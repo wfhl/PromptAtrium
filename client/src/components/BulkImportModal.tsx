@@ -177,8 +177,8 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         body: JSON.stringify({
           prompts: prompts.map(p => ({
             ...p,
-            collectionId: defaultCollection || null,
-            category: p.category || defaultCategory,
+            collectionId: defaultCollection && defaultCollection !== "none" ? defaultCollection : null,
+            category: p.category || (defaultCategory && defaultCategory !== "none" ? defaultCategory : ""),
             isPublic: p.isPublic ?? defaultIsPublic
           }))
         })
@@ -392,7 +392,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
               <SelectValue placeholder="No collection" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No collection</SelectItem>
+              <SelectItem value="none">No collection</SelectItem>
               {collections.map((collection) => (
                 <SelectItem key={collection.id} value={collection.id}>
                   {collection.name}
@@ -409,7 +409,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
               <SelectValue placeholder="No category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No category</SelectItem>
+              <SelectItem value="none">No category</SelectItem>
               <SelectItem value="Art & Design">Art & Design</SelectItem>
               <SelectItem value="Photography">Photography</SelectItem>
               <SelectItem value="Character Design">Character Design</SelectItem>
