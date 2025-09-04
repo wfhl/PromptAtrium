@@ -34,7 +34,7 @@ export default function AdminPage() {
   const [userSearchTerm, setUserSearchTerm] = useState("");
 
   // Check if user is admin (super admin or community admin)
-  if (!authLoading && (!user || !["super_admin", "community_admin"].includes(user.role))) {
+  if (!authLoading && (!user || !["super_admin", "community_admin"].includes((user as any).role))) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-96">
@@ -52,8 +52,8 @@ export default function AdminPage() {
     );
   }
 
-  const isSuperAdmin = user?.role === "super_admin";
-  const isCommunityAdmin = user?.role === "community_admin";
+  const isSuperAdmin = (user as any)?.role === "super_admin";
+  const isCommunityAdmin = (user as any)?.role === "community_admin";
 
   const form = useForm<CommunityFormData>({
     resolver: zodResolver(communitySchema),
@@ -65,12 +65,9 @@ export default function AdminPage() {
   });
 
   // Fetch communities (all for super admin, managed ones for community admin)
-  const { data: communities = [], isLoading: communitiesLoading } = useQuery({
+  const { data: communities = [], isLoading: communitiesLoading } = useQuery<Community[]>({
     queryKey: isSuperAdmin ? ["/api/communities"] : ["/api/communities/managed"],
-    queryFn: async () => {
-      const endpoint = isSuperAdmin ? "/api/communities" : "/api/communities/managed";
-      return await apiRequest(endpoint);
-    },
+    enabled: !!user,
   });
 
   // Fetch users (for user management)
@@ -86,10 +83,7 @@ export default function AdminPage() {
   // Create community mutation
   const createCommunityMutation = useMutation({
     mutationFn: async (data: CommunityFormData) => {
-      return await apiRequest("/api/communities", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("POST", "/api/communities", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
@@ -112,10 +106,7 @@ export default function AdminPage() {
   // Update community mutation
   const updateCommunityMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CommunityFormData> }) => {
-      return await apiRequest(`/api/communities/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("PUT", `/api/communities/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
@@ -139,9 +130,7 @@ export default function AdminPage() {
   // Delete community mutation
   const deleteCommunityMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/communities/${id}`, {
-        method: "DELETE",
-      });
+      return await apiRequest("DELETE", `/api/communities/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
