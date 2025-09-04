@@ -41,7 +41,7 @@ export default function Library() {
     const params = new URLSearchParams();
     if (user?.id) params.append("userId", user.id);
     if (searchQuery) params.append("search", searchQuery);
-    if (categoryFilter) params.append("category", categoryFilter);
+    if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
     if (statusFilter === "published") params.append("status", "published");
     if (statusFilter === "draft") params.append("status", "draft");
     params.append("limit", "20");
@@ -168,7 +168,7 @@ export default function Library() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="Art & Design">Art & Design</SelectItem>
                   <SelectItem value="Photography">Photography</SelectItem>
                   <SelectItem value="Character Design">Character Design</SelectItem>
@@ -184,7 +184,7 @@ export default function Library() {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                 </SelectContent>

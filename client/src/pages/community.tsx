@@ -38,7 +38,7 @@ export default function Community() {
     const params = new URLSearchParams();
     params.append("isPublic", "true");
     if (searchQuery) params.append("search", searchQuery);
-    if (categoryFilter) params.append("category", categoryFilter);
+    if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
     if (sortBy === "featured") params.append("isFeatured", "true");
     params.append("limit", "20");
     return params.toString();
@@ -158,7 +158,7 @@ export default function Community() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="Art & Design">Art & Design</SelectItem>
                   <SelectItem value="Photography">Photography</SelectItem>
                   <SelectItem value="Character Design">Character Design</SelectItem>
