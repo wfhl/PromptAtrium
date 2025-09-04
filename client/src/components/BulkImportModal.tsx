@@ -117,7 +117,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData];
         parsed = dataArray.map((item: any, index: number) => ({
           name: item.name || item.title || `Prompt ${index + 1}`,
-          promptContent: item.prompt || item.content || item.promptContent || "",
+          promptContent: item.prompt || item.content || item.promptContent || item.positive_prompt || item.negative_prompt || "",
           description: item.description || "",
           category: item.category || "",
           tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',').map((t: string) => t.trim()) : []),
