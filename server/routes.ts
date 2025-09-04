@@ -459,24 +459,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User role management (Super Admin only)
-  app.put('/api/users/:userId/role', requireSuperAdmin, async (req: any, res) => {
-    try {
-      const { userId } = req.params;
-      const { role } = req.body;
-      
-      if (!["user", "community_admin", "super_admin"].includes(role)) {
-        return res.status(400).json({ message: "Invalid role" });
-      }
-      
-      const user = await storage.updateUserRole(userId, role);
-      res.json(user);
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      res.status(500).json({ message: "Failed to update user role" });
-    }
-  });
-
   // Get user's communities
   app.get('/api/user/communities', isAuthenticated, async (req: any, res) => {
     try {
@@ -486,6 +468,313 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user communities:", error);
       res.status(500).json({ message: "Failed to fetch user communities" });
+    }
+  });
+
+  // Community admin assignment routes (Super Admin only)
+  app.post('/api/communities/:id/admins', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const { userId } = req.body;
+      const assignedByUserId = req.user.claims.sub;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID required" });
+      }
+
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if community exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Check if user is already a community admin
+      const existingAdmins = await storage.getCommunityAdmins(communityId);
+      const isAlreadyAdmin = existingAdmins.some(admin => admin.userId === userId);
+      if (isAlreadyAdmin) {
+        return res.status(400).json({ message: "User is already a community admin" });
+      }
+
+      const adminAssignment = await storage.assignCommunityAdmin({
+        userId,
+        communityId,
+        assignedBy: assignedByUserId,
+      });
+      
+      res.status(201).json(adminAssignment);
+    } catch (error) {
+      console.error("Error assigning community admin:", error);
+      res.status(500).json({ message: "Failed to assign community admin" });
+    }
+  });
+
+  app.delete('/api/communities/:id/admins/:userId', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id: communityId, userId } = req.params;
+      
+      // Check if community exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Check if user is actually a community admin
+      const existingAdmins = await storage.getCommunityAdmins(communityId);
+      const isAdmin = existingAdmins.some(admin => admin.userId === userId);
+      if (!isAdmin) {
+        return res.status(404).json({ message: "User is not a community admin" });
+      }
+
+      await storage.removeCommunityAdmin(userId, communityId);
+      res.json({ message: "Community admin removed successfully" });
+    } catch (error) {
+      console.error("Error removing community admin:", error);
+      res.status(500).json({ message: "Failed to remove community admin" });
+    }
+  });
+
+  app.get('/api/communities/:id/admins', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      
+      // Check if community exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      const admins = await storage.getCommunityAdmins(communityId);
+      res.json(admins);
+    } catch (error) {
+      console.error("Error fetching community admins:", error);
+      res.status(500).json({ message: "Failed to fetch community admins" });
+    }
+  });
+
+  // User management routes (Super Admin only)
+  app.get('/api/users', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const {
+        search,
+        role,
+        communityId,
+        limit = "50",
+        offset = "0"
+      } = req.query;
+
+      const options = {
+        search: search as string,
+        role: role as string,
+        communityId: communityId as string,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+      };
+
+      const users = await storage.getAllUsers(options);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get('/api/users/search', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { q, limit = "20" } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ message: "Search query required" });
+      }
+
+      const users = await storage.searchUsers(q, parseInt(limit as string));
+      res.json(users);
+    } catch (error) {
+      console.error("Error searching users:", error);
+      res.status(500).json({ message: "Failed to search users" });
+    }
+  });
+
+  app.put('/api/users/:id/role', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      
+      if (!["user", "community_admin", "super_admin"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      const user = await storage.updateUserRole(id, role);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Community invite system routes
+  app.post('/api/communities/:id/invites', requireCommunityAdminRole(), async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const { maxUses = 1, expiresIn } = req.body;
+      const createdByUserId = req.user.claims.sub;
+      
+      // Check if community exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Generate unique invite code
+      const code = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      let expiresAt: Date | undefined;
+      if (expiresIn) {
+        expiresAt = new Date(Date.now() + expiresIn * 1000); // expiresIn is in seconds
+      }
+
+      const invite = await storage.createInvite({
+        code,
+        communityId,
+        createdBy: createdByUserId,
+        maxUses: parseInt(maxUses),
+        expiresAt,
+      });
+      
+      res.status(201).json(invite);
+    } catch (error) {
+      console.error("Error creating invite:", error);
+      res.status(500).json({ message: "Failed to create invite" });
+    }
+  });
+
+  app.get('/api/communities/:id/invites', requireCommunityAdminRole(), async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const { active = "true" } = req.query;
+      
+      // Check if community exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      let invites;
+      if (active === "true") {
+        invites = await storage.getActiveInvites(communityId);
+      } else {
+        invites = await storage.getAllInvites({ communityId });
+      }
+      
+      res.json(invites);
+    } catch (error) {
+      console.error("Error fetching invites:", error);
+      res.status(500).json({ message: "Failed to fetch invites" });
+    }
+  });
+
+  app.get('/api/invites/:code', async (req, res) => {
+    try {
+      const { code } = req.params;
+      
+      const invite = await storage.getInviteByCode(code);
+      if (!invite) {
+        return res.status(404).json({ message: "Invite not found" });
+      }
+
+      // Check if invite is still valid
+      if (!invite.isActive) {
+        return res.status(400).json({ message: "Invite is no longer active" });
+      }
+
+      if (invite.expiresAt && new Date() > invite.expiresAt) {
+        return res.status(400).json({ message: "Invite has expired" });
+      }
+
+      if (invite.currentUses >= invite.maxUses) {
+        return res.status(400).json({ message: "Invite has reached maximum uses" });
+      }
+
+      // Get community info for the invite
+      const community = await storage.getCommunity(invite.communityId);
+      
+      res.json({
+        ...invite,
+        community,
+      });
+    } catch (error) {
+      console.error("Error validating invite:", error);
+      res.status(500).json({ message: "Failed to validate invite" });
+    }
+  });
+
+  app.post('/api/invites/:code/accept', isAuthenticated, async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const invite = await storage.getInviteByCode(code);
+      if (!invite) {
+        return res.status(404).json({ message: "Invite not found" });
+      }
+
+      // Check if invite is still valid
+      if (!invite.isActive) {
+        return res.status(400).json({ message: "Invite is no longer active" });
+      }
+
+      if (invite.expiresAt && new Date() > invite.expiresAt) {
+        return res.status(400).json({ message: "Invite has expired" });
+      }
+
+      if (invite.currentUses >= invite.maxUses) {
+        return res.status(400).json({ message: "Invite has reached maximum uses" });
+      }
+
+      // Check if user is already a member
+      const isMember = await storage.isCommunityMember(userId, invite.communityId);
+      if (isMember) {
+        return res.status(400).json({ message: "Already a member of this community" });
+      }
+
+      // Join the community
+      const membership = await storage.joinCommunity(userId, invite.communityId);
+      
+      // Use the invite (increment usage count)
+      await storage.useInvite(code);
+      
+      res.status(201).json({
+        membership,
+        message: "Successfully joined community",
+      });
+    } catch (error) {
+      console.error("Error accepting invite:", error);
+      res.status(500).json({ message: "Failed to accept invite" });
+    }
+  });
+
+  app.delete('/api/invites/:id', requireCommunityAdminRole(), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get the invite first to check community ownership
+      const invites = await storage.getAllInvites();
+      const invite = invites.find(inv => inv.id === id);
+      
+      if (!invite) {
+        return res.status(404).json({ message: "Invite not found" });
+      }
+
+      await storage.deactivateInvite(id);
+      res.json({ message: "Invite deactivated successfully" });
+    } catch (error) {
+      console.error("Error deactivating invite:", error);
+      res.status(500).json({ message: "Failed to deactivate invite" });
     }
   });
 

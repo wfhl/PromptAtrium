@@ -69,6 +69,29 @@ export const userCommunities = pgTable("user_communities", {
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 
+// Community admins table - tracks which users are admins of which communities
+export const communityAdmins = pgTable("community_admins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  communityId: varchar("community_id").notNull().references(() => communities.id),
+  assignedBy: varchar("assigned_by").notNull().references(() => users.id),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+});
+
+// Community invites table - tracks invite codes and their usage
+export const communityInvites = pgTable("community_invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(),
+  communityId: varchar("community_id").notNull().references(() => communities.id),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  maxUses: integer("max_uses").default(1),
+  currentUses: integer("current_uses").default(0),
+  expiresAt: timestamp("expires_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Collections table
 export const collections = pgTable("collections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -147,11 +170,15 @@ export const usersRelations = relations(users, ({ many }) => ({
   favorites: many(promptFavorites),
   ratings: many(promptRatings),
   communityMemberships: many(userCommunities),
+  communityAdminRoles: many(communityAdmins),
+  createdInvites: many(communityInvites),
 }));
 
 export const communitiesRelations = relations(communities, ({ many }) => ({
   members: many(userCommunities),
   collections: many(collections),
+  admins: many(communityAdmins),
+  invites: many(communityInvites),
 }));
 
 export const userCommunitiesRelations = relations(userCommunities, ({ one }) => ({
@@ -189,6 +216,17 @@ export const promptRatingsRelations = relations(promptRatings, ({ one }) => ({
   prompt: one(prompts, { fields: [promptRatings.promptId], references: [prompts.id] }),
 }));
 
+export const communityAdminsRelations = relations(communityAdmins, ({ one }) => ({
+  user: one(users, { fields: [communityAdmins.userId], references: [users.id] }),
+  community: one(communities, { fields: [communityAdmins.communityId], references: [communities.id] }),
+  assignedByUser: one(users, { fields: [communityAdmins.assignedBy], references: [users.id] }),
+}));
+
+export const communityInvitesRelations = relations(communityInvites, ({ one }) => ({
+  community: one(communities, { fields: [communityInvites.communityId], references: [communities.id] }),
+  createdByUser: one(users, { fields: [communityInvites.createdBy], references: [users.id] }),
+}));
+
 // Insert schemas
 export const insertPromptSchema = createInsertSchema(prompts).omit({
   id: true,
@@ -223,6 +261,18 @@ export const insertUserCommunitySchema = createInsertSchema(userCommunities).omi
   joinedAt: true,
 });
 
+export const insertCommunityAdminSchema = createInsertSchema(communityAdmins).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertCommunityInviteSchema = createInsertSchema(communityInvites).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  currentUses: true,
+});
+
 export const insertPromptRatingSchema = createInsertSchema(promptRatings).omit({
   id: true,
   createdAt: true,
@@ -242,6 +292,10 @@ export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
 export type Community = typeof communities.$inferSelect;
 export type InsertUserCommunity = z.infer<typeof insertUserCommunitySchema>;
 export type UserCommunity = typeof userCommunities.$inferSelect;
+export type InsertCommunityAdmin = z.infer<typeof insertCommunityAdminSchema>;
+export type CommunityAdmin = typeof communityAdmins.$inferSelect;
+export type InsertCommunityInvite = z.infer<typeof insertCommunityInviteSchema>;
+export type CommunityInvite = typeof communityInvites.$inferSelect;
 export type InsertPromptRating = z.infer<typeof insertPromptRatingSchema>;
 export type PromptRating = typeof promptRatings.$inferSelect;
 export type PromptFavorite = typeof promptFavorites.$inferSelect;

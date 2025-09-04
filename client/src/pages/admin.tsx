@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Settings, Users, Shield, Crown, Folder } from "lucide-react";
+import { Plus, Settings, Users, Shield, Crown, Folder, Mail, UserPlus, Search } from "lucide-react";
 import type { Community, User, UserRole } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -73,11 +74,28 @@ export default function AdminPage() {
   // Fetch users (for user management)
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["/api/users"],
-    queryFn: async () => {
-      // Note: This endpoint would need to be created for user management
-      return [];
+    enabled: isSuperAdmin && !!user,
+  });
+
+  // Update user role mutation
+  const updateUserRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
+      return apiRequest("PUT", `/api/users/${userId}/role`, { role });
     },
-    enabled: false, // Disable for now since endpoint doesn't exist yet
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user role",
+        variant: "destructive",
+      });
+    },
   });
 
   // Create community mutation
@@ -210,84 +228,265 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Communities Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">
-              {isSuperAdmin ? "All Communities" : "My Communities"}
-            </h2>
+        {/* Tabbed Interface */}
+        <Tabs defaultValue="communities" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="communities" className="flex items-center gap-2">
+              <Folder className="h-4 w-4" />
+              Communities
+            </TabsTrigger>
             {isSuperAdmin && (
-              <Button onClick={openCreateModal} data-testid="button-create-community">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Community
-              </Button>
+              <>
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Users
+                </TabsTrigger>
+                <TabsTrigger value="invites" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Invites
+                </TabsTrigger>
+              </>
             )}
-          </div>
+          </TabsList>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {communities.map((community: Community) => (
-              <Card key={community.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{community.name}</CardTitle>
-                      <CardDescription className="mt-1">@{community.slug}</CardDescription>
+          {/* Communities Tab */}
+          <TabsContent value="communities" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-gray-900">
+                {isSuperAdmin ? "All Communities" : "My Communities"}
+              </h2>
+              {isSuperAdmin && (
+                <Button onClick={openCreateModal} data-testid="button-create-community">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Community
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {communities.map((community: Community) => (
+                <Card key={community.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{community.name}</CardTitle>
+                        <CardDescription className="mt-1">@{community.slug}</CardDescription>
+                      </div>
+                      <Badge variant={community.isActive ? "default" : "secondary"}>
+                        {community.isActive ? "Active" : "Inactive"}
+                      </Badge>
                     </div>
-                    <Badge variant={community.isActive ? "default" : "secondary"}>
-                      {community.isActive ? "Active" : "Inactive"}
-                    </Badge>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 mb-4">{community.description}</p>
+                    <div className="flex items-center gap-2">
+                      {isSuperAdmin ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditModal(community)}
+                            data-testid={`button-edit-community-${community.id}`}
+                          >
+                            <Settings className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteCommunityMutation.mutate(community.id)}
+                            disabled={deleteCommunityMutation.isPending}
+                            data-testid={`button-delete-community-${community.id}`}
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            data-testid={`button-manage-members-${community.id}`}
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            Members
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            data-testid={`button-manage-collections-${community.id}`}
+                          >
+                            <Folder className="h-4 w-4 mr-1" />
+                            Collections
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Users Tab - Super Admin Only */}
+          {isSuperAdmin && (
+            <TabsContent value="users" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-gray-900">User Management</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search users..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      className="pl-10 w-64"
+                      data-testid="input-user-search"
+                    />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">{community.description}</p>
-                  <div className="flex items-center gap-2">
-                    {isSuperAdmin ? (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditModal(community)}
-                          data-testid={`button-edit-community-${community.id}`}
-                        >
-                          <Settings className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteCommunityMutation.mutate(community.id)}
-                          disabled={deleteCommunityMutation.isPending}
-                          data-testid={`button-delete-community-${community.id}`}
-                        >
-                          Delete
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          data-testid={`button-manage-members-${community.id}`}
-                        >
-                          <Users className="h-4 w-4 mr-1" />
-                          Members
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          data-testid={`button-manage-collections-${community.id}`}
-                        >
-                          <Folder className="h-4 w-4 mr-1" />
-                          Collections
-                        </Button>
-                      </>
-                    )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg border">
+                <div className="p-4 border-b">
+                  <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                    <span className="w-8">#</span>
+                    <span className="flex-1">User</span>
+                    <span className="w-32">Role</span>
+                    <span className="w-32">Joined</span>
+                    <span className="w-32">Actions</span>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+                </div>
+                
+                {usersLoading ? (
+                  <div className="p-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading users...</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {users
+                      ?.filter((user: User) =>
+                        !userSearchTerm ||
+                        user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                        user.firstName?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                        user.lastName?.toLowerCase().includes(userSearchTerm.toLowerCase())
+                      )
+                      .map((user: User, index: number) => (
+                        <div key={user.id} className="p-4 hover:bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            <span className="w-8 text-sm text-gray-500">{index + 1}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">
+                                  {user.firstName} {user.lastName}
+                                </span>
+                                <span className="text-sm text-gray-500">({user.email})</span>
+                              </div>
+                            </div>
+                            <div className="w-32">
+                              <Select
+                                value={(user as any).role || "user"}
+                                onValueChange={(role: UserRole) => {
+                                  updateUserRoleMutation.mutate({ userId: user.id, role });
+                                }}
+                              >
+                                <SelectTrigger className="w-full" data-testid={`select-user-role-${user.id}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="user">User</SelectItem>
+                                  <SelectItem value="community_admin">Community Admin</SelectItem>
+                                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="w-32 text-sm text-gray-600">
+                              {user.createdAt && new Date(user.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="w-32">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                data-testid={`button-manage-user-${user.id}`}
+                              >
+                                <UserPlus className="h-4 w-4 mr-1" />
+                                Manage
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          )}
+
+          {/* Invites Tab - Super Admin Only */}
+          {isSuperAdmin && (
+            <TabsContent value="invites" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-gray-900">Invite Management</h2>
+                <Button data-testid="button-create-invite">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Invite
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Active Invites</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">--</div>
+                    <p className="text-sm text-gray-600">Currently active</p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Used Invites</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">--</div>
+                    <p className="text-sm text-gray-600">Successfully redeemed</p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Expired Invites</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">--</div>
+                    <p className="text-sm text-gray-600">No longer valid</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="bg-white rounded-lg border">
+                <div className="p-4 border-b">
+                  <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                    <span className="flex-1">Code</span>
+                    <span className="w-32">Community</span>
+                    <span className="w-24">Uses</span>
+                    <span className="w-24">Status</span>
+                    <span className="w-32">Created</span>
+                    <span className="w-24">Actions</span>
+                  </div>
+                </div>
+                
+                <div className="p-8 text-center text-gray-500">
+                  <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>No invites found</p>
+                  <p className="text-sm">Create your first community invite to get started</p>
+                </div>
+              </div>
+            </TabsContent>
+          )}
+        </Tabs>
 
         {/* Community Modal */}
         <Dialog open={communityModalOpen} onOpenChange={setCommunityModalOpen}>

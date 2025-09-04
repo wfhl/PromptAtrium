@@ -5,6 +5,8 @@ import {
   collections,
   communities,
   userCommunities,
+  communityAdmins,
+  communityInvites,
   promptFavorites,
   promptRatings,
   type User,
@@ -19,6 +21,10 @@ import {
   type InsertCommunity,
   type UserCommunity,
   type InsertUserCommunity,
+  type CommunityAdmin,
+  type InsertCommunityAdmin,
+  type CommunityInvite,
+  type InsertCommunityInvite,
   type PromptRating,
   type InsertPromptRating,
   type PromptFavorite,
@@ -100,6 +106,36 @@ export interface IStorage {
     collections: number;
     forksCreated: number;
   }>;
+
+  // User management operations (for Super Admin)
+  getAllUsers(options?: {
+    search?: string;
+    role?: UserRole;
+    communityId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<User[]>;
+  searchUsers(query: string, limit?: number): Promise<User[]>;
+
+  // Community admin operations
+  assignCommunityAdmin(data: InsertCommunityAdmin): Promise<CommunityAdmin>;
+  removeCommunityAdmin(userId: string, communityId: string): Promise<void>;
+  getCommunityAdmins(communityId: string): Promise<CommunityAdmin[]>;
+  getUserCommunityAdminRoles(userId: string): Promise<CommunityAdmin[]>;
+
+  // Invite system operations
+  createInvite(invite: InsertCommunityInvite): Promise<CommunityInvite>;
+  getInviteByCode(code: string): Promise<CommunityInvite | undefined>;
+  useInvite(code: string): Promise<CommunityInvite>;
+  getActiveInvites(communityId: string): Promise<CommunityInvite[]>;
+  getAllInvites(options?: {
+    communityId?: string;
+    createdBy?: string;
+    isActive?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<CommunityInvite[]>;
+  deactivateInvite(id: string): Promise<void>;
 }
 
 function generatePromptId(): string {
@@ -525,6 +561,200 @@ export class DatabaseStorage implements IStorage {
       collections: userCollections?.count || 0,
       forksCreated: userForks?.count || 0,
     };
+  }
+
+  // User management operations (for Super Admin)
+  async getAllUsers(options: {
+    search?: string;
+    role?: UserRole;
+    communityId?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<User[]> {
+    let query = db.select().from(users);
+
+    const conditions: any[] = [];
+    
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(users.email, `%${options.search}%`),
+          ilike(users.firstName, `%${options.search}%`),
+          ilike(users.lastName, `%${options.search}%`)
+        )
+      );
+    }
+
+    if (options.role) {
+      conditions.push(eq(users.role, options.role));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    if (options.communityId) {
+      // If filtering by community, join with userCommunities
+      query = query
+        .innerJoin(userCommunities, eq(users.id, userCommunities.userId))
+        .where(eq(userCommunities.communityId, options.communityId));
+    }
+
+    query = query.orderBy(desc(users.createdAt));
+
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+
+    return await query;
+  }
+
+  async searchUsers(query: string, limit: number = 20): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(
+        or(
+          ilike(users.email, `%${query}%`),
+          ilike(users.firstName, `%${query}%`),
+          ilike(users.lastName, `%${query}%`)
+        )
+      )
+      .limit(limit);
+  }
+
+  // Community admin operations
+  async assignCommunityAdmin(data: InsertCommunityAdmin): Promise<CommunityAdmin> {
+    const [admin] = await db
+      .insert(communityAdmins)
+      .values(data)
+      .returning();
+    return admin;
+  }
+
+  async removeCommunityAdmin(userId: string, communityId: string): Promise<void> {
+    await db
+      .delete(communityAdmins)
+      .where(
+        and(
+          eq(communityAdmins.userId, userId),
+          eq(communityAdmins.communityId, communityId)
+        )
+      );
+  }
+
+  async getCommunityAdmins(communityId: string): Promise<CommunityAdmin[]> {
+    return await db
+      .select()
+      .from(communityAdmins)
+      .where(eq(communityAdmins.communityId, communityId));
+  }
+
+  async getUserCommunityAdminRoles(userId: string): Promise<CommunityAdmin[]> {
+    return await db
+      .select()
+      .from(communityAdmins)
+      .where(eq(communityAdmins.userId, userId));
+  }
+
+  // Invite system operations
+  async createInvite(invite: InsertCommunityInvite): Promise<CommunityInvite> {
+    const [newInvite] = await db
+      .insert(communityInvites)
+      .values(invite)
+      .returning();
+    return newInvite;
+  }
+
+  async getInviteByCode(code: string): Promise<CommunityInvite | undefined> {
+    const [invite] = await db
+      .select()
+      .from(communityInvites)
+      .where(eq(communityInvites.code, code));
+    return invite;
+  }
+
+  async useInvite(code: string): Promise<CommunityInvite> {
+    const [invite] = await db
+      .update(communityInvites)
+      .set({
+        currentUses: sql`current_uses + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(communityInvites.code, code))
+      .returning();
+    return invite;
+  }
+
+  async getActiveInvites(communityId: string): Promise<CommunityInvite[]> {
+    return await db
+      .select()
+      .from(communityInvites)
+      .where(
+        and(
+          eq(communityInvites.communityId, communityId),
+          eq(communityInvites.isActive, true),
+          or(
+            sql`expires_at IS NULL`,
+            sql`expires_at > NOW()`
+          )
+        )
+      )
+      .orderBy(desc(communityInvites.createdAt));
+  }
+
+  async getAllInvites(options: {
+    communityId?: string;
+    createdBy?: string;
+    isActive?: boolean;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<CommunityInvite[]> {
+    let query = db.select().from(communityInvites);
+
+    const conditions: any[] = [];
+    
+    if (options.communityId) {
+      conditions.push(eq(communityInvites.communityId, options.communityId));
+    }
+
+    if (options.createdBy) {
+      conditions.push(eq(communityInvites.createdBy, options.createdBy));
+    }
+
+    if (options.isActive !== undefined) {
+      conditions.push(eq(communityInvites.isActive, options.isActive));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    query = query.orderBy(desc(communityInvites.createdAt));
+
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+
+    return await query;
+  }
+
+  async deactivateInvite(id: string): Promise<void> {
+    await db
+      .update(communityInvites)
+      .set({
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(communityInvites.id, id));
   }
 }
 
