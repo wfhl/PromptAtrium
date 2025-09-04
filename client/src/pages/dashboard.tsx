@@ -8,6 +8,7 @@ import { Lightbulb, Plus, Search, FileText, Heart, Folder, GitBranch, ChevronDow
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { QuickActions } from "@/components/QuickActions";
+import { BulkImportModal } from "@/components/BulkImportModal";
 import { StatsCard } from "@/components/StatsCard";
 import { CollectionItem } from "@/components/CollectionItem";
 import { ActivityItem } from "@/components/ActivityItem";
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -96,10 +98,7 @@ export default function Dashboard() {
   };
 
   const handleImportPrompts = () => {
-    toast({
-      title: "Coming Soon",
-      description: "Prompt import will be available soon!",
-    });
+    setBulkImportModalOpen(true);
   };
 
   if (isLoading) {
@@ -386,6 +385,13 @@ export default function Dashboard() {
         onOpenChange={setPromptModalOpen}
         prompt={editingPrompt}
         mode={editingPrompt ? "edit" : "create"}
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        open={bulkImportModalOpen}
+        onOpenChange={setBulkImportModalOpen}
+        collections={collections}
       />
     </div>
   );

@@ -139,6 +139,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/prompts/bulk-import', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { prompts } = req.body;
+
+      if (!Array.isArray(prompts) || prompts.length === 0) {
+        return res.status(400).json({ message: "Invalid prompts array" });
+      }
+
+      const results = {
+        total: prompts.length,
+        success: 0,
+        failed: 0,
+        errors: [] as Array<{ row: number; error: string; data: any }>
+      };
+
+      // Process prompts in batches to avoid overwhelming the database
+      const batchSize = 10;
+      for (let i = 0; i < prompts.length; i += batchSize) {
+        const batch = prompts.slice(i, i + batchSize);
+        
+        for (let j = 0; j < batch.length; j++) {
+          const rowIndex = i + j + 1;
+          const promptData = batch[j];
+          
+          try {
+            // Validate prompt data
+            const validatedPrompt = insertPromptSchema.parse({
+              ...promptData,
+              userId,
+              tags: Array.isArray(promptData.tags) ? promptData.tags : [],
+              tagsNormalized: Array.isArray(promptData.tags) 
+                ? promptData.tags.map((tag: string) => tag.toLowerCase().trim())
+                : [],
+              status: promptData.status || "draft",
+              isPublic: promptData.isPublic ?? false,
+              version: 1,
+            });
+
+            // Create the prompt
+            await storage.createPrompt(validatedPrompt);
+            results.success++;
+          } catch (error) {
+            results.failed++;
+            const errorMessage = error instanceof z.ZodError 
+              ? error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+              : error instanceof Error 
+                ? error.message 
+                : "Unknown error";
+            
+            results.errors.push({
+              row: rowIndex,
+              error: errorMessage,
+              data: promptData
+            });
+          }
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error during bulk import:", error);
+      res.status(500).json({ message: "Failed to process bulk import" });
+    }
+  });
+
   // Community routes
   app.post('/api/prompts/:id/like', isAuthenticated, async (req: any, res) => {
     try {
