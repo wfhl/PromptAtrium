@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Settings, Users, Shield, Crown } from "lucide-react";
+import { Plus, Settings, Users, Shield, Crown, Folder } from "lucide-react";
 import type { Community, User, UserRole } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,8 +33,8 @@ export default function AdminPage() {
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [userSearchTerm, setUserSearchTerm] = useState("");
 
-  // Check if user is super admin
-  if (!authLoading && (!user || user.role !== "super_admin")) {
+  // Check if user is admin (super admin or community admin)
+  if (!authLoading && (!user || !["super_admin", "community_admin"].includes(user.role))) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-96">
@@ -44,13 +44,16 @@ export default function AdminPage() {
               Access Denied
             </CardTitle>
             <CardDescription>
-              You don't have permission to access this page. Super Admin access required.
+              You don't have permission to access this page. Admin access required.
             </CardDescription>
           </CardHeader>
         </Card>
       </div>
     );
   }
+
+  const isSuperAdmin = user?.role === "super_admin";
+  const isCommunityAdmin = user?.role === "community_admin";
 
   const form = useForm<CommunityFormData>({
     resolver: zodResolver(communitySchema),
@@ -61,9 +64,13 @@ export default function AdminPage() {
     },
   });
 
-  // Fetch communities
+  // Fetch communities (all for super admin, managed ones for community admin)
   const { data: communities = [], isLoading: communitiesLoading } = useQuery({
-    queryKey: ["/api/communities"],
+    queryKey: isSuperAdmin ? ["/api/communities"] : ["/api/communities/managed"],
+    queryFn: async () => {
+      const endpoint = isSuperAdmin ? "/api/communities" : "/api/communities/managed";
+      return await apiRequest(endpoint);
+    },
   });
 
   // Fetch users (for user management)
@@ -81,7 +88,6 @@ export default function AdminPage() {
     mutationFn: async (data: CommunityFormData) => {
       return await apiRequest("/api/communities", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
     },
@@ -108,7 +114,6 @@ export default function AdminPage() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<CommunityFormData> }) => {
       return await apiRequest(`/api/communities/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
     },
@@ -195,21 +200,39 @@ export default function AdminPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <Crown className="h-8 w-8 text-yellow-500" />
-              Super Admin Dashboard
+              {isSuperAdmin ? (
+                <>
+                  <Crown className="h-8 w-8 text-yellow-500" />
+                  Super Admin Dashboard
+                </>
+              ) : (
+                <>
+                  <Users className="h-8 w-8 text-blue-500" />
+                  Community Admin Dashboard
+                </>
+              )}
             </h1>
-            <p className="text-gray-600 mt-2">Manage communities, users, and platform settings</p>
+            <p className="text-gray-600 mt-2">
+              {isSuperAdmin 
+                ? "Manage communities, users, and platform settings"
+                : "Manage your communities, collections, and members"
+              }
+            </p>
           </div>
         </div>
 
         {/* Communities Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Communities</h2>
-            <Button onClick={openCreateModal} data-testid="button-create-community">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Community
-            </Button>
+            <h2 className="text-2xl font-semibold text-gray-900">
+              {isSuperAdmin ? "All Communities" : "My Communities"}
+            </h2>
+            {isSuperAdmin && (
+              <Button onClick={openCreateModal} data-testid="button-create-community">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Community
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -229,24 +252,47 @@ export default function AdminPage() {
                 <CardContent>
                   <p className="text-sm text-gray-600 mb-4">{community.description}</p>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditModal(community)}
-                      data-testid={`button-edit-community-${community.id}`}
-                    >
-                      <Settings className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteCommunityMutation.mutate(community.id)}
-                      disabled={deleteCommunityMutation.isPending}
-                      data-testid={`button-delete-community-${community.id}`}
-                    >
-                      Delete
-                    </Button>
+                    {isSuperAdmin ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal(community)}
+                          data-testid={`button-edit-community-${community.id}`}
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteCommunityMutation.mutate(community.id)}
+                          disabled={deleteCommunityMutation.isPending}
+                          data-testid={`button-delete-community-${community.id}`}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-testid={`button-manage-members-${community.id}`}
+                        >
+                          <Users className="h-4 w-4 mr-1" />
+                          Members
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-testid={`button-manage-collections-${community.id}`}
+                        >
+                          <Folder className="h-4 w-4 mr-1" />
+                          Collections
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>

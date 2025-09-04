@@ -68,6 +68,7 @@ export interface IStorage {
   
   // Community operations
   getCommunities(): Promise<Community[]>;
+  getManagedCommunities(userId: string): Promise<Community[]>;
   getCommunity(id: string): Promise<Community | undefined>;
   getCommunityBySlug(slug: string): Promise<Community | undefined>;
   createCommunity(community: InsertCommunity): Promise<Community>;
@@ -334,6 +335,23 @@ export class DatabaseStorage implements IStorage {
   // Community operations
   async getCommunities(): Promise<Community[]> {
     return await db.select().from(communities).where(eq(communities.isActive, true)).orderBy(desc(communities.createdAt));
+  }
+
+  async getManagedCommunities(userId: string): Promise<Community[]> {
+    return await db
+      .select({
+        id: communities.id,
+        name: communities.name,
+        description: communities.description,
+        slug: communities.slug,
+        isActive: communities.isActive,
+        createdAt: communities.createdAt,
+        updatedAt: communities.updatedAt,
+      })
+      .from(communities)
+      .innerJoin(communityAdmins, eq(communities.id, communityAdmins.communityId))
+      .where(and(eq(communityAdmins.userId, userId), eq(communities.isActive, true)))
+      .orderBy(desc(communities.createdAt));
   }
 
   async getCommunity(id: string): Promise<Community | undefined> {

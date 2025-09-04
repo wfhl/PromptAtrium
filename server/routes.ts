@@ -335,6 +335,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get communities managed by the current user (community admin)
+  app.get('/api/communities/managed', requireCommunityAdminRole(), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const communities = await storage.getManagedCommunities(userId);
+      res.json(communities);
+    } catch (error) {
+      console.error("Error fetching managed communities:", error);
+      res.status(500).json({ message: "Failed to fetch managed communities" });
+    }
+  });
+
   app.get('/api/communities/:id', async (req, res) => {
     try {
       const community = await storage.getCommunity(req.params.id);

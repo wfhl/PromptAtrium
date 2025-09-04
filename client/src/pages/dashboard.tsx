@@ -144,7 +144,7 @@ export default function Dashboard() {
               <Link href="/projects" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-projects">
                 Projects
               </Link>
-              {user?.role === "super_admin" && (
+              {(user?.role === "super_admin" || user?.role === "community_admin") && (
                 <Link href="/admin" className="text-yellow-600 hover:text-yellow-700 transition-colors flex items-center gap-1" data-testid="nav-admin">
                   <Crown className="h-4 w-4" />
                   Admin
