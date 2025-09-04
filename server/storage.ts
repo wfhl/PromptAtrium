@@ -3,6 +3,8 @@ import {
   prompts,
   projects,
   collections,
+  communities,
+  userCommunities,
   promptFavorites,
   promptRatings,
   type User,
@@ -13,9 +15,15 @@ import {
   type InsertProject,
   type Collection,
   type InsertCollection,
+  type Community,
+  type InsertCommunity,
+  type UserCommunity,
+  type InsertUserCommunity,
   type PromptRating,
   type InsertPromptRating,
   type PromptFavorite,
+  type UserRole,
+  type CommunityRole,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray } from "drizzle-orm";
@@ -52,13 +60,33 @@ export interface IStorage {
   deleteProject(id: string): Promise<void>;
   
   // Collection operations
-  getCollections(userId: string): Promise<Collection[]>;
+  getCollections(options?: { userId?: string; communityId?: string; type?: string }): Promise<Collection[]>;
   getCollection(id: string): Promise<Collection | undefined>;
   createCollection(collection: InsertCollection): Promise<Collection>;
   updateCollection(id: string, collection: Partial<InsertCollection>): Promise<Collection>;
   deleteCollection(id: string): Promise<void>;
   
   // Community operations
+  getCommunities(): Promise<Community[]>;
+  getCommunity(id: string): Promise<Community | undefined>;
+  getCommunityBySlug(slug: string): Promise<Community | undefined>;
+  createCommunity(community: InsertCommunity): Promise<Community>;
+  updateCommunity(id: string, community: Partial<InsertCommunity>): Promise<Community>;
+  deleteCommunity(id: string): Promise<void>;
+  
+  // Community membership operations
+  joinCommunity(userId: string, communityId: string, role?: CommunityRole): Promise<UserCommunity>;
+  leaveCommunity(userId: string, communityId: string): Promise<void>;
+  getUserCommunities(userId: string): Promise<UserCommunity[]>;
+  getCommunityMembers(communityId: string): Promise<UserCommunity[]>;
+  updateCommunityMemberRole(userId: string, communityId: string, role: CommunityRole): Promise<UserCommunity>;
+  isCommunityMember(userId: string, communityId: string): Promise<boolean>;
+  isCommunityAdmin(userId: string, communityId: string): Promise<boolean>;
+  
+  // User role operations
+  updateUserRole(userId: string, role: UserRole): Promise<User>;
+  
+  // Social operations
   toggleLike(userId: string, promptId: string): Promise<boolean>;
   toggleFavorite(userId: string, promptId: string): Promise<boolean>;
   ratePrompt(rating: InsertPromptRating): Promise<PromptRating>;
@@ -256,8 +284,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Collection operations
-  async getCollections(userId: string): Promise<Collection[]> {
-    return await db.select().from(collections).where(eq(collections.userId, userId)).orderBy(desc(collections.updatedAt));
+  async getCollections(options: { userId?: string; communityId?: string; type?: string } = {}): Promise<Collection[]> {
+    let query = db.select().from(collections);
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(collections.userId, options.userId));
+    }
+    
+    if (options.communityId) {
+      conditions.push(eq(collections.communityId, options.communityId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(collections.type, options.type));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(collections.updatedAt));
   }
 
   async getCollection(id: string): Promise<Collection | undefined> {
@@ -284,6 +332,104 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Community operations
+  async getCommunities(): Promise<Community[]> {
+    return await db.select().from(communities).where(eq(communities.isActive, true)).orderBy(desc(communities.createdAt));
+  }
+
+  async getCommunity(id: string): Promise<Community | undefined> {
+    const [community] = await db.select().from(communities).where(eq(communities.id, id));
+    return community;
+  }
+
+  async getCommunityBySlug(slug: string): Promise<Community | undefined> {
+    const [community] = await db.select().from(communities).where(eq(communities.slug, slug));
+    return community;
+  }
+
+  async createCommunity(community: InsertCommunity): Promise<Community> {
+    const [newCommunity] = await db.insert(communities).values(community).returning();
+    return newCommunity;
+  }
+
+  async updateCommunity(id: string, community: Partial<InsertCommunity>): Promise<Community> {
+    const [updatedCommunity] = await db
+      .update(communities)
+      .set({ ...community, updatedAt: new Date() })
+      .where(eq(communities.id, id))
+      .returning();
+    return updatedCommunity;
+  }
+
+  async deleteCommunity(id: string): Promise<void> {
+    await db.update(communities).set({ isActive: false }).where(eq(communities.id, id));
+  }
+
+  // Community membership operations
+  async joinCommunity(userId: string, communityId: string, role: CommunityRole = "member"): Promise<UserCommunity> {
+    const [membership] = await db.insert(userCommunities).values({
+      userId,
+      communityId,
+      role,
+    }).returning();
+    return membership;
+  }
+
+  async leaveCommunity(userId: string, communityId: string): Promise<void> {
+    await db.delete(userCommunities).where(
+      and(eq(userCommunities.userId, userId), eq(userCommunities.communityId, communityId))
+    );
+  }
+
+  async getUserCommunities(userId: string): Promise<UserCommunity[]> {
+    return await db.select().from(userCommunities).where(eq(userCommunities.userId, userId));
+  }
+
+  async getCommunityMembers(communityId: string): Promise<UserCommunity[]> {
+    return await db.select().from(userCommunities).where(eq(userCommunities.communityId, communityId));
+  }
+
+  async updateCommunityMemberRole(userId: string, communityId: string, role: CommunityRole): Promise<UserCommunity> {
+    const [updatedMembership] = await db
+      .update(userCommunities)
+      .set({ role })
+      .where(and(eq(userCommunities.userId, userId), eq(userCommunities.communityId, communityId)))
+      .returning();
+    return updatedMembership;
+  }
+
+  async isCommunityMember(userId: string, communityId: string): Promise<boolean> {
+    const [membership] = await db
+      .select()
+      .from(userCommunities)
+      .where(and(eq(userCommunities.userId, userId), eq(userCommunities.communityId, communityId)));
+    return !!membership;
+  }
+
+  async isCommunityAdmin(userId: string, communityId: string): Promise<boolean> {
+    const [membership] = await db
+      .select()
+      .from(userCommunities)
+      .where(
+        and(
+          eq(userCommunities.userId, userId),
+          eq(userCommunities.communityId, communityId),
+          eq(userCommunities.role, "admin")
+        )
+      );
+    return !!membership;
+  }
+
+  // User role operations
+  async updateUserRole(userId: string, role: UserRole): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+
+  // Social operations
   async toggleLike(userId: string, promptId: string): Promise<boolean> {
     const [existing] = await db
       .select()

@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema } from "@shared/schema";
+import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -278,7 +279,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/collections', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const collections = await storage.getCollections(userId);
+      const { communityId, type } = req.query;
+      
+      const options: any = {};
+      if (!communityId && !type) {
+        // Default: get user's personal collections
+        options.userId = userId;
+      }
+      if (communityId) options.communityId = communityId as string;
+      if (type) options.type = type as string;
+      
+      const collections = await storage.getCollections(options);
       res.json(collections);
     } catch (error) {
       console.error("Error fetching collections:", error);
@@ -310,6 +321,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user stats:", error);
       res.status(500).json({ message: "Failed to fetch user stats" });
+    }
+  });
+
+  // Community routes
+  app.get('/api/communities', async (req, res) => {
+    try {
+      const communities = await storage.getCommunities();
+      res.json(communities);
+    } catch (error) {
+      console.error("Error fetching communities:", error);
+      res.status(500).json({ message: "Failed to fetch communities" });
+    }
+  });
+
+  app.get('/api/communities/:id', async (req, res) => {
+    try {
+      const community = await storage.getCommunity(req.params.id);
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+      res.json(community);
+    } catch (error) {
+      console.error("Error fetching community:", error);
+      res.status(500).json({ message: "Failed to fetch community" });
+    }
+  });
+
+  app.post('/api/communities', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const communityData = insertCommunitySchema.parse(req.body);
+      const community = await storage.createCommunity(communityData);
+      res.status(201).json(community);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid community data", errors: error.errors });
+      }
+      console.error("Error creating community:", error);
+      res.status(500).json({ message: "Failed to create community" });
+    }
+  });
+
+  app.put('/api/communities/:id', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const communityData = insertCommunitySchema.partial().parse(req.body);
+      const community = await storage.updateCommunity(req.params.id, communityData);
+      res.json(community);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid community data", errors: error.errors });
+      }
+      console.error("Error updating community:", error);
+      res.status(500).json({ message: "Failed to update community" });
+    }
+  });
+
+  app.delete('/api/communities/:id', requireSuperAdmin, async (req: any, res) => {
+    try {
+      await storage.deleteCommunity(req.params.id);
+      res.json({ message: "Community deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting community:", error);
+      res.status(500).json({ message: "Failed to delete community" });
+    }
+  });
+
+  // Community membership routes
+  app.post('/api/communities/:communityId/join', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { communityId } = req.params;
+      
+      // Check if already a member
+      const isMember = await storage.isCommunityMember(userId, communityId);
+      if (isMember) {
+        return res.status(400).json({ message: "Already a member of this community" });
+      }
+      
+      const membership = await storage.joinCommunity(userId, communityId);
+      res.status(201).json(membership);
+    } catch (error) {
+      console.error("Error joining community:", error);
+      res.status(500).json({ message: "Failed to join community" });
+    }
+  });
+
+  app.delete('/api/communities/:communityId/leave', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { communityId } = req.params;
+      
+      await storage.leaveCommunity(userId, communityId);
+      res.json({ message: "Left community successfully" });
+    } catch (error) {
+      console.error("Error leaving community:", error);
+      res.status(500).json({ message: "Failed to leave community" });
+    }
+  });
+
+  app.get('/api/communities/:communityId/members', requireCommunityMember(), async (req: any, res) => {
+    try {
+      const { communityId } = req.params;
+      const members = await storage.getCommunityMembers(communityId);
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching community members:", error);
+      res.status(500).json({ message: "Failed to fetch community members" });
+    }
+  });
+
+  app.put('/api/communities/:communityId/members/:userId/role', requireCommunityAdminRole(), async (req: any, res) => {
+    try {
+      const { communityId, userId } = req.params;
+      const { role } = req.body;
+      
+      if (!["member", "admin"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      const membership = await storage.updateCommunityMemberRole(userId, communityId, role);
+      res.json(membership);
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      res.status(500).json({ message: "Failed to update member role" });
+    }
+  });
+
+  // User role management (Super Admin only)
+  app.put('/api/users/:userId/role', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { role } = req.body;
+      
+      if (!["user", "community_admin", "super_admin"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      const user = await storage.updateUserRole(userId, role);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Get user's communities
+  app.get('/api/user/communities', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const communities = await storage.getUserCommunities(userId);
+      res.json(communities);
+    } catch (error) {
+      console.error("Error fetching user communities:", error);
+      res.status(500).json({ message: "Failed to fetch user communities" });
     }
   });
 

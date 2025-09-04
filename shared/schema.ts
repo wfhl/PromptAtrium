@@ -33,7 +33,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role", { enum: ["user", "moderator", "admin"] }).default("user"),
+  role: varchar("role", { enum: ["user", "community_admin", "super_admin"] }).default("user"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -48,12 +48,35 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Communities table
+export const communities = pgTable("communities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  slug: varchar("slug").notNull().unique(),
+  imageUrl: varchar("image_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User communities membership table
+export const userCommunities = pgTable("user_communities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  communityId: varchar("community_id").notNull().references(() => communities.id),
+  role: varchar("role", { enum: ["member", "admin"] }).default("member"),
+  joinedAt: timestamp("joined_at").defaultNow(),
+});
+
 // Collections table
 export const collections = pgTable("collections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name").notNull(),
   description: text("description"),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").references(() => users.id),
+  communityId: varchar("community_id").references(() => communities.id),
+  type: varchar("type", { enum: ["user", "community", "global"] }).notNull().default("user"),
   isPublic: boolean("is_public").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -123,6 +146,17 @@ export const usersRelations = relations(users, ({ many }) => ({
   collections: many(collections),
   favorites: many(promptFavorites),
   ratings: many(promptRatings),
+  communityMemberships: many(userCommunities),
+}));
+
+export const communitiesRelations = relations(communities, ({ many }) => ({
+  members: many(userCommunities),
+  collections: many(collections),
+}));
+
+export const userCommunitiesRelations = relations(userCommunities, ({ one }) => ({
+  user: one(users, { fields: [userCommunities.userId], references: [users.id] }),
+  community: one(communities, { fields: [userCommunities.communityId], references: [communities.id] }),
 }));
 
 export const promptsRelations = relations(prompts, ({ one, many }) => ({
@@ -141,6 +175,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
 
 export const collectionsRelations = relations(collections, ({ one, many }) => ({
   user: one(users, { fields: [collections.userId], references: [users.id] }),
+  community: one(communities, { fields: [collections.communityId], references: [communities.id] }),
   prompts: many(prompts),
 }));
 
@@ -177,6 +212,17 @@ export const insertCollectionSchema = createInsertSchema(collections).omit({
   updatedAt: true,
 });
 
+export const insertCommunitySchema = createInsertSchema(communities).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserCommunitySchema = createInsertSchema(userCommunities).omit({
+  id: true,
+  joinedAt: true,
+});
+
 export const insertPromptRatingSchema = createInsertSchema(promptRatings).omit({
   id: true,
   createdAt: true,
@@ -192,6 +238,15 @@ export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertCollection = z.infer<typeof insertCollectionSchema>;
 export type Collection = typeof collections.$inferSelect;
+export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
+export type Community = typeof communities.$inferSelect;
+export type InsertUserCommunity = z.infer<typeof insertUserCommunitySchema>;
+export type UserCommunity = typeof userCommunities.$inferSelect;
 export type InsertPromptRating = z.infer<typeof insertPromptRatingSchema>;
 export type PromptRating = typeof promptRatings.$inferSelect;
 export type PromptFavorite = typeof promptFavorites.$inferSelect;
+
+// User role types
+export type UserRole = "user" | "community_admin" | "super_admin";
+export type CommunityRole = "member" | "admin";
+export type CollectionType = "user" | "community" | "global";
