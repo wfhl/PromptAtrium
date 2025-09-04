@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lightbulb, Plus, Search, FileText, Heart, Folder, GitBranch, ChevronDown } from "lucide-react";
+import { Lightbulb, Plus, Search, FileText, Heart, Folder, GitBranch, ChevronDown, Crown } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { QuickActions } from "@/components/QuickActions";
@@ -144,6 +144,12 @@ export default function Dashboard() {
               <Link href="/projects" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-projects">
                 Projects
               </Link>
+              {user?.role === "super_admin" && (
+                <Link href="/admin" className="text-yellow-600 hover:text-yellow-700 transition-colors flex items-center gap-1" data-testid="nav-admin">
+                  <Crown className="h-4 w-4" />
+                  Admin
+                </Link>
+              )}
             </nav>
           </div>
           

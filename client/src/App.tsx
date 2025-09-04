@@ -9,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import Library from "@/pages/library";
 import Community from "@/pages/community";
 import Projects from "@/pages/projects";
+import Admin from "@/pages/admin";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
           <Route path="/library" component={Library} />
           <Route path="/community" component={Community} />
           <Route path="/projects" component={Projects} />
+          <Route path="/admin" component={Admin} />
         </>
       )}
       <Route component={NotFound} />
