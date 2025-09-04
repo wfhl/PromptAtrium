@@ -27,7 +27,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
     negativePrompt: prompt?.negativePrompt || "",
     tags: prompt?.tags?.join(", ") || "",
     isPublic: prompt?.isPublic ?? true,
-    collectionId: prompt?.collectionId || "",
+    collectionId: prompt?.collectionId || "none",
     license: prompt?.license || "CC0 (Public Domain)",
     status: prompt?.status || "published",
   });
@@ -46,6 +46,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         ...data,
         tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
         tagsNormalized: data.tags ? data.tags.split(",").map((tag: string) => tag.trim().toLowerCase()) : [],
+        collectionId: data.collectionId === "none" ? null : data.collectionId,
       };
       await apiRequest("POST", "/api/prompts", payload);
     },
@@ -85,6 +86,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         ...data,
         tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
         tagsNormalized: data.tags ? data.tags.split(",").map((tag: string) => tag.trim().toLowerCase()) : [],
+        collectionId: data.collectionId === "none" ? null : data.collectionId,
       };
       await apiRequest("PUT", `/api/prompts/${prompt!.id}`, payload);
     },
@@ -125,7 +127,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
       negativePrompt: "",
       tags: "",
       isPublic: true,
-      collectionId: "",
+      collectionId: "none",
       license: "CC0 (Public Domain)",
       status: "published",
     });
@@ -233,7 +235,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                   <SelectValue placeholder="Select collection" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {collections?.map((collection) => (
                     <SelectItem key={collection.id} value={collection.id}>
                       {collection.name}

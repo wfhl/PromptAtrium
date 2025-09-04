@@ -14,7 +14,7 @@ import { ActivityItem } from "@/components/ActivityItem";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import type { Prompt, Collection } from "@shared/schema";
+import type { Prompt, Collection, User } from "@shared/schema";
 
 export default function Dashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -39,7 +39,12 @@ export default function Dashboard() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch user stats
-  const { data: userStats } = useQuery({
+  const { data: userStats } = useQuery<{
+    totalPrompts: number;
+    totalLikes: number;
+    collections: number;
+    forksCreated: number;
+  }>({
     queryKey: ["/api/user/stats"],
     enabled: isAuthenticated,
     retry: false,
@@ -47,14 +52,14 @@ export default function Dashboard() {
 
   // Fetch user's recent prompts
   const { data: userPrompts = [] } = useQuery<Prompt[]>({
-    queryKey: ["/api/prompts", { userId: user?.id, limit: 3 }],
+    queryKey: [`/api/prompts?userId=${user?.id}&limit=3`],
     enabled: isAuthenticated && !!user,
     retry: false,
   });
 
   // Fetch community featured prompts
   const { data: communityPrompts = [] } = useQuery<Prompt[]>({
-    queryKey: ["/api/prompts", { isPublic: true, isFeatured: true, limit: 3 }],
+    queryKey: ["/api/prompts?isPublic=true&isFeatured=true&limit=3"],
     enabled: isAuthenticated,
     retry: false,
   });
