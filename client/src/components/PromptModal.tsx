@@ -58,10 +58,11 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
 
   const createCollectionMutation = useMutation({
     mutationFn: async (data: { name: string; description?: string; isPublic: boolean }) => {
-      return await apiRequest("POST", "/api/collections", {
+      const response = await apiRequest("POST", "/api/collections", {
         ...data,
         type: "user",
       });
+      return await response.json();
     },
     onSuccess: (newCollection: any) => {
       refetchCollections();
