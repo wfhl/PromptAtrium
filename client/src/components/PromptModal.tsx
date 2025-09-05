@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,59 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
     technicalParams: prompt?.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
     variables: prompt?.variables ? JSON.stringify(prompt.variables, null, 2) : "",
   });
+
+  // Update form data when prompt or mode changes
+  useEffect(() => {
+    if (mode === "edit" && prompt) {
+      // Populate form with existing prompt data for editing
+      setFormData({
+        name: prompt.name || "",
+        description: prompt.description || "",
+        category: prompt.category || "",
+        promptContent: prompt.promptContent || "",
+        negativePrompt: prompt.negativePrompt || "",
+        promptType: prompt.promptType || "",
+        promptStyle: prompt.promptStyle || "",
+        tags: prompt.tags?.join(", ") || "",
+        isPublic: prompt.isPublic ?? true,
+        collectionId: prompt.collectionId || "none",
+        license: prompt.license || "CC0 (Public Domain)",
+        status: prompt.status || "published",
+        exampleImages: prompt.exampleImagesUrl || [],
+        notes: prompt.notes || "",
+        author: prompt.author || "",
+        sourceUrl: prompt.sourceUrl || "",
+        intendedGenerator: prompt.intendedGenerator || "",
+        recommendedModels: prompt.recommendedModels?.join(", ") || "",
+        technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
+        variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
+      });
+    } else if (mode === "create") {
+      // Reset form for creating new prompt
+      setFormData({
+        name: "",
+        description: "",
+        category: "",
+        promptContent: "",
+        negativePrompt: "",
+        promptType: "",
+        promptStyle: "",
+        tags: "",
+        isPublic: true,
+        collectionId: "none",
+        license: "CC0 (Public Domain)",
+        status: "published",
+        exampleImages: [],
+        notes: "",
+        author: "",
+        sourceUrl: "",
+        intendedGenerator: "",
+        recommendedModels: "",
+        technicalParams: "",
+        variables: "",
+      });
+    }
+  }, [prompt, mode]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
