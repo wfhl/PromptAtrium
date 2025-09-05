@@ -474,8 +474,25 @@ export default function AdminPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 mb-4">{community.description}</p>
-                    <div className="flex items-center gap-2">
-                      {isSuperAdmin ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openMemberModal(community)}
+                        data-testid={`button-manage-members-${community.id}`}
+                      >
+                        <Users className="h-4 w-4 mr-1" />
+                        Members
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        data-testid={`button-manage-collections-${community.id}`}
+                      >
+                        <Folder className="h-4 w-4 mr-1" />
+                        Collections
+                      </Button>
+                      {isSuperAdmin && (
                         <>
                           <Button
                             variant="outline"
@@ -494,26 +511,6 @@ export default function AdminPage() {
                             data-testid={`button-delete-community-${community.id}`}
                           >
                             Delete
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openMemberModal(community)}
-                            data-testid={`button-manage-members-${community.id}`}
-                          >
-                            <Users className="h-4 w-4 mr-1" />
-                            Members
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            data-testid={`button-manage-collections-${community.id}`}
-                          >
-                            <Folder className="h-4 w-4 mr-1" />
-                            Collections
                           </Button>
                         </>
                       )}
