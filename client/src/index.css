@@ -1,5 +1,4 @@
-/* Import Croppie CSS first (required by CSS spec) */
-@import 'croppie/croppie.css';
+/* Croppie CSS now imported directly in component */
 
 @tailwind base;
 @tailwind components;

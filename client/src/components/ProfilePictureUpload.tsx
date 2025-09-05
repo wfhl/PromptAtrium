@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import Croppie from "croppie";
+import "croppie/croppie.css";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Camera, Upload, X } from "lucide-react";
