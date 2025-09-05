@@ -18,7 +18,7 @@ export function ProfilePictureUpload({
   onImageUpdate, 
   className = ""
 }: ProfilePictureUploadProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const croppieRef = useRef<HTMLDivElement>(null);
@@ -26,10 +26,10 @@ export function ProfilePictureUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Initialize Croppie when modal opens (following exact docs pattern)
+  // Initialize Croppie when cropper is shown (no modal timing issues)
   useEffect(() => {
-    if (isModalOpen && croppieRef.current) {
-      console.log('Modal opened, initializing Croppie instance...');
+    if (showCropper && selectedFile && croppieRef.current) {
+      console.log('Initializing Croppie...');
       
       // Clean up existing instance
       if (croppieInstance.current) {
@@ -37,12 +37,12 @@ export function ProfilePictureUpload({
         croppieInstance.current = null;
       }
       
-      // Wait for modal animation, then initialize
+      // Simple timeout to ensure DOM is ready
       const timer = setTimeout(() => {
-        if (!croppieRef.current || !isModalOpen) return;
+        if (!croppieRef.current || !selectedFile) return;
 
         try {
-          // Initialize Croppie (exact pattern from docs)
+          // Initialize Croppie
           croppieInstance.current = new Croppie(croppieRef.current, {
             enableExif: true,
             viewport: {
@@ -56,47 +56,40 @@ export function ProfilePictureUpload({
             }
           });
           console.log('✅ Croppie initialized');
+
+          // Bind image immediately
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result && croppieInstance.current) {
+              croppieInstance.current.bind({
+                url: e.target.result as string
+              }).then(() => {
+                console.log('✅ Image bound to Croppie!');
+              }).catch((error) => {
+                console.error('❌ Bind error:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to load image for cropping",
+                  variant: "destructive",
+                });
+              });
+            }
+          };
+          reader.readAsDataURL(selectedFile);
         } catch (error) {
           console.error('❌ Croppie initialization error:', error);
         }
-      }, 500);
+      }, 100);
 
       return () => clearTimeout(timer);
     }
 
-    // Clean up when modal closes
-    if (!isModalOpen && croppieInstance.current) {
+    // Clean up when cropper is hidden
+    if (!showCropper && croppieInstance.current) {
       croppieInstance.current.destroy();
       croppieInstance.current = null;
     }
-  }, [isModalOpen]);
-
-  // Bind image AFTER modal is shown (exact docs pattern)
-  useEffect(() => {
-    if (isModalOpen && selectedFile && croppieInstance.current) {
-      console.log('Modal shown, binding image to Croppie...');
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result && croppieInstance.current) {
-          // Bind image to existing Croppie instance
-          croppieInstance.current.bind({
-            url: e.target.result as string
-          }).then(() => {
-            console.log('✅ Image bound to Croppie successfully!');
-          }).catch((error) => {
-            console.error('❌ Bind error:', error);
-            toast({
-              title: "Error",
-              description: "Failed to load image for cropping",
-              variant: "destructive",
-            });
-          });
-        }
-      };
-      reader.readAsDataURL(selectedFile);
-    }
-  }, [isModalOpen, selectedFile, toast]);
+  }, [showCropper, selectedFile, toast]);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -132,7 +125,7 @@ export function ProfilePictureUpload({
       }
 
       setSelectedFile(file);
-      setIsModalOpen(true);
+      setShowCropper(true);
     }
   };
 
@@ -197,8 +190,8 @@ export function ProfilePictureUpload({
       // Call the callback with the new image path
       onImageUpdate?.(objectPath);
 
-      // Close modal and reset state
-      setIsModalOpen(false);
+      // Hide cropper and reset state
+      setShowCropper(false);
       setSelectedFile(null);
       
       // Reset file input
@@ -219,7 +212,7 @@ export function ProfilePictureUpload({
   };
 
   const handleCancel = () => {
-    setIsModalOpen(false);
+    setShowCropper(false);
     setSelectedFile(null);
     
     // Reset file input
@@ -273,43 +266,32 @@ export function ProfilePictureUpload({
         </div>
       </div>
 
-      {/* Cropping Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent 
-          className="sm:max-w-[450px]" 
-          data-testid="modal-crop-profile-picture"
-          onOpenAutoFocus={(e) => {
-            // Prevent auto-focus to allow Croppie to initialize properly
-            e.preventDefault();
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Crop Profile Picture
-            </DialogTitle>
-          </DialogHeader>
+      {/* Inline Cropper (when image selected) */}
+      {showCropper && selectedFile && (
+        <div className="mt-6 space-y-4" data-testid="inline-crop-container">
+          <h3 className="text-lg font-medium flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Crop Profile Picture
+          </h3>
           
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Adjust the crop area to frame your profile picture. The image will be resized to 200x200 pixels.
-            </p>
-            
-            {/* Croppie container - simplified setup */}
-            <div className="flex justify-center">
-              <div 
-                ref={croppieRef} 
-                className="w-[300px] h-[300px]"
-                data-testid="croppie-container"
-                style={{ 
-                  minWidth: '300px', 
-                  minHeight: '300px'
-                }}
-              />
-            </div>
+          <p className="text-sm text-muted-foreground">
+            Adjust the crop area to frame your profile picture. The image will be resized to 200x200 pixels.
+          </p>
+          
+          {/* Croppie container */}
+          <div className="flex justify-center">
+            <div 
+              ref={croppieRef} 
+              className="w-[300px] h-[300px]"
+              data-testid="croppie-container"
+              style={{ 
+                minWidth: '300px', 
+                minHeight: '300px'
+              }}
+            />
           </div>
 
-          <DialogFooter className="flex gap-2">
+          <div className="flex gap-2 justify-center">
             <Button
               variant="outline"
               onClick={handleCancel}
@@ -336,9 +318,9 @@ export function ProfilePictureUpload({
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </>
   );
 }
