@@ -31,8 +31,16 @@ const inviteSchema = z.object({
   expiresAt: z.string().optional(),
 });
 
+const collectionSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  type: z.enum(["user", "community", "global"]).default("community"),
+  isPublic: z.boolean().default(false),
+});
+
 type CommunityFormData = z.infer<typeof communitySchema>;
 type InviteFormData = z.infer<typeof inviteSchema>;
+type CollectionFormData = z.infer<typeof collectionSchema>;
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -44,6 +52,9 @@ export default function AdminPage() {
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<Community | null>(null);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
+  const [collectionsModalOpen, setCollectionsModalOpen] = useState(false);
+  const [selectedCommunityForCollections, setSelectedCommunityForCollections] = useState<Community | null>(null);
+  const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
 
   // Check if user is admin (super admin or community admin)
   if (!authLoading && (!user || !["super_admin", "community_admin"].includes((user as any).role))) {
@@ -85,6 +96,16 @@ export default function AdminPage() {
     },
   });
 
+  const collectionForm = useForm<CollectionFormData>({
+    resolver: zodResolver(collectionSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      type: "community",
+      isPublic: false,
+    },
+  });
+
   // Fetch communities (all for super admin, managed ones for community admin)
   const { data: communities = [], isLoading: communitiesLoading } = useQuery<Community[]>({
     queryKey: isSuperAdmin ? ["/api/communities"] : ["/api/communities/managed"],
@@ -116,6 +137,13 @@ export default function AdminPage() {
   const { data: communityMembers = [], isLoading: membersLoading, refetch: refetchMembers } = useQuery({
     queryKey: ["/api/communities", selectedCommunityForMembers?.id, "members"],
     enabled: !!selectedCommunityForMembers && !!user,
+  });
+
+  // Fetch community collections (when collections modal is open)
+  const { data: communityCollections = [], isLoading: collectionsLoading, refetch: refetchCollections } = useQuery({
+    queryKey: ["/api/collections"],
+    queryFn: () => apiRequest("GET", `/api/collections?communityId=${selectedCommunityForCollections?.id}&type=community`),
+    enabled: !!selectedCommunityForCollections && !!user,
   });
 
   // Update user role mutation
@@ -295,6 +323,12 @@ export default function AdminPage() {
     setMemberModalOpen(true);
   };
 
+  const openCollectionsModal = (community: Community) => {
+    setSelectedCommunityForCollections(community);
+    setCollectionSearchTerm("");
+    setCollectionsModalOpen(true);
+  };
+
   // Member management mutations
   const removeMemberMutation = useMutation({
     mutationFn: async ({ userId, communityId }: { userId: string; communityId: string }) => {
@@ -335,6 +369,55 @@ export default function AdminPage() {
       });
     },
   });
+
+  // Collection mutations
+  const createCollectionMutation = useMutation({
+    mutationFn: async (data: CollectionFormData) => {
+      return await apiRequest("POST", "/api/collections", {
+        ...data,
+        communityId: selectedCommunityForCollections?.id,
+      });
+    },
+    onSuccess: () => {
+      refetchCollections();
+      collectionForm.reset();
+      toast({
+        title: "Success",
+        description: "Collection created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create collection",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCollectionMutation = useMutation({
+    mutationFn: async (collectionId: string) => {
+      return await apiRequest("DELETE", `/api/collections/${collectionId}`);
+    },
+    onSuccess: () => {
+      refetchCollections();
+      toast({
+        title: "Success",
+        description: "Collection deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete collection",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onCollectionSubmit = (data: CollectionFormData) => {
+    createCollectionMutation.mutate(data);
+  };
 
   if (authLoading || communitiesLoading) {
     return (
@@ -487,6 +570,7 @@ export default function AdminPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => openCollectionsModal(community)}
                         data-testid={`button-manage-collections-${community.id}`}
                       >
                         <Folder className="h-4 w-4 mr-1" />
@@ -1010,6 +1094,173 @@ export default function AdminPage() {
                                 className="text-red-600 hover:text-red-800 hover:bg-red-50"
                               >
                                 Remove
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Collections Management Modal */}
+        <Dialog open={collectionsModalOpen} onOpenChange={setCollectionsModalOpen}>
+          <DialogContent className="sm:max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>
+                Manage Collections - {selectedCommunityForCollections?.name}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search collections..."
+                    value={collectionSearchTerm}
+                    onChange={(e) => setCollectionSearchTerm(e.target.value)}
+                    className="pl-10 w-64"
+                    data-testid="input-collection-search"
+                  />
+                </div>
+              </div>
+
+              {/* Create Collection Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Create New Collection</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Form {...collectionForm}>
+                    <form onSubmit={collectionForm.handleSubmit(onCollectionSubmit)} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={collectionForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Collection Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., Writing Prompts" {...field} data-testid="input-collection-name" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={collectionForm.control}
+                          name="isPublic"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                              <div className="space-y-0.5">
+                                <FormLabel>Public Collection</FormLabel>
+                                <div className="text-sm text-gray-600">
+                                  Allow all community members to view
+                                </div>
+                              </div>
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={field.value}
+                                  onChange={field.onChange}
+                                  className="h-4 w-4"
+                                  data-testid="checkbox-collection-public"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormField
+                        control={collectionForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Describe what this collection contains..."
+                                {...field}
+                                data-testid="textarea-collection-description"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button 
+                        type="submit" 
+                        disabled={createCollectionMutation.isPending}
+                        data-testid="button-create-collection"
+                      >
+                        {createCollectionMutation.isPending ? "Creating..." : "Create Collection"}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+
+              {/* Collections List */}
+              <div className="bg-white rounded-lg border max-h-96 overflow-y-auto">
+                <div className="p-4 border-b">
+                  <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                    <span className="w-8">#</span>
+                    <span className="flex-1">Collection</span>
+                    <span className="w-24">Visibility</span>
+                    <span className="w-32">Created</span>
+                    <span className="w-24">Actions</span>
+                  </div>
+                </div>
+                
+                {collectionsLoading ? (
+                  <div className="p-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading collections...</p>
+                  </div>
+                ) : communityCollections.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <Folder className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No collections found</p>
+                    <p className="text-sm">Create your first community collection to get started</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {communityCollections
+                      ?.filter((collection: any) =>
+                        !collectionSearchTerm ||
+                        collection.name?.toLowerCase().includes(collectionSearchTerm.toLowerCase()) ||
+                        collection.description?.toLowerCase().includes(collectionSearchTerm.toLowerCase())
+                      )
+                      .map((collection: any, index: number) => (
+                        <div key={collection.id} className="p-4 hover:bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            <span className="w-8 text-sm text-gray-500">{index + 1}</span>
+                            <div className="flex-1">
+                              <div className="font-medium">{collection.name}</div>
+                              <div className="text-sm text-gray-600">{collection.description}</div>
+                            </div>
+                            <div className="w-24">
+                              <Badge variant={collection.isPublic ? "default" : "secondary"}>
+                                {collection.isPublic ? "Public" : "Private"}
+                              </Badge>
+                            </div>
+                            <div className="w-32 text-sm text-gray-600">
+                              {collection.createdAt && new Date(collection.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="w-24">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteCollectionMutation.mutate(collection.id)}
+                                disabled={deleteCollectionMutation.isPending}
+                                data-testid={`button-delete-collection-${collection.id}`}
+                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              >
+                                Delete
                               </Button>
                             </div>
                           </div>

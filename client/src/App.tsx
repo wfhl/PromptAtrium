@@ -10,6 +10,7 @@ import Library from "@/pages/library";
 import Community from "@/pages/community";
 import Projects from "@/pages/projects";
 import Admin from "@/pages/admin";
+import Collections from "@/pages/collections";
 import Invite from "@/pages/invite";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -26,6 +27,7 @@ function Router() {
           <Route path="/library" component={Library} />
           <Route path="/community" component={Community} />
           <Route path="/projects" component={Projects} />
+          <Route path="/collections" component={Collections} />
           <Route path="/admin" component={Admin} />
         </>
       )}

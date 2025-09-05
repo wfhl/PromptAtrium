@@ -138,6 +138,9 @@ export default function Dashboard() {
               <Link href="/library" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-library">
                 My Library
               </Link>
+              <Link href="/collections" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-collections">
+                Collections
+              </Link>
               <Link href="/community" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-community">
                 Community
               </Link>

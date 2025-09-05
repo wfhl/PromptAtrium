@@ -312,6 +312,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/collections/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const collection = await storage.getCollection(req.params.id);
+      
+      if (!collection) {
+        return res.status(404).json({ message: "Collection not found" });
+      }
+      
+      // Check permissions
+      const isSuperAdmin = (req.user as any).role === "super_admin";
+      const isCommunityAdmin = (req.user as any).role === "community_admin";
+      
+      if (!isSuperAdmin && collection.userId !== userId && 
+          !(isCommunityAdmin && collection.type === "community")) {
+        return res.status(403).json({ message: "Not authorized to edit this collection" });
+      }
+
+      const collectionData = insertCollectionSchema.partial().parse(req.body);
+      const updatedCollection = await storage.updateCollection(req.params.id, collectionData);
+      res.json(updatedCollection);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid collection data", errors: error.errors });
+      }
+      console.error("Error updating collection:", error);
+      res.status(500).json({ message: "Failed to update collection" });
+    }
+  });
+
+  app.delete('/api/collections/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const collection = await storage.getCollection(req.params.id);
+      
+      if (!collection) {
+        return res.status(404).json({ message: "Collection not found" });
+      }
+      
+      // Check permissions
+      const isSuperAdmin = (req.user as any).role === "super_admin";
+      const isCommunityAdmin = (req.user as any).role === "community_admin";
+      
+      if (!isSuperAdmin && collection.userId !== userId && 
+          !(isCommunityAdmin && collection.type === "community")) {
+        return res.status(403).json({ message: "Not authorized to delete this collection" });
+      }
+
+      await storage.deleteCollection(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting collection:", error);
+      res.status(500).json({ message: "Failed to delete collection" });
+    }
+  });
+
   // User stats
   app.get('/api/user/stats', isAuthenticated, async (req: any, res) => {
     try {
