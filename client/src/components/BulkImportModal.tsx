@@ -169,6 +169,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
 
   const bulkImportMutation = useMutation({
     mutationFn: async (prompts: ParsedPrompt[]): Promise<ImportResult> => {
+      // Start progress at 10%
+      setImportProgress(10);
+      
       const response = await apiRequest("POST", "/api/prompts/bulk-import", {
         prompts: prompts.map(p => ({
           ...p,
@@ -177,7 +180,16 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           isPublic: p.isPublic ?? defaultIsPublic
         }))
       });
-      return await response.json();
+      
+      // Progress to 90% when request completes
+      setImportProgress(90);
+      
+      const result = await response.json();
+      
+      // Complete progress
+      setImportProgress(100);
+      
+      return result;
     },
     onSuccess: (result: ImportResult) => {
       setImportResults(result);
@@ -203,18 +215,6 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const handleImport = () => {
     setStep("import");
     setImportProgress(0);
-    
-    // Simulate progress updates
-    const progressInterval = setInterval(() => {
-      setImportProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + 10;
-      });
-    }, 200);
-
     bulkImportMutation.mutate(parsedData);
   };
 
