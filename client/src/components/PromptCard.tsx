@@ -215,6 +215,17 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
+                {/* Show favorite button even for owned prompts */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => favoriteMutation.mutate()}
+                  disabled={favoriteMutation.isPending}
+                  className="text-yellow-600 hover:bg-yellow-50 border-yellow-200"
+                  data-testid={`button-favorite-${prompt.id}`}
+                >
+                  <Star className="h-4 w-4" />
+                </Button>
               </>
             ) : (
               <>
