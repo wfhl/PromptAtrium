@@ -150,6 +150,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // Check if user exists before upserting
+    const existingUser = await this.getUser(userData.id);
+    const isNewUser = !existingUser;
+
     const [user] = await db
       .insert(users)
       .values(userData)
@@ -161,6 +165,20 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+
+    // Auto-join new users to the PromptAtrium General community
+    if (isNewUser) {
+      try {
+        const generalCommunity = await this.getCommunityBySlug("general");
+        if (generalCommunity) {
+          await this.joinCommunity(user.id, generalCommunity.id, "member");
+        }
+      } catch (error) {
+        console.error("Failed to auto-join user to general community:", error);
+        // Don't throw error - user creation should still succeed even if community join fails
+      }
+    }
+
     return user;
   }
 
