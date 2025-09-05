@@ -74,6 +74,13 @@ export default function Dashboard() {
     retry: false,
   });
 
+  // Fetch user's favorite prompts
+  const { data: favoritePrompts = [] } = useQuery<Prompt[]>({
+    queryKey: ["/api/user/favorites"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
   const handleCreatePrompt = () => {
     setEditingPrompt(null);
     setPromptModalOpen(true);
@@ -279,6 +286,36 @@ export default function Dashboard() {
                         <Plus className="h-4 w-4 mr-2" />
                         Create Your First Prompt
                       </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+            
+            {/* Favorite Prompts */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-foreground">Favorite Prompts</h2>
+                <Link href="/library?section=favorites">
+                  <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-favorites">
+                    View all
+                  </Button>
+                </Link>
+              </div>
+              
+              <div className="space-y-4" data-testid="section-favorite-prompts">
+                {favoritePrompts.length > 0 ? (
+                  favoritePrompts.slice(0, 3).map((prompt) => (
+                    <PromptCard
+                      key={prompt.id}
+                      prompt={prompt}
+                    />
+                  ))
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <p className="text-muted-foreground mb-4">You haven't favorited any prompts yet.</p>
+                      <p className="text-sm text-muted-foreground">Click the star icon on any prompt to add it to your favorites!</p>
                     </CardContent>
                   </Card>
                 )}
