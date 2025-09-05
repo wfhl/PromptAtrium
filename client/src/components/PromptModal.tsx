@@ -227,7 +227,10 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
       await apiRequest("PUT", `/api/prompts/${prompt!.id}`, payload);
     },
     onSuccess: () => {
+      // Invalidate all prompt-related queries to ensure immediate UI updates
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: "Success",
         description: "Prompt updated successfully!",

@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X } from "lucide-react";
+import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -20,6 +20,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -146,6 +147,24 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       });
     },
   });
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt.promptContent);
+      setCopied(true);
+      toast({
+        title: "Copied!",
+        description: "Prompt content copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy prompt to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow" data-testid={`card-prompt-${prompt.id}`}>
@@ -308,8 +327,23 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
           </div>
         )}
 
-        <div className="bg-muted rounded-md p-3 text-sm font-mono text-muted-foreground" data-testid={`text-content-${prompt.id}`}>
-          {prompt.promptContent}
+        <div className="relative bg-muted rounded-md p-3 text-sm font-mono text-muted-foreground group" data-testid={`text-content-${prompt.id}`}>
+          <div className="pr-8">
+            {prompt.promptContent}
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={handleCopyPrompt}
+            data-testid={`button-copy-prompt-${prompt.id}`}
+          >
+            {copied ? (
+              <Check className="h-3 w-3 text-green-600" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+          </Button>
         </div>
 
         {/* Image Viewer Modal */}
