@@ -424,7 +424,7 @@ export default function AdminPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Loading...</p>
+          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -432,11 +432,11 @@ export default function AdminPage() {
 
   return (
     <>
-      <div className="bg-gray-50 p-6">
+      <div className="bg-background p-6">
         <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
               {isSuperAdmin ? (
                 <>
                   <Crown className="h-8 w-8 text-yellow-500" />
@@ -449,7 +449,7 @@ export default function AdminPage() {
                 </>
               )}
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-muted-foreground mt-2">
               {isSuperAdmin 
                 ? "Manage communities, users, and platform settings"
                 : "Manage your communities, collections, and members"
@@ -482,7 +482,7 @@ export default function AdminPage() {
           {/* Communities Tab */}
           <TabsContent value="communities" className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-gray-900">
+              <h2 className="text-2xl font-semibold text-foreground">
                 {isSuperAdmin ? "All Communities" : "My Communities"}
               </h2>
               {isSuperAdmin && (
@@ -508,7 +508,7 @@ export default function AdminPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 mb-4">{community.description}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{community.description}</p>
                     <div className="flex items-center gap-2 flex-wrap">
                       <Button
                         variant="outline"
@@ -561,10 +561,10 @@ export default function AdminPage() {
           {isSuperAdmin && (
             <TabsContent value="users" className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-gray-900">User Management</h2>
+                <h2 className="text-2xl font-semibold text-foreground">User Management</h2>
                 <div className="flex items-center gap-2">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Search users..."
                       value={userSearchTerm}
@@ -576,9 +576,9 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border">
+              <div className="bg-card rounded-lg border">
                 <div className="p-4 border-b">
-                  <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                  <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
                     <span className="w-8">#</span>
                     <span className="flex-1">User</span>
                     <span className="w-32">Role</span>
@@ -590,7 +590,7 @@ export default function AdminPage() {
                 {usersLoading ? (
                   <div className="p-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-600">Loading users...</p>
+                    <p className="mt-2 text-sm text-muted-foreground">Loading users...</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
@@ -602,15 +602,15 @@ export default function AdminPage() {
                         user.lastName?.toLowerCase().includes(userSearchTerm.toLowerCase())
                       )
                       .map((user: User, index: number) => (
-                        <div key={user.id} className="p-4 hover:bg-gray-50">
+                        <div key={user.id} className="p-4 hover:bg-accent/50">
                           <div className="flex items-center gap-4">
-                            <span className="w-8 text-sm text-gray-500">{index + 1}</span>
+                            <span className="w-8 text-sm text-muted-foreground">{index + 1}</span>
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">
                                   {user.firstName} {user.lastName}
                                 </span>
-                                <span className="text-sm text-gray-500">({user.email})</span>
+                                <span className="text-sm text-muted-foreground">({user.email})</span>
                               </div>
                             </div>
                             <div className="w-32">
@@ -630,7 +630,7 @@ export default function AdminPage() {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="w-32 text-sm text-gray-600">
+                            <div className="w-32 text-sm text-muted-foreground">
                               {user.createdAt && new Date(user.createdAt).toLocaleDateString()}
                             </div>
                             <div className="w-32">
@@ -656,7 +656,7 @@ export default function AdminPage() {
           {isSuperAdmin && (
             <TabsContent value="invites" className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-gray-900">Invite Management</h2>
+                <h2 className="text-2xl font-semibold text-foreground">Invite Management</h2>
                 <Button onClick={openInviteModal} data-testid="button-create-invite">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Invite
@@ -670,7 +670,7 @@ export default function AdminPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">{inviteStats?.active || 0}</div>
-                    <p className="text-sm text-gray-600">Currently active</p>
+                    <p className="text-sm text-muted-foreground">Currently active</p>
                   </CardContent>
                 </Card>
                 
@@ -680,7 +680,7 @@ export default function AdminPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-600">{inviteStats?.used || 0}</div>
-                    <p className="text-sm text-gray-600">Successfully redeemed</p>
+                    <p className="text-sm text-muted-foreground">Successfully redeemed</p>
                   </CardContent>
                 </Card>
                 
@@ -689,15 +689,15 @@ export default function AdminPage() {
                     <CardTitle className="text-lg">Expired Invites</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-red-600">{inviteStats?.expired || 0}</div>
-                    <p className="text-sm text-gray-600">No longer valid</p>
+                    <div className="text-2xl font-bold text-destructive">{inviteStats?.expired || 0}</div>
+                    <p className="text-sm text-muted-foreground">No longer valid</p>
                   </CardContent>
                 </Card>
               </div>
 
-              <div className="bg-white rounded-lg border">
+              <div className="bg-card rounded-lg border">
                 <div className="p-4 border-b">
-                  <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                  <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
                     <span className="flex-1">Code</span>
                     <span className="w-32">Community</span>
                     <span className="w-24">Uses</span>
@@ -708,8 +708,8 @@ export default function AdminPage() {
                 </div>
                 
                 {invites.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p>No invites found</p>
                     <p className="text-sm">Create your first community invite to get started</p>
                   </div>
@@ -730,7 +730,7 @@ export default function AdminPage() {
                             {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used Up" : "Inactive"}
                           </Badge>
                         </span>
-                        <span className="w-32 text-gray-600">
+                        <span className="w-32 text-muted-foreground">
                           {new Date(invite.createdAt).toLocaleDateString()}
                         </span>
                         <span className="w-24">
@@ -942,7 +942,7 @@ export default function AdminPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search members..."
                     value={memberSearchTerm}
@@ -962,7 +962,7 @@ export default function AdminPage() {
 
               <div className="bg-white rounded-lg border max-h-96 overflow-y-auto">
                 <div className="p-4 border-b">
-                  <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                  <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
                     <span className="w-8">#</span>
                     <span className="flex-1">Member</span>
                     <span className="w-32">Role</span>
@@ -974,11 +974,11 @@ export default function AdminPage() {
                 {membersLoading ? (
                   <div className="p-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-600">Loading members...</p>
+                    <p className="mt-2 text-sm text-muted-foreground">Loading members...</p>
                   </div>
                 ) : communityMembers.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p>No members found</p>
                     <p className="text-sm">Invite your first community member to get started</p>
                   </div>
@@ -992,15 +992,15 @@ export default function AdminPage() {
                         member.user?.lastName?.toLowerCase().includes(memberSearchTerm.toLowerCase())
                       )
                       .map((member: any, index: number) => (
-                        <div key={member.id} className="p-4 hover:bg-gray-50">
+                        <div key={member.id} className="p-4 hover:bg-accent/50">
                           <div className="flex items-center gap-4">
-                            <span className="w-8 text-sm text-gray-500">{index + 1}</span>
+                            <span className="w-8 text-sm text-muted-foreground">{index + 1}</span>
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">
                                   {member.user?.firstName} {member.user?.lastName}
                                 </span>
-                                <span className="text-sm text-gray-500">({member.user?.email})</span>
+                                <span className="text-sm text-muted-foreground">({member.user?.email})</span>
                               </div>
                             </div>
                             <div className="w-32">
@@ -1026,7 +1026,7 @@ export default function AdminPage() {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="w-32 text-sm text-gray-600">
+                            <div className="w-32 text-sm text-muted-foreground">
                               {member.joinedAt && new Date(member.joinedAt).toLocaleDateString()}
                             </div>
                             <div className="w-24">
@@ -1043,7 +1043,7 @@ export default function AdminPage() {
                                 }}
                                 disabled={removeMemberMutation.isPending}
                                 data-testid={`button-remove-member-${member.id}`}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
                                 Remove
                               </Button>
@@ -1070,7 +1070,7 @@ export default function AdminPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search collections..."
                     value={collectionSearchTerm}
@@ -1110,7 +1110,7 @@ export default function AdminPage() {
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                               <div className="space-y-0.5">
                                 <FormLabel>Public Collection</FormLabel>
-                                <div className="text-sm text-gray-600">
+                                <div className="text-sm text-muted-foreground">
                                   Allow all community members to view
                                 </div>
                               </div>
@@ -1159,7 +1159,7 @@ export default function AdminPage() {
               {/* Collections List */}
               <div className="bg-white rounded-lg border max-h-96 overflow-y-auto">
                 <div className="p-4 border-b">
-                  <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                  <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
                     <span className="w-8">#</span>
                     <span className="flex-1">Collection</span>
                     <span className="w-24">Visibility</span>
@@ -1171,11 +1171,11 @@ export default function AdminPage() {
                 {collectionsLoading ? (
                   <div className="p-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-600">Loading collections...</p>
+                    <p className="mt-2 text-sm text-muted-foreground">Loading collections...</p>
                   </div>
                 ) : communityCollections.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    <Folder className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Folder className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p>No collections found</p>
                     <p className="text-sm">Create your first community collection to get started</p>
                   </div>
@@ -1188,19 +1188,19 @@ export default function AdminPage() {
                         collection.description?.toLowerCase().includes(collectionSearchTerm.toLowerCase())
                       )
                       .map((collection: any, index: number) => (
-                        <div key={collection.id} className="p-4 hover:bg-gray-50">
+                        <div key={collection.id} className="p-4 hover:bg-accent/50">
                           <div className="flex items-center gap-4">
-                            <span className="w-8 text-sm text-gray-500">{index + 1}</span>
+                            <span className="w-8 text-sm text-muted-foreground">{index + 1}</span>
                             <div className="flex-1">
                               <div className="font-medium">{collection.name}</div>
-                              <div className="text-sm text-gray-600">{collection.description}</div>
+                              <div className="text-sm text-muted-foreground">{collection.description}</div>
                             </div>
                             <div className="w-24">
                               <Badge variant={collection.isPublic ? "default" : "secondary"}>
                                 {collection.isPublic ? "Public" : "Private"}
                               </Badge>
                             </div>
-                            <div className="w-32 text-sm text-gray-600">
+                            <div className="w-32 text-sm text-muted-foreground">
                               {collection.createdAt && new Date(collection.createdAt).toLocaleDateString()}
                             </div>
                             <div className="w-24">
@@ -1210,7 +1210,7 @@ export default function AdminPage() {
                                 onClick={() => deleteCollectionMutation.mutate(collection.id)}
                                 disabled={deleteCollectionMutation.isPending}
                                 data-testid={`button-delete-collection-${collection.id}`}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
                                 Delete
                               </Button>
