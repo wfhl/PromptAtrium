@@ -94,8 +94,22 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         collectionId: data.collectionId === "none" ? null : data.collectionId,
         exampleImagesUrl: data.exampleImages ? data.exampleImages.split(",").map((url: string) => url.trim()) : [],
         recommendedModels: data.recommendedModels ? data.recommendedModels.split(",").map((model: string) => model.trim()) : [],
-        technicalParams: data.technicalParams ? (data.technicalParams.trim() ? JSON.parse(data.technicalParams) : null) : null,
-        variables: data.variables ? (data.variables.trim() ? JSON.parse(data.variables) : null) : null,
+        technicalParams: data.technicalParams && data.technicalParams.trim() ? (() => {
+          try {
+            return JSON.parse(data.technicalParams);
+          } catch (e) {
+            console.error('Invalid JSON in technicalParams:', e);
+            return null;
+          }
+        })() : null,
+        variables: data.variables && data.variables.trim() ? (() => {
+          try {
+            return JSON.parse(data.variables);
+          } catch (e) {
+            console.error('Invalid JSON in variables:', e);
+            return null;
+          }
+        })() : null,
       };
       await apiRequest("POST", "/api/prompts", payload);
     },
@@ -138,8 +152,22 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         collectionId: data.collectionId === "none" ? null : data.collectionId,
         exampleImagesUrl: data.exampleImages ? data.exampleImages.split(",").map((url: string) => url.trim()) : [],
         recommendedModels: data.recommendedModels ? data.recommendedModels.split(",").map((model: string) => model.trim()) : [],
-        technicalParams: data.technicalParams ? (data.technicalParams.trim() ? JSON.parse(data.technicalParams) : null) : null,
-        variables: data.variables ? (data.variables.trim() ? JSON.parse(data.variables) : null) : null,
+        technicalParams: data.technicalParams && data.technicalParams.trim() ? (() => {
+          try {
+            return JSON.parse(data.technicalParams);
+          } catch (e) {
+            console.error('Invalid JSON in technicalParams:', e);
+            return null;
+          }
+        })() : null,
+        variables: data.variables && data.variables.trim() ? (() => {
+          try {
+            return JSON.parse(data.variables);
+          } catch (e) {
+            console.error('Invalid JSON in variables:', e);
+            return null;
+          }
+        })() : null,
       };
       await apiRequest("PUT", `/api/prompts/${prompt!.id}`, payload);
     },
