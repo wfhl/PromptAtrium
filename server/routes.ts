@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema } from "@shared/schema";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { z } from "zod";
 
@@ -19,6 +19,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Profile routes
+  app.put('/api/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Validate request body
+      const validatedData = insertUserSchema.partial().parse(req.body);
+      
+      // Check username uniqueness if username is being updated
+      if (validatedData.username) {
+        const existingUser = await storage.getUserByUsername(validatedData.username);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ message: "Username already taken" });
+        }
+      }
+      
+      const updatedUser = await storage.updateUser(userId, validatedData);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid profile data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  app.get('/api/profile/:username', async (req, res) => {
+    try {
+      const { username } = req.params;
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return public profile data only
+      const publicProfile = {
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        bio: user.bio,
+        profileImageUrl: user.profileImageUrl,
+        website: user.website,
+        twitterHandle: user.twitterHandle,
+        githubHandle: user.githubHandle,
+        linkedinHandle: user.linkedinHandle,
+        customSocials: user.customSocials,
+        createdAt: user.createdAt,
+        // Respect privacy settings
+        email: user.emailVisibility ? user.email : null,
+        birthday: user.showBirthday ? user.birthday : null,
+      };
+
+      // Only return profile if it's public or user is viewing their own profile
+      const currentUserId = req.user?.claims?.sub;
+      if (user.profileVisibility === 'private' && currentUserId !== user.id) {
+        return res.status(403).json({ message: "Profile is private" });
+      }
+
+      res.json(publicProfile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.get('/api/profile/check-username/:username', async (req, res) => {
+    try {
+      const { username } = req.params;
+      
+      // Basic username validation
+      if (username.length < 3 || username.length > 30) {
+        return res.json({ available: false, reason: "Username must be 3-30 characters" });
+      }
+      
+      if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        return res.json({ available: false, reason: "Username can only contain letters, numbers, hyphens, and underscores" });
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
+      res.json({ available: !existingUser });
+    } catch (error) {
+      console.error("Error checking username:", error);
+      res.status(500).json({ message: "Failed to check username availability" });
     }
   });
 

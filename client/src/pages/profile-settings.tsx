@@ -1,0 +1,432 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Lightbulb, Plus, X, Link2, Calendar, User as UserIcon, Shield, Globe } from "lucide-react";
+import type { User } from "@shared/schema";
+
+// Custom social link type
+type CustomSocial = {
+  platform: string;
+  url: string;
+  handle?: string;
+};
+
+// Profile form schema
+const profileSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").max(30, "Username must be less than 30 characters").regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, hyphens, and underscores").optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+  birthday: z.string().optional(), // Date string
+  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  twitterHandle: z.string().optional(),
+  githubHandle: z.string().optional(),
+  linkedinHandle: z.string().optional(),
+  profileVisibility: z.enum(["public", "private"]).default("public"),
+  emailVisibility: z.boolean().default(false),
+  showStats: z.boolean().default(true),
+  showBirthday: z.boolean().default(false),
+});
+
+type ProfileFormData = z.infer<typeof profileSchema>;
+
+export default function ProfileSettings() {
+  const { user, isLoading, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [customSocials, setCustomSocials] = useState<CustomSocial[]>([]);
+  const [newSocial, setNewSocial] = useState({ platform: "", url: "", handle: "" });
+
+  const form = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      profileVisibility: "public",
+      emailVisibility: false,
+      showStats: true,
+      showBirthday: false,
+    },
+  });
+
+  // Load current user data into form
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        username: user.username || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        bio: user.bio || "",
+        birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : "",
+        website: user.website || "",
+        twitterHandle: user.twitterHandle || "",
+        githubHandle: user.githubHandle || "",
+        linkedinHandle: user.linkedinHandle || "",
+        profileVisibility: user.profileVisibility || "public",
+        emailVisibility: user.emailVisibility || false,
+        showStats: user.showStats !== false, // Default to true
+        showBirthday: user.showBirthday || false,
+      });
+
+      if (user.customSocials && Array.isArray(user.customSocials)) {
+        setCustomSocials(user.customSocials);
+      }
+    }
+  }, [user, form]);
+
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: ProfileFormData) => {
+      const profileData = {
+        ...data,
+        birthday: data.birthday ? new Date(data.birthday) : null,
+        customSocials,
+      };
+      const response = await apiRequest("PUT", "/api/profile", profileData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Success",
+        description: "Profile updated successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add custom social link
+  const addCustomSocial = () => {
+    if (newSocial.platform && newSocial.url) {
+      setCustomSocials([...customSocials, { ...newSocial }]);
+      setNewSocial({ platform: "", url: "", handle: "" });
+    }
+  };
+
+  // Remove custom social link
+  const removeCustomSocial = (index: number) => {
+    setCustomSocials(customSocials.filter((_, i) => i !== index));
+  };
+
+  const onSubmit = (data: ProfileFormData) => {
+    updateProfileMutation.mutate(data);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center mx-auto mb-4">
+            <Lightbulb className="h-4 w-4 text-primary-foreground animate-pulse" />
+          </div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+              <Lightbulb className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-bold text-foreground">PromptAtrium</h1>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-6 py-8 max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h1>
+          <p className="text-muted-foreground">Manage your personal information and privacy preferences</p>
+        </div>
+
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <UserIcon className="h-5 w-5" />
+                <span>Basic Information</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    {...form.register("firstName")}
+                    data-testid="input-firstName"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    {...form.register("lastName")}
+                    data-testid="input-lastName"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  placeholder="@username"
+                  {...form.register("username")}
+                  data-testid="input-username"
+                />
+                {form.formState.errors.username && (
+                  <p className="text-sm text-destructive">{form.formState.errors.username.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  placeholder="Tell us about yourself..."
+                  rows={4}
+                  {...form.register("bio")}
+                  data-testid="textarea-bio"
+                />
+                {form.formState.errors.bio && (
+                  <p className="text-sm text-destructive">{form.formState.errors.bio.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="birthday">Birthday</Label>
+                <Input
+                  id="birthday"
+                  type="date"
+                  {...form.register("birthday")}
+                  data-testid="input-birthday"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Links & Social Media */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Link2 className="h-5 w-5" />
+                <span>Links & Social Media</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="website">Website</Label>
+                <Input
+                  id="website"
+                  type="url"
+                  placeholder="https://your-website.com"
+                  {...form.register("website")}
+                  data-testid="input-website"
+                />
+                {form.formState.errors.website && (
+                  <p className="text-sm text-destructive">{form.formState.errors.website.message}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="twitterHandle">Twitter/X Handle</Label>
+                  <Input
+                    id="twitterHandle"
+                    placeholder="@username"
+                    {...form.register("twitterHandle")}
+                    data-testid="input-twitter"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="githubHandle">GitHub Handle</Label>
+                  <Input
+                    id="githubHandle"
+                    placeholder="username"
+                    {...form.register("githubHandle")}
+                    data-testid="input-github"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="linkedinHandle">LinkedIn Handle</Label>
+                  <Input
+                    id="linkedinHandle"
+                    placeholder="username"
+                    {...form.register("linkedinHandle")}
+                    data-testid="input-linkedin"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Custom Social Links */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Custom Social Links</h4>
+                
+                {customSocials.map((social, index) => (
+                  <div key={index} className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-medium">{social.platform}</p>
+                      <p className="text-sm text-muted-foreground">{social.url}</p>
+                      {social.handle && <p className="text-sm text-muted-foreground">@{social.handle}</p>}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeCustomSocial(index)}
+                      data-testid={`button-remove-social-${index}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  <Input
+                    placeholder="Platform"
+                    value={newSocial.platform}
+                    onChange={(e) => setNewSocial({ ...newSocial, platform: e.target.value })}
+                    data-testid="input-new-social-platform"
+                  />
+                  <Input
+                    placeholder="URL"
+                    value={newSocial.url}
+                    onChange={(e) => setNewSocial({ ...newSocial, url: e.target.value })}
+                    data-testid="input-new-social-url"
+                  />
+                  <Input
+                    placeholder="Handle (optional)"
+                    value={newSocial.handle}
+                    onChange={(e) => setNewSocial({ ...newSocial, handle: e.target.value })}
+                    data-testid="input-new-social-handle"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addCustomSocial}
+                    disabled={!newSocial.platform || !newSocial.url}
+                    data-testid="button-add-social"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Privacy Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5" />
+                <span>Privacy Settings</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="profileVisibility">Profile Visibility</Label>
+                  <p className="text-sm text-muted-foreground">Control who can see your profile</p>
+                </div>
+                <Select
+                  value={form.watch("profileVisibility")}
+                  onValueChange={(value: "public" | "private") => form.setValue("profileVisibility", value)}
+                >
+                  <SelectTrigger className="w-32" data-testid="select-profile-visibility">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="emailVisibility">Show Email</Label>
+                  <p className="text-sm text-muted-foreground">Make your email visible on your profile</p>
+                </div>
+                <Switch
+                  id="emailVisibility"
+                  checked={form.watch("emailVisibility")}
+                  onCheckedChange={(checked) => form.setValue("emailVisibility", checked)}
+                  data-testid="switch-email-visibility"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="showStats">Show Statistics</Label>
+                  <p className="text-sm text-muted-foreground">Display prompt counts, likes, and other stats</p>
+                </div>
+                <Switch
+                  id="showStats"
+                  checked={form.watch("showStats")}
+                  onCheckedChange={(checked) => form.setValue("showStats", checked)}
+                  data-testid="switch-show-stats"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="showBirthday">Show Birthday</Label>
+                  <p className="text-sm text-muted-foreground">Display your birthday on your profile</p>
+                </div>
+                <Switch
+                  id="showBirthday"
+                  checked={form.watch("showBirthday")}
+                  onCheckedChange={(checked) => form.setValue("showBirthday", checked)}
+                  data-testid="switch-show-birthday"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={updateProfileMutation.isPending}
+              data-testid="button-save-profile"
+            >
+              {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

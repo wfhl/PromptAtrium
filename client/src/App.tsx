@@ -12,6 +12,7 @@ import Projects from "@/pages/projects";
 import Admin from "@/pages/admin";
 import Collections from "@/pages/collections";
 import Invite from "@/pages/invite";
+import ProfileSettings from "@/pages/profile-settings";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/projects" component={Projects} />
           <Route path="/collections" component={Collections} />
           <Route path="/admin" component={Admin} />
+          <Route path="/profile/settings" component={ProfileSettings} />
         </>
       )}
       <Route path="/invite/:code" component={Invite} />

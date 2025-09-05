@@ -39,7 +39,9 @@ import { randomBytes } from "crypto";
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, userData: Partial<InsertUser>): Promise<User>;
   
   // Prompt operations
   getPrompts(options?: {
@@ -177,6 +179,28 @@ export class DatabaseStorage implements IStorage {
         console.error("Failed to auto-join user to general community:", error);
         // Don't throw error - user creation should still succeed even if community join fails
       }
+    }
+
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async updateUser(id: string, userData: Partial<InsertUser>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        ...userData,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+
+    if (!user) {
+      throw new Error("User not found");
     }
 
     return user;

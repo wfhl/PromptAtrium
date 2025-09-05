@@ -34,6 +34,29 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role", { enum: ["user", "community_admin", "super_admin"] }).default("user"),
+  
+  // Extended profile fields
+  username: varchar("username").unique(),
+  bio: text("bio"),
+  birthday: timestamp("birthday"),
+  website: varchar("website"),
+  
+  // Preset social media handles
+  twitterHandle: varchar("twitter_handle"),
+  githubHandle: varchar("github_handle"),
+  linkedinHandle: varchar("linkedin_handle"),
+  
+  // Custom social links - array of {platform: string, url: string, handle?: string}
+  customSocials: jsonb("custom_socials").default([]),
+  
+  // Privacy settings
+  profileVisibility: varchar("profile_visibility", { 
+    enum: ["public", "private"] 
+  }).default("public"),
+  emailVisibility: boolean("email_visibility").default(false),
+  showStats: boolean("show_stats").default(true),
+  showBirthday: boolean("show_birthday").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -279,9 +302,16 @@ export const insertPromptRatingSchema = createInsertSchema(promptRatings).omit({
   updatedAt: true,
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertPrompt = z.infer<typeof insertPromptSchema>;
 export type Prompt = typeof prompts.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
