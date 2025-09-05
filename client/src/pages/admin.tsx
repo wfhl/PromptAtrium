@@ -202,8 +202,57 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-background">
+      {/* Header Navigation */}
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-8">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+                <Folder className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground">PromptAtrium</h1>
+            </div>
+            
+            <nav className="hidden md:flex items-center space-x-6">
+              <a href="/" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-dashboard">
+                Dashboard
+              </a>
+              <a href="/library" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-library">
+                My Library
+              </a>
+              <a href="/community" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-community">
+                Community
+              </a>
+              <a href="/projects" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-projects">
+                Projects
+              </a>
+              {(user?.role === "super_admin" || user?.role === "community_admin") && (
+                <span className="text-yellow-600 font-medium border-b-2 border-yellow-600 pb-4 -mb-4 flex items-center gap-1" data-testid="nav-admin">
+                  <Crown className="h-4 w-4" />
+                  Admin
+                </span>
+              )}
+            </nav>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm">
+              <span className="text-muted-foreground">Welcome back,</span>
+              <span className="font-medium text-foreground">
+                {user?.firstName || user?.email}
+              </span>
+            </div>
+            <a href="/api/logout" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Logout
+            </a>
+          </div>
+        </div>
+      </header>
+
+      {/* Admin Content */}
+      <div className="bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
