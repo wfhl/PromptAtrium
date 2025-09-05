@@ -4,7 +4,15 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lightbulb, Plus, Search, FileText, Heart, Folder, GitBranch, ChevronDown, Crown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Lightbulb, Plus, Search, FileText, Heart, Folder, GitBranch, ChevronDown, Crown, Settings, LogOut, Moon, Sun, User as UserIcon, Eye } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { QuickActions } from "@/components/QuickActions";
@@ -25,6 +33,28 @@ export default function Dashboard() {
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+    }
+    return 'light';
+  });
+
+  // Apply theme to document
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const handleLogout = () => {
+    window.location.href = '/api/logout';
+  };
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -171,27 +201,81 @@ export default function Dashboard() {
               <span>New Prompt</span>
             </Button>
             
-            <div className="relative">
-              <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
-                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                  {user?.profileImageUrl ? (
-                    <img
-                      src={user.profileImageUrl}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
+                  <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                    {user?.profileImageUrl ? (
+                      <img
+                        src={user.profileImageUrl}
+                        alt="Profile"
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium">
+                        {user?.firstName?.[0] || user?.email?.[0] || "U"}
+                      </span>
+                    )}
+                  </div>
+                  <span className="hidden md:block text-sm font-medium" data-testid="text-username">
+                    {user?.firstName || user?.email?.split("@")[0] || "User"}
+                  </span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" data-testid="dropdown-user-menu">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.email?.split("@")[0] || "User"}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem asChild>
+                  <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    Profile Settings
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                  Display Preferences
+                </DropdownMenuLabel>
+                
+                <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer" data-testid="menu-theme-toggle">
+                  {theme === 'light' ? (
+                    <>
+                      <Moon className="mr-2 h-4 w-4" />
+                      Switch to Dark Mode
+                    </>
                   ) : (
-                    <span className="text-sm font-medium">
-                      {user?.firstName?.[0] || user?.email?.[0] || "U"}
-                    </span>
+                    <>
+                      <Sun className="mr-2 h-4 w-4" />
+                      Switch to Light Mode
+                    </>
                   )}
-                </div>
-                <span className="hidden md:block text-sm font-medium" data-testid="text-username">
-                  {user?.firstName || user?.email?.split("@")[0] || "User"}
-                </span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
-              </Button>
-            </div>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem className="cursor-pointer" data-testid="menu-status-options">
+                  <Eye className="mr-2 h-4 w-4" />
+                  Status Display Options
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600" data-testid="menu-logout">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
