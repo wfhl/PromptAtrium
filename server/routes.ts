@@ -626,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const options = {
         search: search as string,
-        role: role as string,
+        role: role as "user" | "community_admin" | "super_admin" | undefined,
         communityId: communityId as string,
         limit: parseInt(limit as string),
         offset: parseInt(offset as string),
@@ -746,7 +746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       allInvites.forEach(invite => {
         const isExpired = invite.expiresAt && invite.expiresAt < now;
-        const isExhausted = invite.currentUses >= invite.maxUses;
+        const isExhausted = (invite.currentUses ?? 0) >= (invite.maxUses ?? 1);
         const isInactive = !invite.isActive;
 
         if (isExpired) {
@@ -783,7 +783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invite has expired" });
       }
 
-      if (invite.currentUses >= invite.maxUses) {
+      if ((invite.currentUses ?? 0) >= (invite.maxUses ?? 1)) {
         return res.status(400).json({ message: "Invite has reached maximum uses" });
       }
 
@@ -819,7 +819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invite has expired" });
       }
 
-      if (invite.currentUses >= invite.maxUses) {
+      if ((invite.currentUses ?? 0) >= (invite.maxUses ?? 1)) {
         return res.status(400).json({ message: "Invite has reached maximum uses" });
       }
 
