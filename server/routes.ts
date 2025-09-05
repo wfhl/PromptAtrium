@@ -157,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Process prompts in batches to avoid overwhelming the database
-      const batchSize = 10;
+      const batchSize = 50;
       for (let i = 0; i < prompts.length; i += batchSize) {
         const batch = prompts.slice(i, i + batchSize);
         
