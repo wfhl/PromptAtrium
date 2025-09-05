@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useForm } from "react-hook-form";
@@ -13,6 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   Form,
   FormControl,
@@ -35,7 +42,12 @@ import {
   ArrowLeft,
   BookOpen,
   Lock,
-  Globe
+  Globe,
+  Filter,
+  SortAsc,
+  SortDesc,
+  Calendar,
+  Type
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -55,6 +67,9 @@ export default function CollectionsPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "public" | "private">("all");
+  const [sortBy, setSortBy] = useState<"name" | "date" | "type">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const createForm = useForm<CollectionFormData>({
     resolver: zodResolver(collectionSchema),
@@ -74,10 +89,19 @@ export default function CollectionsPage() {
     },
   });
 
-  // Fetch user's personal collections
-  const { data: collections = [], isLoading, refetch } = useQuery<any[]>({
+  // Fetch user's personal collections with better caching and error handling
+  const { data: collections = [], isLoading, refetch, error } = useQuery<any[]>({
     queryKey: ["/api/collections"],
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on 401/403 errors
+      if (error?.message?.includes("401") || error?.message?.includes("403")) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 
   // Create collection mutation
@@ -171,11 +195,61 @@ export default function CollectionsPage() {
     setEditModalOpen(true);
   };
 
-  const filteredCollections = collections.filter((collection: any) =>
-    !searchTerm ||
-    collection.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    collection.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Advanced filtering, searching, and sorting with memoization
+  const filteredAndSortedCollections = useMemo(() => {
+    let filtered = collections;
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter((collection: any) =>
+        collection.name?.toLowerCase().includes(searchLower) ||
+        collection.description?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filter by type
+    if (filterType !== "all") {
+      filtered = filtered.filter((collection: any) => {
+        if (filterType === "public") return collection.isPublic;
+        if (filterType === "private") return !collection.isPublic;
+        return true;
+      });
+    }
+
+    // Sort collections
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case "name":
+          aValue = a.name?.toLowerCase() || "";
+          bValue = b.name?.toLowerCase() || "";
+          break;
+        case "date":
+          aValue = new Date(a.createdAt || 0).getTime();
+          bValue = new Date(b.createdAt || 0).getTime();
+          break;
+        case "type":
+          aValue = a.isPublic ? "public" : "private";
+          bValue = b.isPublic ? "public" : "private";
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [collections, searchTerm, filterType, sortBy, sortOrder]);
+
+  // Debounced search to improve performance
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value);
+  }, []);
 
   if (authLoading || isLoading) {
     return (
@@ -186,20 +260,20 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark:bg-gray-950">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link href="/" className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                <Folder className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+                <Folder className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                 My Collections
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Organize your prompts into collections for easy access and sharing
               </p>
             </div>
@@ -289,32 +363,90 @@ export default function CollectionsPage() {
           </Dialog>
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search collections..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              data-testid="input-search-collections"
-            />
+        {/* Advanced Search and Filters */}
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search collections..."
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="pl-10"
+                data-testid="input-search-collections"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Filter Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    {filterType === "all" ? "All" : filterType === "public" ? "Public" : "Private"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setFilterType("all")}>
+                    <Folder className="h-4 w-4 mr-2" />
+                    All Collections
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterType("public")}>
+                    <Globe className="h-4 w-4 mr-2" />
+                    Public Only
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterType("private")}>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Private Only
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Sort Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => { setSortBy("name"); setSortOrder("asc"); }}>
+                    <Type className="h-4 w-4 mr-2" />
+                    Name A-Z
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setSortBy("name"); setSortOrder("desc"); }}>
+                    <Type className="h-4 w-4 mr-2" />
+                    Name Z-A
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => { setSortBy("date"); setSortOrder("desc"); }}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Newest First
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setSortBy("date"); setSortOrder("asc"); }}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Oldest First
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Badge variant="secondary" className="flex items-center justify-center gap-1">
+                <BookOpen className="h-3 w-3" />
+                {filteredAndSortedCollections.length} of {collections.length}
+              </Badge>
+            </div>
           </div>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <BookOpen className="h-3 w-3" />
-            {collections.length} Collections
-          </Badge>
         </div>
 
         {/* Collections Grid */}
-        {filteredCollections.length === 0 ? (
+        {filteredAndSortedCollections.length === 0 ? (
           <div className="text-center py-12">
-            <Folder className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-            <h3 className="text-xl font-semibold mb-2">
+            <Folder className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50 dark:text-gray-600" />
+            <h3 className="text-xl font-semibold mb-2 text-foreground dark:text-gray-200">
               {searchTerm ? "No collections found" : "No collections yet"}
             </h3>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground dark:text-gray-400 mb-4">
               {searchTerm 
                 ? "Try adjusting your search terms" 
                 : "Create your first collection to organize your prompts"
@@ -329,10 +461,10 @@ export default function CollectionsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCollections.map((collection: any) => (
+            {filteredAndSortedCollections.map((collection: any) => (
               <Card 
                 key={collection.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer"
+                className="hover:shadow-md dark:hover:shadow-2xl transition-shadow cursor-pointer bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 data-testid={`card-collection-${collection.id}`}
               >
                 <CardHeader className="pb-3">
@@ -368,12 +500,12 @@ export default function CollectionsPage() {
                     {collection.description || "No description provided"}
                   </p>
                   
-                  <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t gap-2 sm:gap-0">
                     <div className="text-xs text-muted-foreground">
                       {/* TODO: Add prompt count */}
                       0 prompts
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 self-end sm:self-auto">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -381,16 +513,18 @@ export default function CollectionsPage() {
                         data-testid={`button-edit-collection-${collection.id}`}
                       >
                         <Edit className="h-4 w-4" />
+                        <span className="sr-only sm:not-sr-only sm:ml-1">Edit</span>
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => deleteCollectionMutation.mutate(collection.id)}
                         disabled={deleteCollectionMutation.isPending}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                        className="text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                         data-testid={`button-delete-collection-${collection.id}`}
                       >
                         <Trash2 className="h-4 w-4" />
+                        <span className="sr-only sm:not-sr-only sm:ml-1">Delete</span>
                       </Button>
                     </div>
                   </div>

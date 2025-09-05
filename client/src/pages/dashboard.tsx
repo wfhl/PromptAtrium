@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import type { Prompt, Collection, User } from "@shared/schema";
 export default function Dashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
@@ -84,10 +85,7 @@ export default function Dashboard() {
   };
 
   const handleCreateCollection = () => {
-    toast({
-      title: "Coming Soon",
-      description: "Collection creation will be available soon!",
-    });
+    setLocation("/collections");
   };
 
   const handleStartProject = () => {

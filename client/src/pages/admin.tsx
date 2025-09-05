@@ -140,8 +140,8 @@ export default function AdminPage() {
   });
 
   // Fetch community collections (when collections modal is open)
-  const { data: communityCollections = [], isLoading: collectionsLoading, refetch: refetchCollections } = useQuery({
-    queryKey: ["/api/collections"],
+  const { data: communityCollections = [], isLoading: collectionsLoading, refetch: refetchCollections } = useQuery<any[]>({
+    queryKey: ["/api/collections", selectedCommunityForCollections?.id, "community"],
     queryFn: () => apiRequest("GET", `/api/collections?communityId=${selectedCommunityForCollections?.id}&type=community`),
     enabled: !!selectedCommunityForCollections && !!user,
   });
