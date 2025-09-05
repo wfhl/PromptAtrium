@@ -185,6 +185,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/prompt-images", isAuthenticated, async (req, res) => {
+    if (!req.body.imageUrl) {
+      return res.status(400).json({ error: "imageUrl is required" });
+    }
+
+    // Gets the authenticated user id.
+    const userId = req.user?.claims?.sub;
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.imageUrl,
+        {
+          owner: userId,
+          // Prompt images should be public so they can be viewed by other users
+          visibility: "public",
+        },
+      );
+
+      res.status(200).json({
+        objectPath: objectPath,
+      });
+    } catch (error) {
+      console.error("Error setting prompt image ACL:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Prompt routes
   app.get('/api/prompts', async (req, res) => {
     try {

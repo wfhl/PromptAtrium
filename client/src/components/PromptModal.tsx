@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Plus } from "lucide-react";
 import type { Prompt, Collection } from "@shared/schema";
+import { PromptImageUploader } from "./PromptImageUploader";
 
 interface PromptModalProps {
   open: boolean;
@@ -38,7 +39,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
     collectionId: prompt?.collectionId || "none",
     license: prompt?.license || "CC0 (Public Domain)",
     status: prompt?.status || "published",
-    exampleImages: prompt?.exampleImagesUrl?.join(", ") || "",
+    exampleImages: prompt?.exampleImagesUrl || [],
     notes: prompt?.notes || "",
     author: prompt?.author || "",
     sourceUrl: prompt?.sourceUrl || "",
@@ -93,7 +94,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
         tagsNormalized: data.tags ? data.tags.split(",").map((tag: string) => tag.trim().toLowerCase()) : [],
         collectionId: data.collectionId === "none" ? null : data.collectionId,
-        exampleImagesUrl: data.exampleImages ? data.exampleImages.split(",").map((url: string) => url.trim()) : [],
+        exampleImagesUrl: data.exampleImages || [],
         recommendedModels: data.recommendedModels ? data.recommendedModels.split(",").map((model: string) => model.trim()) : [],
         technicalParams: data.technicalParams && data.technicalParams.trim() ? (() => {
           try {
@@ -151,7 +152,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
         tagsNormalized: data.tags ? data.tags.split(",").map((tag: string) => tag.trim().toLowerCase()) : [],
         collectionId: data.collectionId === "none" ? null : data.collectionId,
-        exampleImagesUrl: data.exampleImages ? data.exampleImages.split(",").map((url: string) => url.trim()) : [],
+        exampleImagesUrl: data.exampleImages || [],
         recommendedModels: data.recommendedModels ? data.recommendedModels.split(",").map((model: string) => model.trim()) : [],
         technicalParams: data.technicalParams && data.technicalParams.trim() ? (() => {
           try {
@@ -214,7 +215,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
       collectionId: "none",
       license: "CC0 (Public Domain)",
       status: "published",
-      exampleImages: "",
+      exampleImages: [],
       notes: "",
       author: "",
       sourceUrl: "",
@@ -492,15 +493,14 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
           </div>
 
           <div>
-            <Label htmlFor="exampleImages">Example Images (URLs)</Label>
-            <Input
-              id="exampleImages"
-              value={formData.exampleImages}
-              onChange={(e) => setFormData({ ...formData, exampleImages: e.target.value })}
-              placeholder="https://image1.jpg, https://image2.png..."
-              data-testid="input-example-images"
+            <Label>Example Images</Label>
+            <PromptImageUploader
+              currentImages={formData.exampleImages}
+              onImagesUpdate={(imageUrls) => setFormData({ ...formData, exampleImages: imageUrls })}
+              maxImages={5}
+              className="mt-2"
             />
-            <p className="text-xs text-muted-foreground mt-1">Separate URLs with commas</p>
+            <p className="text-xs text-muted-foreground mt-1">Upload up to 5 example images to showcase your prompt results</p>
           </div>
 
           <div>

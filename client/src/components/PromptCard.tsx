@@ -1,12 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { useState } from "react";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -17,6 +19,7 @@ interface PromptCardProps {
 export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -267,9 +270,71 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
           </div>
         </div>
 
+        {/* Image Gallery */}
+        {prompt.exampleImagesUrl && prompt.exampleImagesUrl.length > 0 && (
+          <div className="mb-4" data-testid={`gallery-images-${prompt.id}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Example Images ({prompt.exampleImagesUrl.length})</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {prompt.exampleImagesUrl.slice(0, 4).map((imageUrl, index) => (
+                <div 
+                  key={index} 
+                  className="relative aspect-square overflow-hidden rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
+                  onClick={() => setSelectedImage(imageUrl)}
+                  data-testid={`image-thumbnail-${prompt.id}-${index}`}
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`Example ${index + 1} for ${prompt.name}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  {/* Show count badge for additional images */}
+                  {index === 3 && prompt.exampleImagesUrl.length > 4 && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white font-medium text-sm">
+                        +{prompt.exampleImagesUrl.length - 4}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bg-muted rounded-md p-3 text-sm font-mono text-muted-foreground" data-testid={`text-content-${prompt.id}`}>
           {prompt.promptContent}
         </div>
+
+        {/* Image Viewer Modal */}
+        <Dialog open={selectedImage !== null} onOpenChange={() => setSelectedImage(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0" data-testid={`modal-image-viewer-${prompt.id}`}>
+            {selectedImage && (
+              <div className="relative">
+                <img
+                  src={selectedImage}
+                  alt="Full size example"
+                  className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="absolute top-2 right-2"
+                  onClick={() => setSelectedImage(null)}
+                  data-testid={`button-close-image-${prompt.id}`}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
