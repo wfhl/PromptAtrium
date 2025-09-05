@@ -169,21 +169,15 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
 
   const bulkImportMutation = useMutation({
     mutationFn: async (prompts: ParsedPrompt[]): Promise<ImportResult> => {
-      const response = await apiRequest('/api/prompts/bulk-import', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompts: prompts.map(p => ({
-            ...p,
-            collectionId: defaultCollection && defaultCollection !== "none" ? defaultCollection : null,
-            category: p.category || (defaultCategory && defaultCategory !== "none" ? defaultCategory : ""),
-            isPublic: p.isPublic ?? defaultIsPublic
-          }))
-        })
+      const response = await apiRequest("POST", "/api/prompts/bulk-import", {
+        prompts: prompts.map(p => ({
+          ...p,
+          collectionId: defaultCollection && defaultCollection !== "none" ? defaultCollection : null,
+          category: p.category || (defaultCategory && defaultCategory !== "none" ? defaultCategory : ""),
+          isPublic: p.isPublic ?? defaultIsPublic
+        }))
       });
-      return response as ImportResult;
+      return await response.json();
     },
     onSuccess: (result: ImportResult) => {
       setImportResults(result);
@@ -195,9 +189,12 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
       });
     },
     onError: (error) => {
+      setStep("upload");
+      setImportProgress(0);
+      setImportResults(null);
       toast({
         title: "Import Failed",
-        description: "An error occurred during import. Please try again.",
+        description: error.message || "An error occurred during import. Please try again.",
         variant: "destructive",
       });
     },
