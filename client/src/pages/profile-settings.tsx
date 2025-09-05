@@ -66,12 +66,6 @@ export default function ProfileSettings() {
   const [, setLocation] = useLocation();
   const [customSocials, setCustomSocials] = useState<CustomSocial[]>([]);
   const [newSocial, setNewSocial] = useState({ platform: "", url: "", handle: "" });
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') as 'light' | 'dark' || 'dark';
-    }
-    return 'dark';
-  });
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -114,25 +108,6 @@ export default function ProfileSettings() {
     }
   }, [user, form]);
 
-  // Apply theme to document
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  const handleLogout = () => {
-    window.location.href = '/api/logout';
-  };
-
-  const handleCreatePrompt = () => {
-    setLocation('/');
-  };
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
