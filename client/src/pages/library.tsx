@@ -20,6 +20,7 @@ export default function Library() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [activeTab, setActiveTab] = useState<"prompts" | "favorites">("prompts");
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -51,7 +52,14 @@ export default function Library() {
   // Fetch user's prompts
   const { data: prompts = [], refetch } = useQuery<Prompt[]>({
     queryKey: [`/api/prompts?${buildQuery()}`],
-    enabled: isAuthenticated && !!user,
+    enabled: isAuthenticated && !!user && activeTab === "prompts",
+    retry: false,
+  });
+
+  // Fetch user's favorite prompts
+  const { data: favoritePrompts = [] } = useQuery<Prompt[]>({
+    queryKey: ["/api/user/favorites"],
+    enabled: isAuthenticated && activeTab === "favorites",
     retry: false,
   });
 
@@ -139,6 +147,24 @@ export default function Library() {
             My Prompt Library
           </h1>
           <p className="text-muted-foreground">Manage and organize all your AI prompts</p>
+          
+          {/* Tab Navigation */}
+          <div className="flex space-x-1 mt-6">
+            <Button
+              variant={activeTab === "prompts" ? "default" : "ghost"}
+              onClick={() => setActiveTab("prompts")}
+              data-testid="tab-my-prompts"
+            >
+              My Prompts
+            </Button>
+            <Button
+              variant={activeTab === "favorites" ? "default" : "ghost"}
+              onClick={() => setActiveTab("favorites")}
+              data-testid="tab-favorites"
+            >
+              My Favorites
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -197,35 +223,58 @@ export default function Library() {
           </CardContent>
         </Card>
 
-        {/* Prompts Grid */}
-        <div className="space-y-4" data-testid="section-prompts">
-          {prompts.length > 0 ? (
-            prompts.map((prompt) => (
-              <PromptCard
-                key={prompt.id}
-                prompt={prompt}
-                showActions={true}
-                onEdit={handleEditPrompt}
-              />
-            ))
+        {/* Content Grid */}
+        <div className="space-y-4" data-testid={`section-${activeTab}`}>
+          {activeTab === "prompts" ? (
+            prompts.length > 0 ? (
+              prompts.map((prompt) => (
+                <PromptCard
+                  key={prompt.id}
+                  prompt={prompt}
+                  showActions={true}
+                  onEdit={handleEditPrompt}
+                />
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lightbulb className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No prompts found</h3>
+                  <p className="text-muted-foreground mb-6">
+                    {searchQuery || categoryFilter || statusFilter
+                      ? "Try adjusting your filters to see more results."
+                      : "You haven't created any prompts yet. Create your first prompt to get started."}
+                  </p>
+                  <Button onClick={handleCreatePrompt} data-testid="button-create-first-prompt">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Prompt
+                  </Button>
+                </CardContent>
+              </Card>
+            )
           ) : (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Lightbulb className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">No prompts found</h3>
-                <p className="text-muted-foreground mb-6">
-                  {searchQuery || categoryFilter || statusFilter
-                    ? "Try adjusting your filters to see more results."
-                    : "You haven't created any prompts yet. Create your first prompt to get started."}
-                </p>
-                <Button onClick={handleCreatePrompt} data-testid="button-create-first-prompt">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Prompt
-                </Button>
-              </CardContent>
-            </Card>
+            favoritePrompts.length > 0 ? (
+              favoritePrompts.map((prompt) => (
+                <PromptCard
+                  key={prompt.id}
+                  prompt={prompt}
+                />
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lightbulb className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No favorite prompts yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Click the star icon on any prompt to add it to your favorites!
+                  </p>
+                </CardContent>
+              </Card>
+            )
           )}
         </div>
       </div>
