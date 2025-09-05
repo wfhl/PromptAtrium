@@ -1,0 +1,136 @@
+------------------------------INSTALL---------------------------------
+
+NPM:
+npm install croppie
+Bower:
+bower install croppie
+Download:
+Source
+
+Then add the following elements to your page:
+<link rel="stylesheet" href="croppie.css" />
+<script src="croppie.js"></script>
+
+
+------------------------------DEMO---------------------------------
+
+Usage
+You can initialize Croppie with the following code:
+var c = new Croppie(document.getElementById('item'), opts);
+// call a method
+c.method(args);
+Or you can use jquery
+$('#item').croppie(opts);
+// call a method via jquery
+$('#item').croppie(method, args);
+
+Documentation
+Options
+		boundaryobjectThe outer container of the cropper Default will default to the size of the container
+		customClassstringA class of your choosing to add to the container to add custom styles to your croppie Default''
+		enableExifbooleanEnable exif orientation reading. Tells Croppie to read exif orientation from the image data and orient the image correctly before rendering to the page. Requires exif.js Defaultfalse
+		enableOrientationbooleanEnable or disable support for specifying a custom orientation when binding images (See bind method) Default false
+		enableResizebooleanEnable or disable support for resizing the viewport area. Default false
+		enableZoombooleanEnable zooming functionality. If set to false - scrolling and pinching would not zoom. Defaulttrue
+		enforceBoundaryboolean* ExperimentalRestricts zoom so image cannot be smaller than viewport Defaulttrue
+		mouseWheelZoombool/stringEnable or disable the ability to use the mouse wheel to zoom in and out on a croppie instance. If 'ctrl' is passed mouse wheel will only work while control keyboard is pressed Defaulttrue
+		showZoomerbooleanHide or Show the zoom slider Defaulttrue
+		viewportobjectThe inner container of the coppie. The visible part of the image Default { width: 100, height: 100, type: 'square' }  Valid type values:'square' 'circle'
+Methods
+		get()objectGet the crop points, and the zoom of the image.
+		bind({ url, points, orientation, zoom })PromiseBind an image to the croppie. Returns a promise to be resolved when the image has been loaded and the croppie has been initialized. Parameters
+		url URL to image
+		points Array of points that translate into [topLeftX, topLeftY, bottomRightX, bottomRightY]
+		zoom Apply zoom after image has been bound
+		orientation Custom orientation, applied after exif orientation (if enabled). Only works with enableOrientation option enabled (see 'Options'). Valid options are:
+		1 unchanged
+		2 flipped horizontally
+		3 rotated 180 degrees
+		4 flipped vertically
+		5 flipped horizontally, then rotated left by 90 degrees
+		6 rotated clockwise by 90 degrees
+		7 flipped horizontally, then rotated right by 90 degrees
+		8 rotated counter-clockwise by 90 degrees
+		destroy()Destroy a croppie instance and remove it from the DOM
+		result({ type, size, format, quality, circle })PromiseGet the resulting crop of the image. Parameters
+		type The type of result to return defaults to 'canvas'
+		'base64' returns a the cropped image encoded in base64
+		'html' returns html of the image positioned within an div of hidden overflow
+		'blob' returns a blob of the cropped image
+		'rawcanvas' returns the canvas element allowing you to manipulate prior to getting the resulted image
+		size The size of the cropped image defaults to 'viewport'
+		'viewport' the size of the resulting image will be the same width and height as the viewport
+		'original' the size of the resulting image will be at the original scale of the image
+		{width, height} an object defining the width and height. If only one dimension is specified, the other will be calculated using the viewport aspect ratio.
+		format Indicating the image format.
+		Default:'png'
+		Valid values:'jpeg'|'png'|'webp'
+		quality Number between 0 and 1 indicating image quality.
+		Default:1
+		circle force the result to be cropped into a circle
+		Valid Values:truefalse
+		rotate(degrees)Rotate the image by a specified degree amount. Only works with enableOrientation option enabled (see 'Options').
+		degrees Valid Values:90, 180, 270, -90, -180, -270
+		setZoom(value)Set the zoom of a Croppie instance. The value passed in is still restricted to the min/max set by Croppie.
+		value a floating point to scale the image within the croppie. Must be between a min and max value set by croppie.
+Events
+		update(croppie)CroppieTriggered when a drag or zoom occurs
+		$('.my-croppie').on('update.croppie', function(ev, cropData) {});
+		// or
+		document.getElementById('another-croppie').addEventListener('update', function(ev) { var cropData = ev.detail; });
+		                             
+
+Resizer Example
+var el = document.getElementById('resizer-demo');
+var resize = new Croppie(el, {
+    viewport: { width: 100, height: 100 },
+    boundary: { width: 300, height: 300 },
+    showZoomer: false,
+    enableResize: true,
+    enableOrientation: true,
+    mouseWheelZoom: 'ctrl'
+});
+resize.bind({
+    url: 'demo/demo-2.jpg',
+});
+//on button click
+resize.result('blob').then(function(blob) {
+    // do something with cropped blob
+});
+
+
+Upload Example (with exif orientation compatability)
+$uploadCrop = $('#upload-demo').croppie({
+    enableExif: true,
+    viewport: {
+        width: 200,
+        height: 200,
+        type: 'circle'
+    },
+    boundary: {
+        width: 300,
+        height: 300
+    }
+});
+
+Hidden Example
+When binding a croppie element that isn't visible, i.e., in a modal - you'll need to call bind again on your croppie element, to indicate to croppie that the position has changed and it needs to recalculate its points.
+$('#hidden-demo').croppie('bind')
+
+Important Notes
+Image Hosting & Cross Origin Errors
+Croppie uses canvas.drawImage(...) to manipulate images. Thus, images must obey the CORS policy. More info can be found here.
+Visibility and Binding
+Croppie is dependent on it's container being visible when the bind method is called. This can be an issue when your croppie component is inside a modal that isn't shown. Let's take the bootstrap modal for example..
+var myCroppie = $('#my-croppie').croppie(opts);
+$('#my-modal').on('shown.bs.modal', function(){ 
+    myCroppie.croppie('bind', bindOpts);
+});
+                    
+If you are having issues getting the correct crop result, and your croppie instance is shown inside of a modal, try taking your croppie out of the modal and see if your issues persist. If they don't, then make sure that your bind method is called after the modal is done animating.
+
+
+
+------------------------------COMPONENT SOURCE CODE ---------------------------------
+
+https://github.com/Foliotek/Croppie/releases
