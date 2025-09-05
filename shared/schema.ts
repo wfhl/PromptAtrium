@@ -45,6 +45,12 @@ export const users = pgTable("users", {
   twitterHandle: varchar("twitter_handle"),
   githubHandle: varchar("github_handle"),
   linkedinHandle: varchar("linkedin_handle"),
+  instagramHandle: varchar("instagram_handle"),
+  deviantartHandle: varchar("deviantart_handle"),
+  blueskyHandle: varchar("bluesky_handle"),
+  tiktokHandle: varchar("tiktok_handle"),
+  redditHandle: varchar("reddit_handle"),
+  patreonHandle: varchar("patreon_handle"),
   
   // Custom social links - array of {platform: string, url: string, handle?: string}
   customSocials: jsonb("custom_socials").default([]),

@@ -35,9 +35,9 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+      return localStorage.getItem('theme') as 'light' | 'dark' || 'dark';
     }
-    return 'light';
+    return 'dark';
   });
 
   // Apply theme to document

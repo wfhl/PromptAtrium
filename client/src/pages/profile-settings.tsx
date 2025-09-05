@@ -35,6 +35,12 @@ const profileSchema = z.object({
   twitterHandle: z.string().optional(),
   githubHandle: z.string().optional(),
   linkedinHandle: z.string().optional(),
+  instagramHandle: z.string().optional(),
+  deviantartHandle: z.string().optional(),
+  blueskyHandle: z.string().optional(),
+  tiktokHandle: z.string().optional(),
+  redditHandle: z.string().optional(),
+  patreonHandle: z.string().optional(),
   profileVisibility: z.enum(["public", "private"]).default("public"),
   emailVisibility: z.boolean().default(false),
   showStats: z.boolean().default(true),
@@ -73,6 +79,12 @@ export default function ProfileSettings() {
         twitterHandle: user.twitterHandle || "",
         githubHandle: user.githubHandle || "",
         linkedinHandle: user.linkedinHandle || "",
+        instagramHandle: user.instagramHandle || "",
+        deviantartHandle: user.deviantartHandle || "",
+        blueskyHandle: user.blueskyHandle || "",
+        tiktokHandle: user.tiktokHandle || "",
+        redditHandle: user.redditHandle || "",
+        patreonHandle: user.patreonHandle || "",
         profileVisibility: user.profileVisibility || "public",
         emailVisibility: user.emailVisibility || false,
         showStats: user.showStats !== false, // Default to true
@@ -283,6 +295,66 @@ export default function ProfileSettings() {
                     placeholder="username"
                     {...form.register("linkedinHandle")}
                     data-testid="input-linkedin"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="instagramHandle">Instagram Handle</Label>
+                  <Input
+                    id="instagramHandle"
+                    placeholder="@username"
+                    {...form.register("instagramHandle")}
+                    data-testid="input-instagram"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deviantartHandle">DeviantArt Handle</Label>
+                  <Input
+                    id="deviantartHandle"
+                    placeholder="username"
+                    {...form.register("deviantartHandle")}
+                    data-testid="input-deviantart"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="blueskyHandle">Bluesky Handle</Label>
+                  <Input
+                    id="blueskyHandle"
+                    placeholder="@username.bsky.social"
+                    {...form.register("blueskyHandle")}
+                    data-testid="input-bluesky"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tiktokHandle">TikTok Handle</Label>
+                  <Input
+                    id="tiktokHandle"
+                    placeholder="@username"
+                    {...form.register("tiktokHandle")}
+                    data-testid="input-tiktok"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="redditHandle">Reddit Handle</Label>
+                  <Input
+                    id="redditHandle"
+                    placeholder="u/username"
+                    {...form.register("redditHandle")}
+                    data-testid="input-reddit"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="patreonHandle">Patreon Handle</Label>
+                  <Input
+                    id="patreonHandle"
+                    placeholder="username"
+                    {...form.register("patreonHandle")}
+                    data-testid="input-patreon"
                   />
                 </div>
               </div>
