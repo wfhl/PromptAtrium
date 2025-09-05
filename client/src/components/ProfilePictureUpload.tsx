@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import Croppie from "croppie";
-import "croppie/croppie.css";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Camera, Upload, X } from "lucide-react";
@@ -26,7 +25,7 @@ export function ProfilePictureUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Initialize Croppie after modal is visible and file is selected
+  // Initialize Croppie with proper visibility checks and timing
   useEffect(() => {
     if (isModalOpen && selectedFile && croppieRef.current) {
       // Clean up existing instance
@@ -35,63 +34,116 @@ export function ProfilePictureUpload({
         croppieInstance.current = null;
       }
 
-      // Delay initialization to ensure modal is fully rendered
-      const timer = setTimeout(() => {
-        if (croppieRef.current && isModalOpen) {
-          console.log('Initializing Croppie with container:', croppieRef.current);
-          try {
-            // Create new Croppie instance
-            croppieInstance.current = new Croppie(croppieRef.current, {
-              viewport: {
-                width: 200,
-                height: 200,
-                type: 'circle'
-              },
-              boundary: {
-                width: 350,
-                height: 350
-              },
-              showZoomer: true,
-              enableOrientation: true,
-              mouseWheelZoom: 'ctrl'
-            });
-
-            console.log('Croppie instance created successfully');
-
-            // Bind the selected file to Croppie
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              if (e.target?.result && croppieInstance.current) {
-                console.log('Binding image to Croppie');
-                croppieInstance.current.bind({
-                  url: e.target.result as string
-                }).then(() => {
-                  console.log('Image bound successfully to Croppie');
-                }).catch((error) => {
-                  console.error('Error binding image to Croppie:', error);
-                  toast({
-                    title: "Error",
-                    description: "Failed to load image for cropping",
-                    variant: "destructive",
-                  });
-                });
-              }
-            };
-            reader.readAsDataURL(selectedFile);
-          } catch (error) {
-            console.error('Error initializing Croppie:', error);
-            toast({
-              title: "Error",
-              description: "Failed to initialize image cropper",
-              variant: "destructive",
-            });
-          }
-        }
-      }, 100); // Small delay to ensure modal DOM is ready
-
-      return () => {
-        clearTimeout(timer);
+      // Function to check if container is actually visible
+      const isContainerVisible = (element: HTMLElement): boolean => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          style.opacity !== '0'
+        );
       };
+
+      // Function to initialize Croppie with retries
+      const initializeCroppie = (attempt = 0) => {
+        const maxAttempts = 10;
+        
+        if (attempt >= maxAttempts) {
+          console.error('Failed to initialize Croppie after', maxAttempts, 'attempts');
+          toast({
+            title: "Error",
+            description: "Failed to initialize image cropper after multiple attempts",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (!croppieRef.current || !isModalOpen) {
+          return;
+        }
+
+        // Check if container is visible
+        if (!isContainerVisible(croppieRef.current)) {
+          console.log(`Attempt ${attempt + 1}: Container not visible yet, retrying...`);
+          setTimeout(() => initializeCroppie(attempt + 1), 50);
+          return;
+        }
+
+        console.log(`Attempt ${attempt + 1}: Container is visible, initializing Croppie`);
+
+        try {
+          // Create new Croppie instance
+          croppieInstance.current = new Croppie(croppieRef.current, {
+            viewport: {
+              width: 200,
+              height: 200,
+              type: 'circle'
+            },
+            boundary: {
+              width: 350,
+              height: 350
+            },
+            showZoomer: true,
+            enableOrientation: true,
+            mouseWheelZoom: 'ctrl'
+          });
+
+          console.log('Croppie instance created successfully');
+
+          // Bind the selected file to Croppie
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result && croppieInstance.current) {
+              console.log('Binding image to Croppie');
+              croppieInstance.current.bind({
+                url: e.target.result as string
+              }).then(() => {
+                console.log('Image bound successfully to Croppie');
+              }).catch((error) => {
+                console.error('Error binding image to Croppie:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to load image for cropping",
+                  variant: "destructive",
+                });
+              });
+            }
+          };
+          reader.readAsDataURL(selectedFile);
+        } catch (error) {
+          console.error('Error initializing Croppie:', error);
+          toast({
+            title: "Error",
+            description: "Failed to initialize image cropper",
+            variant: "destructive",
+          });
+        }
+      };
+
+      // Enhanced portal mounting detection for Radix Dialog
+      const waitForPortalMount = () => {
+        // Check if the dialog portal is mounted and visible
+        const dialogContent = document.querySelector('[role="dialog"]');
+        const isPortalReady = dialogContent && 
+          getComputedStyle(dialogContent).opacity !== '0' &&
+          getComputedStyle(dialogContent).visibility !== 'hidden';
+
+        if (isPortalReady) {
+          console.log('Dialog portal is ready, initializing Croppie');
+          requestAnimationFrame(() => {
+            setTimeout(() => initializeCroppie(), 100);
+          });
+        } else {
+          console.log('Dialog portal not ready yet, retrying...');
+          setTimeout(waitForPortalMount, 50);
+        }
+      };
+
+      // Start portal detection
+      waitForPortalMount();
     }
 
     // Cleanup when modal closes
@@ -278,7 +330,14 @@ export function ProfilePictureUpload({
 
       {/* Cropping Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[450px]" data-testid="modal-crop-profile-picture">
+        <DialogContent 
+          className="sm:max-w-[450px]" 
+          data-testid="modal-crop-profile-picture"
+          onOpenAutoFocus={(e) => {
+            // Prevent auto-focus to allow Croppie to initialize properly
+            e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
