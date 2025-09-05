@@ -549,7 +549,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Label>Example Images</Label>
             <PromptImageUploader
               currentImages={formData.exampleImages}
-              onImagesUpdate={(imageUrls) => setFormData({ ...formData, exampleImages: imageUrls })}
+              onImagesUpdate={(imageUrls) => setFormData(prevFormData => ({ ...prevFormData, exampleImages: imageUrls }))}
               maxImages={5}
               className="mt-2"
             />

@@ -153,7 +153,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
-              <h3 className="font-semibold text-foreground" data-testid={`text-prompt-name-${prompt.id}`}>
+              <h3 className="font-semibold text-foreground flex-1 min-w-0" data-testid={`text-prompt-name-${prompt.id}`}>
                 {prompt.name}
               </h3>
               <Badge variant={prompt.isPublic ? "default" : "secondary"} data-testid={`badge-visibility-${prompt.id}`}>
