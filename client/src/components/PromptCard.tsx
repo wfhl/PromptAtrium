@@ -49,6 +49,39 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     },
   });
 
+  const favoriteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/prompts/${prompt.id}/favorite`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
+      toast({
+        title: "Success",
+        description: "Prompt added to favorites!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to favorite prompt",
+        variant: "destructive",
+      });
+    },
+  });
+
   const forkMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", `/api/prompts/${prompt.id}/fork`);
@@ -195,6 +228,17 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                 >
                   <Heart className="h-4 w-4 mr-1" />
                   Like
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => favoriteMutation.mutate()}
+                  disabled={favoriteMutation.isPending}
+                  className="text-yellow-600 hover:bg-yellow-50"
+                  data-testid={`button-favorite-${prompt.id}`}
+                >
+                  <Star className="h-4 w-4 mr-1" />
+                  Favorite
                 </Button>
                 <Button
                   size="sm"

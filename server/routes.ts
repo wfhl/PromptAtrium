@@ -229,6 +229,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/user/favorites', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const favorites = await storage.getUserFavorites(userId);
+      
+      // Get the full prompt details for each favorite
+      const favoritePrompts = await Promise.all(
+        favorites.map(async (favorite) => {
+          const prompt = await storage.getPrompt(favorite.promptId);
+          return prompt;
+        })
+      );
+      
+      // Filter out any null prompts (in case prompts were deleted)
+      res.json(favoritePrompts.filter(prompt => prompt !== undefined));
+    } catch (error) {
+      console.error("Error fetching user favorites:", error);
+      res.status(500).json({ message: "Failed to fetch favorites" });
+    }
+  });
+
   app.post('/api/prompts/:id/rate', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
