@@ -618,10 +618,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Community invite system routes
-  app.post('/api/communities/:id/invites', requireCommunityAdminRole(), async (req: any, res) => {
+  app.post('/api/communities/:id/invites', requireSuperAdmin, async (req: any, res) => {
     try {
       const { id: communityId } = req.params;
-      const { maxUses = 1, expiresIn } = req.body;
+      const { maxUses = 1, expiresAt } = req.body;
       const createdByUserId = req.user.claims.sub;
       
       // Check if community exists
@@ -633,9 +633,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate unique invite code
       const code = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       
-      let expiresAt: Date | undefined;
-      if (expiresIn) {
-        expiresAt = new Date(Date.now() + expiresIn * 1000); // expiresIn is in seconds
+      let expiresAtDate: Date | undefined;
+      if (expiresAt) {
+        expiresAtDate = new Date(expiresAt);
       }
 
       const invite = await storage.createInvite({
@@ -643,7 +643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         communityId,
         createdBy: createdByUserId,
         maxUses: parseInt(maxUses),
-        expiresAt,
+        expiresAt: expiresAtDate,
       });
       
       res.status(201).json(invite);
@@ -775,6 +775,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deactivating invite:", error);
       res.status(500).json({ message: "Failed to deactivate invite" });
+    }
+  });
+
+  // Add POST endpoint for deactivating invites (for frontend compatibility)
+  app.post('/api/invites/:id/deactivate', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      await storage.deactivateInvite(id);
+      res.json({ message: "Invite deactivated successfully" });
+    } catch (error) {
+      console.error("Error deactivating invite:", error);
+      res.status(500).json({ message: "Failed to deactivate invite" });
+    }
+  });
+
+  // Get all invites (for Super Admin)
+  app.get('/api/invites', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const {
+        communityId,
+        createdBy,
+        isActive,
+        limit = "50",
+        offset = "0"
+      } = req.query;
+
+      const options = {
+        communityId: communityId as string,
+        createdBy: createdBy as string,
+        isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+      };
+
+      const invites = await storage.getAllInvites(options);
+      res.json(invites);
+    } catch (error) {
+      console.error("Error fetching invites:", error);
+      res.status(500).json({ message: "Failed to fetch invites" });
+    }
+  });
+
+  // Get invite stats (for Super Admin)
+  app.get('/api/invites/stats', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const allInvites = await storage.getAllInvites();
+      const now = new Date();
+
+      let active = 0;
+      let used = 0;
+      let expired = 0;
+
+      allInvites.forEach(invite => {
+        const isExpired = invite.expiresAt && invite.expiresAt < now;
+        const isExhausted = invite.currentUses >= invite.maxUses;
+        const isInactive = !invite.isActive;
+
+        if (isExpired) {
+          expired++;
+        } else if (isExhausted || isInactive) {
+          used++;
+        } else if (invite.isActive) {
+          active++;
+        }
+      });
+
+      res.json({ active, used, expired });
+    } catch (error) {
+      console.error("Error fetching invite stats:", error);
+      res.status(500).json({ message: "Failed to fetch invite stats" });
     }
   });
 

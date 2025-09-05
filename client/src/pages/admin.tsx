@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Settings, Users, Shield, Crown, Folder, Mail, UserPlus, Search } from "lucide-react";
-import type { Community, User, UserRole } from "@shared/schema";
+import type { Community, User, UserRole, CommunityInvite } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -25,7 +25,14 @@ const communitySchema = z.object({
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
 });
 
+const inviteSchema = z.object({
+  communityId: z.string().min(1, "Community is required"),
+  maxUses: z.number().min(1, "Max uses must be at least 1").max(100, "Max uses cannot exceed 100"),
+  expiresAt: z.string().optional(),
+});
+
 type CommunityFormData = z.infer<typeof communitySchema>;
+type InviteFormData = z.infer<typeof inviteSchema>;
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -33,6 +40,7 @@ export default function AdminPage() {
   const [communityModalOpen, setCommunityModalOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   // Check if user is admin (super admin or community admin)
   if (!authLoading && (!user || !["super_admin", "community_admin"].includes((user as any).role))) {
@@ -65,10 +73,34 @@ export default function AdminPage() {
     },
   });
 
+  const inviteForm = useForm<InviteFormData>({
+    resolver: zodResolver(inviteSchema),
+    defaultValues: {
+      communityId: "",
+      maxUses: 1,
+      expiresAt: "",
+    },
+  });
+
   // Fetch communities (all for super admin, managed ones for community admin)
   const { data: communities = [], isLoading: communitiesLoading } = useQuery<Community[]>({
     queryKey: isSuperAdmin ? ["/api/communities"] : ["/api/communities/managed"],
     enabled: !!user,
+  });
+
+  // Fetch invites and stats (for Super Admin)
+  const { data: invites = [], isLoading: invitesLoading } = useQuery<CommunityInvite[]>({
+    queryKey: ["/api/invites"],
+    enabled: isSuperAdmin && !!user,
+  });
+
+  const { data: inviteStats } = useQuery<{
+    active: number;
+    used: number;
+    expired: number;
+  }>({
+    queryKey: ["/api/invites/stats"],
+    enabled: isSuperAdmin && !!user,
   });
 
   // Fetch users (for user management)
@@ -166,12 +198,65 @@ export default function AdminPage() {
     },
   });
 
+  // Invite mutations
+  const createInviteMutation = useMutation({
+    mutationFn: async (data: InviteFormData) => {
+      const payload = {
+        ...data,
+        expiresAt: data.expiresAt ? new Date(data.expiresAt).toISOString() : null,
+      };
+      return await apiRequest("POST", `/api/communities/${data.communityId}/invites`, payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invites/stats"] });
+      setInviteModalOpen(false);
+      inviteForm.reset();
+      toast({
+        title: "Success",
+        description: "Invite created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create invite",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deactivateInviteMutation = useMutation({
+    mutationFn: async (inviteId: string) => {
+      return await apiRequest("POST", `/api/invites/${inviteId}/deactivate`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invites/stats"] });
+      toast({
+        title: "Success", 
+        description: "Invite deactivated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to deactivate invite",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: CommunityFormData) => {
     if (selectedCommunity) {
       updateCommunityMutation.mutate({ id: selectedCommunity.id, data });
     } else {
       createCommunityMutation.mutate(data);
     }
+  };
+
+  const onInviteSubmit = (data: InviteFormData) => {
+    createInviteMutation.mutate(data);
   };
 
   const openEditModal = (community: Community) => {
@@ -188,6 +273,11 @@ export default function AdminPage() {
     setSelectedCommunity(null);
     form.reset();
     setCommunityModalOpen(true);
+  };
+
+  const openInviteModal = () => {
+    inviteForm.reset();
+    setInviteModalOpen(true);
   };
 
   if (authLoading || communitiesLoading) {
@@ -477,7 +567,7 @@ export default function AdminPage() {
             <TabsContent value="invites" className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-semibold text-gray-900">Invite Management</h2>
-                <Button data-testid="button-create-invite">
+                <Button onClick={openInviteModal} data-testid="button-create-invite">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Invite
                 </Button>
@@ -489,7 +579,7 @@ export default function AdminPage() {
                     <CardTitle className="text-lg">Active Invites</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-green-600">--</div>
+                    <div className="text-2xl font-bold text-green-600">{inviteStats?.active || 0}</div>
                     <p className="text-sm text-gray-600">Currently active</p>
                   </CardContent>
                 </Card>
@@ -499,7 +589,7 @@ export default function AdminPage() {
                     <CardTitle className="text-lg">Used Invites</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">--</div>
+                    <div className="text-2xl font-bold text-blue-600">{inviteStats?.used || 0}</div>
                     <p className="text-sm text-gray-600">Successfully redeemed</p>
                   </CardContent>
                 </Card>
@@ -509,7 +599,7 @@ export default function AdminPage() {
                     <CardTitle className="text-lg">Expired Invites</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-red-600">--</div>
+                    <div className="text-2xl font-bold text-red-600">{inviteStats?.expired || 0}</div>
                     <p className="text-sm text-gray-600">No longer valid</p>
                   </CardContent>
                 </Card>
@@ -527,11 +617,49 @@ export default function AdminPage() {
                   </div>
                 </div>
                 
-                <div className="p-8 text-center text-gray-500">
-                  <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p>No invites found</p>
-                  <p className="text-sm">Create your first community invite to get started</p>
-                </div>
+                {invites.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No invites found</p>
+                    <p className="text-sm">Create your first community invite to get started</p>
+                  </div>
+                ) : (
+                  invites.map((invite) => {
+                    const community = communities.find(c => c.id === invite.communityId);
+                    const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
+                    const isExhausted = invite.currentUses >= invite.maxUses;
+                    const isActive = invite.isActive && !isExpired && !isExhausted;
+                    
+                    return (
+                      <div key={invite.id} className="p-4 border-b last:border-b-0 flex items-center gap-4 text-sm">
+                        <span className="flex-1 font-mono text-blue-600">{invite.code}</span>
+                        <span className="w-32">{community?.name || 'Unknown'}</span>
+                        <span className="w-24">{invite.currentUses}/{invite.maxUses}</span>
+                        <span className="w-24">
+                          <Badge variant={isActive ? "default" : "secondary"}>
+                            {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used Up" : "Inactive"}
+                          </Badge>
+                        </span>
+                        <span className="w-32 text-gray-600">
+                          {new Date(invite.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="w-24">
+                          {isActive && (
+                            <Button
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => deactivateInviteMutation.mutate(invite.id)}
+                              disabled={deactivateInviteMutation.isPending}
+                              data-testid={`button-deactivate-${invite.id}`}
+                            >
+                              Deactivate
+                            </Button>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </TabsContent>
           )}
@@ -613,6 +741,98 @@ export default function AdminPage() {
                     data-testid="button-submit-community"
                   >
                     {selectedCommunity ? "Update" : "Create"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Invite Modal */}
+        <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Create Community Invite</DialogTitle>
+            </DialogHeader>
+            <Form {...inviteForm}>
+              <form onSubmit={inviteForm.handleSubmit(onInviteSubmit)} className="space-y-4">
+                <FormField
+                  control={inviteForm.control}
+                  name="communityId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Community</FormLabel>
+                      <FormControl>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger data-testid="select-invite-community">
+                            <SelectValue placeholder="Select a community" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {communities.map((community) => (
+                              <SelectItem key={community.id} value={community.id}>
+                                {community.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={inviteForm.control}
+                  name="maxUses"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Maximum Uses</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="100"
+                          placeholder="1"
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                          data-testid="input-invite-max-uses"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={inviteForm.control}
+                  name="expiresAt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expiration Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="datetime-local"
+                          {...field}
+                          data-testid="input-invite-expires-at"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setInviteModalOpen(false)}
+                    data-testid="button-cancel-invite"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createInviteMutation.isPending}
+                    data-testid="button-submit-invite"
+                  >
+                    Create Invite
                   </Button>
                 </div>
               </form>
