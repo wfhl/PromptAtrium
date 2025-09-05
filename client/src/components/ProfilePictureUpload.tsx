@@ -25,57 +25,57 @@ export function ProfilePictureUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Simplified Croppie initialization
+  // Initialize Croppie once when component mounts (following Croppie docs pattern)
   useEffect(() => {
-    if (!isModalOpen || !selectedFile || !croppieRef.current) {
-      return;
-    }
-
-    // Clean up existing instance
-    if (croppieInstance.current) {
-      croppieInstance.current.destroy();
-      croppieInstance.current = null;
-    }
-
-    console.log('Starting Croppie initialization...');
-
-    // Simple timeout to allow modal to fully render
-    const timer = setTimeout(() => {
-      if (!croppieRef.current || !isModalOpen) {
-        console.log('Container or modal not available');
-        return;
-      }
-
-      console.log('Container element:', croppieRef.current);
-      console.log('Container dimensions:', {
-        width: croppieRef.current.offsetWidth,
-        height: croppieRef.current.offsetHeight,
-        visible: croppieRef.current.offsetParent !== null
-      });
-
+    if (croppieRef.current && !croppieInstance.current) {
+      console.log('Initializing Croppie instance...');
       try {
-        // Initialize Croppie with basic settings
-        console.log('Creating Croppie instance...');
         croppieInstance.current = new Croppie(croppieRef.current, {
-          viewport: { width: 200, height: 200, type: 'circle' },
-          boundary: { width: 350, height: 350 },
+          enableExif: true,
+          viewport: {
+            width: 200,
+            height: 200,
+            type: 'circle'
+          },
+          boundary: {
+            width: 350,
+            height: 350
+          },
           showZoomer: true,
-          enableOrientation: true
+          enableOrientation: true,
+          mouseWheelZoom: 'ctrl'
         });
+        console.log('✅ Croppie instance created');
+      } catch (error) {
+        console.error('❌ Error initializing Croppie:', error);
+      }
+    }
+  }, []);
 
-        console.log('Croppie created, reading file...');
+  // Bind image when modal opens (following Croppie modal pattern from docs)
+  useEffect(() => {
+    if (isModalOpen && selectedFile && croppieInstance.current) {
+      console.log('Modal opened, binding image...');
+      
+      // Wait for modal animation to complete, then bind
+      const timer = setTimeout(() => {
+        if (!croppieInstance.current || !selectedFile) return;
 
-        // Read and bind the file
         const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result && croppieInstance.current) {
-            console.log('File read, binding to Croppie...');
+            console.log('Binding image to Croppie...');
             croppieInstance.current.bind({
               url: e.target.result as string
             }).then(() => {
-              console.log('✅ Croppie bound successfully!');
+              console.log('✅ Image bound successfully!');
             }).catch((error) => {
-              console.error('❌ Croppie bind error:', error);
+              console.error('❌ Bind error:', error);
+              toast({
+                title: "Error",
+                description: "Failed to load image for cropping",
+                variant: "destructive",
+              });
             });
           }
         };
@@ -83,16 +83,11 @@ export function ProfilePictureUpload({
           console.error('FileReader error:', error);
         };
         reader.readAsDataURL(selectedFile);
+      }, 500); // Wait for modal animation
 
-      } catch (error) {
-        console.error('❌ Croppie initialization error:', error);
-      }
-    }, 300); // Increased delay for modal animation
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [isModalOpen, selectedFile]);
+      return () => clearTimeout(timer);
+    }
+  }, [isModalOpen, selectedFile, toast]);
 
   // Cleanup on component unmount
   useEffect(() => {
