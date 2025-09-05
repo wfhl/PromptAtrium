@@ -10,6 +10,7 @@ import Library from "@/pages/library";
 import Community from "@/pages/community";
 import Projects from "@/pages/projects";
 import Admin from "@/pages/admin";
+import Invite from "@/pages/invite";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -28,6 +29,8 @@ function Router() {
           <Route path="/admin" component={Admin} />
         </>
       )}
+      <Route path="/invite/:code" component={Invite} />
+      <Route path="/invite" component={Invite} />
       <Route component={NotFound} />
     </Switch>
   );

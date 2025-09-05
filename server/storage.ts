@@ -456,8 +456,25 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(userCommunities).where(eq(userCommunities.userId, userId));
   }
 
-  async getCommunityMembers(communityId: string): Promise<UserCommunity[]> {
-    return await db.select().from(userCommunities).where(eq(userCommunities.communityId, communityId));
+  async getCommunityMembers(communityId: string): Promise<any[]> {
+    return await db
+      .select({
+        id: userCommunities.id,
+        userId: userCommunities.userId,
+        communityId: userCommunities.communityId,
+        role: userCommunities.role,
+        joinedAt: userCommunities.joinedAt,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+        }
+      })
+      .from(userCommunities)
+      .leftJoin(users, eq(userCommunities.userId, users.id))
+      .where(eq(userCommunities.communityId, communityId));
   }
 
   async updateCommunityMemberRole(userId: string, communityId: string, role: CommunityRole): Promise<UserCommunity> {

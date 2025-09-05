@@ -678,6 +678,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get invite stats (for Super Admin) - must come before /:code route
+  app.get('/api/invites/stats', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const allInvites = await storage.getAllInvites();
+      const now = new Date();
+
+      let active = 0;
+      let used = 0;
+      let expired = 0;
+
+      allInvites.forEach(invite => {
+        const isExpired = invite.expiresAt && invite.expiresAt < now;
+        const isExhausted = invite.currentUses >= invite.maxUses;
+        const isInactive = !invite.isActive;
+
+        if (isExpired) {
+          expired++;
+        } else if (isExhausted || isInactive) {
+          used++;
+        } else if (invite.isActive) {
+          active++;
+        }
+      });
+
+      res.json({ active, used, expired });
+    } catch (error) {
+      console.error("Error fetching invite stats:", error);
+      res.status(500).json({ message: "Failed to fetch invite stats" });
+    }
+  });
+
   app.get('/api/invites/:code', async (req, res) => {
     try {
       const { code } = req.params;
@@ -818,34 +849,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get invite stats (for Super Admin)
-  app.get('/api/invites/stats', requireSuperAdmin, async (req: any, res) => {
+  // Community member management routes
+  app.get('/api/communities/:id/members', requireCommunityAdminRole(), async (req: any, res) => {
     try {
-      const allInvites = await storage.getAllInvites();
-      const now = new Date();
-
-      let active = 0;
-      let used = 0;
-      let expired = 0;
-
-      allInvites.forEach(invite => {
-        const isExpired = invite.expiresAt && invite.expiresAt < now;
-        const isExhausted = invite.currentUses >= invite.maxUses;
-        const isInactive = !invite.isActive;
-
-        if (isExpired) {
-          expired++;
-        } else if (isExhausted || isInactive) {
-          used++;
-        } else if (invite.isActive) {
-          active++;
-        }
-      });
-
-      res.json({ active, used, expired });
+      const { id: communityId } = req.params;
+      
+      const members = await storage.getCommunityMembers(communityId);
+      res.json(members);
     } catch (error) {
-      console.error("Error fetching invite stats:", error);
-      res.status(500).json({ message: "Failed to fetch invite stats" });
+      console.error("Error fetching community members:", error);
+      res.status(500).json({ message: "Failed to fetch community members" });
+    }
+  });
+
+  app.delete('/api/communities/:id/members/:userId', requireCommunityAdminRole(), async (req: any, res) => {
+    try {
+      const { id: communityId, userId } = req.params;
+      
+      await storage.leaveCommunity(userId, communityId);
+      res.json({ message: "Member removed successfully" });
+    } catch (error) {
+      console.error("Error removing community member:", error);
+      res.status(500).json({ message: "Failed to remove community member" });
+    }
+  });
+
+  app.put('/api/communities/:id/members/:userId/role', requireCommunityAdminRole(), async (req: any, res) => {
+    try {
+      const { id: communityId, userId } = req.params;
+      const { role } = req.body;
+      
+      if (!["member", "moderator", "admin"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      const updatedMember = await storage.updateCommunityMemberRole(userId, communityId, role);
+      res.json(updatedMember);
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      res.status(500).json({ message: "Failed to update member role" });
     }
   });
 

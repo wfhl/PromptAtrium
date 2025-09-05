@@ -41,6 +41,9 @@ export default function AdminPage() {
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [memberModalOpen, setMemberModalOpen] = useState(false);
+  const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<Community | null>(null);
+  const [memberSearchTerm, setMemberSearchTerm] = useState("");
 
   // Check if user is admin (super admin or community admin)
   if (!authLoading && (!user || !["super_admin", "community_admin"].includes((user as any).role))) {
@@ -107,6 +110,12 @@ export default function AdminPage() {
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["/api/users"],
     enabled: isSuperAdmin && !!user,
+  });
+
+  // Fetch community members (when member modal is open)
+  const { data: communityMembers = [], isLoading: membersLoading, refetch: refetchMembers } = useQuery({
+    queryKey: ["/api/communities", selectedCommunityForMembers?.id, "members"],
+    enabled: !!selectedCommunityForMembers && !!user,
   });
 
   // Update user role mutation
@@ -280,6 +289,53 @@ export default function AdminPage() {
     setInviteModalOpen(true);
   };
 
+  const openMemberModal = (community: Community) => {
+    setSelectedCommunityForMembers(community);
+    setMemberSearchTerm("");
+    setMemberModalOpen(true);
+  };
+
+  // Member management mutations
+  const removeMemberMutation = useMutation({
+    mutationFn: async ({ userId, communityId }: { userId: string; communityId: string }) => {
+      return await apiRequest("DELETE", `/api/communities/${communityId}/members/${userId}`);
+    },
+    onSuccess: () => {
+      refetchMembers();
+      toast({
+        title: "Success",
+        description: "Member removed successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove member",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMemberRoleMutation = useMutation({
+    mutationFn: async ({ userId, communityId, role }: { userId: string; communityId: string; role: string }) => {
+      return await apiRequest("PUT", `/api/communities/${communityId}/members/${userId}/role`, { role });
+    },
+    onSuccess: () => {
+      refetchMembers();
+      toast({
+        title: "Success",
+        description: "Member role updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update member role",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (authLoading || communitiesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -445,6 +501,7 @@ export default function AdminPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => openMemberModal(community)}
                             data-testid={`button-manage-members-${community.id}`}
                           >
                             <Users className="h-4 w-4 mr-1" />
@@ -837,6 +894,134 @@ export default function AdminPage() {
                 </div>
               </form>
             </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Member Management Modal */}
+        <Dialog open={memberModalOpen} onOpenChange={setMemberModalOpen}>
+          <DialogContent className="sm:max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>
+                Manage Members - {selectedCommunityForMembers?.name}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search members..."
+                    value={memberSearchTerm}
+                    onChange={(e) => setMemberSearchTerm(e.target.value)}
+                    className="pl-10 w-64"
+                    data-testid="input-member-search"
+                  />
+                </div>
+                <Button 
+                  size="sm"
+                  data-testid="button-invite-new-member"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Invite Member
+                </Button>
+              </div>
+
+              <div className="bg-white rounded-lg border max-h-96 overflow-y-auto">
+                <div className="p-4 border-b">
+                  <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                    <span className="w-8">#</span>
+                    <span className="flex-1">Member</span>
+                    <span className="w-32">Role</span>
+                    <span className="w-32">Joined</span>
+                    <span className="w-24">Actions</span>
+                  </div>
+                </div>
+                
+                {membersLoading ? (
+                  <div className="p-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading members...</p>
+                  </div>
+                ) : communityMembers.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No members found</p>
+                    <p className="text-sm">Invite your first community member to get started</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {communityMembers
+                      ?.filter((member: any) =>
+                        !memberSearchTerm ||
+                        member.user?.email?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+                        member.user?.firstName?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+                        member.user?.lastName?.toLowerCase().includes(memberSearchTerm.toLowerCase())
+                      )
+                      .map((member: any, index: number) => (
+                        <div key={member.id} className="p-4 hover:bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            <span className="w-8 text-sm text-gray-500">{index + 1}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">
+                                  {member.user?.firstName} {member.user?.lastName}
+                                </span>
+                                <span className="text-sm text-gray-500">({member.user?.email})</span>
+                              </div>
+                            </div>
+                            <div className="w-32">
+                              <Select
+                                value={member.role || "member"}
+                                onValueChange={(role: string) => {
+                                  if (selectedCommunityForMembers && member.userId) {
+                                    updateMemberRoleMutation.mutate({ 
+                                      userId: member.userId, 
+                                      communityId: selectedCommunityForMembers.id, 
+                                      role 
+                                    });
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-full" data-testid={`select-member-role-${member.id}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="member">Member</SelectItem>
+                                  <SelectItem value="moderator">Moderator</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="w-32 text-sm text-gray-600">
+                              {member.joinedAt && new Date(member.joinedAt).toLocaleDateString()}
+                            </div>
+                            <div className="w-24">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (selectedCommunityForMembers && member.userId) {
+                                    removeMemberMutation.mutate({ 
+                                      userId: member.userId, 
+                                      communityId: selectedCommunityForMembers.id 
+                                    });
+                                  }
+                                }}
+                                disabled={removeMemberMutation.isPending}
+                                data-testid={`button-remove-member-${member.id}`}
+                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
         </div>
