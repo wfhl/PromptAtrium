@@ -91,55 +91,7 @@ export default function Library() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <Link href="/">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-                  <Lightbulb className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <h1 className="text-xl font-bold text-foreground">PromptAtrium</h1>
-              </div>
-            </Link>
-            
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-dashboard">
-                Dashboard
-              </Link>
-              <Link href="/library" className="text-primary font-medium border-b-2 border-primary pb-4 -mb-4" data-testid="nav-library">
-                My Library
-              </Link>
-              <Link href="/community" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-community">
-                Community
-              </Link>
-              <Link href="/projects" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-projects">
-                Projects
-              </Link>
-            </nav>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Button
-              className="hidden md:flex items-center space-x-2"
-              onClick={handleCreatePrompt}
-              data-testid="button-new-prompt"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Prompt</span>
-            </Button>
-            
-            <Link href="/api/logout">
-              <Button variant="ghost" data-testid="button-logout">
-                Sign Out
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <>
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -286,6 +238,6 @@ export default function Library() {
         prompt={editingPrompt}
         mode={editingPrompt ? "edit" : "create"}
       />
-    </div>
+    </>
   );
 }

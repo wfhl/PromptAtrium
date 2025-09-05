@@ -24,17 +24,29 @@ function Router() {
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
-        <Layout>
-          <Switch>
-            <Route path="/" component={Dashboard} />
-            <Route path="/library" component={Library} />
-            <Route path="/community" component={Community} />
-            <Route path="/projects" component={Projects} />
-            <Route path="/collections" component={Collections} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/profile/settings" component={ProfileSettings} />
-          </Switch>
-        </Layout>
+        <>
+          <Route path="/">
+            {() => <Layout><Dashboard /></Layout>}
+          </Route>
+          <Route path="/library">
+            {() => <Layout><Library /></Layout>}
+          </Route>
+          <Route path="/community">
+            {() => <Layout><Community /></Layout>}
+          </Route>
+          <Route path="/projects">
+            {() => <Layout><Projects /></Layout>}
+          </Route>
+          <Route path="/collections">
+            {() => <Layout><Collections /></Layout>}
+          </Route>
+          <Route path="/admin">
+            {() => <Layout><Admin /></Layout>}
+          </Route>
+          <Route path="/profile/settings">
+            {() => <Layout><ProfileSettings /></Layout>}
+          </Route>
+        </>
       )}
       <Route path="/invite/:code" component={Invite} />
       <Route path="/invite" component={Invite} />
