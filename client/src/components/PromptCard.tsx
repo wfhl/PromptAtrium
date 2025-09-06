@@ -74,8 +74,13 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousPromptsData, previousFavoritesData };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"], exact: false });
+      // Invalidate ALL prompt queries - Dashboard, Library, any page  
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/favorites");
+        }
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
       toast({
         title: "Success",
@@ -143,8 +148,13 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousPromptsData, previousFavoritesData };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"], exact: false });
+      // Invalidate ALL prompt queries - Dashboard, Library, any page
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/favorites");
+        }
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
       toast({
         title: "Success",
@@ -350,7 +360,13 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousData };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
+      // Invalidate ALL prompt queries - Dashboard, Library, any page
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/favorites");
+        }
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
       toast({
         title: "Success",
