@@ -460,6 +460,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Archive/unarchive prompt
+  app.post('/api/prompts/:id/archive', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const prompt = await storage.getPrompt(req.params.id);
+      
+      if (!prompt || prompt.userId !== userId) {
+        return res.status(404).json({ message: "Prompt not found or not authorized" });
+      }
+
+      const newStatus = prompt.status === 'archived' ? 'published' : 'archived';
+      const updatedPrompt = await storage.updatePrompt(req.params.id, { status: newStatus });
+      
+      res.json({ archived: newStatus === 'archived', status: newStatus });
+    } catch (error) {
+      console.error("Error toggling archive:", error);
+      res.status(500).json({ message: "Failed to toggle archive" });
+    }
+  });
+
+  // Toggle public/private status
+  app.post('/api/prompts/:id/visibility', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const prompt = await storage.getPrompt(req.params.id);
+      
+      if (!prompt || prompt.userId !== userId) {
+        return res.status(404).json({ message: "Prompt not found or not authorized" });
+      }
+
+      const newVisibility = !prompt.isPublic;
+      const updatedPrompt = await storage.updatePrompt(req.params.id, { isPublic: newVisibility });
+      
+      res.json({ isPublic: newVisibility });
+    } catch (error) {
+      console.error("Error toggling visibility:", error);
+      res.status(500).json({ message: "Failed to toggle visibility" });
+    }
+  });
+
   // Project routes
   app.get('/api/projects', isAuthenticated, async (req: any, res) => {
     try {

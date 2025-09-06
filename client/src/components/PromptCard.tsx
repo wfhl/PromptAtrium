@@ -2,7 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -148,6 +149,72 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     },
   });
 
+  const archiveMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/prompts/${prompt.id}/archive`);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      toast({
+        title: "Success",
+        description: data.archived ? "Prompt archived successfully!" : "Prompt restored from archive!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to toggle archive status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const visibilityMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/prompts/${prompt.id}/visibility`);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      toast({
+        title: "Success",
+        description: data.isPublic ? "Prompt shared publicly!" : "Prompt made private!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to toggle visibility",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCopyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(prompt.promptContent);
@@ -166,6 +233,71 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     }
   };
 
+  const handleCopyLink = async () => {
+    try {
+      const shareableLink = `${window.location.origin}/prompt/${prompt.id}`;
+      await navigator.clipboard.writeText(shareableLink);
+      toast({
+        title: "Copied!",
+        description: "Shareable link copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy link to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCopyJSON = async () => {
+    try {
+      const promptData = {
+        name: prompt.name,
+        description: prompt.description,
+        content: prompt.promptContent,
+        category: prompt.category,
+        tags: prompt.tags,
+      };
+      await navigator.clipboard.writeText(JSON.stringify(promptData, null, 2));
+      toast({
+        title: "Copied!",
+        description: "Prompt JSON copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy JSON to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownload = () => {
+    const promptData = {
+      name: prompt.name,
+      description: prompt.description,
+      content: prompt.promptContent,
+      category: prompt.category,
+      tags: prompt.tags,
+      created: prompt.createdAt,
+    };
+    const blob = new Blob([JSON.stringify(promptData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${prompt.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Downloaded!",
+      description: "Prompt downloaded successfully",
+    });
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow" data-testid={`card-prompt-${prompt.id}`}>
       <CardContent className="p-6">
@@ -175,9 +307,23 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
               <h3 className="font-semibold text-foreground flex-1 min-w-0" data-testid={`text-prompt-name-${prompt.id}`}>
                 {prompt.name}
               </h3>
-              <Badge variant={prompt.isPublic ? "default" : "secondary"} data-testid={`badge-visibility-${prompt.id}`}>
-                {prompt.isPublic ? "Public" : "Private"}
-              </Badge>
+{showActions ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`px-2 py-1 text-xs ${prompt.isPublic ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                  onClick={() => visibilityMutation.mutate()}
+                  disabled={visibilityMutation.isPending}
+                  data-testid={`button-visibility-toggle-${prompt.id}`}
+                >
+                  <Globe className="h-3 w-3 mr-1" />
+                  {prompt.isPublic ? "Public" : "Private"}
+                </Button>
+              ) : (
+                <Badge variant={prompt.isPublic ? "default" : "secondary"} data-testid={`badge-visibility-${prompt.id}`}>
+                  {prompt.isPublic ? "Public" : "Private"}
+                </Badge>
+              )}
               {prompt.category && (
                 <Badge variant="outline" data-testid={`badge-category-${prompt.id}`}>
                   {prompt.category}
@@ -209,48 +355,146 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
               </span>
             </div>
           </div>
-          <div className="flex items-center space-x-2 ml-4">
+          <div className="flex items-center space-x-1 ml-4">
             {showActions ? (
-              <>
+              <div className="flex items-center space-x-1" data-testid={`actions-personal-${prompt.id}`}>
+                {/* 1. Like Toggle - Heart (outline → filled red) */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => likeMutation.mutate()}
+                  disabled={likeMutation.isPending}
+                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                  data-testid={`button-like-${prompt.id}`}
+                >
+                  <Heart className={`h-4 w-4 ${(prompt.likes || 0) > 0 ? 'fill-red-600' : ''}`} />
+                </Button>
+
+                {/* 2. Edit Button - Green edit icon */}
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => onEdit?.(prompt)}
+                  className="h-8 w-8 p-0 text-green-600 hover:bg-green-50"
                   data-testid={`button-edit-${prompt.id}`}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
+
+                {/* 3. Collections - Yellow folder with dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50"
+                      data-testid={`button-collections-${prompt.id}`}
+                    >
+                      <Folder className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
+                      Add to Collection
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
+                      Create New Collection
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* 4. Share Menu - Share icon with dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                      data-testid={`button-share-${prompt.id}`}
+                    >
+                      <Share className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={handleCopyLink}>
+                      Share Link
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleCopyJSON}>
+                      Copy JSON
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Email sharing coming soon!" })}>
+                      Email Prompt
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Google Drive integration coming soon!" })}>
+                      Save to Google Drive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "System share coming soon!" })}>
+                      System Share
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* 5. Download - Download icon */}
                 <Button
                   size="sm"
                   variant="ghost"
-                  data-testid={`button-share-${prompt.id}`}
+                  onClick={handleDownload}
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  data-testid={`button-download-${prompt.id}`}
                 >
-                  <Share className="h-4 w-4" />
+                  <Download className="h-4 w-4" />
                 </Button>
+
+                {/* 6. Fork - Fork icon (existing) */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => forkMutation.mutate()}
+                  disabled={forkMutation.isPending}
+                  className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50"
+                  data-testid={`button-fork-${prompt.id}`}
+                >
+                  <GitBranch className="h-4 w-4" />
+                </Button>
+
+                {/* 7. Archive - Archive icon */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => archiveMutation.mutate()}
+                  disabled={archiveMutation.isPending}
+                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50"
+                  data-testid={`button-archive-${prompt.id}`}
+                >
+                  <Archive className="h-4 w-4" />
+                </Button>
+
+                {/* 8. Delete - Trash icon (red) */}
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => deleteMutation.mutate()}
                   disabled={deleteMutation.isPending}
-                  className="text-destructive hover:text-destructive"
+                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
                   data-testid={`button-delete-${prompt.id}`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-                {/* Show favorite button even for owned prompts */}
+
+                {/* 9. Bookmark - Bookmark (outline → filled) */}
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => favoriteMutation.mutate()}
                   disabled={favoriteMutation.isPending}
-                  className="text-yellow-600 hover:bg-yellow-50 border-yellow-200"
-                  data-testid={`button-favorite-${prompt.id}`}
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  data-testid={`button-bookmark-${prompt.id}`}
                 >
-                  <Star className="h-4 w-4" />
+                  <Bookmark className={`h-4 w-4 ${/* TODO: Check if favorited */ false ? 'fill-blue-600' : ''}`} />
                 </Button>
-              </>
+              </div>
             ) : (
-              <>
+              <div className="flex items-center space-x-2" data-testid={`actions-community-${prompt.id}`}>
                 <Button
                   size="sm"
                   variant="outline"
@@ -284,7 +528,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   <GitBranch className="h-4 w-4 mr-1" />
                   Fork
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>

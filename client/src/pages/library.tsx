@@ -20,7 +20,7 @@ export default function Library() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [activeTab, setActiveTab] = useState<"prompts" | "favorites">("prompts");
+  const [activeTab, setActiveTab] = useState<"prompts" | "favorites" | "archive">("prompts");
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -43,8 +43,16 @@ export default function Library() {
     if (user?.id) params.append("userId", user.id);
     if (searchQuery) params.append("search", searchQuery);
     if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
-    if (statusFilter === "published") params.append("status", "published");
-    if (statusFilter === "draft") params.append("status", "draft");
+    
+    // Handle status filtering based on active tab
+    if (activeTab === "archive") {
+      params.append("status", "archived");
+    } else if (statusFilter === "published") {
+      params.append("status", "published");
+    } else if (statusFilter === "draft") {
+      params.append("status", "draft");
+    }
+    
     params.append("limit", "20");
     return params.toString();
   };
@@ -52,7 +60,7 @@ export default function Library() {
   // Fetch user's prompts
   const { data: prompts = [], refetch } = useQuery<Prompt[]>({
     queryKey: [`/api/prompts?${buildQuery()}`],
-    enabled: isAuthenticated && !!user && activeTab === "prompts",
+    enabled: isAuthenticated && !!user && (activeTab === "prompts" || activeTab === "archive"),
     retry: false,
   });
 
@@ -116,6 +124,13 @@ export default function Library() {
             >
               My Favorites
             </Button>
+            <Button
+              variant={activeTab === "archive" ? "default" : "ghost"}
+              onClick={() => setActiveTab("archive")}
+              data-testid="tab-archive"
+            >
+              Archive
+            </Button>
           </div>
         </div>
 
@@ -157,16 +172,18 @@ export default function Library() {
                 </SelectContent>
               </Select>
               
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger data-testid="select-status">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                </SelectContent>
-              </Select>
+{activeTab !== "archive" && (
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger data-testid="select-status">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               
               <Button onClick={() => refetch()} data-testid="button-apply-filters">
                 Apply Filters
@@ -206,7 +223,7 @@ export default function Library() {
                 </CardContent>
               </Card>
             )
-          ) : (
+          ) : activeTab === "favorites" ? (
             favoritePrompts.length > 0 ? (
               favoritePrompts.map((prompt) => (
                 <PromptCard
@@ -227,7 +244,32 @@ export default function Library() {
                 </CardContent>
               </Card>
             )
-          )}
+          ) : activeTab === "archive" ? (
+            prompts.length > 0 ? (
+              prompts.map((prompt) => (
+                <PromptCard
+                  key={prompt.id}
+                  prompt={prompt}
+                  showActions={true}
+                  onEdit={handleEditPrompt}
+                />
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lightbulb className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No archived prompts</h3>
+                  <p className="text-muted-foreground mb-6">
+                    {searchQuery || categoryFilter
+                      ? "Try adjusting your filters to see more results."
+                      : "You haven't archived any prompts yet. Use the archive button on any prompt to move it here."}
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          ) : null}
         </div>
       </div>
 
