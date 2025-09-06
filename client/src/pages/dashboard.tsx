@@ -128,13 +128,15 @@ export default function Dashboard() {
           
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <StatsCard
-              title="Your Prompts"
-              value={userStats?.totalPrompts || 0}
-              icon={FileText}
-              iconColor="bg-primary/10 text-primary"
-              testId="stat-prompts"
-            />
+            <Link href="/library" className="hover:scale-105 transition-transform cursor-pointer">
+              <StatsCard
+                title="Your Prompts"
+                value={userStats?.totalPrompts || 0}
+                icon={FileText}
+                iconColor="bg-primary/10 text-primary"
+                testId="stat-prompts"
+              />
+            </Link>
             <StatsCard
               title="Total Likes"
               value={userStats?.totalLikes || 0}
