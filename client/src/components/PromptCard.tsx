@@ -50,6 +50,10 @@ export function PromptCard({
   
   // Collapse/expand state
   const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  const toggleCollapsed = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   // Separate queries for likes and favorites
   const { data: userFavorites = [] } = useQuery({
@@ -616,7 +620,7 @@ export function PromptCard({
   };
 
   return (
-    <Card className={`hover:shadow-md transition-all duration-200 ${
+    <Card className={`relative hover:shadow-md transition-all duration-200 ${
       isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
     } ${isSelectable ? 'cursor-pointer' : ''}`} 
     data-testid={`card-prompt-${prompt.id}`}
@@ -626,6 +630,24 @@ export function PromptCard({
       onSelectionChange?.(prompt.id, !isSelected);
     } : undefined}
     >
+      {/* Collapse/Expand Toggle Button */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="absolute bottom-2 right-2 h-6 w-6 p-0 z-10 opacity-60 hover:opacity-100 transition-opacity"
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent card selection when clicking toggle
+          toggleCollapsed();
+        }}
+        data-testid={`button-toggle-collapse-${prompt.id}`}
+      >
+        {isCollapsed ? (
+          <Plus className="h-3 w-3" />
+        ) : (
+          <Minus className="h-3 w-3" />
+        )}
+      </Button>
+      
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
