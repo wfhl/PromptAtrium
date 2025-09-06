@@ -616,67 +616,6 @@ export function BulkEditModal({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="collectionIds"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Collections</FormLabel>
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {watchedCollectionIds.map((collectionId) => {
-                          const collection = collections.find((c: any) => c.id === collectionId);
-                          return (
-                            <Badge key={collectionId} variant="secondary" className="group">
-                              {collection?.name || collectionId}
-                              <button
-                                type="button"
-                                onClick={() => removeCollectionId(collectionId)}
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                data-testid={`remove-collection-${collectionId}`}
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                      <div className="flex gap-2">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" data-testid="button-add-collection">
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Collection
-                              <ChevronDown className="h-4 w-4 ml-1" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80 p-0" align="start">
-                            <Command>
-                              <CommandInput placeholder="Search collections..." />
-                              <CommandList>
-                                <CommandEmpty>No collections found.</CommandEmpty>
-                                <CommandGroup>
-                                  {collections.map((collection: any) => (
-                                    <CommandItem
-                                      key={collection.id}
-                                      onSelect={() => addCollectionId(collection.id)}
-                                      data-testid={`collection-option-${collection.id}`}
-                                    >
-                                      <Check className={cn("mr-2 h-4 w-4", watchedCollectionIds.includes(collection.id) ? "opacity-100" : "opacity-0")} />
-                                      {collection.name}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}
