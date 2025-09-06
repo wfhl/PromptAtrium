@@ -99,8 +99,8 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousLikesData) {
-        context.previousLikesData.forEach(([queryKey, data]) => {
+      if (context?.previousFavoritesData) {
+        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -173,8 +173,8 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousLikesData) {
-        context.previousLikesData.forEach(([queryKey, data]) => {
+      if (context?.previousFavoritesData) {
+        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -737,14 +737,14 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
         </div>
 
         {/* Image Gallery */}
-        {prompt.exampleImagesUrl && prompt.exampleImagesUrl.length > 0 && (
+        {prompt.exampleImagesUrl && prompt.exampleImagesUrl?.length > 0 && (
           <div className="mb-4" data-testid={`gallery-images-${prompt.id}`}>
             <div className="flex items-center gap-2 mb-2">
               <ImageIcon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Example Images ({prompt.exampleImagesUrl.length})</span>
+              <span className="text-sm text-muted-foreground">Example Images ({prompt.exampleImagesUrl?.length || 0})</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {prompt.exampleImagesUrl.slice(0, 4).map((imageUrl, index) => (
+              {prompt.exampleImagesUrl?.slice(0, 4).map((imageUrl: any, index: any) => (
                 <div 
                   key={index} 
                   className="relative aspect-square overflow-hidden rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
@@ -761,10 +761,10 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                     <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   {/* Show count badge for additional images */}
-                  {index === 3 && prompt.exampleImagesUrl.length > 4 && (
+                  {index === 3 && (prompt.exampleImagesUrl?.length || 0) > 4 && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <span className="text-white font-medium text-sm">
-                        +{prompt.exampleImagesUrl.length - 4}
+                        +{(prompt.exampleImagesUrl?.length || 0) - 4}
                       </span>
                     </div>
                   )}

@@ -106,7 +106,7 @@ export default function Dashboard() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="text-welcome">
-                Welcome back, {user?.firstName || (user?.email ? user.email.split("@")[0] : null) || "User"}
+                Welcome back, {user?.firstName || (user?.email ? user.email.split("@")[0] : "") || "User"}
               </h1>
               <p className="text-muted-foreground">Manage your AI prompts and discover community favorites</p>
             </div>

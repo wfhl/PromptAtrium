@@ -243,7 +243,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (options.status) {
-      conditions.push(eq(prompts.status, options.status));
+      conditions.push(eq(prompts.status, options.status as any));
     }
     
     if (options.statusNotEqual) {
@@ -335,8 +335,8 @@ export class DatabaseStorage implements IStorage {
       forkOf: originalPrompt.id,
       intendedGenerator: originalPrompt.intendedGenerator,
       recommendedModels: originalPrompt.recommendedModels || [],
-      technicalParams: originalPrompt.technicalParams,
-      variables: originalPrompt.variables,
+      technicalParams: originalPrompt.technicalParams as any,
+      variables: originalPrompt.variables as any,
       projectId: originalPrompt.projectId,
       collectionId: null,
       relatedPrompts: originalPrompt.relatedPrompts || [],
@@ -390,7 +390,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (options.type) {
-      conditions.push(eq(collections.type, options.type));
+      conditions.push(eq(collections.type, options.type as any));
     }
     
     if (conditions.length > 0) {
