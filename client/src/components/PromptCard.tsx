@@ -689,30 +689,6 @@ export function PromptCard({
                 </Badge>
               )}
             </div>
-            {(prompt.description || editingField === 'description') && (
-              editingField === 'description' ? (
-                <Textarea
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onBlur={saveEdit}
-                  className="text-sm text-muted-foreground mb-3 min-h-[60px]"
-                  autoFocus
-                  data-testid={`textarea-description-${prompt.id}`}
-                />
-              ) : (
-                <p 
-                  className={`text-sm text-muted-foreground mb-3 ${
-                    canEdit ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1' : ''
-                  }`}
-                  data-testid={`text-description-${prompt.id}`}
-                  onDoubleClick={() => startEdit('description')}
-                  title={canEdit ? 'Double-click to edit' : ''}
-                >
-                  {prompt.description}
-                </p>
-              )
-            )}
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <span data-testid={`text-likes-${prompt.id}`}>
                 <Heart className="h-4 w-4 text-red-500 inline mr-1" />
@@ -727,6 +703,51 @@ export function PromptCard({
                 {prompt.usageCount}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Full-width Description Section */}
+        {(prompt.description || editingField === 'description') && (
+          <div className="mb-4">
+            {editingField === 'description' ? (
+              <Textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={saveEdit}
+                className="w-full text-sm text-muted-foreground min-h-[60px]"
+                autoFocus
+                data-testid={`textarea-description-${prompt.id}`}
+              />
+            ) : (
+              <p 
+                className={`w-full text-sm text-muted-foreground ${
+                  canEdit ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-2 py-1 -mx-2 -my-1' : ''
+                }`}
+                data-testid={`text-description-${prompt.id}`}
+                onDoubleClick={() => startEdit('description')}
+                title={canEdit ? 'Double-click to edit' : ''}
+              >
+                {prompt.description}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-start justify-between">
+          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+            <span data-testid={`text-likes-${prompt.id}`}>
+              <Heart className="h-4 w-4 text-red-500 inline mr-1" />
+              {prompt.likes}
+            </span>
+            <span data-testid={`text-rating-${prompt.id}`}>
+              <Star className="h-4 w-4 text-yellow-500 inline mr-1" />
+              {prompt.qualityScore}
+            </span>
+            <span data-testid={`text-usage-${prompt.id}`}>
+              <Eye className="h-4 w-4 inline mr-1" />
+              {prompt.usageCount}
+            </span>
           </div>
           <div className="flex items-center space-x-1 ml-4">
             {showActions ? (

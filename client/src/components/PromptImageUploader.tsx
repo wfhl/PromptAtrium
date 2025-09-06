@@ -23,7 +23,7 @@ interface PromptImageUploaderProps {
 export function PromptImageUploader({ 
   currentImages = [], 
   onImagesUpdate, 
-  maxImages = 5,
+  maxImages = 10,
   className = ""
 }: PromptImageUploaderProps) {
   const [images, setImages] = useState<PromptImage[]>(() => 
