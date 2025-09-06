@@ -494,8 +494,8 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                 </Button>
               ) : (
                 <Badge 
-                  variant={currentPrompt.isPublic ? "default" : "secondary"} 
-                  className={currentPrompt.isPublic ? "bg-blue-500" : ""}
+                  variant={prompt.isPublic ? "default" : "secondary"} 
+                  className={prompt.isPublic ? "bg-blue-500" : ""}
                   data-testid={`badge-visibility-${prompt.id}`}
                 >
                   <Globe className="h-3 w-3 mr-1" />
