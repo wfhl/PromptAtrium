@@ -230,8 +230,56 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
     promptIds?: string[];
-  } = {}): Promise<Prompt[]> {
-    let query = db.select().from(prompts);
+  } = {}): Promise<any[]> {
+    // Use select with join to include user data
+    let selectQuery = db.select({
+      id: prompts.id,
+      name: prompts.name,
+      description: prompts.description,
+      category: prompts.category,
+      promptType: prompts.promptType,
+      promptStyle: prompts.promptStyle,
+      categories: prompts.categories,
+      promptTypes: prompts.promptTypes,
+      promptStyles: prompts.promptStyles,
+      tags: prompts.tags,
+      tagsNormalized: prompts.tagsNormalized,
+      isPublic: prompts.isPublic,
+      isFeatured: prompts.isFeatured,
+      status: prompts.status,
+      exampleImagesUrl: prompts.exampleImagesUrl,
+      notes: prompts.notes,
+      author: prompts.author,
+      sourceUrl: prompts.sourceUrl,
+      version: prompts.version,
+      forkOf: prompts.forkOf,
+      usageCount: prompts.usageCount,
+      likes: prompts.likes,
+      qualityScore: prompts.qualityScore,
+      intendedGenerator: prompts.intendedGenerator,
+      intendedGenerators: prompts.intendedGenerators,
+      recommendedModels: prompts.recommendedModels,
+      technicalParams: prompts.technicalParams,
+      variables: prompts.variables,
+      projectId: prompts.projectId,
+      collectionId: prompts.collectionId,
+      collectionIds: prompts.collectionIds,
+      relatedPrompts: prompts.relatedPrompts,
+      license: prompts.license,
+      lastUsedAt: prompts.lastUsedAt,
+      userId: prompts.userId,
+      createdAt: prompts.createdAt,
+      updatedAt: prompts.updatedAt,
+      promptContent: prompts.promptContent,
+      negativePrompt: prompts.negativePrompt,
+      user: {
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        username: users.username,
+      }
+    }).from(prompts).leftJoin(users, eq(prompts.userId, users.id));
     
     const conditions = [];
     
@@ -299,20 +347,20 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      selectQuery = selectQuery.where(and(...conditions));
     }
     
-    query = query.orderBy(desc(prompts.updatedAt));
+    selectQuery = selectQuery.orderBy(desc(prompts.updatedAt));
     
     if (options.limit) {
-      query = query.limit(options.limit);
+      selectQuery = selectQuery.limit(options.limit);
     }
     
     if (options.offset) {
-      query = query.offset(options.offset);
+      selectQuery = selectQuery.offset(options.offset);
     }
     
-    return await query.execute();
+    return await selectQuery.execute();
   }
 
   async getPrompt(id: string): Promise<Prompt | undefined> {
