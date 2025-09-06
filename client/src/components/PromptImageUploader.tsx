@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,14 @@ export function PromptImageUploader({
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Sync with currentImages prop changes (important for edit mode)
+  useEffect(() => {
+    setImages(currentImages.map((url, index) => ({
+      id: `existing-${index}`,
+      url
+    })));
+  }, [currentImages]);
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -155,12 +163,14 @@ export function PromptImageUploader({
       }
 
       // Update parent component with all current image URLs
-      const allUrls = images
-        .filter(img => !img.uploading && !img.file)
-        .map(img => img.url)
-        .concat(uploadedUrls);
-      
-      onImagesUpdate?.(allUrls);
+      setImages(currentImages => {
+        const allUrls = [...new Set([
+          ...currentImages.filter(img => !img.uploading && (!img.file || img.url.startsWith('http'))).map(img => img.url),
+          ...uploadedUrls
+        ])];
+        onImagesUpdate?.(allUrls);
+        return currentImages;
+      });
 
     } finally {
       setIsUploading(false);
@@ -170,7 +180,10 @@ export function PromptImageUploader({
   const handleRemoveImage = (imageId: string) => {
     setImages(prev => {
       const updated = prev.filter(img => img.id !== imageId);
-      const urls = updated.filter(img => !img.uploading && !img.file).map(img => img.url);
+      // Update parent with remaining image URLs
+      const urls = updated
+        .filter(img => !img.uploading && (!img.file || img.url.startsWith('http')))
+        .map(img => img.url);
       onImagesUpdate?.(urls);
       return updated;
     });
