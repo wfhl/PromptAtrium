@@ -4,16 +4,33 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lightbulb, Plus, Search, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Lightbulb, Plus, Search, Filter, FolderPlus, Folder, Edit, Trash2, Globe, Lock, MoreHorizontal, SortAsc, SortDesc } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkEditToolbar } from "@/components/BulkEditToolbar";
 import { BulkEditModal } from "@/components/BulkEditModal";
+import { CollectionItem } from "@/components/CollectionItem";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
-import type { Prompt, User, BulkOperationType, BulkEditPrompt } from "@shared/schema";
+import type { Prompt, User, BulkOperationType, BulkEditPrompt, Collection } from "@shared/schema";
+
+const collectionSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  isPublic: z.boolean().default(false),
+});
+
+type CollectionFormData = z.infer<typeof collectionSchema>;
 
 export default function Library() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -24,12 +41,40 @@ export default function Library() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [activeTab, setActiveTab] = useState<"prompts" | "favorites" | "archive">("prompts");
+  const [activeTab, setActiveTab] = useState<"prompts" | "bookmarked" | "collections" | "archive">("prompts");
   
   // Bulk editing state
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [selectedPromptIds, setSelectedPromptIds] = useState<Set<string>>(new Set());
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+
+  // Collections state
+  const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
+  const [editCollectionModalOpen, setEditCollectionModalOpen] = useState(false);
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
+  const [collectionFilterType, setCollectionFilterType] = useState<"all" | "public" | "private">("all");
+  const [collectionSortBy, setCollectionSortBy] = useState<"name" | "date" | "type">("date");
+  const [collectionSortOrder, setCollectionSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Collection forms
+  const createCollectionForm = useForm<CollectionFormData>({
+    resolver: zodResolver(collectionSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      isPublic: false,
+    },
+  });
+
+  const editCollectionForm = useForm<CollectionFormData>({
+    resolver: zodResolver(collectionSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      isPublic: false,
+    },
+  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -79,11 +124,90 @@ export default function Library() {
     retry: false,
   });
 
-  // Fetch user's favorite prompts
+  // Fetch user's favorite prompts (bookmarked)
   const { data: favoritePrompts = [] } = useQuery<Prompt[]>({
     queryKey: ["/api/user/favorites"],
-    enabled: isAuthenticated && activeTab === "favorites",
+    enabled: isAuthenticated && activeTab === "bookmarked",
     retry: false,
+  });
+
+  // Fetch user's collections
+  const { data: collections = [], isLoading: collectionsLoading, refetch: refetchCollections } = useQuery<Collection[]>({
+    queryKey: ["/api/collections"],
+    enabled: isAuthenticated && !!user && activeTab === "collections",
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false,
+  });
+
+  // Collection mutations
+  const createCollectionMutation = useMutation({
+    mutationFn: async (data: CollectionFormData) => {
+      return await apiRequest("POST", "/api/collections", {
+        ...data,
+        type: "user",
+      });
+    },
+    onSuccess: () => {
+      refetchCollections();
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      createCollectionForm.reset();
+      setCreateCollectionModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Collection created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create collection",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCollectionMutation = useMutation({
+    mutationFn: async (data: CollectionFormData) => {
+      return await apiRequest("PUT", `/api/collections/${selectedCollection?.id}`, data);
+    },
+    onSuccess: () => {
+      refetchCollections();
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      setEditCollectionModalOpen(false);
+      setSelectedCollection(null);
+      toast({
+        title: "Success",
+        description: "Collection updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update collection",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCollectionMutation = useMutation({
+    mutationFn: async (collectionId: string) => {
+      return await apiRequest("DELETE", `/api/collections/${collectionId}`);
+    },
+    onSuccess: () => {
+      refetchCollections();
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      toast({
+        title: "Success",
+        description: "Collection deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete collection",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleCreatePrompt = () => {
@@ -110,7 +234,7 @@ export default function Library() {
   };
 
   const handleSelectAll = () => {
-    const currentPrompts = activeTab === "favorites" ? favoritePrompts : prompts;
+    const currentPrompts = activeTab === "bookmarked" ? favoritePrompts : prompts;
     setSelectedPromptIds(new Set(currentPrompts.map(p => p.id)));
   };
 
@@ -181,7 +305,7 @@ export default function Library() {
   };
 
   const handleBulkExport = () => {
-    const currentPrompts = activeTab === "favorites" ? favoritePrompts : prompts;
+    const currentPrompts = activeTab === "bookmarked" ? favoritePrompts : prompts;
     const selectedPrompts = currentPrompts.filter(p => selectedPromptIds.has(p.id));
     
     const exportData = selectedPrompts.map(prompt => ({
@@ -211,6 +335,78 @@ export default function Library() {
       description: `${selectedPrompts.length} prompts exported successfully`,
     });
   };
+
+  // Collection handlers
+  const onCreateCollectionSubmit = (data: CollectionFormData) => {
+    createCollectionMutation.mutate(data);
+  };
+
+  const onEditCollectionSubmit = (data: CollectionFormData) => {
+    updateCollectionMutation.mutate(data);
+  };
+
+  const openEditCollectionModal = (collection: Collection) => {
+    setSelectedCollection(collection);
+    editCollectionForm.reset({
+      name: collection.name,
+      description: collection.description || "",
+      isPublic: collection.isPublic || false,
+    });
+    setEditCollectionModalOpen(true);
+  };
+
+  // Filter and sort collections
+  const filteredAndSortedCollections = (() => {
+    if (!collections) return [];
+    
+    let filtered = collections;
+
+    // Filter by search term
+    if (collectionSearchTerm.trim()) {
+      const searchLower = collectionSearchTerm.toLowerCase().trim();
+      filtered = filtered.filter((collection: any) =>
+        collection.name?.toLowerCase().includes(searchLower) ||
+        collection.description?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filter by type
+    if (collectionFilterType !== "all") {
+      filtered = filtered.filter((collection: any) => {
+        if (collectionFilterType === "public") return collection.isPublic;
+        if (collectionFilterType === "private") return !collection.isPublic;
+        return true;
+      });
+    }
+
+    // Sort collections
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (collectionSortBy) {
+        case "name":
+          aValue = a.name?.toLowerCase() || "";
+          bValue = b.name?.toLowerCase() || "";
+          break;
+        case "date":
+          aValue = new Date(a.createdAt || 0).getTime();
+          bValue = new Date(b.createdAt || 0).getTime();
+          break;
+        case "type":
+          aValue = a.isPublic ? "public" : "private";
+          bValue = b.isPublic ? "public" : "private";
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return collectionSortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return collectionSortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  })();
 
   if (isLoading) {
     return (
@@ -249,11 +445,18 @@ export default function Library() {
               My Prompts
             </Button>
             <Button
-              variant={activeTab === "favorites" ? "default" : "ghost"}
-              onClick={() => setActiveTab("favorites")}
-              data-testid="tab-favorites"
+              variant={activeTab === "bookmarked" ? "default" : "ghost"}
+              onClick={() => setActiveTab("bookmarked")}
+              data-testid="tab-bookmarked"
             >
-              My Favorites
+              Bookmarked
+            </Button>
+            <Button
+              variant={activeTab === "collections" ? "default" : "ghost"}
+              onClick={() => setActiveTab("collections")}
+              data-testid="tab-collections"
+            >
+              Collections
             </Button>
             <Button
               variant={activeTab === "archive" ? "default" : "ghost"}
@@ -324,16 +527,18 @@ export default function Library() {
         </Card>
 
         {/* Bulk Edit Toolbar */}
-        <BulkEditToolbar
-          selectedCount={selectedPromptIds.size}
-          totalCount={activeTab === "favorites" ? favoritePrompts.length : prompts.length}
-          onSelectAll={handleSelectAll}
-          onClearSelection={handleClearSelection}
-          onBulkOperation={handleBulkOperation}
-          onToggleBulkMode={handleToggleBulkMode}
-          isBulkMode={isBulkMode}
-          isLoading={bulkOperationMutation.isPending}
-        />
+        {activeTab !== "collections" && (
+          <BulkEditToolbar
+            selectedCount={selectedPromptIds.size}
+            totalCount={activeTab === "bookmarked" ? favoritePrompts.length : prompts.length}
+            onSelectAll={handleSelectAll}
+            onClearSelection={handleClearSelection}
+            onBulkOperation={handleBulkOperation}
+            onToggleBulkMode={handleToggleBulkMode}
+            isBulkMode={isBulkMode}
+            isLoading={bulkOperationMutation.isPending}
+          />
+        )}
 
         {/* Content Grid */}
         <div className="space-y-4" data-testid={`section-${activeTab}`}>
@@ -369,7 +574,7 @@ export default function Library() {
                 </CardContent>
               </Card>
             )
-          ) : activeTab === "favorites" ? (
+          ) : activeTab === "bookmarked" ? (
             favoritePrompts.length > 0 ? (
               favoritePrompts.map((prompt) => (
                 <PromptCard
@@ -386,13 +591,244 @@ export default function Library() {
                   <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                     <Lightbulb className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No favorite prompts yet</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No bookmarked prompts yet</h3>
                   <p className="text-muted-foreground mb-6">
-                    Click the star icon on any prompt to add it to your favorites!
+                    Click the bookmark icon on any prompt to add it to your bookmarks!
                   </p>
                 </CardContent>
               </Card>
             )
+          ) : activeTab === "collections" ? (
+            <div>
+              {/* Collections Header with Actions */}
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Collections</h2>
+                <Dialog open={createCollectionModalOpen} onOpenChange={setCreateCollectionModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="flex items-center gap-2" data-testid="button-create-collection">
+                      <FolderPlus className="h-4 w-4" />
+                      New Collection
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Collection</DialogTitle>
+                    </DialogHeader>
+                    <Form {...createCollectionForm}>
+                      <form onSubmit={createCollectionForm.handleSubmit(onCreateCollectionSubmit)} className="space-y-4">
+                        <FormField
+                          control={createCollectionForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Collection Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., Creative Writing, Business Ideas" {...field} data-testid="input-collection-name" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={createCollectionForm.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Description</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Describe what this collection contains..."
+                                  {...field}
+                                  data-testid="textarea-collection-description"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={createCollectionForm.control}
+                          name="isPublic"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel>Make Public</FormLabel>
+                                <div className="text-sm text-muted-foreground">
+                                  Allow others to discover and view this collection
+                                </div>
+                              </div>
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={field.value}
+                                  onChange={field.onChange}
+                                  className="h-4 w-4"
+                                  data-testid="checkbox-collection-public"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <div className="flex justify-end gap-3">
+                          <Button type="button" variant="outline" onClick={() => setCreateCollectionModalOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            disabled={createCollectionMutation.isPending}
+                            data-testid="button-submit-collection"
+                          >
+                            {createCollectionMutation.isPending ? "Creating..." : "Create Collection"}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {/* Collections Filter and Search */}
+              <Card className="mb-6">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        type="text"
+                        placeholder="Search collections..."
+                        value={collectionSearchTerm}
+                        onChange={(e) => setCollectionSearchTerm(e.target.value)}
+                        className="pl-10"
+                        data-testid="input-search-collections"
+                      />
+                    </div>
+                    
+                    <Select value={collectionFilterType} onValueChange={setCollectionFilterType}>
+                      <SelectTrigger data-testid="select-collection-type">
+                        <SelectValue placeholder="All Types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="public">Public</SelectItem>
+                        <SelectItem value="private">Private</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={collectionSortBy} onValueChange={setCollectionSortBy}>
+                      <SelectTrigger data-testid="select-collection-sort">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date">Date Created</SelectItem>
+                        <SelectItem value="name">Name</SelectItem>
+                        <SelectItem value="type">Type</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => setCollectionSortOrder(collectionSortOrder === "asc" ? "desc" : "asc")}
+                      data-testid="button-sort-order"
+                    >
+                      {collectionSortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                      {collectionSortOrder === "asc" ? "Ascending" : "Descending"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Collections Grid */}
+              {collectionsLoading ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading collections...</p>
+                </div>
+              ) : filteredAndSortedCollections.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredAndSortedCollections.map((collection: any) => (
+                    <Card key={collection.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Folder className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold text-lg">{collection.name}</h3>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" data-testid={`button-collection-menu-${collection.id}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditCollectionModal(collection)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => deleteCollectionMutation.mutate(collection.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        
+                        {collection.description && (
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {collection.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <Badge variant={collection.isPublic ? "default" : "secondary"}>
+                            {collection.isPublic ? (
+                              <>
+                                <Globe className="h-3 w-3 mr-1" />
+                                Public
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3 w-3 mr-1" />
+                                Private
+                              </>
+                            )}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(collection.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Folder className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      {collectionSearchTerm ? "No collections found" : "No collections yet"}
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      {collectionSearchTerm 
+                        ? "Try adjusting your search terms" 
+                        : "Create your first collection to organize your prompts"
+                      }
+                    </p>
+                    {!collectionSearchTerm && (
+                      <Button onClick={() => setCreateCollectionModalOpen(true)} data-testid="button-create-first-collection">
+                        <FolderPlus className="h-4 w-4 mr-2" />
+                        Create Your First Collection
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           ) : activeTab === "archive" ? (
             prompts.length > 0 ? (
               prompts.map((prompt) => (
@@ -441,6 +877,80 @@ export default function Library() {
         selectedCount={selectedPromptIds.size}
         isLoading={bulkOperationMutation.isPending}
       />
+
+      {/* Edit Collection Modal */}
+      <Dialog open={editCollectionModalOpen} onOpenChange={setEditCollectionModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Collection</DialogTitle>
+          </DialogHeader>
+          <Form {...editCollectionForm}>
+            <form onSubmit={editCollectionForm.handleSubmit(onEditCollectionSubmit)} className="space-y-4">
+              <FormField
+                control={editCollectionForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Collection Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} data-testid="input-edit-collection-name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editCollectionForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} data-testid="textarea-edit-collection-description" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editCollectionForm.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Make Public</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Allow others to discover and view this collection
+                      </div>
+                    </div>
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4"
+                        data-testid="checkbox-edit-collection-public"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => setEditCollectionModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateCollectionMutation.isPending}
+                  data-testid="button-submit-edit-collection"
+                >
+                  {updateCollectionMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
