@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -20,8 +21,13 @@ interface PromptCardProps {
 export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Check if this prompt is favorited by the current user
+  const userFavorites = queryClient.getQueryData(["/api/user/favorites"]) as any[] || [];
+  const isFavorited = userFavorites.some((fav: any) => fav.id === prompt.id);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -29,12 +35,14 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return await response.json();
     },
     onMutate: async () => {
-      // Optimistic update - immediately update UI
-      await queryClient.cancelQueries({ queryKey: ["/api/prompts"] });
-      const previousPrompts = queryClient.getQueryData(["/api/prompts"]);
+      // Cancel all prompt queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
       
-      // Update prompt in cache immediately
-      queryClient.setQueryData(["/api/prompts"], (old: any) => {
+      // Get all existing prompt queries 
+      const previousData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      
+      // Update all matching prompt queries with optimistic update
+      queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
         if (!old) return old;
         return old.map((p: any) => 
           p.id === prompt.id 
@@ -43,7 +51,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
         );
       });
       
-      return { previousPrompts };
+      return { previousData };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
@@ -55,8 +63,10 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     },
     onError: (error, variables, context) => {
       // Revert optimistic update on error
-      if (context?.previousPrompts) {
-        queryClient.setQueryData(["/api/prompts"], context.previousPrompts);
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
       
       if (isUnauthorizedError(error)) {
@@ -84,10 +94,15 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return await response.json();
     },
     onMutate: async () => {
-      // Optimistic update for immediate UI response
-      await queryClient.cancelQueries({ queryKey: ["/api/prompts"] });
-      const previousPrompts = queryClient.getQueryData(["/api/prompts"]);
-      return { previousPrompts };
+      // Cancel all prompt queries and favorites queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
+      await queryClient.cancelQueries({ queryKey: ["/api/user/favorites"], exact: false });
+      
+      // Get all existing data
+      const previousPromptsData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      const previousFavoritesData = queryClient.getQueriesData({ queryKey: ["/api/user/favorites"], exact: false });
+      
+      return { previousPromptsData, previousFavoritesData };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
@@ -100,8 +115,15 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     },
     onError: (error, variables, context) => {
       // Revert optimistic update on error
-      if (context?.previousPrompts) {
-        queryClient.setQueryData(["/api/prompts"], context.previousPrompts);
+      if (context?.previousPromptsData) {
+        context.previousPromptsData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousFavoritesData) {
+        context.previousFavoritesData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
       
       if (isUnauthorizedError(error)) {
@@ -159,17 +181,19 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       await apiRequest("DELETE", `/api/prompts/${prompt.id}`);
     },
     onMutate: async () => {
-      // Optimistic update - remove prompt immediately
-      await queryClient.cancelQueries({ queryKey: ["/api/prompts"] });
-      const previousPrompts = queryClient.getQueryData(["/api/prompts"]);
+      // Cancel all prompt queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
       
-      // Remove prompt from cache immediately
-      queryClient.setQueryData(["/api/prompts"], (old: any) => {
+      // Get all existing prompt queries 
+      const previousData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      
+      // Remove prompt from all caches immediately
+      queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
         if (!old) return old;
         return old.filter((p: any) => p.id !== prompt.id);
       });
       
-      return { previousPrompts };
+      return { previousData };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
@@ -181,8 +205,10 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     },
     onError: (error, variables, context) => {
       // Revert optimistic update on error
-      if (context?.previousPrompts) {
-        queryClient.setQueryData(["/api/prompts"], context.previousPrompts);
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
       
       if (isUnauthorizedError(error)) {
@@ -209,18 +235,39 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/archive`);
       return await response.json();
     },
+    onMutate: async () => {
+      // Cancel all prompt queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
+      
+      // Get all existing prompt queries 
+      const previousData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      
+      // Optimistically remove from current view (will be invalidated anyway)
+      queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
+        if (!old) return old;
+        return old.filter((p: any) => p.id !== prompt.id);
+      });
+      
+      return { previousData };
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
-      // Invalidate all possible query variations to ensure immediate refresh
+      // Invalidate all queries to refresh both "My Prompts" and "Archive" tabs
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
       toast({
         title: "Success",
         description: data.archived ? "Prompt archived successfully!" : "Prompt restored from archive!",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Revert optimistic update on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -245,17 +292,41 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/visibility`);
       return await response.json();
     },
+    onMutate: async () => {
+      // Cancel all prompt queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
+      
+      // Get all existing prompt queries 
+      const previousData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      
+      // Update all matching prompt queries with optimistic visibility toggle
+      queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
+        if (!old) return old;
+        return old.map((p: any) => 
+          p.id === prompt.id 
+            ? { ...p, isPublic: !p.isPublic }
+            : p
+        );
+      });
+      
+      return { previousData };
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
-      // Invalidate all possible query variations to ensure immediate refresh
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
       toast({
         title: "Success",
         description: data.isPublic ? "Prompt shared publicly!" : "Prompt made private!",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Revert optimistic update on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -559,7 +630,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
                   data-testid={`button-bookmark-${prompt.id}`}
                 >
-                  <Bookmark className={`h-4 w-4 ${/* TODO: Check if favorited */ false ? 'fill-blue-600' : ''}`} />
+                  <Bookmark className={`h-4 w-4 ${isFavorited ? 'fill-blue-600' : ''}`} />
                 </Button>
               </div>
             ) : (
