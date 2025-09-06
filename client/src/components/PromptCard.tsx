@@ -9,8 +9,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -25,16 +26,27 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Check if this prompt is favorited by the current user
-  const userFavorites = queryClient.getQueryData(["/api/user/favorites"]) as any[] || [];
+  // Use reactive queries to subscribe to data changes
+  const { data: userFavorites = [] } = useQuery({
+    queryKey: ["/api/user/favorites"],
+    enabled: !!user,
+  });
+  
   const isFavorited = userFavorites.some((fav: any) => fav.id === prompt.id);
+  const isLiked = isFavorited;  // Backend uses same table for likes and favorites
   
-  // For likes, since the backend uses the same table for likes and favorites,
-  // we'll use the same detection method
-  const isLiked = isFavorited;
-  
-  // Force component re-render when prompt data changes
-  const currentPrompt = queryClient.getQueryData(["/api/prompts"])?.find?.((p: any) => p.id === prompt.id) || prompt;
+  // Get all prompt queries and find the current prompt with fresh data
+  const allQueries = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+  const currentPrompt = useMemo(() => {
+    // Find the prompt in any of the active prompt queries
+    for (const [queryKey, data] of allQueries) {
+      if (Array.isArray(data)) {
+        const foundPrompt = data.find((p: any) => p.id === prompt.id);
+        if (foundPrompt) return foundPrompt;
+      }
+    }
+    return prompt; // fallback to original prompt
+  }, [allQueries, prompt]);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -351,11 +363,8 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousData };
     },
     onSuccess: (data) => {
-      // Don't immediately invalidate - let the optimistic update show first
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
-        queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
-      }, 100);
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
       toast({
         title: "Success",
         description: data.isPublic ? "Prompt shared publicly!" : "Prompt made private!",
