@@ -7,13 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Check, ChevronDown } from "lucide-react";
 import { bulkEditPromptSchema, type BulkEditPrompt } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 // Extend the schema to make all fields optional for partial updates
 const modalBulkEditSchema = z.object({
@@ -55,6 +58,12 @@ export function BulkEditModal({
     enabled: isOpen,
   }) as { data: any[] };
 
+  // Get existing tags and models for dropdowns
+  const { data: options = { tags: [], models: [] } } = useQuery({
+    queryKey: ["/api/prompts/options"],
+    enabled: isOpen,
+  }) as { data: { tags: string[]; models: string[] } };
+
   const form = useForm<ModalBulkEditForm>({
     resolver: zodResolver(modalBulkEditSchema),
     defaultValues: {
@@ -80,9 +89,10 @@ export function BulkEditModal({
     onSubmit(cleanData);
   };
 
-  const addTag = () => {
-    if (newTag.trim() && !watchedTags.includes(newTag.trim())) {
-      form.setValue("tags", [...watchedTags, newTag.trim()]);
+  const addTag = (tag?: string) => {
+    const tagToAdd = tag || newTag.trim();
+    if (tagToAdd && !watchedTags.includes(tagToAdd)) {
+      form.setValue("tags", [...watchedTags, tagToAdd]);
       setNewTag("");
     }
   };
@@ -91,9 +101,10 @@ export function BulkEditModal({
     form.setValue("tags", watchedTags.filter(tag => tag !== tagToRemove));
   };
 
-  const addModel = () => {
-    if (newModel.trim() && !watchedModels.includes(newModel.trim())) {
-      form.setValue("recommendedModels", [...watchedModels, newModel.trim()]);
+  const addModel = (model?: string) => {
+    const modelToAdd = model || newModel.trim();
+    if (modelToAdd && !watchedModels.includes(modelToAdd)) {
+      form.setValue("recommendedModels", [...watchedModels, modelToAdd]);
       setNewModel("");
     }
   };
@@ -298,10 +309,50 @@ export function BulkEditModal({
             <div className="space-y-3">
               <Label>Tags</Label>
               <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between"
+                      data-testid="button-select-tags"
+                    >
+                      Select from existing tags...
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search tags..." />
+                      <CommandList>
+                        <CommandEmpty>No tags found.</CommandEmpty>
+                        <CommandGroup>
+                          {options.tags.filter(tag => !watchedTags.includes(tag)).map((tag) => (
+                            <CommandItem
+                              key={tag}
+                              value={tag}
+                              onSelect={() => addTag(tag)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchedTags.includes(tag) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {tag}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="Add a tag"
+                  placeholder="Or add custom tag"
+                  className="flex-1"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -312,7 +363,7 @@ export function BulkEditModal({
                 />
                 <Button
                   type="button"
-                  onClick={addTag}
+                  onClick={() => addTag()}
                   variant="outline"
                   size="sm"
                   data-testid="button-add-tag"
@@ -337,10 +388,50 @@ export function BulkEditModal({
             <div className="space-y-3">
               <Label>Recommended Models</Label>
               <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between"
+                      data-testid="button-select-models"
+                    >
+                      Select from existing models...
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search models..." />
+                      <CommandList>
+                        <CommandEmpty>No models found.</CommandEmpty>
+                        <CommandGroup>
+                          {options.models.filter(model => !watchedModels.includes(model)).map((model) => (
+                            <CommandItem
+                              key={model}
+                              value={model}
+                              onSelect={() => addModel(model)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchedModels.includes(model) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {model}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   value={newModel}
                   onChange={(e) => setNewModel(e.target.value)}
-                  placeholder="Add a model"
+                  placeholder="Or add custom model"
+                  className="flex-1"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -351,7 +442,7 @@ export function BulkEditModal({
                 />
                 <Button
                   type="button"
-                  onClick={addModel}
+                  onClick={() => addModel()}
                   variant="outline"
                   size="sm"
                   data-testid="button-add-model"

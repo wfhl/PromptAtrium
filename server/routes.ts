@@ -214,6 +214,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Prompt routes
+  // Get unique tags and models for dropdowns
+  app.get('/api/prompts/options', isAuthenticated, async (req: any, res) => {
+    try {
+      const allPrompts = await storage.getPrompts({});
+      
+      // Extract unique tags and models
+      const tagsSet = new Set<string>();
+      const modelsSet = new Set<string>();
+      
+      allPrompts.forEach((prompt: any) => {
+        if (prompt.tags) {
+          prompt.tags.forEach((tag: string) => tagsSet.add(tag));
+        }
+        if (prompt.recommendedModels) {
+          prompt.recommendedModels.forEach((model: string) => modelsSet.add(model));
+        }
+      });
+      
+      const tags = Array.from(tagsSet).sort();
+      const models = Array.from(modelsSet).sort();
+      
+      res.json({ tags, models });
+    } catch (error) {
+      console.error('Error fetching prompt options:', error);
+      res.status(500).json({ message: 'Failed to fetch options' });
+    }
+  });
+
   app.get('/api/prompts', async (req, res) => {
     try {
       const {
