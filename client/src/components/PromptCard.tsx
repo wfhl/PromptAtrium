@@ -50,7 +50,7 @@ export function PromptCard({
   const [originalValue, setOriginalValue] = useState('');
   
   // Collapse/expand state
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   
   const toggleCollapsed = () => {
     setIsCollapsed(!isCollapsed);
