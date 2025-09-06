@@ -555,6 +555,7 @@ export default function Library() {
                   isSelectable={isBulkMode}
                   isSelected={selectedPromptIds.has(prompt.id)}
                   onSelectionChange={handleSelectionChange}
+                  allowInlineEdit={true}
                 />
               ))
             ) : (

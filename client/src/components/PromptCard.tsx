@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +24,8 @@ interface PromptCardProps {
   isSelectable?: boolean;
   isSelected?: boolean;
   onSelectionChange?: (promptId: string, selected: boolean) => void;
+  // Inline editing functionality
+  allowInlineEdit?: boolean;
 }
 
 export function PromptCard({ 
@@ -30,13 +34,19 @@ export function PromptCard({
   onEdit,
   isSelectable = false,
   isSelected = false,
-  onSelectionChange
+  onSelectionChange,
+  allowInlineEdit = false
 }: PromptCardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  
+  // Inline editing state
+  const [editingField, setEditingField] = useState<'name' | 'description' | 'notes' | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [originalValue, setOriginalValue] = useState('');
 
   // Separate queries for likes and favorites
   const { data: userFavorites = [] } = useQuery({
@@ -247,6 +257,44 @@ export function PromptCard({
     },
   });
 
+  // Inline edit mutation
+  const inlineEditMutation = useMutation({
+    mutationFn: async (updates: { name?: string; description?: string; notes?: string }) => {
+      const response = await apiRequest("PUT", `/api/prompts/${prompt.id}`, updates);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/prompts');
+        }
+      });
+      toast({
+        title: "Success",
+        description: "Prompt updated successfully!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to update prompt",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("DELETE", `/api/prompts/${prompt.id}`);
@@ -433,6 +481,54 @@ export function PromptCard({
     },
   });
 
+  // Inline editing functions
+  const startEdit = (field: 'name' | 'description' | 'notes') => {
+    if (!allowInlineEdit || !user || user.id !== prompt.userId) return;
+    
+    const currentValue = field === 'name' ? prompt.name : 
+                        field === 'description' ? prompt.description : 
+                        prompt.notes || '';
+    
+    setEditingField(field);
+    setEditValue(currentValue);
+    setOriginalValue(currentValue);
+  };
+
+  const cancelEdit = () => {
+    setEditingField(null);
+    setEditValue('');
+    setOriginalValue('');
+  };
+
+  const saveEdit = () => {
+    if (!editingField || editValue.trim() === originalValue.trim()) {
+      cancelEdit();
+      return;
+    }
+
+    const updates = {
+      [editingField]: editValue.trim()
+    };
+
+    inlineEditMutation.mutate(updates, {
+      onSuccess: () => {
+        cancelEdit();
+      }
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+    }
+  };
+
+  const canEdit = allowInlineEdit && user && user.id === prompt.userId;
+
   const handleCopyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(prompt.promptContent);
@@ -539,9 +635,28 @@ export function PromptCard({
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
-              <h3 className="font-semibold text-foreground flex-1 min-w-0" data-testid={`text-prompt-name-${prompt.id}`}>
-                {prompt.name}
-              </h3>
+              {editingField === 'name' ? (
+                <Input
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={saveEdit}
+                  className="font-semibold text-foreground flex-1 min-w-0"
+                  autoFocus
+                  data-testid={`input-prompt-name-${prompt.id}`}
+                />
+              ) : (
+                <h3 
+                  className={`font-semibold text-foreground flex-1 min-w-0 ${
+                    canEdit ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1' : ''
+                  }`}
+                  data-testid={`text-prompt-name-${prompt.id}`}
+                  onDoubleClick={() => startEdit('name')}
+                  title={canEdit ? 'Double-click to edit' : ''}
+                >
+                  {prompt.name}
+                </h3>
+              )}
 {showActions ? (
                 <Button
                   variant="outline"
@@ -568,21 +683,35 @@ export function PromptCard({
                   {prompt.isPublic ? "Public" : "Private"}
                 </Badge>
               )}
-              {prompt.category && (
-                <Badge variant="outline" data-testid={`badge-category-${prompt.id}`}>
-                  {prompt.category}
-                </Badge>
-              )}
               {prompt.isFeatured && (
                 <Badge className="bg-yellow-100 text-yellow-800" data-testid={`badge-featured-${prompt.id}`}>
                   Featured
                 </Badge>
               )}
             </div>
-            {prompt.description && (
-              <p className="text-sm text-muted-foreground mb-3" data-testid={`text-description-${prompt.id}`}>
-                {prompt.description}
-              </p>
+            {(prompt.description || editingField === 'description') && (
+              editingField === 'description' ? (
+                <Textarea
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={saveEdit}
+                  className="text-sm text-muted-foreground mb-3 min-h-[60px]"
+                  autoFocus
+                  data-testid={`textarea-description-${prompt.id}`}
+                />
+              ) : (
+                <p 
+                  className={`text-sm text-muted-foreground mb-3 ${
+                    canEdit ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1' : ''
+                  }`}
+                  data-testid={`text-description-${prompt.id}`}
+                  onDoubleClick={() => startEdit('description')}
+                  title={canEdit ? 'Double-click to edit' : ''}
+                >
+                  {prompt.description}
+                </p>
+              )
             )}
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <span data-testid={`text-likes-${prompt.id}`}>
@@ -1020,10 +1149,37 @@ export function PromptCard({
             <div>
               <span className="font-medium text-muted-foreground">Notes:</span>
               <div className="mt-1">
-                {prompt.notes ? (
-                  <div className="text-xs bg-yellow-50 p-2 rounded border max-h-20 overflow-y-auto">
+                {editingField === 'notes' ? (
+                  <Textarea
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onBlur={saveEdit}
+                    className="text-xs min-h-[60px]"
+                    placeholder="Add notes..."
+                    autoFocus
+                    data-testid={`textarea-notes-${prompt.id}`}
+                  />
+                ) : prompt.notes ? (
+                  <div 
+                    className={`text-xs bg-yellow-50 p-2 rounded border max-h-20 overflow-y-auto ${
+                      canEdit ? 'cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/20' : ''
+                    }`}
+                    onDoubleClick={() => startEdit('notes')}
+                    title={canEdit ? 'Double-click to edit' : ''}
+                    data-testid={`text-notes-${prompt.id}`}
+                  >
                     {prompt.notes}
                   </div>
+                ) : canEdit ? (
+                  <span 
+                    className="text-muted-foreground text-xs cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1"
+                    onDoubleClick={() => startEdit('notes')}
+                    title="Double-click to add notes"
+                    data-testid={`text-no-notes-${prompt.id}`}
+                  >
+                    No notes (double-click to add)
+                  </span>
                 ) : (
                   <span className="text-muted-foreground text-xs">No notes</span>
                 )}
