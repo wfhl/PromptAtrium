@@ -212,81 +212,317 @@ export function BulkEditModal({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Category */}
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="e.g. Creative Writing, Marketing"
-                        data-testid="input-bulk-category"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Categories */}
+              <div className="col-span-1 md:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="categories"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categories</FormLabel>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {watchedCategories.map((category) => (
+                            <Badge key={category} variant="secondary" className="group">
+                              {category}
+                              <button
+                                type="button"
+                                onClick={() => removeCategory(category)}
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                                data-testid={`remove-category-${category}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" data-testid="button-add-category">
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add Category
+                                <ChevronDown className="h-4 w-4 ml-1" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-0" align="start">
+                              <Command>
+                                <CommandInput
+                                  placeholder="Search categories..."
+                                  value={newCategory}
+                                  onValueChange={setNewCategory}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => addCategory()}
+                                      disabled={!newCategory.trim()}
+                                      className="w-full"
+                                      data-testid="button-create-category"
+                                    >
+                                      Create "{newCategory}"
+                                    </Button>
+                                  </CommandEmpty>
+                                  <CommandGroup>
+                                    {options.categories.map((category) => (
+                                      <CommandItem
+                                        key={category}
+                                        onSelect={() => addCategory(category)}
+                                        data-testid={`category-option-${category}`}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", watchedCategories.includes(category) ? "opacity-100" : "opacity-0")} />
+                                        {category}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Prompt Type */}
-              <FormField
-                control={form.control}
-                name="promptType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prompt Type</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="e.g. Instruction, Question, Template"
-                        data-testid="input-bulk-prompt-type"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Prompt Types */}
+              <div className="col-span-1 md:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="promptTypes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prompt Types</FormLabel>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {watchedPromptTypes.map((type) => (
+                            <Badge key={type} variant="secondary" className="group">
+                              {type}
+                              <button
+                                type="button"
+                                onClick={() => removePromptType(type)}
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                                data-testid={`remove-prompt-type-${type}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" data-testid="button-add-prompt-type">
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add Prompt Type
+                                <ChevronDown className="h-4 w-4 ml-1" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-0" align="start">
+                              <Command>
+                                <CommandInput
+                                  placeholder="Search prompt types..."
+                                  value={newPromptType}
+                                  onValueChange={setNewPromptType}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => addPromptType()}
+                                      disabled={!newPromptType.trim()}
+                                      className="w-full"
+                                      data-testid="button-create-prompt-type"
+                                    >
+                                      Create "{newPromptType}"
+                                    </Button>
+                                  </CommandEmpty>
+                                  <CommandGroup>
+                                    {options.promptTypes.map((type) => (
+                                      <CommandItem
+                                        key={type}
+                                        onSelect={() => addPromptType(type)}
+                                        data-testid={`prompt-type-option-${type}`}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", watchedPromptTypes.includes(type) ? "opacity-100" : "opacity-0")} />
+                                        {type}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Prompt Style */}
-              <FormField
-                control={form.control}
-                name="promptStyle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prompt Style</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="e.g. Casual, Professional, Technical"
-                        data-testid="input-bulk-prompt-style"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Prompt Styles */}
+              <div className="col-span-1 md:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="promptStyles"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prompt Styles</FormLabel>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {watchedPromptStyles.map((style) => (
+                            <Badge key={style} variant="secondary" className="group">
+                              {style}
+                              <button
+                                type="button"
+                                onClick={() => removePromptStyle(style)}
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                                data-testid={`remove-prompt-style-${style}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" data-testid="button-add-prompt-style">
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add Prompt Style
+                                <ChevronDown className="h-4 w-4 ml-1" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-0" align="start">
+                              <Command>
+                                <CommandInput
+                                  placeholder="Search prompt styles..."
+                                  value={newPromptStyle}
+                                  onValueChange={setNewPromptStyle}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => addPromptStyle()}
+                                      disabled={!newPromptStyle.trim()}
+                                      className="w-full"
+                                      data-testid="button-create-prompt-style"
+                                    >
+                                      Create "{newPromptStyle}"
+                                    </Button>
+                                  </CommandEmpty>
+                                  <CommandGroup>
+                                    {options.promptStyles.map((style) => (
+                                      <CommandItem
+                                        key={style}
+                                        onSelect={() => addPromptStyle(style)}
+                                        data-testid={`prompt-style-option-${style}`}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", watchedPromptStyles.includes(style) ? "opacity-100" : "opacity-0")} />
+                                        {style}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Intended Generator */}
-              <FormField
-                control={form.control}
-                name="intendedGenerator"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Intended Generator</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="e.g. ChatGPT, Claude, Gemini"
-                        data-testid="input-bulk-intended-generator"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Intended Generators */}
+              <div className="col-span-1 md:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="intendedGenerators"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Intended Generators</FormLabel>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {watchedIntendedGenerators.map((generator) => (
+                            <Badge key={generator} variant="secondary" className="group">
+                              {generator}
+                              <button
+                                type="button"
+                                onClick={() => removeIntendedGenerator(generator)}
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                                data-testid={`remove-intended-generator-${generator}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" data-testid="button-add-intended-generator">
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add Intended Generator
+                                <ChevronDown className="h-4 w-4 ml-1" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-0" align="start">
+                              <Command>
+                                <CommandInput
+                                  placeholder="Search intended generators..."
+                                  value={newIntendedGenerator}
+                                  onValueChange={setNewIntendedGenerator}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => addIntendedGenerator()}
+                                      disabled={!newIntendedGenerator.trim()}
+                                      className="w-full"
+                                      data-testid="button-create-intended-generator"
+                                    >
+                                      Create "{newIntendedGenerator}"
+                                    </Button>
+                                  </CommandEmpty>
+                                  <CommandGroup>
+                                    {options.intendedGenerators.map((generator) => (
+                                      <CommandItem
+                                        key={generator}
+                                        onSelect={() => addIntendedGenerator(generator)}
+                                        data-testid={`intended-generator-option-${generator}`}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", watchedIntendedGenerators.includes(generator) ? "opacity-100" : "opacity-0")} />
+                                        {generator}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Status and Visibility */}
@@ -316,25 +552,61 @@ export function BulkEditModal({
 
               <FormField
                 control={form.control}
-                name="collectionId"
+                name="collectionIds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Collection</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || undefined}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-bulk-collection">
-                          <SelectValue placeholder="Select collection" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="null">No Collection</SelectItem>
-                        {collections.map((collection: any) => (
-                          <SelectItem key={collection.id} value={collection.id}>
-                            {collection.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Collections</FormLabel>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {watchedCollectionIds.map((collectionId) => {
+                          const collection = collections.find((c: any) => c.id === collectionId);
+                          return (
+                            <Badge key={collectionId} variant="secondary" className="group">
+                              {collection?.name || collectionId}
+                              <button
+                                type="button"
+                                onClick={() => removeCollectionId(collectionId)}
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                                data-testid={`remove-collection-${collectionId}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" data-testid="button-add-collection">
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add Collection
+                              <ChevronDown className="h-4 w-4 ml-1" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search collections..." />
+                              <CommandList>
+                                <CommandEmpty>No collections found.</CommandEmpty>
+                                <CommandGroup>
+                                  {collections.map((collection: any) => (
+                                    <CommandItem
+                                      key={collection.id}
+                                      onSelect={() => addCollectionId(collection.id)}
+                                      data-testid={`collection-option-${collection.id}`}
+                                    >
+                                      <Check className={cn("mr-2 h-4 w-4", watchedCollectionIds.includes(collection.id) ? "opacity-100" : "opacity-0")} />
+                                      {collection.name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
