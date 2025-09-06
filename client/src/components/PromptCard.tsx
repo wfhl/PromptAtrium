@@ -26,14 +26,19 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Simple favorites query for bookmark icon state
+  // Separate queries for likes and favorites
   const { data: userFavorites = [] } = useQuery({
     queryKey: ["/api/user/favorites"],
     enabled: !!user,
   }) as { data: any[] };
   
+  const { data: userLikes = [] } = useQuery({
+    queryKey: ["/api/user/likes"],
+    enabled: !!user,
+  }) as { data: any[] };
+  
   const isFavorited = userFavorites.some((fav: any) => fav.id === prompt.id);
-  const isLiked = isFavorited;
+  const isLiked = userLikes.some((like: any) => like.id === prompt.id);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -41,15 +46,15 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return await response.json();
     },
     onMutate: async () => {
-      // Cancel all prompt queries and favorites queries to prevent race conditions
+      // Cancel all prompt queries and likes queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
-      await queryClient.cancelQueries({ queryKey: ["/api/user/favorites"], exact: false });
+      await queryClient.cancelQueries({ queryKey: ["/api/user/likes"], exact: false });
       
       // Get all existing data
       const previousPromptsData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
-      const previousFavoritesData = queryClient.getQueriesData({ queryKey: ["/api/user/favorites"], exact: false });
+      const previousLikesData = queryClient.getQueriesData({ queryKey: ["/api/user/likes"], exact: false });
       
-      // Optimistically update likes count
+      // Optimistically update likes count on prompts
       queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
         if (!old) return old;
         return old.map((p: any) => 
@@ -59,26 +64,26 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
         );
       });
       
-      // Optimistically update favorites cache (since backend uses same table)
-      const currentFavorites = queryClient.getQueryData(["/api/user/favorites"]) as any[] || [];
-      const isCurrentlyLiked = currentFavorites.some((fav: any) => fav.id === prompt.id);
+      // Optimistically update likes cache
+      const currentLikes = queryClient.getQueryData(["/api/user/likes"]) as any[] || [];
+      const isCurrentlyLiked = currentLikes.some((like: any) => like.id === prompt.id);
       
       if (isCurrentlyLiked) {
-        // Remove from favorites
-        queryClient.setQueryData(["/api/user/favorites"], currentFavorites.filter((fav: any) => fav.id !== prompt.id));
+        // Remove from likes
+        queryClient.setQueryData(["/api/user/likes"], currentLikes.filter((like: any) => like.id !== prompt.id));
       } else {
-        // Add to favorites
-        queryClient.setQueryData(["/api/user/favorites"], [...currentFavorites, prompt]);
+        // Add to likes
+        queryClient.setQueryData(["/api/user/likes"], [...currentLikes, prompt]);
       }
       
-      return { previousPromptsData, previousFavoritesData };
+      return { previousPromptsData, previousLikesData };
     },
     onSuccess: (data) => {
-      // Invalidate ALL prompt queries - Dashboard, Library, any page  
+      // Invalidate ALL prompt queries and likes - Dashboard, Library, any page  
       queryClient.invalidateQueries({ 
         predicate: (query) => {
           const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/favorites");
+          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/likes");
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
@@ -94,8 +99,8 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousFavoritesData) {
-        context.previousFavoritesData.forEach(([queryKey, data]) => {
+      if (context?.previousLikesData) {
+        context.previousLikesData.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -168,8 +173,8 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousFavoritesData) {
-        context.previousFavoritesData.forEach(([queryKey, data]) => {
+      if (context?.previousLikesData) {
+        context.previousLikesData.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }

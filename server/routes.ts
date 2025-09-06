@@ -441,6 +441,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/user/likes', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const likes = await storage.getUserLikes(userId);
+      
+      // Get the full prompt details for each liked prompt
+      const likedPrompts = await Promise.all(
+        likes.map(async (like) => {
+          const prompt = await storage.getPrompt(like.promptId);
+          return prompt;
+        })
+      );
+      
+      // Filter out any null prompts (in case prompts were deleted)
+      res.json(likedPrompts.filter(prompt => prompt !== undefined));
+    } catch (error) {
+      console.error("Error fetching user likes:", error);
+      res.status(500).json({ message: "Failed to fetch likes" });
+    }
+  });
+
   app.post('/api/prompts/:id/rate', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

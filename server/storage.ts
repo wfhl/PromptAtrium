@@ -7,6 +7,7 @@ import {
   userCommunities,
   communityAdmins,
   communityInvites,
+  promptLikes,
   promptFavorites,
   promptRatings,
   type User,
@@ -27,6 +28,7 @@ import {
   type InsertCommunityInvite,
   type PromptRating,
   type InsertPromptRating,
+  type PromptLike,
   type PromptFavorite,
   type UserRole,
   type CommunityRole,
@@ -100,6 +102,7 @@ export interface IStorage {
   toggleFavorite(userId: string, promptId: string): Promise<boolean>;
   ratePrompt(rating: InsertPromptRating): Promise<PromptRating>;
   getUserFavorites(userId: string): Promise<PromptFavorite[]>;
+  getUserLikes(userId: string): Promise<PromptLike[]>;
   
   // Stats
   getUserStats(userId: string): Promise<{
@@ -546,22 +549,33 @@ export class DatabaseStorage implements IStorage {
   async toggleLike(userId: string, promptId: string): Promise<boolean> {
     const [existing] = await db
       .select()
-      .from(promptFavorites)
-      .where(and(eq(promptFavorites.userId, userId), eq(promptFavorites.promptId, promptId)));
+      .from(promptLikes)
+      .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
 
     if (existing) {
-      await db.delete(promptFavorites).where(eq(promptFavorites.id, existing.id));
+      await db.delete(promptLikes).where(eq(promptLikes.id, existing.id));
       await db.update(prompts).set({ likes: sql`${prompts.likes} - 1` }).where(eq(prompts.id, promptId));
       return false;
     } else {
-      await db.insert(promptFavorites).values({ userId, promptId });
+      await db.insert(promptLikes).values({ userId, promptId });
       await db.update(prompts).set({ likes: sql`${prompts.likes} + 1` }).where(eq(prompts.id, promptId));
       return true;
     }
   }
 
   async toggleFavorite(userId: string, promptId: string): Promise<boolean> {
-    return await this.toggleLike(userId, promptId);
+    const [existing] = await db
+      .select()
+      .from(promptFavorites)
+      .where(and(eq(promptFavorites.userId, userId), eq(promptFavorites.promptId, promptId)));
+
+    if (existing) {
+      await db.delete(promptFavorites).where(eq(promptFavorites.id, existing.id));
+      return false;
+    } else {
+      await db.insert(promptFavorites).values({ userId, promptId });
+      return true;
+    }
   }
 
   async ratePrompt(rating: InsertPromptRating): Promise<PromptRating> {
@@ -585,6 +599,10 @@ export class DatabaseStorage implements IStorage {
 
   async getUserFavorites(userId: string): Promise<PromptFavorite[]> {
     return await db.select().from(promptFavorites).where(eq(promptFavorites.userId, userId));
+  }
+
+  async getUserLikes(userId: string): Promise<PromptLike[]> {
+    return await db.select().from(promptLikes).where(eq(promptLikes.userId, userId));
   }
 
   // Stats

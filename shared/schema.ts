@@ -172,7 +172,15 @@ export const prompts = pgTable("prompts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Prompt favorites table
+// Prompt likes table - tracks individual likes/hearts
+export const promptLikes = pgTable("prompt_likes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Prompt favorites table - tracks user bookmarks/favorites
 export const promptFavorites = pgTable("prompt_favorites", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -334,6 +342,7 @@ export type InsertCommunityInvite = z.infer<typeof insertCommunityInviteSchema>;
 export type CommunityInvite = typeof communityInvites.$inferSelect;
 export type InsertPromptRating = z.infer<typeof insertPromptRatingSchema>;
 export type PromptRating = typeof promptRatings.$inferSelect;
+export type PromptLike = typeof promptLikes.$inferSelect;
 export type PromptFavorite = typeof promptFavorites.$inferSelect;
 
 // User role types
