@@ -282,7 +282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         statusNotEqual,
         tags,
         search,
-        limit = "20",
+        limit,
         offset = "0"
       } = req.query;
 
@@ -295,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         statusNotEqual: statusNotEqual as string,
         tags: tags ? (tags as string).split(",") : undefined,
         search: search as string,
-        limit: parseInt(limit as string),
+        limit: limit ? parseInt(limit as string) : undefined,
         offset: parseInt(offset as string),
       };
 
