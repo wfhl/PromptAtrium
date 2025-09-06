@@ -68,7 +68,7 @@ export default function Library() {
       }
     }
     
-    params.append("limit", "20");
+    // Remove limit to show all prompts
     return params.toString();
   };
 
