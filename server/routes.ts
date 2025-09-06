@@ -426,6 +426,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               tagsNormalized: Array.isArray(promptData.tags) 
                 ? promptData.tags.map((tag: string) => tag.toLowerCase().trim())
                 : [],
+              // Handle new array fields
+              categories: Array.isArray(promptData.categories) ? promptData.categories : [],
+              promptTypes: Array.isArray(promptData.promptTypes) ? promptData.promptTypes : [],
+              promptStyles: Array.isArray(promptData.promptStyles) ? promptData.promptStyles : [],
+              intendedGenerators: Array.isArray(promptData.intendedGenerators) ? promptData.intendedGenerators : [],
+              collectionIds: Array.isArray(promptData.collectionIds) ? promptData.collectionIds : [],
               status: promptData.status || "draft",
               isPublic: promptData.isPublic ?? false,
               version: 1,
