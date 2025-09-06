@@ -219,23 +219,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const allPrompts = await storage.getPrompts({});
       
-      // Extract unique tags and models
+      // Extract unique values for all array and single fields
       const tagsSet = new Set<string>();
       const modelsSet = new Set<string>();
+      const categoriesSet = new Set<string>();
+      const promptTypesSet = new Set<string>();
+      const promptStylesSet = new Set<string>();
+      const intendedGeneratorsSet = new Set<string>();
       
       allPrompts.forEach((prompt: any) => {
+        // Handle existing tags and models arrays
         if (prompt.tags) {
           prompt.tags.forEach((tag: string) => tagsSet.add(tag));
         }
         if (prompt.recommendedModels) {
           prompt.recommendedModels.forEach((model: string) => modelsSet.add(model));
         }
+        
+        // Handle existing single fields (for backward compatibility)
+        if (prompt.category) categoriesSet.add(prompt.category);
+        if (prompt.promptType) promptTypesSet.add(prompt.promptType);
+        if (prompt.promptStyle) promptStylesSet.add(prompt.promptStyle);
+        if (prompt.intendedGenerator) intendedGeneratorsSet.add(prompt.intendedGenerator);
+        
+        // Handle new array fields (when they exist)
+        if (prompt.categories) {
+          prompt.categories.forEach((category: string) => categoriesSet.add(category));
+        }
+        if (prompt.promptTypes) {
+          prompt.promptTypes.forEach((type: string) => promptTypesSet.add(type));
+        }
+        if (prompt.promptStyles) {
+          prompt.promptStyles.forEach((style: string) => promptStylesSet.add(style));
+        }
+        if (prompt.intendedGenerators) {
+          prompt.intendedGenerators.forEach((generator: string) => intendedGeneratorsSet.add(generator));
+        }
       });
       
       const tags = Array.from(tagsSet).sort();
       const models = Array.from(modelsSet).sort();
+      const categories = Array.from(categoriesSet).sort();
+      const promptTypes = Array.from(promptTypesSet).sort();
+      const promptStyles = Array.from(promptStylesSet).sort();
+      const intendedGenerators = Array.from(intendedGeneratorsSet).sort();
       
-      res.json({ tags, models });
+      res.json({ tags, models, categories, promptTypes, promptStyles, intendedGenerators });
     } catch (error) {
       console.error('Error fetching prompt options:', error);
       res.status(500).json({ message: 'Failed to fetch options' });
