@@ -35,18 +35,25 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   const isFavorited = userFavorites.some((fav: any) => fav.id === prompt.id);
   const isLiked = isFavorited;  // Backend uses same table for likes and favorites
   
-  // Get all prompt queries and find the current prompt with fresh data
-  const allQueries = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+  // Build the same query key format as the Library page
+  const buildQueryKey = () => {
+    const params = new URLSearchParams();
+    if (user?.id) params.append("userId", user.id);
+    return `/api/prompts?${params.toString()}`;
+  };
+
+  // Create a reactive subscription to prompt data changes using the correct query key
+  const { data: allPrompts = [] } = useQuery({
+    queryKey: [buildQueryKey()],
+    enabled: !!user,
+    staleTime: 0, // Always fetch fresh data
+  });
+
+  // Find current prompt from the reactive data, fallback to original
   const currentPrompt = useMemo(() => {
-    // Find the prompt in any of the active prompt queries
-    for (const [queryKey, data] of allQueries) {
-      if (Array.isArray(data)) {
-        const foundPrompt = data.find((p: any) => p.id === prompt.id);
-        if (foundPrompt) return foundPrompt;
-      }
-    }
-    return prompt; // fallback to original prompt
-  }, [allQueries, prompt]);
+    const foundPrompt = allPrompts.find((p: any) => p.id === prompt.id);
+    return foundPrompt || prompt;
+  }, [allPrompts, prompt]);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -363,8 +370,11 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousData };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
+      // Delay invalidation slightly to let server process the change
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
+      }, 200);
       toast({
         title: "Success",
         description: data.isPublic ? "Prompt shared publicly!" : "Prompt made private!",
