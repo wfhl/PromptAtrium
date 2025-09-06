@@ -26,31 +26,42 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Use simple state to force re-renders when cache updates
-  const [updateTrigger, setUpdateTrigger] = useState(0);
-  
-  // Use reactive queries to subscribe to data changes
+  // Create a reactive subscription that watches for any prompt data changes
+  const { data: allPrompts = [] } = useQuery({
+    queryKey: ["/api/prompts", "watch", prompt.id], // Unique key for this component
+    queryFn: () => {
+      // Don't actually fetch - just return current cache data
+      const allQueries = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      const allPromptData: any[] = [];
+      
+      for (const [queryKey, data] of allQueries) {
+        if (Array.isArray(data)) {
+          allPromptData.push(...data);
+        }
+      }
+      
+      return allPromptData;
+    },
+    enabled: !!user,
+    staleTime: 0, // Always consider stale to refresh from cache
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Use reactive favorites query
   const { data: userFavorites = [] } = useQuery({
     queryKey: ["/api/user/favorites"],
     enabled: !!user,
   }) as { data: any[] };
   
   const isFavorited = userFavorites.some((fav: any) => fav.id === prompt.id);
-  const isLiked = isFavorited;  // Backend uses same table for likes and favorites
-  
-  // Get the freshest prompt data from any matching query
+  const isLiked = isFavorited;
+
+  // Find current prompt from reactive data
   const currentPrompt = useMemo(() => {
-    const allQueries = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
-    
-    // Find this prompt in any active query
-    for (const [queryKey, data] of allQueries) {
-      if (Array.isArray(data)) {
-        const foundPrompt = data.find((p: any) => p.id === prompt.id);
-        if (foundPrompt) return foundPrompt;
-      }
-    }
-    return prompt; // fallback
-  }, [queryClient, prompt, updateTrigger]); // Include updateTrigger to force re-computation
+    const foundPrompt = allPrompts.find((p: any) => p.id === prompt.id);
+    return foundPrompt || prompt;
+  }, [allPrompts, prompt]);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -91,11 +102,10 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousPromptsData, previousFavoritesData };
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts", "watch", prompt.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
-      // Force component re-render
-      setUpdateTrigger(prev => prev + 1);
       toast({
         title: "Success",
         description: data.liked ? "Prompt liked!" : "Prompt unliked!",
@@ -162,11 +172,10 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousPromptsData, previousFavoritesData };
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts", "watch", prompt.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
-      // Force component re-render
-      setUpdateTrigger(prev => prev + 1);
       toast({
         title: "Success",
         description: data.favorited ? "Prompt bookmarked!" : "Prompt unbookmarked!",
@@ -371,10 +380,10 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousData };
     },
     onSuccess: (data) => {
+      // Invalidate the watch query to trigger re-render
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts", "watch", prompt.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
-      // Force component re-render to pick up fresh data
-      setUpdateTrigger(prev => prev + 1);
       toast({
         title: "Success",
         description: data.isPublic ? "Prompt shared publicly!" : "Prompt made private!",
