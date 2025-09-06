@@ -352,6 +352,10 @@ export const bulkOperationSchema = z.object({
     "draft",
     "makePublic",
     "makePrivate",
+    "like",
+    "unlike",
+    "favorite",
+    "unfavorite",
     "export"
   ]),
   updateData: bulkEditPromptSchema.optional(),
