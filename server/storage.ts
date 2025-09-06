@@ -221,6 +221,11 @@ export class DatabaseStorage implements IStorage {
     status?: string;
     statusNotEqual?: string;
     tags?: string[];
+    categories?: string[];
+    promptTypes?: string[];
+    promptStyles?: string[];
+    intendedGenerators?: string[];
+    collectionIds?: string[];
     search?: string;
     limit?: number;
     offset?: number;
@@ -256,6 +261,27 @@ export class DatabaseStorage implements IStorage {
     
     if (options.tags && options.tags.length > 0) {
       conditions.push(sql`${prompts.tags} && ${options.tags}`);
+    }
+    
+    // Add filtering for new array fields
+    if (options.categories && options.categories.length > 0) {
+      conditions.push(sql`${prompts.categories} && ${options.categories}`);
+    }
+    
+    if (options.promptTypes && options.promptTypes.length > 0) {
+      conditions.push(sql`${prompts.promptTypes} && ${options.promptTypes}`);
+    }
+    
+    if (options.promptStyles && options.promptStyles.length > 0) {
+      conditions.push(sql`${prompts.promptStyles} && ${options.promptStyles}`);
+    }
+    
+    if (options.intendedGenerators && options.intendedGenerators.length > 0) {
+      conditions.push(sql`${prompts.intendedGenerators} && ${options.intendedGenerators}`);
+    }
+    
+    if (options.collectionIds && options.collectionIds.length > 0) {
+      conditions.push(sql`${prompts.collectionIds} && ${options.collectionIds}`);
     }
     
     if (options.search) {
