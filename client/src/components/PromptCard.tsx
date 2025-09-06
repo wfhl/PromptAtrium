@@ -15,6 +15,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -912,8 +913,15 @@ export function PromptCard({
         </div>
 
         {/* Full-width Description Section */}
-        {!isCollapsed && (prompt.description || editingField === 'description') && (
-          <div className="mb-4">
+        <AnimatePresence>
+          {!isCollapsed && (prompt.description || editingField === 'description') && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="mb-4 overflow-hidden"
+            >
             {editingField === 'description' ? (
               <Textarea
                 value={editValue}
@@ -936,8 +944,9 @@ export function PromptCard({
                 {prompt.description}
               </p>
             )}
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Image Gallery */}
         {prompt.exampleImagesUrl && prompt.exampleImagesUrl?.length > 0 && (
@@ -1097,8 +1106,16 @@ export function PromptCard({
           </div>
 
           {/* Row 2: Intended Generator, Recommended Models, Technical Parameters, Variables */}
-          {!isCollapsed && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs" data-testid={`info-row-2-${prompt.id}`}>
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut", delay: 0.1 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs overflow-hidden" 
+                data-testid={`info-row-2-${prompt.id}`}
+              >
             {/* Intended Generator */}
             <div>
               <span className="font-medium text-muted-foreground">Intended Generator:</span>
@@ -1175,12 +1192,21 @@ export function PromptCard({
                 )}
               </div>
             </div>
-          </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Row 3: Notes, Author, and License */}
-          {!isCollapsed && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs" data-testid={`info-row-3-${prompt.id}`}>
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut", delay: 0.2 }}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs overflow-hidden" 
+                data-testid={`info-row-3-${prompt.id}`}
+              >
             {/* Notes */}
             <div>
               <span className="font-medium text-muted-foreground">Notes:</span>
@@ -1245,8 +1271,9 @@ export function PromptCard({
                 )}
               </div>
             </div>
-          </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Image Viewer Modal */}
