@@ -1162,8 +1162,8 @@ export function PromptCard({
                   />
                 ) : prompt.notes ? (
                   <div 
-                    className={`text-xs bg-yellow-50 p-2 rounded border max-h-20 overflow-y-auto ${
-                      canEdit ? 'cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/20' : ''
+                    className={`text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-100 p-3 rounded-md border border-yellow-200 dark:border-yellow-800 max-h-20 overflow-y-auto leading-relaxed ${
+                      canEdit ? 'cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/40 hover:border-yellow-300 dark:hover:border-yellow-700' : ''
                     }`}
                     onDoubleClick={() => startEdit('notes')}
                     title={canEdit ? 'Double-click to edit' : ''}
