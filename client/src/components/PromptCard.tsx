@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown } from "lucide-react";
+import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -47,6 +47,9 @@ export function PromptCard({
   const [editingField, setEditingField] = useState<'name' | 'description' | 'notes' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [originalValue, setOriginalValue] = useState('');
+  
+  // Collapse/expand state
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Separate queries for likes and favorites
   const { data: userFavorites = [] } = useQuery({
