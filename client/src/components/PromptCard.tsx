@@ -26,29 +26,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Create a reactive subscription that watches for any prompt data changes
-  const { data: allPrompts = [] } = useQuery({
-    queryKey: ["/api/prompts", "watch", prompt.id], // Unique key for this component
-    queryFn: () => {
-      // Don't actually fetch - just return current cache data
-      const allQueries = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
-      const allPromptData: any[] = [];
-      
-      for (const [queryKey, data] of allQueries) {
-        if (Array.isArray(data)) {
-          allPromptData.push(...data);
-        }
-      }
-      
-      return allPromptData;
-    },
-    enabled: !!user,
-    staleTime: 0, // Always consider stale to refresh from cache
-    refetchInterval: false,
-    refetchOnWindowFocus: false,
-  });
-
-  // Use reactive favorites query
+  // Simple favorites query for bookmark icon state
   const { data: userFavorites = [] } = useQuery({
     queryKey: ["/api/user/favorites"],
     enabled: !!user,
@@ -56,12 +34,6 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   
   const isFavorited = userFavorites.some((fav: any) => fav.id === prompt.id);
   const isLiked = isFavorited;
-
-  // Find current prompt from reactive data
-  const currentPrompt = useMemo(() => {
-    const foundPrompt = allPrompts.find((p: any) => p.id === prompt.id);
-    return foundPrompt || prompt;
-  }, [allPrompts, prompt]);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -102,7 +74,6 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousPromptsData, previousFavoritesData };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts", "watch", prompt.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
@@ -172,7 +143,6 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousPromptsData, previousFavoritesData };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts", "watch", prompt.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
@@ -380,8 +350,6 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousData };
     },
     onSuccess: (data) => {
-      // Invalidate the watch query to trigger re-render
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts", "watch", prompt.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
       toast({
@@ -513,7 +481,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   variant="outline"
                   size="sm"
                   className={`px-2 py-1 text-xs transition-all ${
-                    currentPrompt.isPublic 
+                    prompt.isPublic 
                       ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 shadow-sm' 
                       : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
                   }`}
@@ -522,7 +490,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   data-testid={`button-visibility-toggle-${prompt.id}`}
                 >
                   <Globe className="h-3 w-3 mr-1" />
-                  {currentPrompt.isPublic ? "Public" : "Private"}
+                  {prompt.isPublic ? "Public" : "Private"}
                 </Button>
               ) : (
                 <Badge 
@@ -531,7 +499,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   data-testid={`badge-visibility-${prompt.id}`}
                 >
                   <Globe className="h-3 w-3 mr-1" />
-                  {currentPrompt.isPublic ? "Public" : "Private"}
+                  {prompt.isPublic ? "Public" : "Private"}
                 </Badge>
               )}
               {prompt.category && (
