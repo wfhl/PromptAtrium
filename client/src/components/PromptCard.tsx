@@ -843,7 +843,11 @@ export function PromptCard({
               <span className="font-medium text-muted-foreground">Creator:</span>
               <div className="mt-1">
                 <Badge variant="outline" className="text-xs">
-                  {prompt.author || 'Anonymous'}
+                  {(prompt as any).user?.firstName && (prompt as any).user?.lastName 
+                    ? `${(prompt as any).user.firstName} ${(prompt as any).user.lastName}`
+                    : (prompt as any).user?.email 
+                    ? (prompt as any).user.email
+                    : `User ${prompt.userId.slice(-6)}`}
                 </Badge>
               </div>
             </div>
@@ -994,8 +998,8 @@ export function PromptCard({
             </div>
           </div>
 
-          {/* Row 3: Notes and License */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs" data-testid={`info-row-3-${prompt.id}`}>
+          {/* Row 3: Notes, Author, and License */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs" data-testid={`info-row-3-${prompt.id}`}>
             {/* Notes */}
             <div>
               <span className="font-medium text-muted-foreground">Notes:</span>
@@ -1007,6 +1011,16 @@ export function PromptCard({
                 ) : (
                   <span className="text-muted-foreground text-xs">No notes</span>
                 )}
+              </div>
+            </div>
+
+            {/* Author */}
+            <div>
+              <span className="font-medium text-muted-foreground">Author:</span>
+              <div className="mt-1">
+                <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
+                  {prompt.author || 'Not specified'}
+                </Badge>
               </div>
             </div>
 
