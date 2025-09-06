@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Star, GitBranch, Eye, Edit, Share, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,9 +18,20 @@ interface PromptCardProps {
   prompt: Prompt;
   showActions?: boolean;
   onEdit?: (prompt: Prompt) => void;
+  // Multi-select functionality
+  isSelectable?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (promptId: string, selected: boolean) => void;
 }
 
-export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardProps) {
+export function PromptCard({ 
+  prompt, 
+  showActions = false, 
+  onEdit,
+  isSelectable = false,
+  isSelected = false,
+  onSelectionChange
+}: PromptCardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -493,11 +505,28 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow" data-testid={`card-prompt-${prompt.id}`}>
+    <Card className={`hover:shadow-md transition-all duration-200 ${
+      isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
+    } ${isSelectable ? 'cursor-pointer' : ''}`} 
+    data-testid={`card-prompt-${prompt.id}`}
+    onClick={isSelectable ? (e) => {
+      // Don't trigger selection if clicking on interactive elements
+      if ((e.target as HTMLElement).closest('button, a, [role="button"]')) return;
+      onSelectionChange?.(prompt.id, !isSelected);
+    } : undefined}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
+              {isSelectable && (
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onSelectionChange?.(prompt.id, checked as boolean)}
+                  data-testid={`checkbox-select-${prompt.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
               <h3 className="font-semibold text-foreground flex-1 min-w-0" data-testid={`text-prompt-name-${prompt.id}`}>
                 {prompt.name}
               </h3>
