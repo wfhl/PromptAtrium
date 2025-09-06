@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema } from "@shared/schema";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -398,6 +398,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error during bulk import:", error);
       res.status(500).json({ message: "Failed to process bulk import" });
+    }
+  });
+
+  // Bulk operations endpoint
+  app.post('/api/prompts/bulk-operations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Validate request body
+      const validatedData = bulkOperationSchema.parse(req.body);
+      const { promptIds, operation, updateData } = validatedData;
+
+      // Initialize result tracking
+      const result = {
+        total: promptIds.length,
+        success: 0,
+        failed: 0,
+        errors: [] as Array<{ promptId: string; error: string }>,
+        results: [] as Array<{ promptId: string; success: boolean; error?: string }>
+      };
+
+      // Verify user owns all prompts before making any changes
+      const ownedPrompts = await storage.getUserPrompts(userId, { promptIds });
+      const ownedPromptIds = new Set(ownedPrompts.map(p => p.id));
+      
+      const unauthorizedPrompts = promptIds.filter(id => !ownedPromptIds.has(id));
+      if (unauthorizedPrompts.length > 0) {
+        return res.status(403).json({ 
+          message: "Not authorized to modify some prompts",
+          unauthorizedPrompts 
+        });
+      }
+
+      // Process each prompt
+      for (const promptId of promptIds) {
+        try {
+          let success = false;
+          
+          switch (operation) {
+            case "update":
+              if (updateData) {
+                await storage.updatePrompt(promptId, updateData);
+                success = true;
+              }
+              break;
+              
+            case "delete":
+              await storage.deletePrompt(promptId);
+              success = true;
+              break;
+              
+            case "archive":
+              await storage.updatePrompt(promptId, { status: "archived" });
+              success = true;
+              break;
+              
+            case "unarchive":
+              await storage.updatePrompt(promptId, { status: "published" });
+              success = true;
+              break;
+              
+            case "publish":
+              await storage.updatePrompt(promptId, { status: "published" });
+              success = true;
+              break;
+              
+            case "draft":
+              await storage.updatePrompt(promptId, { status: "draft" });
+              success = true;
+              break;
+              
+            case "makePublic":
+              await storage.updatePrompt(promptId, { isPublic: true });
+              success = true;
+              break;
+              
+            case "makePrivate":
+              await storage.updatePrompt(promptId, { isPublic: false });
+              success = true;
+              break;
+              
+            case "like":
+              await storage.toggleLike(userId, promptId);
+              success = true;
+              break;
+              
+            case "unlike":
+              // Force unlike by checking current state
+              const isCurrentlyLiked = await storage.checkIfLiked(userId, promptId);
+              if (isCurrentlyLiked) {
+                await storage.toggleLike(userId, promptId);
+              }
+              success = true;
+              break;
+              
+            case "favorite":
+              await storage.toggleFavorite(userId, promptId);
+              success = true;
+              break;
+              
+            case "unfavorite":
+              // Force unfavorite by checking current state
+              const isCurrentlyFavorited = await storage.checkIfFavorited(userId, promptId);
+              if (isCurrentlyFavorited) {
+                await storage.toggleFavorite(userId, promptId);
+              }
+              success = true;
+              break;
+              
+            case "export":
+              // Export is handled client-side, just mark as success
+              success = true;
+              break;
+              
+            default:
+              throw new Error(`Unsupported operation: ${operation}`);
+          }
+          
+          if (success) {
+            result.success++;
+            result.results.push({ promptId, success: true });
+          }
+          
+        } catch (error) {
+          result.failed++;
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          result.errors.push({ promptId, error: errorMessage });
+          result.results.push({ promptId, success: false, error: errorMessage });
+        }
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error during bulk operation:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid bulk operation data", 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to process bulk operation" });
     }
   });
 
