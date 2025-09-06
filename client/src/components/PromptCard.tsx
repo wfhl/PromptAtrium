@@ -215,7 +215,13 @@ export function PromptCard({
       await apiRequest("POST", `/api/prompts/${prompt.id}/fork`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      // Invalidate all prompt-related queries to ensure immediate UI updates
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/prompts');
+        }
+      });
       toast({
         title: "Success",
         description: "Prompt forked successfully!",
@@ -261,7 +267,13 @@ export function PromptCard({
       return { previousData };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      // Invalidate all prompt-related queries to ensure immediate UI updates
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/prompts');
+        }
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: "Success",

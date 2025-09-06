@@ -164,10 +164,8 @@ export function PromptImageUploader({
 
       // Update parent component with all current image URLs
       setImages(currentImages => {
-        const allUrls = [...new Set([
-          ...currentImages.filter(img => !img.uploading && (!img.file || img.url.startsWith('http'))).map(img => img.url),
-          ...uploadedUrls
-        ])];
+        const existingUrls = currentImages.filter(img => !img.uploading && (!img.file || img.url.startsWith('http'))).map(img => img.url);
+        const allUrls = Array.from(new Set([...existingUrls, ...uploadedUrls]));
         onImagesUpdate?.(allUrls);
         return currentImages;
       });

@@ -169,7 +169,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
       await apiRequest("POST", "/api/prompts", payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      // Invalidate all prompt-related queries to ensure immediate UI updates
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/prompts');
+        }
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: "Success",
@@ -228,7 +234,12 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
     },
     onSuccess: () => {
       // Invalidate all prompt-related queries to ensure immediate UI updates
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/prompts');
+        }
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
