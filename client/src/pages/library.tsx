@@ -47,10 +47,16 @@ export default function Library() {
     // Handle status filtering based on active tab
     if (activeTab === "archive") {
       params.append("status", "archived");
-    } else if (statusFilter === "published") {
-      params.append("status", "published");
-    } else if (statusFilter === "draft") {
-      params.append("status", "draft");
+    } else {
+      // For "prompts" tab, explicitly exclude archived prompts
+      if (statusFilter === "published") {
+        params.append("status", "published");
+      } else if (statusFilter === "draft") {
+        params.append("status", "draft");
+      } else {
+        // Default: show both published and draft, but NOT archived
+        params.append("statusNotEqual", "archived");
+      }
     }
     
     params.append("limit", "20");

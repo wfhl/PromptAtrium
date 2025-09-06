@@ -215,6 +215,8 @@ export class DatabaseStorage implements IStorage {
     isPublic?: boolean;
     isFeatured?: boolean;
     category?: string;
+    status?: string;
+    statusNotEqual?: string;
     tags?: string[];
     search?: string;
     limit?: number;
@@ -238,6 +240,14 @@ export class DatabaseStorage implements IStorage {
     
     if (options.category) {
       conditions.push(eq(prompts.category, options.category));
+    }
+    
+    if (options.status) {
+      conditions.push(eq(prompts.status, options.status));
+    }
+    
+    if (options.statusNotEqual) {
+      conditions.push(sql`${prompts.status} != ${options.statusNotEqual}`);
     }
     
     if (options.tags && options.tags.length > 0) {

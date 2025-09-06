@@ -221,17 +221,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPublic,
         isFeatured,
         category,
+        status,
+        statusNotEqual,
         tags,
         search,
         limit = "20",
         offset = "0"
       } = req.query;
 
-      const options = {
+      const options: any = {
         userId: userId as string,
         isPublic: isPublic === "true" ? true : isPublic === "false" ? false : undefined,
         isFeatured: isFeatured === "true",
         category: category as string,
+        status: status as string,
+        statusNotEqual: statusNotEqual as string,
         tags: tags ? (tags as string).split(",") : undefined,
         search: search as string,
         limit: parseInt(limit as string),

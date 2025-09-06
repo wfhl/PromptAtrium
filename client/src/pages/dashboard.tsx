@@ -41,9 +41,9 @@ export default function Dashboard() {
     retry: false,
   });
 
-  // Fetch user's recent prompts
+  // Fetch user's recent prompts (exclude archived)
   const { data: userPrompts = [] } = useQuery<Prompt[]>({
-    queryKey: [`/api/prompts?userId=${user?.id}&limit=3`],
+    queryKey: [`/api/prompts?userId=${user?.id}&limit=3&statusNotEqual=archived`],
     enabled: isAuthenticated && !!user,
     retry: false,
   });
