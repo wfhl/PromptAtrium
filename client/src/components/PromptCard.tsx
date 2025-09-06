@@ -862,6 +862,10 @@ export function PromptCard({
                       {type}
                     </Badge>
                   ))
+                ) : prompt.promptType ? (
+                  <Badge variant="secondary" className="text-xs">
+                    {prompt.promptType}
+                  </Badge>
                 ) : (
                   <span className="text-muted-foreground text-xs">None</span>
                 )}
@@ -878,6 +882,10 @@ export function PromptCard({
                       {style}
                     </Badge>
                   ))
+                ) : prompt.promptStyle ? (
+                  <Badge variant="secondary" className="text-xs">
+                    {prompt.promptStyle}
+                  </Badge>
                 ) : (
                   <span className="text-muted-foreground text-xs">None</span>
                 )}
@@ -894,6 +902,10 @@ export function PromptCard({
                       {category}
                     </Badge>
                   ))
+                ) : prompt.category ? (
+                  <Badge variant="outline" className="text-xs">
+                    {prompt.category}
+                  </Badge>
                 ) : (
                   <span className="text-muted-foreground text-xs">None</span>
                 )}
@@ -934,6 +946,10 @@ export function PromptCard({
                       {generator}
                     </Badge>
                   ))
+                ) : prompt.intendedGenerator ? (
+                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                    {prompt.intendedGenerator}
+                  </Badge>
                 ) : (
                   <span className="text-muted-foreground text-xs">Any</span>
                 )}
