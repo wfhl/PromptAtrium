@@ -834,6 +834,198 @@ export function PromptCard({
           </Button>
         </div>
 
+        {/* Additional Prompt Information */}
+        <div className="mt-4 space-y-3" data-testid={`additional-info-${prompt.id}`}>
+          {/* Row 1: User, Types, Styles, Categories, Tags */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs" data-testid={`info-row-1-${prompt.id}`}>
+            {/* User who created/shared */}
+            <div>
+              <span className="font-medium text-muted-foreground">Creator:</span>
+              <div className="mt-1">
+                <Badge variant="outline" className="text-xs">
+                  {prompt.author || 'Anonymous'}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Prompt Types */}
+            <div>
+              <span className="font-medium text-muted-foreground">Types:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {prompt.promptTypes && prompt.promptTypes.length > 0 ? (
+                  prompt.promptTypes.map((type, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {type}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-muted-foreground text-xs">None</span>
+                )}
+              </div>
+            </div>
+
+            {/* Prompt Styles */}
+            <div>
+              <span className="font-medium text-muted-foreground">Styles:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {prompt.promptStyles && prompt.promptStyles.length > 0 ? (
+                  prompt.promptStyles.map((style, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {style}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-muted-foreground text-xs">None</span>
+                )}
+              </div>
+            </div>
+
+            {/* Prompt Categories */}
+            <div>
+              <span className="font-medium text-muted-foreground">Categories:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {prompt.categories && prompt.categories.length > 0 ? (
+                  prompt.categories.map((category, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {category}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-muted-foreground text-xs">None</span>
+                )}
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <span className="font-medium text-muted-foreground">Tags:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {prompt.tags && prompt.tags.length > 0 ? (
+                  prompt.tags.slice(0, 3).map((tag, index) => (
+                    <Badge key={index} variant="default" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-muted-foreground text-xs">None</span>
+                )}
+                {prompt.tags && prompt.tags.length > 3 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{prompt.tags.length - 3}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Intended Generator, Recommended Models, Technical Parameters, Variables */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs" data-testid={`info-row-2-${prompt.id}`}>
+            {/* Intended Generator */}
+            <div>
+              <span className="font-medium text-muted-foreground">Intended Generator:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {prompt.intendedGenerators && prompt.intendedGenerators.length > 0 ? (
+                  prompt.intendedGenerators.map((generator, index) => (
+                    <Badge key={index} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      {generator}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-muted-foreground text-xs">Any</span>
+                )}
+              </div>
+            </div>
+
+            {/* Recommended Models */}
+            <div>
+              <span className="font-medium text-muted-foreground">Recommended Models:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {prompt.recommendedModels && prompt.recommendedModels.length > 0 ? (
+                  prompt.recommendedModels.slice(0, 2).map((model, index) => (
+                    <Badge key={index} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      {model}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-muted-foreground text-xs">Any</span>
+                )}
+                {prompt.recommendedModels && prompt.recommendedModels.length > 2 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{prompt.recommendedModels.length - 2}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Technical Parameters */}
+            <div>
+              <span className="font-medium text-muted-foreground">Technical Parameters:</span>
+              <div className="mt-1">
+                {prompt.technicalParams && Object.keys(prompt.technicalParams as object).length > 0 ? (
+                  <div className="text-xs bg-gray-50 p-2 rounded border font-mono max-h-16 overflow-y-auto">
+                    {Object.entries(prompt.technicalParams as object).map(([key, value]) => (
+                      <div key={key} className="truncate">
+                        <span className="text-gray-600">{key}:</span> {String(value)}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-xs">None specified</span>
+                )}
+              </div>
+            </div>
+
+            {/* Variables */}
+            <div>
+              <span className="font-medium text-muted-foreground">Variables:</span>
+              <div className="mt-1">
+                {prompt.variables && Object.keys(prompt.variables as object).length > 0 ? (
+                  <div className="text-xs bg-purple-50 p-2 rounded border font-mono max-h-16 overflow-y-auto">
+                    {Object.entries(prompt.variables as object).map(([key, value]) => (
+                      <div key={key} className="truncate">
+                        <span className="text-purple-600">{key}:</span> {String(value)}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-xs">None specified</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3: Notes and License */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs" data-testid={`info-row-3-${prompt.id}`}>
+            {/* Notes */}
+            <div>
+              <span className="font-medium text-muted-foreground">Notes:</span>
+              <div className="mt-1">
+                {prompt.notes ? (
+                  <div className="text-xs bg-yellow-50 p-2 rounded border max-h-20 overflow-y-auto">
+                    {prompt.notes}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-xs">No notes</span>
+                )}
+              </div>
+            </div>
+
+            {/* License */}
+            <div>
+              <span className="font-medium text-muted-foreground">License:</span>
+              <div className="mt-1">
+                {prompt.license ? (
+                  <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                    {prompt.license}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-xs">Not specified</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Image Viewer Modal */}
         <Dialog open={selectedImage !== null} onOpenChange={() => setSelectedImage(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] p-0" data-testid={`modal-image-viewer-${prompt.id}`}>
