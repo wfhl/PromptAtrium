@@ -32,6 +32,9 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   // For likes, since the backend uses the same table for likes and favorites,
   // we'll use the same detection method
   const isLiked = isFavorited;
+  
+  // Force component re-render when prompt data changes
+  const currentPrompt = queryClient.getQueryData(["/api/prompts"])?.find?.((p: any) => p.id === prompt.id) || prompt;
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -348,8 +351,11 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return { previousData };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
+      // Don't immediately invalidate - let the optimistic update show first
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
+        queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
+      }, 100);
       toast({
         title: "Success",
         description: data.isPublic ? "Prompt shared publicly!" : "Prompt made private!",
@@ -479,7 +485,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   variant="outline"
                   size="sm"
                   className={`px-2 py-1 text-xs transition-all ${
-                    prompt.isPublic 
+                    currentPrompt.isPublic 
                       ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 shadow-sm' 
                       : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
                   }`}
@@ -488,16 +494,16 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   data-testid={`button-visibility-toggle-${prompt.id}`}
                 >
                   <Globe className="h-3 w-3 mr-1" />
-                  {prompt.isPublic ? "Public" : "Private"}
+                  {currentPrompt.isPublic ? "Public" : "Private"}
                 </Button>
               ) : (
                 <Badge 
-                  variant={prompt.isPublic ? "default" : "secondary"} 
-                  className={prompt.isPublic ? "bg-blue-500" : ""}
+                  variant={currentPrompt.isPublic ? "default" : "secondary"} 
+                  className={currentPrompt.isPublic ? "bg-blue-500" : ""}
                   data-testid={`badge-visibility-${prompt.id}`}
                 >
                   <Globe className="h-3 w-3 mr-1" />
-                  {prompt.isPublic ? "Public" : "Private"}
+                  {currentPrompt.isPublic ? "Public" : "Private"}
                 </Badge>
               )}
               {prompt.category && (
