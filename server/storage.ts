@@ -43,7 +43,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  updateUser(id: string, userData: Partial<InsertUser>): Promise<User>;
+  updateUser(id: string, userData: Partial<User>): Promise<User>;
   
   // Prompt operations
   getPrompts(options?: {
@@ -156,7 +156,7 @@ export class DatabaseStorage implements IStorage {
 
   async upsertUser(userData: UpsertUser): Promise<User> {
     // Check if user exists before upserting
-    const existingUser = await this.getUser(userData.id);
+    const existingUser = userData.id ? await this.getUser(userData.id) : null;
     const isNewUser = !existingUser;
 
     const [user] = await db
@@ -192,7 +192,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: string, userData: Partial<InsertUser>): Promise<User> {
+  async updateUser(id: string, userData: Partial<User>): Promise<User> {
     const [user] = await db
       .update(users)
       .set({
@@ -278,7 +278,7 @@ export class DatabaseStorage implements IStorage {
       query = query.offset(options.offset);
     }
     
-    return await query;
+    return await query.execute();
   }
 
   async getPrompt(id: string): Promise<Prompt | undefined> {
@@ -322,24 +322,24 @@ export class DatabaseStorage implements IStorage {
       negativePrompt: originalPrompt.negativePrompt,
       promptType: originalPrompt.promptType,
       promptStyle: originalPrompt.promptStyle,
-      tags: originalPrompt.tags,
-      tagsNormalized: originalPrompt.tagsNormalized,
+      tags: originalPrompt.tags || [],
+      tagsNormalized: originalPrompt.tagsNormalized || [],
       isPublic: false,
       isFeatured: false,
-      status: "draft",
-      exampleImagesUrl: originalPrompt.exampleImagesUrl,
+      status: "draft" as const,
+      exampleImagesUrl: originalPrompt.exampleImagesUrl || [],
       notes: originalPrompt.notes,
       author: originalPrompt.author,
       sourceUrl: originalPrompt.sourceUrl,
       version: 1,
       forkOf: originalPrompt.id,
       intendedGenerator: originalPrompt.intendedGenerator,
-      recommendedModels: originalPrompt.recommendedModels,
+      recommendedModels: originalPrompt.recommendedModels || [],
       technicalParams: originalPrompt.technicalParams,
       variables: originalPrompt.variables,
       projectId: originalPrompt.projectId,
       collectionId: null,
-      relatedPrompts: originalPrompt.relatedPrompts,
+      relatedPrompts: originalPrompt.relatedPrompts || [],
       license: originalPrompt.license,
       userId,
     };
@@ -435,6 +435,7 @@ export class DatabaseStorage implements IStorage {
         name: communities.name,
         description: communities.description,
         slug: communities.slug,
+        imageUrl: communities.imageUrl,
         isActive: communities.isActive,
         createdAt: communities.createdAt,
         updatedAt: communities.updatedAt,

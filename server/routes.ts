@@ -15,7 +15,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -27,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile routes
   app.put('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       
       // Validate request body
       const validatedData = insertUserSchema.partial().parse(req.body);
@@ -80,7 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Only return profile if it's public or user is viewing their own profile
-      const currentUserId = req.user?.claims?.sub;
+      const currentUserId = (req.user as any)?.claims?.sub;
       if (user.profileVisibility === 'private' && currentUserId !== user.id) {
         return res.status(403).json({ message: "Profile is private" });
       }
@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Object Storage routes
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req, res) => {
     // Gets the authenticated user id.
-    const userId = req.user?.claims?.sub;
+    const userId = (req.user as any)?.claims?.sub;
     const objectStorageService = new ObjectStorageService();
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(
@@ -157,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Gets the authenticated user id.
-    const userId = req.user?.claims?.sub;
+    const userId = (req.user as any)?.claims?.sub;
 
     try {
       const objectStorageService = new ObjectStorageService();
@@ -191,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Gets the authenticated user id.
-    const userId = req.user?.claims?.sub;
+    const userId = (req.user as any)?.claims?.sub;
 
     try {
       const objectStorageService = new ObjectStorageService();
@@ -265,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/prompts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const promptData = insertPromptSchema.parse({ ...req.body, userId });
       const prompt = await storage.createPrompt(promptData);
       res.status(201).json(prompt);
@@ -280,7 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/prompts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const prompt = await storage.getPrompt(req.params.id);
       
       if (!prompt) {
@@ -305,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/prompts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const prompt = await storage.getPrompt(req.params.id);
       
       if (!prompt) {
@@ -326,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/prompts/:id/fork', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const forkedPrompt = await storage.forkPrompt(req.params.id, userId);
       res.status(201).json(forkedPrompt);
     } catch (error) {
@@ -337,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/prompts/bulk-import', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const { prompts } = req.body;
 
       if (!Array.isArray(prompts) || prompts.length === 0) {
@@ -404,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Community routes
   app.post('/api/prompts/:id/like', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const isLiked = await storage.toggleLike(userId, req.params.id);
       res.json({ liked: isLiked });
     } catch (error) {
@@ -415,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/prompts/:id/favorite', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const isFavorited = await storage.toggleFavorite(userId, req.params.id);
       res.json({ favorited: isFavorited });
     } catch (error) {
@@ -426,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user/favorites', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const favorites = await storage.getUserFavorites(userId);
       
       // Get the full prompt details for each favorite
@@ -447,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user/likes', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const likes = await storage.getUserLikes(userId);
       
       // Get the full prompt details for each liked prompt
@@ -468,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/prompts/:id/rate', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const ratingData = insertPromptRatingSchema.parse({
         ...req.body,
         userId,
@@ -488,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Archive/unarchive prompt
   app.post('/api/prompts/:id/archive', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const prompt = await storage.getPrompt(req.params.id);
       
       if (!prompt || prompt.userId !== userId) {
@@ -508,7 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Toggle public/private status
   app.post('/api/prompts/:id/visibility', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const prompt = await storage.getPrompt(req.params.id);
       
       if (!prompt || prompt.userId !== userId) {
@@ -528,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project routes
   app.get('/api/projects', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const projects = await storage.getProjects(userId);
       res.json(projects);
     } catch (error) {
@@ -539,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/projects', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const projectData = insertProjectSchema.parse({ ...req.body, ownerId: userId });
       const project = await storage.createProject(projectData);
       res.status(201).json(project);
@@ -555,7 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Collection routes
   app.get('/api/collections', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const { communityId, type } = req.query;
       
       const options: any = {};
@@ -576,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/collections', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const collectionData = insertCollectionSchema.parse({ ...req.body, userId });
       const collection = await storage.createCollection(collectionData);
       res.status(201).json(collection);
@@ -591,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/collections/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const collection = await storage.getCollection(req.params.id);
       
       if (!collection) {
@@ -621,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/collections/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const collection = await storage.getCollection(req.params.id);
       
       if (!collection) {
@@ -648,7 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User stats
   app.get('/api/user/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const stats = await storage.getUserStats(userId);
       res.json(stats);
     } catch (error) {
@@ -671,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get communities managed by the current user (community admin)
   app.get('/api/communities/managed', requireCommunityAdminRole(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const communities = await storage.getManagedCommunities(userId);
       res.json(communities);
     } catch (error) {
@@ -734,7 +734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Community membership routes
   app.post('/api/communities/:communityId/join', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const { communityId } = req.params;
       
       // Check if already a member
@@ -753,7 +753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/communities/:communityId/leave', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const { communityId } = req.params;
       
       await storage.leaveCommunity(userId, communityId);
@@ -795,7 +795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's communities
   app.get('/api/user/communities', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const communities = await storage.getUserCommunities(userId);
       res.json(communities);
     } catch (error) {
@@ -1080,7 +1080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/invites/:code/accept', isAuthenticated, async (req: any, res) => {
     try {
       const { code } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       
       const invite = await storage.getInviteByCode(code);
       if (!invite) {

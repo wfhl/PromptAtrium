@@ -140,8 +140,6 @@ export const prompts = pgTable("prompts", {
   name: varchar("name").notNull(),
   description: text("description"),
   category: varchar("category"),
-  promptContent: text("prompt_content").notNull(),
-  negativePrompt: text("negative_prompt"),
   promptType: varchar("prompt_type"),
   promptStyle: varchar("prompt_style"),
   tags: text("tags").array(),
@@ -154,7 +152,7 @@ export const prompts = pgTable("prompts", {
   author: varchar("author"),
   sourceUrl: varchar("source_url"),
   version: integer("version").default(1),
-  forkOf: char("fork_of", { length: 10 }).references(() => prompts.id),
+  forkOf: char("fork_of", { length: 10 }),
   usageCount: integer("usage_count").default(0),
   likes: integer("likes").default(0),
   qualityScore: decimal("quality_score", { precision: 3, scale: 2 }).default("0.00"),
@@ -170,6 +168,8 @@ export const prompts = pgTable("prompts", {
   userId: varchar("user_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  promptContent: text("prompt_content").notNull(),
+  negativePrompt: text("negative_prompt"),
 });
 
 // Prompt likes table - tracks individual likes/hearts
@@ -227,9 +227,11 @@ export const promptsRelations = relations(prompts, ({ one, many }) => ({
   user: one(users, { fields: [prompts.userId], references: [users.id] }),
   project: one(projects, { fields: [prompts.projectId], references: [projects.id] }),
   collection: one(collections, { fields: [prompts.collectionId], references: [collections.id] }),
-  parentPrompt: one(prompts, { fields: [prompts.forkOf], references: [prompts.id] }),
+  parentPrompt: one(prompts, { fields: [prompts.forkOf], references: [prompts.id], relationName: "promptForks" }),
+  childPrompts: many(prompts, { relationName: "promptForks" }),
   favorites: many(promptFavorites),
   ratings: many(promptRatings),
+  likes: many(promptLikes),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -322,6 +324,54 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
+// Bulk edit schemas - only fields that can be bulk edited
+export const bulkEditPromptSchema = z.object({
+  // Fields that can be bulk edited
+  category: z.string().optional(),
+  promptType: z.string().optional(),
+  promptStyle: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  isPublic: z.boolean().optional(),
+  status: z.enum(["draft", "published", "archived"]).optional(),
+  collectionId: z.string().nullable().optional(),
+  license: z.string().optional(),
+  intendedGenerator: z.string().optional(),
+  recommendedModels: z.array(z.string()).optional(),
+  // Fields that will be auto-updated
+  updatedAt: z.date().optional(),
+});
+
+export const bulkOperationSchema = z.object({
+  promptIds: z.array(z.string()).min(1, "At least one prompt must be selected"),
+  operation: z.enum([
+    "update",
+    "delete", 
+    "archive",
+    "unarchive",
+    "publish",
+    "draft",
+    "makePublic",
+    "makePrivate",
+    "export"
+  ]),
+  updateData: bulkEditPromptSchema.optional(),
+});
+
+export const bulkOperationResultSchema = z.object({
+  total: z.number(),
+  success: z.number(),
+  failed: z.number(),
+  errors: z.array(z.object({
+    promptId: z.string(),
+    error: z.string(),
+  })),
+  results: z.array(z.object({
+    promptId: z.string(),
+    success: z.boolean(),
+    error: z.string().optional(),
+  })),
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -344,6 +394,12 @@ export type InsertPromptRating = z.infer<typeof insertPromptRatingSchema>;
 export type PromptRating = typeof promptRatings.$inferSelect;
 export type PromptLike = typeof promptLikes.$inferSelect;
 export type PromptFavorite = typeof promptFavorites.$inferSelect;
+
+// Bulk operation types
+export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;
+export type BulkOperation = z.infer<typeof bulkOperationSchema>;
+export type BulkOperationResult = z.infer<typeof bulkOperationResultSchema>;
+export type BulkOperationType = BulkOperation["operation"];
 
 // User role types
 export type UserRole = "user" | "community_admin" | "super_admin";
