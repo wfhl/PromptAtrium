@@ -39,10 +39,15 @@ export function PromptImageUploader({
 
   // Sync with currentImages prop changes (important for edit mode)
   useEffect(() => {
-    setImages(currentImages.map((url, index) => ({
-      id: `existing-${index}`,
-      url
-    })));
+    // Use setTimeout to avoid updating state during render
+    const timeoutId = setTimeout(() => {
+      setImages(currentImages.map((url, index) => ({
+        id: `existing-${index}`,
+        url
+      })));
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [currentImages]);
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,6 +123,9 @@ export function PromptImageUploader({
         try {
           // Get upload URL from backend
           const uploadResponse = await apiRequest("POST", "/api/objects/upload");
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to get upload URL: ${uploadResponse.status} ${uploadResponse.statusText}`);
+          }
           const { uploadURL } = await uploadResponse.json();
 
           // Upload image to object storage
@@ -130,13 +138,17 @@ export function PromptImageUploader({
           });
 
           if (!uploadResult.ok) {
-            throw new Error('Failed to upload image');
+            throw new Error(`Failed to upload image to storage: ${uploadResult.status} ${uploadResult.statusText}`);
           }
 
           // Set ACL policy for the uploaded image
           const updateResponse = await apiRequest("PUT", "/api/prompt-images", {
             imageUrl: uploadURL,
           });
+
+          if (!updateResponse.ok) {
+            throw new Error(`Failed to set ACL policy: ${updateResponse.status} ${updateResponse.statusText}`);
+          }
 
           const { objectPath } = await updateResponse.json();
           uploadedUrls.push(objectPath);
@@ -154,9 +166,13 @@ export function PromptImageUploader({
           // Remove failed upload from state
           setImages(prev => prev.filter(img => img.id !== imageItem.id));
           
+          const errorMessage = error instanceof Error 
+            ? error.message 
+            : "Network error occurred during upload";
+          
           toast({
             title: "Upload failed",
-            description: error instanceof Error ? error.message : "Failed to upload image",
+            description: errorMessage,
             variant: "destructive",
           });
         }
