@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,19 +8,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Lightbulb, Plus, Search, Filter } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
+import { BulkEditToolbar } from "@/components/BulkEditToolbar";
+import { BulkEditModal } from "@/components/BulkEditModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Prompt, User } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import type { Prompt, User, BulkOperationType, BulkEditPrompt } from "@shared/schema";
 
 export default function Library() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"prompts" | "favorites" | "archive">("prompts");
+  
+  // Bulk editing state
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [selectedPromptIds, setSelectedPromptIds] = useState<Set<string>>(new Set());
+  const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -85,6 +94,122 @@ export default function Library() {
   const handleEditPrompt = (prompt: Prompt) => {
     setEditingPrompt(prompt);
     setPromptModalOpen(true);
+  };
+
+  // Bulk editing handlers
+  const handleSelectionChange = (promptId: string, selected: boolean) => {
+    setSelectedPromptIds(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(promptId);
+      } else {
+        newSet.delete(promptId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const currentPrompts = activeTab === "favorites" ? favoritePrompts : prompts;
+    setSelectedPromptIds(new Set(currentPrompts.map(p => p.id)));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedPromptIds(new Set());
+  };
+
+  const handleToggleBulkMode = () => {
+    setIsBulkMode(!isBulkMode);
+    setSelectedPromptIds(new Set());
+  };
+
+  // Clear selection when switching tabs
+  useEffect(() => {
+    setSelectedPromptIds(new Set());
+    setIsBulkMode(false);
+  }, [activeTab]);
+
+  // Bulk operations mutation
+  const bulkOperationMutation = useMutation({
+    mutationFn: async ({ operation, updateData }: { operation: BulkOperationType; updateData?: BulkEditPrompt }) => {
+      const response = await apiRequest("POST", "/api/prompts/bulk-operations", {
+        promptIds: Array.from(selectedPromptIds),
+        operation,
+        updateData,
+      });
+      return response.json();
+    },
+    onSuccess: (result) => {
+      // Invalidate all prompt queries to refresh data
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user");
+        }
+      });
+      
+      toast({
+        title: "Bulk Operation Complete",
+        description: `${result.success} of ${result.total} prompts updated successfully${result.failed > 0 ? `. ${result.failed} failed.` : '.'}`,
+        variant: result.failed > 0 ? "destructive" : "default",
+      });
+      
+      setSelectedPromptIds(new Set());
+      setBulkEditModalOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Bulk Operation Failed",
+        description: "Failed to perform bulk operation. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBulkOperation = (operation: BulkOperationType) => {
+    if (operation === "update") {
+      setBulkEditModalOpen(true);
+    } else if (operation === "export") {
+      handleBulkExport();
+    } else {
+      bulkOperationMutation.mutate({ operation });
+    }
+  };
+
+  const handleBulkEdit = (updateData: BulkEditPrompt) => {
+    bulkOperationMutation.mutate({ operation: "update", updateData });
+  };
+
+  const handleBulkExport = () => {
+    const currentPrompts = activeTab === "favorites" ? favoritePrompts : prompts;
+    const selectedPrompts = currentPrompts.filter(p => selectedPromptIds.has(p.id));
+    
+    const exportData = selectedPrompts.map(prompt => ({
+      name: prompt.name,
+      description: prompt.description,
+      content: prompt.promptContent,
+      category: prompt.category,
+      tags: prompt.tags,
+      promptType: prompt.promptType,
+      promptStyle: prompt.promptStyle,
+      license: prompt.license,
+      created: prompt.createdAt,
+    }));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prompts-export-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Complete",
+      description: `${selectedPrompts.length} prompts exported successfully`,
+    });
   };
 
   if (isLoading) {
@@ -198,6 +323,18 @@ export default function Library() {
           </CardContent>
         </Card>
 
+        {/* Bulk Edit Toolbar */}
+        <BulkEditToolbar
+          selectedCount={selectedPromptIds.size}
+          totalCount={activeTab === "favorites" ? favoritePrompts.length : prompts.length}
+          onSelectAll={handleSelectAll}
+          onClearSelection={handleClearSelection}
+          onBulkOperation={handleBulkOperation}
+          onToggleBulkMode={handleToggleBulkMode}
+          isBulkMode={isBulkMode}
+          isLoading={bulkOperationMutation.isPending}
+        />
+
         {/* Content Grid */}
         <div className="space-y-4" data-testid={`section-${activeTab}`}>
           {activeTab === "prompts" ? (
@@ -208,6 +345,9 @@ export default function Library() {
                   prompt={prompt}
                   showActions={true}
                   onEdit={handleEditPrompt}
+                  isSelectable={isBulkMode}
+                  isSelected={selectedPromptIds.has(prompt.id)}
+                  onSelectionChange={handleSelectionChange}
                 />
               ))
             ) : (
@@ -235,6 +375,9 @@ export default function Library() {
                 <PromptCard
                   key={prompt.id}
                   prompt={prompt}
+                  isSelectable={isBulkMode}
+                  isSelected={selectedPromptIds.has(prompt.id)}
+                  onSelectionChange={handleSelectionChange}
                 />
               ))
             ) : (
@@ -258,6 +401,9 @@ export default function Library() {
                   prompt={prompt}
                   showActions={true}
                   onEdit={handleEditPrompt}
+                  isSelectable={isBulkMode}
+                  isSelected={selectedPromptIds.has(prompt.id)}
+                  onSelectionChange={handleSelectionChange}
                 />
               ))
             ) : (
@@ -285,6 +431,15 @@ export default function Library() {
         onOpenChange={setPromptModalOpen}
         prompt={editingPrompt}
         mode={editingPrompt ? "edit" : "create"}
+      />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditModal
+        isOpen={bulkEditModalOpen}
+        onClose={() => setBulkEditModalOpen(false)}
+        onSubmit={handleBulkEdit}
+        selectedCount={selectedPromptIds.size}
+        isLoading={bulkOperationMutation.isPending}
       />
     </>
   );
