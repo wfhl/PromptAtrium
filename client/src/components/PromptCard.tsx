@@ -25,16 +25,40 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
 
   const likeMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", `/api/prompts/${prompt.id}/like`);
+      const response = await apiRequest("POST", `/api/prompts/${prompt.id}/like`);
+      return await response.json();
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      // Optimistic update - immediately update UI
+      await queryClient.cancelQueries({ queryKey: ["/api/prompts"] });
+      const previousPrompts = queryClient.getQueryData(["/api/prompts"]);
+      
+      // Update prompt in cache immediately
+      queryClient.setQueryData(["/api/prompts"], (old: any) => {
+        if (!old) return old;
+        return old.map((p: any) => 
+          p.id === prompt.id 
+            ? { ...p, likes: (p.likes || 0) + (p.likes > 0 ? -1 : 1) }
+            : p
+        );
+      });
+      
+      return { previousPrompts };
+    },
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: "Success",
-        description: "Prompt liked!",
+        description: data.liked ? "Prompt liked!" : "Prompt unliked!",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Revert optimistic update on error
+      if (context?.previousPrompts) {
+        queryClient.setQueryData(["/api/prompts"], context.previousPrompts);
+      }
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -59,15 +83,27 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/favorite`);
       return await response.json();
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      // Optimistic update for immediate UI response
+      await queryClient.cancelQueries({ queryKey: ["/api/prompts"] });
+      const previousPrompts = queryClient.getQueryData(["/api/prompts"]);
+      return { previousPrompts };
+    },
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: "Success",
-        description: "Prompt added to favorites!",
+        description: data.favorited ? "Prompt bookmarked!" : "Prompt unbookmarked!",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Revert optimistic update on error
+      if (context?.previousPrompts) {
+        queryClient.setQueryData(["/api/prompts"], context.previousPrompts);
+      }
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -81,7 +117,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       }
       toast({
         title: "Error",
-        description: "Failed to favorite prompt",
+        description: "Failed to bookmark prompt",
         variant: "destructive",
       });
     },
@@ -122,14 +158,33 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     mutationFn: async () => {
       await apiRequest("DELETE", `/api/prompts/${prompt.id}`);
     },
+    onMutate: async () => {
+      // Optimistic update - remove prompt immediately
+      await queryClient.cancelQueries({ queryKey: ["/api/prompts"] });
+      const previousPrompts = queryClient.getQueryData(["/api/prompts"]);
+      
+      // Remove prompt from cache immediately
+      queryClient.setQueryData(["/api/prompts"], (old: any) => {
+        if (!old) return old;
+        return old.filter((p: any) => p.id !== prompt.id);
+      });
+      
+      return { previousPrompts };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: "Success",
         description: "Prompt deleted successfully!",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Revert optimistic update on error
+      if (context?.previousPrompts) {
+        queryClient.setQueryData(["/api/prompts"], context.previousPrompts);
+      }
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -158,6 +213,8 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      // Invalidate all possible query variations to ensure immediate refresh
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
       toast({
         title: "Success",
         description: data.archived ? "Prompt archived successfully!" : "Prompt restored from archive!",
@@ -190,6 +247,9 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      // Invalidate all possible query variations to ensure immediate refresh
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
       toast({
         title: "Success",
         description: data.isPublic ? "Prompt shared publicly!" : "Prompt made private!",
@@ -311,7 +371,11 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`px-2 py-1 text-xs ${prompt.isPublic ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                  className={`px-2 py-1 text-xs transition-all ${
+                    prompt.isPublic 
+                      ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 shadow-sm' 
+                      : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                  }`}
                   onClick={() => visibilityMutation.mutate()}
                   disabled={visibilityMutation.isPending}
                   data-testid={`button-visibility-toggle-${prompt.id}`}
@@ -320,7 +384,12 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   {prompt.isPublic ? "Public" : "Private"}
                 </Button>
               ) : (
-                <Badge variant={prompt.isPublic ? "default" : "secondary"} data-testid={`badge-visibility-${prompt.id}`}>
+                <Badge 
+                  variant={prompt.isPublic ? "default" : "secondary"} 
+                  className={prompt.isPublic ? "bg-blue-500" : ""}
+                  data-testid={`badge-visibility-${prompt.id}`}
+                >
+                  <Globe className="h-3 w-3 mr-1" />
                   {prompt.isPublic ? "Public" : "Private"}
                 </Badge>
               )}
