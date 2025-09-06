@@ -28,6 +28,10 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
   // Check if this prompt is favorited by the current user
   const userFavorites = queryClient.getQueryData(["/api/user/favorites"]) as any[] || [];
   const isFavorited = userFavorites.some((fav: any) => fav.id === prompt.id);
+  
+  // For likes, since the backend uses the same table for likes and favorites,
+  // we'll use the same detection method
+  const isLiked = isFavorited;
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -35,27 +39,42 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       return await response.json();
     },
     onMutate: async () => {
-      // Cancel all prompt queries to prevent race conditions
+      // Cancel all prompt queries and favorites queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
+      await queryClient.cancelQueries({ queryKey: ["/api/user/favorites"], exact: false });
       
-      // Get all existing prompt queries 
-      const previousData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      // Get all existing data
+      const previousPromptsData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      const previousFavoritesData = queryClient.getQueriesData({ queryKey: ["/api/user/favorites"], exact: false });
       
-      // Update all matching prompt queries with optimistic update
+      // Optimistically update likes count
       queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
         if (!old) return old;
         return old.map((p: any) => 
           p.id === prompt.id 
-            ? { ...p, likes: (p.likes || 0) + (p.likes > 0 ? -1 : 1) }
+            ? { ...p, likes: (p.likes || 0) + (isLiked ? -1 : 1) }
             : p
         );
       });
       
-      return { previousData };
+      // Optimistically update favorites cache (since backend uses same table)
+      const currentFavorites = queryClient.getQueryData(["/api/user/favorites"]) as any[] || [];
+      const isCurrentlyLiked = currentFavorites.some((fav: any) => fav.id === prompt.id);
+      
+      if (isCurrentlyLiked) {
+        // Remove from favorites
+        queryClient.setQueryData(["/api/user/favorites"], currentFavorites.filter((fav: any) => fav.id !== prompt.id));
+      } else {
+        // Add to favorites
+        queryClient.setQueryData(["/api/user/favorites"], [...currentFavorites, prompt]);
+      }
+      
+      return { previousPromptsData, previousFavoritesData };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
       toast({
         title: "Success",
         description: data.liked ? "Prompt liked!" : "Prompt unliked!",
@@ -63,8 +82,13 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
     },
     onError: (error, variables, context) => {
       // Revert optimistic update on error
-      if (context?.previousData) {
-        context.previousData.forEach(([queryKey, data]) => {
+      if (context?.previousPromptsData) {
+        context.previousPromptsData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousFavoritesData) {
+        context.previousFavoritesData.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -101,6 +125,18 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
       // Get all existing data
       const previousPromptsData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
       const previousFavoritesData = queryClient.getQueriesData({ queryKey: ["/api/user/favorites"], exact: false });
+      
+      // Optimistically update favorites cache
+      const currentFavorites = queryClient.getQueryData(["/api/user/favorites"]) as any[] || [];
+      const isCurrentlyFavorited = currentFavorites.some((fav: any) => fav.id === prompt.id);
+      
+      if (isCurrentlyFavorited) {
+        // Remove from favorites
+        queryClient.setQueryData(["/api/user/favorites"], currentFavorites.filter((fav: any) => fav.id !== prompt.id));
+      } else {
+        // Add to favorites
+        queryClient.setQueryData(["/api/user/favorites"], [...currentFavorites, prompt]);
+      }
       
       return { previousPromptsData, previousFavoritesData };
     },
@@ -507,7 +543,7 @@ export function PromptCard({ prompt, showActions = false, onEdit }: PromptCardPr
                   className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
                   data-testid={`button-like-${prompt.id}`}
                 >
-                  <Heart className={`h-4 w-4 ${(prompt.likes || 0) > 0 ? 'fill-red-600' : ''}`} />
+                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-red-600' : ''}`} />
                 </Button>
 
                 {/* 2. Edit Button - Green edit icon */}
