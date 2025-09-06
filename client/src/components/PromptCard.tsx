@@ -912,7 +912,7 @@ export function PromptCard({
         </div>
 
         {/* Full-width Description Section */}
-        {(prompt.description || editingField === 'description') && (
+        {!isCollapsed && (prompt.description || editingField === 'description') && (
           <div className="mb-4">
             {editingField === 'description' ? (
               <Textarea
@@ -1097,7 +1097,8 @@ export function PromptCard({
           </div>
 
           {/* Row 2: Intended Generator, Recommended Models, Technical Parameters, Variables */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs" data-testid={`info-row-2-${prompt.id}`}>
+          {!isCollapsed && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs" data-testid={`info-row-2-${prompt.id}`}>
             {/* Intended Generator */}
             <div>
               <span className="font-medium text-muted-foreground">Intended Generator:</span>
@@ -1175,9 +1176,11 @@ export function PromptCard({
               </div>
             </div>
           </div>
+          )}
 
           {/* Row 3: Notes, Author, and License */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs" data-testid={`info-row-3-${prompt.id}`}>
+          {!isCollapsed && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs" data-testid={`info-row-3-${prompt.id}`}>
             {/* Notes */}
             <div>
               <span className="font-medium text-muted-foreground">Notes:</span>
@@ -1243,6 +1246,7 @@ export function PromptCard({
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Image Viewer Modal */}
