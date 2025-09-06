@@ -212,321 +212,387 @@ export function BulkEditModal({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Categories */}
-              <div className="col-span-1 md:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="categories"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categories</FormLabel>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {watchedCategories.map((category) => (
-                            <Badge key={category} variant="secondary" className="group">
+            </div>
+
+            {/* Categories */}
+            <div className="space-y-3">
+              <Label>Categories</Label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between"
+                      data-testid="button-select-categories"
+                    >
+                      Select from existing categories...
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search categories..." />
+                      <CommandList>
+                        <CommandEmpty>No categories found.</CommandEmpty>
+                        <CommandGroup>
+                          {options.categories.filter(category => !watchedCategories.includes(category)).map((category) => (
+                            <CommandItem
+                              key={category}
+                              value={category}
+                              onSelect={() => addCategory(category)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchedCategories.includes(category) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
                               {category}
-                              <button
-                                type="button"
-                                onClick={() => removeCategory(category)}
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                data-testid={`remove-category-${category}`}
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
+                            </CommandItem>
                           ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" data-testid="button-add-category">
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add Category
-                                <ChevronDown className="h-4 w-4 ml-1" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 p-0" align="start">
-                              <Command>
-                                <CommandInput
-                                  placeholder="Search categories..."
-                                  value={newCategory}
-                                  onValueChange={setNewCategory}
-                                />
-                                <CommandList>
-                                  <CommandEmpty>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => addCategory()}
-                                      disabled={!newCategory.trim()}
-                                      className="w-full"
-                                      data-testid="button-create-category"
-                                    >
-                                      Create "{newCategory}"
-                                    </Button>
-                                  </CommandEmpty>
-                                  <CommandGroup>
-                                    {options.categories.map((category) => (
-                                      <CommandItem
-                                        key={category}
-                                        onSelect={() => addCategory(category)}
-                                        data-testid={`category-option-${category}`}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", watchedCategories.includes(category) ? "opacity-100" : "opacity-0")} />
-                                        {category}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="Or add custom category"
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCategory();
+                    }
+                  }}
+                  data-testid="input-new-category"
                 />
+                <Button
+                  type="button"
+                  onClick={() => addCategory()}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-add-category"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
+              <div className="flex flex-wrap gap-2">
+                {watchedCategories.map((category, index) => (
+                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                    {category}
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removeCategory(category)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
 
-              {/* Prompt Types */}
-              <div className="col-span-1 md:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="promptTypes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prompt Types</FormLabel>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {watchedPromptTypes.map((type) => (
-                            <Badge key={type} variant="secondary" className="group">
+            {/* Prompt Types */}
+            <div className="space-y-3">
+              <Label>Prompt Types</Label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between"
+                      data-testid="button-select-prompt-types"
+                    >
+                      Select from existing prompt types...
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search prompt types..." />
+                      <CommandList>
+                        <CommandEmpty>No prompt types found.</CommandEmpty>
+                        <CommandGroup>
+                          {options.promptTypes.filter(type => !watchedPromptTypes.includes(type)).map((type) => (
+                            <CommandItem
+                              key={type}
+                              value={type}
+                              onSelect={() => addPromptType(type)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchedPromptTypes.includes(type) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
                               {type}
-                              <button
-                                type="button"
-                                onClick={() => removePromptType(type)}
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                data-testid={`remove-prompt-type-${type}`}
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
+                            </CommandItem>
                           ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" data-testid="button-add-prompt-type">
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add Prompt Type
-                                <ChevronDown className="h-4 w-4 ml-1" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 p-0" align="start">
-                              <Command>
-                                <CommandInput
-                                  placeholder="Search prompt types..."
-                                  value={newPromptType}
-                                  onValueChange={setNewPromptType}
-                                />
-                                <CommandList>
-                                  <CommandEmpty>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => addPromptType()}
-                                      disabled={!newPromptType.trim()}
-                                      className="w-full"
-                                      data-testid="button-create-prompt-type"
-                                    >
-                                      Create "{newPromptType}"
-                                    </Button>
-                                  </CommandEmpty>
-                                  <CommandGroup>
-                                    {options.promptTypes.map((type) => (
-                                      <CommandItem
-                                        key={type}
-                                        onSelect={() => addPromptType(type)}
-                                        data-testid={`prompt-type-option-${type}`}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", watchedPromptTypes.includes(type) ? "opacity-100" : "opacity-0")} />
-                                        {type}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  value={newPromptType}
+                  onChange={(e) => setNewPromptType(e.target.value)}
+                  placeholder="Or add custom prompt type"
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addPromptType();
+                    }
+                  }}
+                  data-testid="input-new-prompt-type"
                 />
+                <Button
+                  type="button"
+                  onClick={() => addPromptType()}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-add-prompt-type"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
+              <div className="flex flex-wrap gap-2">
+                {watchedPromptTypes.map((type, index) => (
+                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                    {type}
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removePromptType(type)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
 
-              {/* Prompt Styles */}
-              <div className="col-span-1 md:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="promptStyles"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prompt Styles</FormLabel>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {watchedPromptStyles.map((style) => (
-                            <Badge key={style} variant="secondary" className="group">
+            {/* Prompt Styles */}
+            <div className="space-y-3">
+              <Label>Prompt Styles</Label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between"
+                      data-testid="button-select-prompt-styles"
+                    >
+                      Select from existing prompt styles...
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search prompt styles..." />
+                      <CommandList>
+                        <CommandEmpty>No prompt styles found.</CommandEmpty>
+                        <CommandGroup>
+                          {options.promptStyles.filter(style => !watchedPromptStyles.includes(style)).map((style) => (
+                            <CommandItem
+                              key={style}
+                              value={style}
+                              onSelect={() => addPromptStyle(style)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchedPromptStyles.includes(style) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
                               {style}
-                              <button
-                                type="button"
-                                onClick={() => removePromptStyle(style)}
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                data-testid={`remove-prompt-style-${style}`}
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
+                            </CommandItem>
                           ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" data-testid="button-add-prompt-style">
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add Prompt Style
-                                <ChevronDown className="h-4 w-4 ml-1" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 p-0" align="start">
-                              <Command>
-                                <CommandInput
-                                  placeholder="Search prompt styles..."
-                                  value={newPromptStyle}
-                                  onValueChange={setNewPromptStyle}
-                                />
-                                <CommandList>
-                                  <CommandEmpty>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => addPromptStyle()}
-                                      disabled={!newPromptStyle.trim()}
-                                      className="w-full"
-                                      data-testid="button-create-prompt-style"
-                                    >
-                                      Create "{newPromptStyle}"
-                                    </Button>
-                                  </CommandEmpty>
-                                  <CommandGroup>
-                                    {options.promptStyles.map((style) => (
-                                      <CommandItem
-                                        key={style}
-                                        onSelect={() => addPromptStyle(style)}
-                                        data-testid={`prompt-style-option-${style}`}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", watchedPromptStyles.includes(style) ? "opacity-100" : "opacity-0")} />
-                                        {style}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  value={newPromptStyle}
+                  onChange={(e) => setNewPromptStyle(e.target.value)}
+                  placeholder="Or add custom prompt style"
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addPromptStyle();
+                    }
+                  }}
+                  data-testid="input-new-prompt-style"
                 />
+                <Button
+                  type="button"
+                  onClick={() => addPromptStyle()}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-add-prompt-style"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
+              <div className="flex flex-wrap gap-2">
+                {watchedPromptStyles.map((style, index) => (
+                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                    {style}
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removePromptStyle(style)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
 
-              {/* Intended Generators */}
-              <div className="col-span-1 md:col-span-2">
-                <FormField
-                  control={form.control}
-                  name="intendedGenerators"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Intended Generators</FormLabel>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {watchedIntendedGenerators.map((generator) => (
-                            <Badge key={generator} variant="secondary" className="group">
+            {/* Intended Generators */}
+            <div className="space-y-3">
+              <Label>Intended Generators</Label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between"
+                      data-testid="button-select-intended-generators"
+                    >
+                      Select from existing generators...
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search intended generators..." />
+                      <CommandList>
+                        <CommandEmpty>No intended generators found.</CommandEmpty>
+                        <CommandGroup>
+                          {options.intendedGenerators.filter(generator => !watchedIntendedGenerators.includes(generator)).map((generator) => (
+                            <CommandItem
+                              key={generator}
+                              value={generator}
+                              onSelect={() => addIntendedGenerator(generator)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchedIntendedGenerators.includes(generator) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
                               {generator}
-                              <button
-                                type="button"
-                                onClick={() => removeIntendedGenerator(generator)}
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                data-testid={`remove-intended-generator-${generator}`}
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
+                            </CommandItem>
                           ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" data-testid="button-add-intended-generator">
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add Intended Generator
-                                <ChevronDown className="h-4 w-4 ml-1" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 p-0" align="start">
-                              <Command>
-                                <CommandInput
-                                  placeholder="Search intended generators..."
-                                  value={newIntendedGenerator}
-                                  onValueChange={setNewIntendedGenerator}
-                                />
-                                <CommandList>
-                                  <CommandEmpty>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => addIntendedGenerator()}
-                                      disabled={!newIntendedGenerator.trim()}
-                                      className="w-full"
-                                      data-testid="button-create-intended-generator"
-                                    >
-                                      Create "{newIntendedGenerator}"
-                                    </Button>
-                                  </CommandEmpty>
-                                  <CommandGroup>
-                                    {options.intendedGenerators.map((generator) => (
-                                      <CommandItem
-                                        key={generator}
-                                        onSelect={() => addIntendedGenerator(generator)}
-                                        data-testid={`intended-generator-option-${generator}`}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", watchedIntendedGenerators.includes(generator) ? "opacity-100" : "opacity-0")} />
-                                        {generator}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  value={newIntendedGenerator}
+                  onChange={(e) => setNewIntendedGenerator(e.target.value)}
+                  placeholder="Or add custom generator"
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addIntendedGenerator();
+                    }
+                  }}
+                  data-testid="input-new-intended-generator"
                 />
+                <Button
+                  type="button"
+                  onClick={() => addIntendedGenerator()}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-add-intended-generator"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {watchedIntendedGenerators.map((generator, index) => (
+                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                    {generator}
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removeIntendedGenerator(generator)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Collections */}
+            <div className="space-y-3">
+              <Label>Collections</Label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="flex-1 justify-between"
+                      data-testid="button-select-collections"
+                    >
+                      Select from existing collections...
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search collections..." />
+                      <CommandList>
+                        <CommandEmpty>No collections found.</CommandEmpty>
+                        <CommandGroup>
+                          {collections.filter((collection: any) => !watchedCollectionIds.includes(collection.id)).map((collection: any) => (
+                            <CommandItem
+                              key={collection.id}
+                              value={collection.name}
+                              onSelect={() => addCollectionId(collection.id)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchedCollectionIds.includes(collection.id) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {collection.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {watchedCollectionIds.map((collectionId, index) => {
+                  const collection = collections.find((c: any) => c.id === collectionId);
+                  return (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {collection?.name || collectionId}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => removeCollectionId(collectionId)}
+                      />
+                    </Badge>
+                  );
+                })}
               </div>
             </div>
 
             {/* Status and Visibility */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
               <FormField
                 control={form.control}
                 name="status"
