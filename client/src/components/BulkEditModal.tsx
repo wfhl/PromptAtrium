@@ -20,15 +20,15 @@ import { cn } from "@/lib/utils";
 
 // Extend the schema to make all fields optional for partial updates
 const modalBulkEditSchema = z.object({
-  category: z.string().optional(),
-  promptType: z.string().optional(),
-  promptStyle: z.string().optional(),
+  categories: z.array(z.string()).optional(),
+  promptTypes: z.array(z.string()).optional(),
+  promptStyles: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   isPublic: z.boolean().optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),
-  collectionId: z.string().nullable().optional(),
+  collectionIds: z.array(z.string()).optional(),
   license: z.string().optional(),
-  intendedGenerator: z.string().optional(),
+  intendedGenerators: z.array(z.string()).optional(),
   recommendedModels: z.array(z.string()).optional(),
 });
 
@@ -51,6 +51,10 @@ export function BulkEditModal({
 }: BulkEditModalProps) {
   const [newTag, setNewTag] = useState("");
   const [newModel, setNewModel] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [newPromptType, setNewPromptType] = useState("");
+  const [newPromptStyle, setNewPromptStyle] = useState("");
+  const [newIntendedGenerator, setNewIntendedGenerator] = useState("");
 
   // Get collections for dropdown
   const { data: collections = [] } = useQuery({
@@ -58,22 +62,32 @@ export function BulkEditModal({
     enabled: isOpen,
   }) as { data: any[] };
 
-  // Get existing tags and models for dropdowns
-  const { data: options = { tags: [], models: [] } } = useQuery({
+  // Get existing options for dropdowns
+  const { data: options = { tags: [], models: [], categories: [], promptTypes: [], promptStyles: [], intendedGenerators: [] } } = useQuery({
     queryKey: ["/api/prompts/options"],
     enabled: isOpen,
-  }) as { data: { tags: string[]; models: string[] } };
+  }) as { data: { tags: string[]; models: string[]; categories: string[]; promptTypes: string[]; promptStyles: string[]; intendedGenerators: string[] } };
 
   const form = useForm<ModalBulkEditForm>({
     resolver: zodResolver(modalBulkEditSchema),
     defaultValues: {
+      categories: [],
+      promptTypes: [],
+      promptStyles: [],
       tags: [],
+      collectionIds: [],
+      intendedGenerators: [],
       recommendedModels: [],
     },
   });
 
   const watchedTags = form.watch("tags") || [];
   const watchedModels = form.watch("recommendedModels") || [];
+  const watchedCategories = form.watch("categories") || [];
+  const watchedPromptTypes = form.watch("promptTypes") || [];
+  const watchedPromptStyles = form.watch("promptStyles") || [];
+  const watchedIntendedGenerators = form.watch("intendedGenerators") || [];
+  const watchedCollectionIds = form.watch("collectionIds") || [];
 
   const handleSubmit = (data: ModalBulkEditForm) => {
     // Filter out undefined/empty values to only send changes
@@ -113,10 +127,73 @@ export function BulkEditModal({
     form.setValue("recommendedModels", watchedModels.filter(model => model !== modelToRemove));
   };
 
+  // Helper functions for new array fields
+  const addCategory = (category?: string) => {
+    const categoryToAdd = category || newCategory.trim();
+    if (categoryToAdd && !watchedCategories.includes(categoryToAdd)) {
+      form.setValue("categories", [...watchedCategories, categoryToAdd]);
+      setNewCategory("");
+    }
+  };
+
+  const removeCategory = (categoryToRemove: string) => {
+    form.setValue("categories", watchedCategories.filter(cat => cat !== categoryToRemove));
+  };
+
+  const addPromptType = (type?: string) => {
+    const typeToAdd = type || newPromptType.trim();
+    if (typeToAdd && !watchedPromptTypes.includes(typeToAdd)) {
+      form.setValue("promptTypes", [...watchedPromptTypes, typeToAdd]);
+      setNewPromptType("");
+    }
+  };
+
+  const removePromptType = (typeToRemove: string) => {
+    form.setValue("promptTypes", watchedPromptTypes.filter(type => type !== typeToRemove));
+  };
+
+  const addPromptStyle = (style?: string) => {
+    const styleToAdd = style || newPromptStyle.trim();
+    if (styleToAdd && !watchedPromptStyles.includes(styleToAdd)) {
+      form.setValue("promptStyles", [...watchedPromptStyles, styleToAdd]);
+      setNewPromptStyle("");
+    }
+  };
+
+  const removePromptStyle = (styleToRemove: string) => {
+    form.setValue("promptStyles", watchedPromptStyles.filter(style => style !== styleToRemove));
+  };
+
+  const addIntendedGenerator = (generator?: string) => {
+    const generatorToAdd = generator || newIntendedGenerator.trim();
+    if (generatorToAdd && !watchedIntendedGenerators.includes(generatorToAdd)) {
+      form.setValue("intendedGenerators", [...watchedIntendedGenerators, generatorToAdd]);
+      setNewIntendedGenerator("");
+    }
+  };
+
+  const removeIntendedGenerator = (generatorToRemove: string) => {
+    form.setValue("intendedGenerators", watchedIntendedGenerators.filter(gen => gen !== generatorToRemove));
+  };
+
+  const addCollectionId = (collectionId: string) => {
+    if (collectionId && !watchedCollectionIds.includes(collectionId)) {
+      form.setValue("collectionIds", [...watchedCollectionIds, collectionId]);
+    }
+  };
+
+  const removeCollectionId = (collectionIdToRemove: string) => {
+    form.setValue("collectionIds", watchedCollectionIds.filter(id => id !== collectionIdToRemove));
+  };
+
   const handleClose = () => {
     form.reset();
     setNewTag("");
     setNewModel("");
+    setNewCategory("");
+    setNewPromptType("");
+    setNewPromptStyle("");
+    setNewIntendedGenerator("");
     onClose();
   };
 
