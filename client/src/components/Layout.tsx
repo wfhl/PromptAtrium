@@ -123,13 +123,6 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 My Library
               </Link>
               <Link 
-                href="/collections" 
-                className={isActiveRoute("/collections") ? "text-primary font-medium border-b-2 border-primary pb-4 -mb-4" : "text-muted-foreground hover:text-foreground transition-colors"} 
-                data-testid="nav-collections"
-              >
-                Collections
-              </Link>
-              <Link 
                 href="/community" 
                 className={isActiveRoute("/community") ? "text-primary font-medium border-b-2 border-primary pb-4 -mb-4" : "text-muted-foreground hover:text-foreground transition-colors"} 
                 data-testid="nav-community"
