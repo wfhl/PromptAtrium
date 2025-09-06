@@ -55,6 +55,7 @@ export function BulkEditModal({
   const [newPromptType, setNewPromptType] = useState("");
   const [newPromptStyle, setNewPromptStyle] = useState("");
   const [newIntendedGenerator, setNewIntendedGenerator] = useState("");
+  const [newCollection, setNewCollection] = useState("");
 
   // Get collections for dropdown
   const { data: collections = [] } = useQuery({
@@ -186,6 +187,20 @@ export function BulkEditModal({
     form.setValue("collectionIds", watchedCollectionIds.filter(id => id !== collectionIdToRemove));
   };
 
+  const addCollection = (collectionName?: string) => {
+    const nameToAdd = collectionName || newCollection.trim();
+    if (nameToAdd && !watchedCollectionIds.includes(nameToAdd)) {
+      // For new collections, we'll use the name as ID temporarily
+      // The backend can handle creating the collection if it doesn't exist
+      form.setValue("collectionIds", [...watchedCollectionIds, nameToAdd]);
+      setNewCollection("");
+    }
+  };
+
+  const removeCollection = (collectionToRemove: string) => {
+    form.setValue("collectionIds", watchedCollectionIds.filter(id => id !== collectionToRemove));
+  };
+
   const handleClose = () => {
     form.reset();
     setNewTag("");
@@ -194,6 +209,7 @@ export function BulkEditModal({
     setNewPromptType("");
     setNewPromptStyle("");
     setNewIntendedGenerator("");
+    setNewCollection("");
     onClose();
   };
 
@@ -211,7 +227,53 @@ export function BulkEditModal({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            
+            {/* Status and Visibility at top */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-bulk-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Public</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Make prompts publicly visible
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="switch-bulk-public"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Categories */}
@@ -573,6 +635,28 @@ export function BulkEditModal({
                     </Command>
                   </PopoverContent>
                 </Popover>
+                <Input
+                  value={newCollection}
+                  onChange={(e) => setNewCollection(e.target.value)}
+                  placeholder="Or add custom collection"
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCollection();
+                    }
+                  }}
+                  data-testid="input-new-collection"
+                />
+                <Button
+                  type="button"
+                  onClick={() => addCollection()}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-add-collection"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {watchedCollectionIds.map((collectionId, index) => {
@@ -590,74 +674,6 @@ export function BulkEditModal({
               </div>
             </div>
 
-            {/* Status and Visibility */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-bulk-status">
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="published">Published</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-
-              <FormField
-                control={form.control}
-                name="isPublic"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Public</FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        Make prompts publicly visible
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        data-testid="switch-bulk-public"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* License */}
-            <FormField
-              control={form.control}
-              name="license"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>License</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="e.g. MIT, Creative Commons, All Rights Reserved"
-                      data-testid="input-bulk-license"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {/* Tags */}
             <div className="space-y-3">
@@ -816,6 +832,31 @@ export function BulkEditModal({
                 ))}
               </div>
             </div>
+
+            {/* License at bottom */}
+            <FormField
+              control={form.control}
+              name="license"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>License</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-bulk-license">
+                        <SelectValue placeholder="Select license" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="CC0 (Public Domain)">CC0 (Public Domain)</SelectItem>
+                      <SelectItem value="CC BY (Attribution)">CC BY (Attribution)</SelectItem>
+                      <SelectItem value="CC BY-SA (Share Alike)">CC BY-SA (Share Alike)</SelectItem>
+                      <SelectItem value="All Rights Reserved">All Rights Reserved</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button
