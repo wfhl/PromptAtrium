@@ -420,8 +420,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Verify user owns all prompts before making any changes
-      const ownedPrompts = await storage.getUserPrompts(userId, { promptIds });
-      const ownedPromptIds = new Set(ownedPrompts.map(p => p.id));
+      const ownedPrompts = await storage.getPrompts({ userId, promptIds });
+      const ownedPromptIds = new Set(ownedPrompts.map((p: any) => p.id));
       
       const unauthorizedPrompts = promptIds.filter(id => !ownedPromptIds.has(id));
       if (unauthorizedPrompts.length > 0) {

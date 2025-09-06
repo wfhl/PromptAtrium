@@ -55,6 +55,7 @@ export interface IStorage {
     search?: string;
     limit?: number;
     offset?: number;
+    promptIds?: string[];
   }): Promise<Prompt[]>;
   getPrompt(id: string): Promise<Prompt | undefined>;
   createPrompt(prompt: InsertPrompt): Promise<Prompt>;
@@ -100,6 +101,8 @@ export interface IStorage {
   // Social operations
   toggleLike(userId: string, promptId: string): Promise<boolean>;
   toggleFavorite(userId: string, promptId: string): Promise<boolean>;
+  checkIfLiked(userId: string, promptId: string): Promise<boolean>;
+  checkIfFavorited(userId: string, promptId: string): Promise<boolean>;
   ratePrompt(rating: InsertPromptRating): Promise<PromptRating>;
   getUserFavorites(userId: string): Promise<PromptFavorite[]>;
   getUserLikes(userId: string): Promise<PromptLike[]>;
@@ -221,6 +224,7 @@ export class DatabaseStorage implements IStorage {
     search?: string;
     limit?: number;
     offset?: number;
+    promptIds?: string[];
   } = {}): Promise<Prompt[]> {
     let query = db.select().from(prompts);
     
@@ -262,6 +266,10 @@ export class DatabaseStorage implements IStorage {
           ilike(prompts.promptContent, `%${options.search}%`)
         )
       );
+    }
+    
+    if (options.promptIds && options.promptIds.length > 0) {
+      conditions.push(inArray(prompts.id, options.promptIds));
     }
     
     if (conditions.length > 0) {
@@ -587,6 +595,22 @@ export class DatabaseStorage implements IStorage {
       await db.insert(promptFavorites).values({ userId, promptId });
       return true;
     }
+  }
+
+  async checkIfLiked(userId: string, promptId: string): Promise<boolean> {
+    const [existing] = await db
+      .select()
+      .from(promptLikes)
+      .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
+    return !!existing;
+  }
+
+  async checkIfFavorited(userId: string, promptId: string): Promise<boolean> {
+    const [existing] = await db
+      .select()
+      .from(promptFavorites)
+      .where(and(eq(promptFavorites.userId, userId), eq(promptFavorites.promptId, promptId)));
+    return !!existing;
   }
 
   async ratePrompt(rating: InsertPromptRating): Promise<PromptRating> {
