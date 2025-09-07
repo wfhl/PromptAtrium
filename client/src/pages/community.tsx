@@ -232,14 +232,6 @@ export default function Community() {
 
   return (
     <div className="container mx-auto px-6 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="text-page-title">
-          Community Hub
-        </h1>
-        <p className="text-muted-foreground">Discover, share, and connect with the community</p>
-      </div>
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">

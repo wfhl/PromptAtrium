@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -428,99 +429,76 @@ export default function Library() {
   return (
     <>
       <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="text-page-title">
-            My Prompt Library
-          </h1>
-          <p className="text-muted-foreground">Manage and organize all your AI prompts</p>
-          
-          {/* Tab Navigation */}
-          <div className="flex space-x-1 mt-6">
-            <Button
-              variant={activeTab === "prompts" ? "default" : "ghost"}
-              onClick={() => setActiveTab("prompts")}
-              data-testid="tab-my-prompts"
-            >
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="prompts" data-testid="tab-my-prompts">
               My Prompts
-            </Button>
-            <Button
-              variant={activeTab === "bookmarked" ? "default" : "ghost"}
-              onClick={() => setActiveTab("bookmarked")}
-              data-testid="tab-bookmarked"
-            >
+            </TabsTrigger>
+            <TabsTrigger value="bookmarked" data-testid="tab-bookmarked">
               Bookmarked
-            </Button>
-            <Button
-              variant={activeTab === "collections" ? "default" : "ghost"}
-              onClick={() => setActiveTab("collections")}
-              data-testid="tab-collections"
-            >
+            </TabsTrigger>
+            <TabsTrigger value="collections" data-testid="tab-collections">
               Collections
-            </Button>
-            <Button
-              variant={activeTab === "archive" ? "default" : "ghost"}
-              onClick={() => setActiveTab("archive")}
-              data-testid="tab-archive"
-            >
+            </TabsTrigger>
+            <TabsTrigger value="archive" data-testid="tab-archive">
               Archive
-            </Button>
-          </div>
-        </div>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Search Bar with Filter Dropdown - Hidden on Collections tab */}
-        {activeTab !== "collections" && (
-          <div className="flex gap-2 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search prompts..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setTimeout(() => refetch(), 500);
-                }}
-                className="pl-10 pr-4"
-                data-testid="input-search"
-              />
-            </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" data-testid="button-filter">
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                
-                {/* Category Filter */}
-                <div className="px-2 py-2">
-                  <label className="text-sm font-medium mb-2 block">Category</label>
-                  <Select value={categoryFilter} onValueChange={(value) => {
-                    setCategoryFilter(value);
-                    setTimeout(() => refetch(), 100);
-                  }}>
-                    <SelectTrigger className="w-full" data-testid="select-category">
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="Art & Design">Art & Design</SelectItem>
-                      <SelectItem value="Photography">Photography</SelectItem>
-                      <SelectItem value="Character Design">Character Design</SelectItem>
-                      <SelectItem value="Landscape">Landscape</SelectItem>
-                      <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
-                      <SelectItem value="Abstract">Abstract</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Status Filter */}
-                {activeTab !== "archive" && (
+          {/* Prompts Tab */}
+          <TabsContent value="prompts" className="space-y-4">
+            {/* Search Bar with Filter Dropdown */}
+            <div className="flex gap-2 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search prompts..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setTimeout(() => refetch(), 500);
+                  }}
+                  className="pl-10 pr-4"
+                  data-testid="input-search"
+                />
+              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" data-testid="button-filter">
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  {/* Category Filter */}
+                  <div className="px-2 py-2">
+                    <label className="text-sm font-medium mb-2 block">Category</label>
+                    <Select value={categoryFilter} onValueChange={(value) => {
+                      setCategoryFilter(value);
+                      setTimeout(() => refetch(), 100);
+                    }}>
+                      <SelectTrigger className="w-full" data-testid="select-category">
+                        <SelectValue placeholder="All Categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="Art & Design">Art & Design</SelectItem>
+                        <SelectItem value="Photography">Photography</SelectItem>
+                        <SelectItem value="Character Design">Character Design</SelectItem>
+                        <SelectItem value="Landscape">Landscape</SelectItem>
+                        <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
+                        <SelectItem value="Abstract">Abstract</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Status Filter */}
                   <div className="px-2 py-2">
                     <label className="text-sm font-medium mb-2 block">Status</label>
                     <Select value={statusFilter} onValueChange={(value) => {
@@ -537,14 +515,11 @@ export default function Library() {
                       </SelectContent>
                     </Select>
                   </div>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-        {/* Bulk Edit Toolbar */}
-        {activeTab !== "collections" && (
+            {/* Bulk Edit Toolbar */}
           <BulkEditToolbar
             selectedCount={selectedPromptIds.size}
             totalCount={activeTab === "bookmarked" ? favoritePrompts.length : prompts.length}
@@ -555,12 +530,9 @@ export default function Library() {
             isBulkMode={isBulkMode}
             isLoading={bulkOperationMutation.isPending}
           />
-        )}
 
-        {/* Content Grid */}
-        <div className="space-y-4" data-testid={`section-${activeTab}`}>
-          {activeTab === "prompts" ? (
-            prompts.length > 0 ? (
+            {/* Content Grid */}
+            {prompts.length > 0 ? (
               prompts.map((prompt) => (
                 <PromptCard
                   key={prompt.id}
@@ -591,9 +563,42 @@ export default function Library() {
                   </Button>
                 </CardContent>
               </Card>
-            )
-          ) : activeTab === "bookmarked" ? (
-            favoritePrompts.length > 0 ? (
+            )}
+          </TabsContent>
+
+          <TabsContent value="bookmarked" className="space-y-4">
+            {/* Search Bar for bookmarked */}
+            <div className="flex gap-2 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search prompts..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setTimeout(() => refetch(), 500);
+                  }}
+                  className="pl-10 pr-4"
+                  data-testid="input-search"
+                />
+              </div>
+            </div>
+
+            {/* Bulk Edit Toolbar */}
+            <BulkEditToolbar
+              selectedCount={selectedPromptIds.size}
+              totalCount={favoritePrompts.length}
+              onSelectAll={handleSelectAll}
+              onClearSelection={handleClearSelection}
+              onBulkOperation={handleBulkOperation}
+              onToggleBulkMode={handleToggleBulkMode}
+              isBulkMode={isBulkMode}
+              isLoading={bulkOperationMutation.isPending}
+            />
+
+            {/* Content Grid */}
+            {favoritePrompts.length > 0 ? (
               favoritePrompts.map((prompt) => (
                 <PromptCard
                   key={prompt.id}
@@ -615,8 +620,10 @@ export default function Library() {
                   </p>
                 </CardContent>
               </Card>
-            )
-          ) : activeTab === "collections" ? (
+            )}
+          </TabsContent>
+
+          <TabsContent value="collections" className="space-y-4">
             <div>
               {/* Collections Header with Actions */}
               <div className="flex justify-between items-center mb-4">
@@ -847,8 +854,41 @@ export default function Library() {
                 </Card>
               )}
             </div>
-          ) : activeTab === "archive" ? (
-            prompts.length > 0 ? (
+          </TabsContent>
+
+          <TabsContent value="archive" className="space-y-4">
+            {/* Search Bar for archive */}
+            <div className="flex gap-2 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search prompts..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setTimeout(() => refetch(), 500);
+                  }}
+                  className="pl-10 pr-4"
+                  data-testid="input-search"
+                />
+              </div>
+            </div>
+
+            {/* Bulk Edit Toolbar */}
+            <BulkEditToolbar
+              selectedCount={selectedPromptIds.size}
+              totalCount={prompts.length}
+              onSelectAll={handleSelectAll}
+              onClearSelection={handleClearSelection}
+              onBulkOperation={handleBulkOperation}
+              onToggleBulkMode={handleToggleBulkMode}
+              isBulkMode={isBulkMode}
+              isLoading={bulkOperationMutation.isPending}
+            />
+
+            {/* Content Grid */}
+            {prompts.length > 0 ? (
               prompts.map((prompt) => (
                 <PromptCard
                   key={prompt.id}
@@ -874,9 +914,9 @@ export default function Library() {
                   </p>
                 </CardContent>
               </Card>
-            )
-          ) : null}
-        </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Prompt Modal */}
