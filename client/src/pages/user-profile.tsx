@@ -160,15 +160,15 @@ export default function UserProfile() {
   const isOwnProfile = currentUser?.id === profile.id;
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-4 md:p-6 max-w-7xl">
       {/* Profile Header */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-6">
+      <Card className="mb-4 md:mb-6">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-start gap-4 md:gap-6">
             {/* Avatar */}
-            <Avatar className="h-24 w-24">
+            <Avatar className="h-16 w-16 md:h-24 md:w-24">
               <AvatarImage src={profile.profileImageUrl || undefined} alt={profile.firstName || undefined} />
-              <AvatarFallback className="text-2xl">
+              <AvatarFallback className="text-lg md:text-2xl">
                 {profile.firstName?.[0]?.toUpperCase() || username?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -177,10 +177,10 @@ export default function UserProfile() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h1 className="text-3xl font-bold">
+                  <h1 className="text-xl md:text-3xl font-bold">
                     {profile.firstName} {profile.lastName}
                   </h1>
-                  <p className="text-gray-500">@{profile.username}</p>
+                  <p className="text-sm md:text-base text-gray-500">@{profile.username}</p>
                 </div>
                 
                 {!isOwnProfile && currentUser && (
@@ -227,53 +227,53 @@ export default function UserProfile() {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-4 mb-4 md:mb-6">
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" data-testid={`text-prompts-count-${profile.id}`}>
+          <CardContent className="p-2 md:p-4 text-center">
+            <div className="text-lg md:text-2xl font-bold" data-testid={`text-prompts-count-${profile.id}`}>
               {stats?.totalPrompts || 0}
             </div>
-            <div className="text-sm text-gray-500">Prompts</div>
+            <div className="text-xs md:text-sm text-gray-500">Prompts</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" data-testid={`text-likes-count-${profile.id}`}>
+          <CardContent className="p-2 md:p-4 text-center">
+            <div className="text-lg md:text-2xl font-bold" data-testid={`text-likes-count-${profile.id}`}>
               {stats?.totalLikes || 0}
             </div>
-            <div className="text-sm text-gray-500">Likes</div>
+            <div className="text-xs md:text-sm text-gray-500">Likes</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" data-testid={`text-collections-count-${profile.id}`}>
+          <CardContent className="p-2 md:p-4 text-center">
+            <div className="text-lg md:text-2xl font-bold" data-testid={`text-collections-count-${profile.id}`}>
               {stats?.collections || 0}
             </div>
-            <div className="text-sm text-gray-500">Collections</div>
+            <div className="text-xs md:text-sm text-gray-500">Collections</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" data-testid={`text-forks-count-${profile.id}`}>
+          <CardContent className="p-2 md:p-4 text-center">
+            <div className="text-lg md:text-2xl font-bold" data-testid={`text-forks-count-${profile.id}`}>
               {stats?.forksCreated || 0}
             </div>
-            <div className="text-sm text-gray-500">Forks</div>
+            <div className="text-xs md:text-sm text-gray-500">Forks</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" data-testid={`text-followers-count-${profile.id}`}>
+          <CardContent className="p-2 md:p-4 text-center">
+            <div className="text-lg md:text-2xl font-bold" data-testid={`text-followers-count-${profile.id}`}>
               {stats?.followers || 0}
             </div>
-            <div className="text-sm text-gray-500">Followers</div>
+            <div className="text-xs md:text-sm text-gray-500">Followers</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" data-testid={`text-following-count-${profile.id}`}>
+          <CardContent className="p-2 md:p-4 text-center">
+            <div className="text-lg md:text-2xl font-bold" data-testid={`text-following-count-${profile.id}`}>
               {stats?.following || 0}
             </div>
-            <div className="text-sm text-gray-500">Following</div>
+            <div className="text-xs md:text-sm text-gray-500">Following</div>
           </CardContent>
         </Card>
       </div>
