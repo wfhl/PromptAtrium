@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -24,7 +24,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const typedUser = user as User;
   const { toast } = useToast();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') as 'light' | 'dark' || 'dark';
@@ -163,6 +164,16 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               <span>New Prompt</span>
             </Button>
             
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
@@ -240,6 +251,68 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             </DropdownMenu>
           </div>
         </div>
+        
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-card border-b border-border">
+            <nav className="container mx-auto px-6 py-4 flex flex-col space-y-3">
+              <Link 
+                href="/" 
+                className={isActiveRoute("/") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="mobile-nav-dashboard"
+              >
+                Dashboard
+              </Link>
+              <Link 
+                href="/library" 
+                className={isActiveRoute("/library") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="mobile-nav-library"
+              >
+                My Library
+              </Link>
+              <Link 
+                href="/community" 
+                className={isActiveRoute("/community") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="mobile-nav-community"
+              >
+                Community
+              </Link>
+              <Link 
+                href="/projects" 
+                className={isActiveRoute("/projects") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="mobile-nav-projects"
+              >
+                Projects
+              </Link>
+              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
+                <Link 
+                  href="/admin" 
+                  className={isActiveRoute("/admin") ? "text-yellow-600 font-medium py-2 flex items-center gap-1" : "text-yellow-600 hover:text-yellow-700 transition-colors py-2 flex items-center gap-1"} 
+                  onClick={() => setMobileMenuOpen(false)}
+                  data-testid="mobile-nav-admin"
+                >
+                  <Crown className="h-4 w-4" />
+                  Admin
+                </Link>
+              )}
+              <Button
+                className="w-full flex items-center justify-center space-x-2 mt-2"
+                onClick={() => {
+                  onCreatePrompt ? onCreatePrompt() : handleDefaultCreatePrompt();
+                  setMobileMenuOpen(false);
+                }}
+                data-testid="mobile-button-new-prompt"
+              >
+                <Plus className="h-4 w-4" />
+                <span>New Prompt</span>
+              </Button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
