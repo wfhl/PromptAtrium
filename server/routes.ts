@@ -323,7 +323,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/prompts', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const promptData = insertPromptSchema.parse({ ...req.body, userId });
+      
+      // Handle empty collectionId by converting to null
+      const requestBody = { ...req.body, userId };
+      if (requestBody.collectionId === "" || requestBody.collectionId === undefined) {
+        requestBody.collectionId = null;
+      }
+      
+      const promptData = insertPromptSchema.parse(requestBody);
       const prompt = await storage.createPrompt(promptData);
       res.status(201).json(prompt);
     } catch (error) {
@@ -348,7 +355,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Not authorized to edit this prompt" });
       }
 
-      const promptData = insertPromptSchema.partial().parse(req.body);
+      // Handle empty collectionId by converting to null
+      const requestBody = { ...req.body };
+      if (requestBody.collectionId === "" || requestBody.collectionId === undefined) {
+        requestBody.collectionId = null;
+      }
+
+      const promptData = insertPromptSchema.partial().parse(requestBody);
       const updatedPrompt = await storage.updatePrompt(req.params.id, promptData);
       res.json(updatedPrompt);
     } catch (error) {
