@@ -149,6 +149,7 @@ export const prompts = pgTable("prompts", {
   tagsNormalized: text("tags_normalized").array(),
   isPublic: boolean("is_public").default(true),
   isFeatured: boolean("is_featured").default(false),
+  isHidden: boolean("is_hidden").default(false),
   status: varchar("status", { enum: ["draft", "published", "archived"] }).default("draft"),
   exampleImagesUrl: text("example_images_url").array(),
   notes: text("notes"),
