@@ -61,6 +61,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function ProfileSettings() {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const typedUser = user as User;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -79,11 +80,11 @@ export default function ProfileSettings() {
 
   // Load current user data into form
   useEffect(() => {
-    if (user) {
+    if (typedUser) {
       form.reset({
-        username: user.username || "",
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
+        username: typedUser.username || "",
+        firstName: typedUser.firstName || "",
+        lastName: typedUser.lastName || "",
         bio: user.bio || "",
         birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : "",
         website: user.website || "",
@@ -269,8 +270,17 @@ export default function ProfileSettings() {
                   Display Preferences
                 </DropdownMenuLabel>
                 
-                <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer" data-testid="menu-theme-toggle">
-                  {theme === 'light' ? (
+                <DropdownMenuItem onClick={() => {
+                    const html = document.documentElement;
+                    if (html.classList.contains('dark')) {
+                      html.classList.remove('dark');
+                      localStorage.setItem('theme', 'light');
+                    } else {
+                      html.classList.add('dark');
+                      localStorage.setItem('theme', 'dark');
+                    }
+                  }} className="cursor-pointer" data-testid="menu-theme-toggle">
+                  {document.documentElement.classList.contains('dark') ? (
                     <>
                       <Moon className="mr-2 h-4 w-4" />
                       Switch to Dark Mode
@@ -290,7 +300,7 @@ export default function ProfileSettings() {
                 
                 <DropdownMenuSeparator />
                 
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600" data-testid="menu-logout">
+                <DropdownMenuItem onClick={() => window.location.href = '/api/logout'} className="cursor-pointer text-red-600 focus:text-red-600" data-testid="menu-logout">
                   <LogOut className="mr-2 h-4 w-4" />
                   Log Out
                 </DropdownMenuItem>

@@ -45,6 +45,7 @@ export function PromptCard({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const typedUser = user as any;
   const isSuperAdmin = (user as any)?.role === "super_admin";
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -210,8 +211,8 @@ export function PromptCard({
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousLikesData) {
-        context.previousLikesData.forEach(([queryKey, data]: [any, any]) => {
+      if (context?.previousFavoritesData) {
+        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -284,8 +285,8 @@ export function PromptCard({
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousLikesData) {
-        context.previousLikesData.forEach(([queryKey, data]: [any, any]) => {
+      if (context?.previousFavoritesData) {
+        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -572,15 +573,15 @@ export function PromptCard({
 
   // Inline editing functions
   const startEdit = (field: 'name' | 'description' | 'notes') => {
-    if (!allowInlineEdit || !user || user.id !== prompt.userId) return;
+    if (!allowInlineEdit || !typedUser || typedUser.id !== prompt.userId) return;
     
     const currentValue = field === 'name' ? prompt.name : 
                         field === 'description' ? prompt.description : 
                         prompt.notes || '';
     
     setEditingField(field);
-    setEditValue(currentValue);
-    setOriginalValue(currentValue);
+    setEditValue(currentValue || '');
+    setOriginalValue(currentValue || '');
   };
 
   const cancelEdit = () => {
