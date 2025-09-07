@@ -17,10 +17,10 @@ export function QuickActions({
 }: QuickActionsProps) {
   return (
     <Card data-testid="card-quick-actions">
-      <CardHeader className="pb-2 md:pb-4">
+      <CardHeader className="pb-1 md:pb-2">
         <CardTitle className="text-base md:text-xl">Quick Actions</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-4 gap-1 md:flex md:flex-col md:space-y-1 pt-1 md:pt-2">
+      <CardContent className="grid grid-cols-4 gap-1 md:flex md:flex-col md:space-y-1 pt-0 md:pt-1 pb-2 md:pb-3">
         <Button
           variant="ghost"
           className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"

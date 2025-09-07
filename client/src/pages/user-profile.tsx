@@ -179,8 +179,8 @@ export default function UserProfile() {
       {/* Profile Header with Stats */}
       <Card className="mb-4 md:mb-6">
         <CardContent className="p-4 md:p-6 relative">
-          {/* Mobile Dropdowns - Top Right */}
-          <div className="absolute top-4 right-4 md:hidden flex flex-col gap-2">
+          {/* Dropdowns - Top Right */}
+          <div className="absolute top-4 right-4 flex flex-col md:flex-row gap-2">
             {/* Stats Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -416,7 +416,7 @@ export default function UserProfile() {
             </div>
 
             {/* Right side: Stats Grid - Hidden on mobile */}
-            <div className="hidden md:grid md:grid-cols-2 gap-2 md:gap-3 md:min-w-[200px]">
+            <div className="hidden md:grid md:grid-cols-2 gap-2 md:gap-3 md:min-w-[280px] self-start">
               <div className="text-center p-2">
                 <div className="text-lg md:text-2xl font-bold" data-testid={`text-prompts-count-${profile.id}`}>
                   {stats?.totalPrompts || 0}

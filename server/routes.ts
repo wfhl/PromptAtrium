@@ -72,11 +72,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         twitterHandle: user.twitterHandle,
         githubHandle: user.githubHandle,
         linkedinHandle: user.linkedinHandle,
+        instagramHandle: user.instagramHandle,
+        deviantartHandle: user.deviantartHandle,
+        blueskyHandle: user.blueskyHandle,
+        tiktokHandle: user.tiktokHandle,
+        redditHandle: user.redditHandle,
+        patreonHandle: user.patreonHandle,
         customSocials: user.customSocials,
         createdAt: user.createdAt,
         // Respect privacy settings
         email: user.emailVisibility ? user.email : null,
         birthday: user.showBirthday ? user.birthday : null,
+        location: user.location,
       };
 
       // Only return profile if it's public or user is viewing their own profile
