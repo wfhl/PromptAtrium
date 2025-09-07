@@ -908,6 +908,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Follow operations
+  app.post('/api/users/:userId/follow', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUserId = (req.user as any).claims.sub;
+      const targetUserId = req.params.userId;
+      
+      if (currentUserId === targetUserId) {
+        return res.status(400).json({ message: "Cannot follow yourself" });
+      }
+      
+      const follow = await storage.followUser(currentUserId, targetUserId);
+      res.json(follow);
+    } catch (error) {
+      console.error("Error following user:", error);
+      res.status(500).json({ message: "Failed to follow user" });
+    }
+  });
+
+  app.delete('/api/users/:userId/follow', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUserId = (req.user as any).claims.sub;
+      const targetUserId = req.params.userId;
+      
+      await storage.unfollowUser(currentUserId, targetUserId);
+      res.json({ message: "Unfollowed successfully" });
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+      res.status(500).json({ message: "Failed to unfollow user" });
+    }
+  });
+
+  app.get('/api/users/:userId/follow-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUserId = (req.user as any).claims.sub;
+      const targetUserId = req.params.userId;
+      
+      const isFollowing = await storage.isFollowing(currentUserId, targetUserId);
+      res.json({ isFollowing });
+    } catch (error) {
+      console.error("Error checking follow status:", error);
+      res.status(500).json({ message: "Failed to check follow status" });
+    }
+  });
+
+  app.get('/api/users/:userId/followers', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const followers = await storage.getFollowers(userId, limit, offset);
+      const followerCount = await storage.getFollowerCount(userId);
+      
+      res.json({ followers, total: followerCount });
+    } catch (error) {
+      console.error("Error fetching followers:", error);
+      res.status(500).json({ message: "Failed to fetch followers" });
+    }
+  });
+
+  app.get('/api/users/:userId/following', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const following = await storage.getFollowing(userId, limit, offset);
+      const followingCount = await storage.getFollowingCount(userId);
+      
+      res.json({ following, total: followingCount });
+    } catch (error) {
+      console.error("Error fetching following:", error);
+      res.status(500).json({ message: "Failed to fetch following" });
+    }
+  });
+
+  app.get('/api/user/following/prompts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const prompts = await storage.getFollowedUsersPrompts(userId, limit, offset);
+      res.json(prompts);
+    } catch (error) {
+      console.error("Error fetching followed users prompts:", error);
+      res.status(500).json({ message: "Failed to fetch followed users prompts" });
+    }
+  });
+
+  app.get('/api/activities/recent', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const activities = await storage.getRecentActivities(limit);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching recent activities:", error);
+      res.status(500).json({ message: "Failed to fetch recent activities" });
+    }
+  });
+
+  app.get('/api/user/following/activities', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const activities = await storage.getFollowedUsersActivities(userId, limit, offset);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching followed users activities:", error);
+      res.status(500).json({ message: "Failed to fetch followed users activities" });
+    }
+  });
+
+  app.get('/api/users/:userId/stats', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      const stats = await storage.getUserStats(userId);
+      const followerCount = await storage.getFollowerCount(userId);
+      const followingCount = await storage.getFollowingCount(userId);
+      
+      res.json({
+        ...stats,
+        followers: followerCount,
+        following: followingCount
+      });
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+      res.status(500).json({ message: "Failed to fetch user stats" });
+    }
+  });
+
   // Community routes
   app.get('/api/communities', async (req, res) => {
     try {
