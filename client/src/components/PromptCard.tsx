@@ -215,8 +215,8 @@ export function PromptCard({
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousLikesData) {
-        context.previousLikesData.forEach(([queryKey, data]: [any, any]) => {
+      if (context?.previousFavoritesData) {
+        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -289,8 +289,8 @@ export function PromptCard({
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousLikesData) {
-        context.previousLikesData.forEach(([queryKey, data]: [any, any]) => {
+      if (context?.previousFavoritesData) {
+        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -810,10 +810,22 @@ export function PromptCard({
 
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <span data-testid={`text-likes-${prompt.id}`}>
-              <Heart className="h-4 w-4 text-red-500 inline mr-1" />
-              {prompt.likes}
-            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => likeMutation.mutate()}
+              disabled={likeMutation.isPending}
+              className="h-auto px-2 py-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-1.5 transition-all duration-200 transform hover:scale-105 active:scale-95 rounded-full"
+              data-testid={`button-like-counter-${prompt.id}`}
+              title={isLiked ? "Unlike this prompt" : "Like this prompt"}
+            >
+              <Heart 
+                className={`h-4 w-4 transition-all duration-200 ${isLiked ? 'fill-red-600 animate-pulse' : 'hover:fill-red-200'}`} 
+              />
+              <span className={`text-sm font-medium transition-colors duration-200 ${isLiked ? 'text-red-600' : 'text-muted-foreground'}`}>
+                {prompt.likes || 0}
+              </span>
+            </Button>
           </div>
           <div className="flex items-center space-x-1 ml-4">
             {showActions ? (
