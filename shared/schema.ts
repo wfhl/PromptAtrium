@@ -205,6 +205,44 @@ export const promptRatings = pgTable("prompt_ratings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Follows table - tracks who follows whom
+export const follows = pgTable("follows", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  followerId: varchar("follower_id").notNull().references(() => users.id),
+  followingId: varchar("following_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  // Composite index for fast lookups of who follows whom
+  index("idx_follows_follower_following").on(table.followerId, table.followingId),
+  // Index for finding all followers of a user
+  index("idx_follows_following").on(table.followingId),
+  // Index for finding all users someone follows
+  index("idx_follows_follower").on(table.followerId),
+]);
+
+// Activities table - tracks user activities for the feed
+export const activities = pgTable("activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  actionType: varchar("action_type", { 
+    enum: ["created_prompt", "shared_prompt", "liked_prompt", "favorited_prompt", 
+           "followed_user", "joined_community", "created_collection"] 
+  }).notNull(),
+  targetId: varchar("target_id"), // ID of the prompt, user, collection, etc.
+  targetType: varchar("target_type", { 
+    enum: ["prompt", "user", "collection", "community"] 
+  }),
+  metadata: jsonb("metadata"), // Additional data about the activity
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  // Index for user's activity timeline
+  index("idx_activities_user_created").on(table.userId, table.createdAt),
+  // Index for fetching recent activities
+  index("idx_activities_created").on(table.createdAt),
+  // Index for filtering by action type
+  index("idx_activities_action_type").on(table.actionType),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   prompts: many(prompts),
@@ -215,6 +253,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   communityMemberships: many(userCommunities),
   communityAdminRoles: many(communityAdmins),
   createdInvites: many(communityInvites),
+  followers: many(follows, { relationName: "following" }),
+  following: many(follows, { relationName: "follower" }),
+  activities: many(activities),
 }));
 
 export const communitiesRelations = relations(communities, ({ many }) => ({
@@ -259,6 +300,15 @@ export const promptFavoritesRelations = relations(promptFavorites, ({ one }) => 
 export const promptRatingsRelations = relations(promptRatings, ({ one }) => ({
   user: one(users, { fields: [promptRatings.userId], references: [users.id] }),
   prompt: one(prompts, { fields: [promptRatings.promptId], references: [prompts.id] }),
+}));
+
+export const followsRelations = relations(follows, ({ one }) => ({
+  follower: one(users, { fields: [follows.followerId], references: [users.id], relationName: "follower" }),
+  following: one(users, { fields: [follows.followingId], references: [users.id], relationName: "following" }),
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  user: one(users, { fields: [activities.userId], references: [users.id] }),
 }));
 
 export const communityAdminsRelations = relations(communityAdmins, ({ one }) => ({
@@ -328,6 +378,16 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertFollowSchema = createInsertSchema(follows).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+  createdAt: true,
 });
 
 // Bulk edit schemas - only fields that can be bulk edited
@@ -404,6 +464,10 @@ export type InsertPromptRating = z.infer<typeof insertPromptRatingSchema>;
 export type PromptRating = typeof promptRatings.$inferSelect;
 export type PromptLike = typeof promptLikes.$inferSelect;
 export type PromptFavorite = typeof promptFavorites.$inferSelect;
+export type InsertFollow = z.infer<typeof insertFollowSchema>;
+export type Follow = typeof follows.$inferSelect;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type Activity = typeof activities.$inferSelect;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;
