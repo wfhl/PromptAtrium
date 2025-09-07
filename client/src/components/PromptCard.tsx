@@ -1171,8 +1171,8 @@ export function PromptCard({
           <div className="grid grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 text-xs" data-testid={`info-row-1-${prompt.id}`}>
             {/* User who created/shared */}
             <div>
-              <span className="font-medium text-muted-foreground">Creator:</span>
-              <div className="mt-1 flex items-center gap-2">
+              {!isCollapsed && <span className="font-medium text-muted-foreground">Creator:</span>}
+              <div className={!isCollapsed ? "mt-1 flex items-center gap-2" : "flex items-center gap-2"}>
                 {(prompt as any).user?.username ? (
                   <Link href={`/user/${(prompt as any).user.username}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid={`link-creator-${prompt.id}`}>
                     <Avatar className="h-6 w-6">
@@ -1188,7 +1188,7 @@ export function PromptCard({
                           : 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs text-muted-foreground hover:text-foreground">
+                    <span className="hidden sm:inline text-xs text-muted-foreground hover:text-foreground">
                       {(prompt as any).user?.firstName || (prompt as any).user?.username || 'User'}
                     </span>
                   </Link>
@@ -1212,8 +1212,8 @@ export function PromptCard({
 
             {/* Prompt Types */}
             <div>
-              <span className="font-medium text-muted-foreground">Types:</span>
-              <div className="flex flex-wrap gap-1 mt-1">
+              {!isCollapsed && <span className="font-medium text-muted-foreground">Types:</span>}
+              <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
                 {prompt.promptTypes && prompt.promptTypes.length > 0 ? (
                   prompt.promptTypes.map((type, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
@@ -1232,8 +1232,8 @@ export function PromptCard({
 
             {/* Prompt Styles */}
             <div>
-              <span className="font-medium text-muted-foreground">Styles:</span>
-              <div className="flex flex-wrap gap-1 mt-1">
+              {!isCollapsed && <span className="font-medium text-muted-foreground">Styles:</span>}
+              <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
                 {prompt.promptStyles && prompt.promptStyles.length > 0 ? (
                   prompt.promptStyles.map((style, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
@@ -1252,8 +1252,8 @@ export function PromptCard({
 
             {/* Prompt Categories */}
             <div>
-              <span className="font-medium text-muted-foreground">Categories:</span>
-              <div className="flex flex-wrap gap-1 mt-1">
+              {!isCollapsed && <span className="font-medium text-muted-foreground">Categories:</span>}
+              <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
                 {prompt.categories && prompt.categories.length > 0 ? (
                   prompt.categories.map((category, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
@@ -1272,8 +1272,8 @@ export function PromptCard({
 
             {/* Tags */}
             <div>
-              <span className="font-medium text-muted-foreground">Tags:</span>
-              <div className="flex flex-wrap gap-1 mt-1">
+              {!isCollapsed && <span className="font-medium text-muted-foreground">Tags:</span>}
+              <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
                 {prompt.tags && prompt.tags.length > 0 ? (
                   prompt.tags.slice(0, 3).map((tag, index) => (
                     <Badge key={index} variant="default" className="text-xs">
