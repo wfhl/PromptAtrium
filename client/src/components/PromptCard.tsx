@@ -44,6 +44,7 @@ export function PromptCard({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const isSuperAdmin = (user as any)?.role === "super_admin";
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   
@@ -842,29 +843,53 @@ export function PromptCard({
                   <GitBranch className="h-4 w-4" />
                 </Button>
 
-                {/* 7. Archive - Archive icon */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => archiveMutation.mutate()}
-                  disabled={archiveMutation.isPending}
-                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50"
-                  data-testid={`button-archive-${prompt.id}`}
-                >
-                  <Archive className="h-4 w-4" />
-                </Button>
+                {/* 7. Archive/Featured - Archive icon for regular users, Star for super admin */}
+                {isSuperAdmin && isCommunityPage ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toast({ title: "Featured", description: "Feature functionality coming soon!" })}
+                    className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50"
+                    data-testid={`button-featured-${prompt.id}`}
+                  >
+                    <Star className={`h-4 w-4 ${prompt.isFeatured ? 'fill-yellow-600' : ''}`} />
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => archiveMutation.mutate()}
+                    disabled={archiveMutation.isPending}
+                    className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50"
+                    data-testid={`button-archive-${prompt.id}`}
+                  >
+                    <Archive className="h-4 w-4" />
+                  </Button>
+                )}
 
-                {/* 8. Delete - Trash icon (red) */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => deleteMutation.mutate()}
-                  disabled={deleteMutation.isPending}
-                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-                  data-testid={`button-delete-${prompt.id}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {/* 8. Delete/Hidden - Trash icon for regular users, Eye for super admin */}
+                {isSuperAdmin && isCommunityPage ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toast({ title: "Hidden", description: "Hide functionality coming soon!" })}
+                    className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
+                    data-testid={`button-hidden-${prompt.id}`}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => deleteMutation.mutate()}
+                    disabled={deleteMutation.isPending}
+                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                    data-testid={`button-delete-${prompt.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
 
                 {/* 9. Bookmark - Bookmark (outline → filled) */}
                 <Button
@@ -879,40 +904,103 @@ export function PromptCard({
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2" data-testid={`actions-community-${prompt.id}`}>
+              {/* Community page action buttons - enabled for all users */}
+              <div className="flex items-center space-x-1" data-testid={`actions-community-${prompt.id}`}>
+                {/* Like */}
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => likeMutation.mutate()}
                   disabled={likeMutation.isPending}
-                  className="text-red-600 hover:bg-red-50"
+                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
                   data-testid={`button-like-${prompt.id}`}
                 >
-                  <Heart className="h-4 w-4 mr-1" />
-                  Like
+                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-red-600' : ''}`} />
                 </Button>
+                
+                {/* Share */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                      data-testid={`button-share-${prompt.id}`}
+                    >
+                      <Share className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={handleCopyLink}>
+                      Share Link
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleCopyJSON}>
+                      Copy JSON
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                {/* Download */}
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={() => favoriteMutation.mutate()}
-                  disabled={favoriteMutation.isPending}
-                  className="text-yellow-600 hover:bg-yellow-50"
-                  data-testid={`button-favorite-${prompt.id}`}
+                  variant="ghost"
+                  onClick={handleDownload}
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  data-testid={`button-download-${prompt.id}`}
                 >
-                  <Star className="h-4 w-4 mr-1" />
-                  Favorite
+                  <Download className="h-4 w-4" />
                 </Button>
+                
+                {/* Fork */}
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => forkMutation.mutate()}
                   disabled={forkMutation.isPending}
-                  className="text-primary hover:bg-primary/10"
+                  className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50"
                   data-testid={`button-fork-${prompt.id}`}
                 >
-                  <GitBranch className="h-4 w-4 mr-1" />
-                  Fork
+                  <GitBranch className="h-4 w-4" />
                 </Button>
+                
+                {/* Bookmark */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => favoriteMutation.mutate()}
+                  disabled={favoriteMutation.isPending}
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  data-testid={`button-bookmark-${prompt.id}`}
+                >
+                  <Bookmark className={`h-4 w-4 ${isFavorited ? 'fill-blue-600' : ''}`} />
+                </Button>
+                
+                {/* Super admin only buttons */}
+                {isSuperAdmin && (
+                  <>
+                    {/* Featured Toggle */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => toast({ title: "Featured", description: "Feature functionality coming soon!" })}
+                      className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50"
+                      data-testid={`button-featured-${prompt.id}`}
+                    >
+                      <Star className={`h-4 w-4 ${prompt.isFeatured ? 'fill-yellow-600' : ''}`} />
+                    </Button>
+                    
+                    {/* Hidden Toggle */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => toast({ title: "Hidden", description: "Hide functionality coming soon!" })}
+                      className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
+                      data-testid={`button-hidden-${prompt.id}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </div>
