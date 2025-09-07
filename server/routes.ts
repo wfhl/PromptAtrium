@@ -628,6 +628,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle featured status (super admin only)
+  app.post('/api/prompts/:id/featured', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const prompt = await storage.getPrompt(req.params.id);
+      if (!prompt) {
+        return res.status(404).json({ message: "Prompt not found" });
+      }
+      
+      const newFeaturedStatus = !prompt.isFeatured;
+      await storage.updatePrompt(req.params.id, { isFeatured: newFeaturedStatus });
+      res.json({ featured: newFeaturedStatus });
+    } catch (error) {
+      console.error("Error toggling featured status:", error);
+      res.status(500).json({ message: "Failed to toggle featured status" });
+    }
+  });
+
+  // Toggle hidden status (super admin only)
+  app.post('/api/prompts/:id/hidden', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const prompt = await storage.getPrompt(req.params.id);
+      if (!prompt) {
+        return res.status(404).json({ message: "Prompt not found" });
+      }
+      
+      const newHiddenStatus = !prompt.isHidden;
+      await storage.updatePrompt(req.params.id, { isHidden: newHiddenStatus });
+      res.json({ hidden: newHiddenStatus });
+    } catch (error) {
+      console.error("Error toggling hidden status:", error);
+      res.status(500).json({ message: "Failed to toggle hidden status" });
+    }
+  });
+
   app.get('/api/user/favorites', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;

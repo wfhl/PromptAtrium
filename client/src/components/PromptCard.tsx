@@ -74,6 +74,82 @@ export function PromptCard({
   const isFavorited = userFavorites.some((fav: any) => fav.id === prompt.id);
   const isLiked = userLikes.some((like: any) => like.id === prompt.id);
 
+  // Featured mutation for super admins
+  const featuredMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/prompts/${prompt.id}/featured`);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      });
+      toast({
+        title: "Success",
+        description: data.featured ? "Prompt featured!" : "Prompt unfeatured!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to toggle featured status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Hidden mutation for super admins
+  const hiddenMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/prompts/${prompt.id}/hidden`);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      });
+      toast({
+        title: "Success",
+        description: data.hidden ? "Prompt hidden from community!" : "Prompt restored to community!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to toggle hidden status",
+        variant: "destructive",
+      });
+    },
+  });
+
   const likeMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/like`);
@@ -848,7 +924,8 @@ export function PromptCard({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => toast({ title: "Featured", description: "Feature functionality coming soon!" })}
+                    onClick={() => featuredMutation.mutate()}
+                    disabled={featuredMutation.isPending}
                     className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50"
                     data-testid={`button-featured-${prompt.id}`}
                   >
@@ -872,7 +949,8 @@ export function PromptCard({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => toast({ title: "Hidden", description: "Hide functionality coming soon!" })}
+                    onClick={() => hiddenMutation.mutate()}
+                    disabled={hiddenMutation.isPending}
                     className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
                     data-testid={`button-hidden-${prompt.id}`}
                   >
@@ -982,7 +1060,8 @@ export function PromptCard({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => toast({ title: "Featured", description: "Feature functionality coming soon!" })}
+                      onClick={() => featuredMutation.mutate()}
+                      disabled={featuredMutation.isPending}
                       className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50"
                       data-testid={`button-featured-${prompt.id}`}
                     >
@@ -993,7 +1072,8 @@ export function PromptCard({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => toast({ title: "Hidden", description: "Hide functionality coming soon!" })}
+                      onClick={() => hiddenMutation.mutate()}
+                      disabled={hiddenMutation.isPending}
                       className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
                       data-testid={`button-hidden-${prompt.id}`}
                     >
