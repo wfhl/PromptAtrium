@@ -830,24 +830,12 @@ export function PromptCard({
           <div className="flex items-center space-x-1 ml-4">
             {showActions ? (
               <div className="flex items-center space-x-1" data-testid={`actions-personal-${prompt.id}`}>
-                {/* 1. Like Toggle - Heart (outline → filled red) */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => likeMutation.mutate()}
-                  disabled={likeMutation.isPending}
-                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-                  data-testid={`button-like-${prompt.id}`}
-                >
-                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-red-600' : ''}`} />
-                </Button>
-
-                {/* 2. Edit Button - Green edit icon */}
+                {/* Edit Button - Green edit icon */}
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => onEdit?.(prompt)}
-                  className="h-8 w-8 p-0 text-green-600 hover:bg-green-50"
+                  className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-edit-${prompt.id}`}
                 >
                   <Edit className="h-4 w-4" />
@@ -859,7 +847,7 @@ export function PromptCard({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50"
+                      className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                       data-testid={`button-collections-${prompt.id}`}
                     >
                       <Folder className="h-4 w-4" />
@@ -881,7 +869,7 @@ export function PromptCard({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                      className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                       data-testid={`button-share-${prompt.id}`}
                     >
                       <Share className="h-4 w-4" />
@@ -911,7 +899,7 @@ export function PromptCard({
                   size="sm"
                   variant="ghost"
                   onClick={handleDownload}
-                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-download-${prompt.id}`}
                 >
                   <Download className="h-4 w-4" />
@@ -923,7 +911,7 @@ export function PromptCard({
                   variant="ghost"
                   onClick={() => forkMutation.mutate()}
                   disabled={forkMutation.isPending}
-                  className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50"
+                  className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-fork-${prompt.id}`}
                 >
                   <GitBranch className="h-4 w-4" />
@@ -939,7 +927,7 @@ export function PromptCard({
                     className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50"
                     data-testid={`button-featured-${prompt.id}`}
                   >
-                    <Star className={`h-4 w-4 ${prompt.isFeatured ? 'fill-yellow-600' : ''}`} />
+                    <Star className={`h-4 w-4 transition-all duration-200 ${prompt.isFeatured ? 'fill-yellow-600' : ''}`} />
                   </Button>
                 ) : (
                   <Button
@@ -947,7 +935,7 @@ export function PromptCard({
                     variant="ghost"
                     onClick={() => archiveMutation.mutate()}
                     disabled={archiveMutation.isPending}
-                    className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50"
+                    className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid={`button-archive-${prompt.id}`}
                   >
                     <Archive className="h-4 w-4" />
@@ -961,7 +949,7 @@ export function PromptCard({
                     variant="ghost"
                     onClick={() => hiddenMutation.mutate()}
                     disabled={hiddenMutation.isPending}
-                    className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
+                    className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid={`button-hidden-${prompt.id}`}
                   >
                     <Eye className="h-4 w-4" />
@@ -972,7 +960,7 @@ export function PromptCard({
                     variant="ghost"
                     onClick={() => deleteMutation.mutate()}
                     disabled={deleteMutation.isPending}
-                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid={`button-delete-${prompt.id}`}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -985,34 +973,22 @@ export function PromptCard({
                   variant="ghost"
                   onClick={() => favoriteMutation.mutate()}
                   disabled={favoriteMutation.isPending}
-                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-bookmark-${prompt.id}`}
                 >
-                  <Bookmark className={`h-4 w-4 ${isFavorited ? 'fill-blue-600' : ''}`} />
+                  <Bookmark className={`h-4 w-4 transition-all duration-200 ${isFavorited ? 'fill-blue-600' : ''}`} />
                 </Button>
               </div>
             ) : (
               /* Community page action buttons - enabled for all users */
               <div className="flex items-center space-x-1" data-testid={`actions-community-${prompt.id}`}>
-                {/* Like */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => likeMutation.mutate()}
-                  disabled={likeMutation.isPending}
-                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-                  data-testid={`button-like-${prompt.id}`}
-                >
-                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-red-600' : ''}`} />
-                </Button>
-                
                 {/* Share */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                      className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                       data-testid={`button-share-${prompt.id}`}
                     >
                       <Share className="h-4 w-4" />
@@ -1033,7 +1009,7 @@ export function PromptCard({
                   size="sm"
                   variant="ghost"
                   onClick={handleDownload}
-                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-download-${prompt.id}`}
                 >
                   <Download className="h-4 w-4" />
@@ -1045,7 +1021,7 @@ export function PromptCard({
                   variant="ghost"
                   onClick={() => forkMutation.mutate()}
                   disabled={forkMutation.isPending}
-                  className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50"
+                  className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-fork-${prompt.id}`}
                 >
                   <GitBranch className="h-4 w-4" />
@@ -1057,10 +1033,10 @@ export function PromptCard({
                   variant="ghost"
                   onClick={() => favoriteMutation.mutate()}
                   disabled={favoriteMutation.isPending}
-                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-bookmark-${prompt.id}`}
                 >
-                  <Bookmark className={`h-4 w-4 ${isFavorited ? 'fill-blue-600' : ''}`} />
+                  <Bookmark className={`h-4 w-4 transition-all duration-200 ${isFavorited ? 'fill-blue-600' : ''}`} />
                 </Button>
                 
                 {/* Super admin only buttons */}
@@ -1072,10 +1048,10 @@ export function PromptCard({
                       variant="ghost"
                       onClick={() => featuredMutation.mutate()}
                       disabled={featuredMutation.isPending}
-                      className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50"
+                      className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                       data-testid={`button-featured-${prompt.id}`}
                     >
-                      <Star className={`h-4 w-4 ${prompt.isFeatured ? 'fill-yellow-600' : ''}`} />
+                      <Star className={`h-4 w-4 transition-all duration-200 ${prompt.isFeatured ? 'fill-yellow-600' : ''}`} />
                     </Button>
                     
                     {/* Hidden Toggle */}
@@ -1084,7 +1060,7 @@ export function PromptCard({
                       variant="ghost"
                       onClick={() => hiddenMutation.mutate()}
                       disabled={hiddenMutation.isPending}
-                      className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
+                      className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                       data-testid={`button-hidden-${prompt.id}`}
                     >
                       <Eye className="h-4 w-4" />
