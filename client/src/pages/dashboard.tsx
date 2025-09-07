@@ -100,34 +100,34 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 py-4 md:px-6 md:py-8">
         {/* Dashboard Header */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div className="mb-4 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="text-welcome">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2" data-testid="text-welcome">
                 Welcome back, {user?.firstName || (user?.email ? user.email.split("@")[0] : "") || "User"}
               </h1>
-              <p className="text-muted-foreground">Manage your AI prompts and discover community favorites</p>
+              <p className="text-sm md:text-base text-muted-foreground">Manage your AI prompts and discover community favorites</p>
             </div>
             
-            <div className="mt-4 md:mt-0 flex items-center space-x-4">
-              <div className="relative">
+            <div className="mt-3 md:mt-0 flex items-center space-x-4">
+              <div className="relative w-full md:w-auto">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   type="text"
                   placeholder="Search prompts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 pl-10"
+                  className="w-full md:w-64 pl-10"
                   data-testid="input-search"
                 />
               </div>
             </div>
           </div>
           
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* Stats Cards - Hidden on mobile */}
+          <div className="hidden md:grid md:grid-cols-4 gap-4 mb-6">
             <Link href="/library" className="hover:scale-105 transition-transform cursor-pointer">
               <StatsCard
                 title="Your Prompts"
@@ -161,12 +161,22 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Quick Actions for Mobile - Show at top on mobile */}
+        <div className="block md:hidden mb-6">
+          <QuickActions
+            onCreatePrompt={handleCreatePrompt}
+            onCreateCollection={handleCreateCollection}
+            onStartProject={handleStartProject}
+            onImportPrompts={handleImportPrompts}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           <div className="lg:col-span-2">
             {/* Recent Prompts */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Recent Prompts</h2>
+            <div className="mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <h2 className="text-lg md:text-xl font-semibold text-foreground">Recent Prompts</h2>
                 <Link href="/library">
                   <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-prompts">
                     View all
@@ -199,9 +209,9 @@ export default function Dashboard() {
             </div>
             
             {/* Favorite Prompts */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Favorite Prompts</h2>
+            <div className="mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <h2 className="text-lg md:text-xl font-semibold text-foreground">Favorite Prompts</h2>
                 <Link href="/library?section=favorites">
                   <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-favorites">
                     View all
@@ -230,8 +240,8 @@ export default function Dashboard() {
             
             {/* Community Highlights */}
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Community Highlights</h2>
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <h2 className="text-lg md:text-xl font-semibold text-foreground">Community Highlights</h2>
                 <div className="flex items-center space-x-2">
                   <Button size="sm" className="bg-primary text-primary-foreground" data-testid="filter-featured">
                     Featured
@@ -262,14 +272,16 @@ export default function Dashboard() {
           </div>
           
           {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Quick Actions */}
-            <QuickActions
-              onCreatePrompt={handleCreatePrompt}
-              onCreateCollection={handleCreateCollection}
-              onStartProject={handleStartProject}
-              onImportPrompts={handleImportPrompts}
-            />
+          <div className="lg:col-span-1 space-y-4 md:space-y-6">
+            {/* Quick Actions - Hidden on mobile (shown at top) */}
+            <div className="hidden md:block">
+              <QuickActions
+                onCreatePrompt={handleCreatePrompt}
+                onCreateCollection={handleCreateCollection}
+                onStartProject={handleStartProject}
+                onImportPrompts={handleImportPrompts}
+              />
+            </div>
             
             {/* Collections */}
             <Card data-testid="card-collections">
