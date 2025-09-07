@@ -161,122 +161,115 @@ export default function UserProfile() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-7xl">
-      {/* Profile Header */}
+      {/* Profile Header with Stats */}
       <Card className="mb-4 md:mb-6">
         <CardContent className="p-4 md:p-6">
-          <div className="flex items-start gap-4 md:gap-6">
-            {/* Avatar */}
-            <Avatar className="h-16 w-16 md:h-24 md:w-24">
-              <AvatarImage src={profile.profileImageUrl || undefined} alt={profile.firstName || undefined} />
-              <AvatarFallback className="text-lg md:text-2xl">
-                {profile.firstName?.[0]?.toUpperCase() || username?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+          <div className="flex flex-col md:flex-row md:justify-between gap-4">
+            {/* Left side: Avatar and Profile Info */}
+            <div className="flex items-start gap-4 md:gap-6">
+              {/* Avatar */}
+              <Avatar className="h-16 w-16 md:h-24 md:w-24">
+                <AvatarImage src={profile.profileImageUrl || undefined} alt={profile.firstName || undefined} />
+                <AvatarFallback className="text-lg md:text-2xl">
+                  {profile.firstName?.[0]?.toUpperCase() || username?.[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
 
-            {/* Profile Info */}
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <div>
+              {/* Profile Info */}
+              <div className="flex-1">
+                <div className="mb-2">
                   <h1 className="text-xl md:text-3xl font-bold">
-                    {profile.firstName} {profile.lastName}
+                    @{profile.username}
                   </h1>
-                  <p className="text-sm md:text-base text-gray-500">@{profile.username}</p>
+                  {(profile.firstName || profile.lastName) && (
+                    <p className="text-sm md:text-base text-gray-500">
+                      {profile.firstName} {profile.lastName}
+                    </p>
+                  )}
                 </div>
-                
-                {!isOwnProfile && currentUser && (
-                  <Button
-                    onClick={() => followMutation.mutate()}
-                    disabled={followMutation.isPending}
-                    variant={isFollowing ? "outline" : "default"}
-                    className="gap-2"
-                    data-testid={`button-follow-${profile.id}`}
-                  >
-                    {isFollowing ? (
-                      <>
-                        <UserMinus className="h-4 w-4" />
-                        Unfollow
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="h-4 w-4" />
-                        Follow
-                      </>
-                    )}
-                  </Button>
+
+                {profile.bio && (
+                  <p className="text-gray-700 mb-4">{profile.bio}</p>
                 )}
-              </div>
 
-              {profile.bio && (
-                <p className="text-gray-700 mb-4">{profile.bio}</p>
-              )}
-
-              <div className="flex items-center gap-6 text-sm text-gray-500">
-                {profile.location && (
-                  <span className="flex items-center gap-1">
-                    <Badge variant="secondary">{profile.location}</Badge>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {profile.location && (
+                    <span className="flex items-center gap-1">
+                      <Badge variant="secondary">{profile.location}</Badge>
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 text-sm text-gray-500">
+                    <Calendar className="h-4 w-4" />
+                    Joined {formatDate(profile.createdAt)}
                   </span>
-                )}
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  Joined {formatDate(profile.createdAt)}
-                </span>
+                  {!isOwnProfile && currentUser && (
+                    <Button
+                      onClick={() => followMutation.mutate()}
+                      disabled={followMutation.isPending}
+                      variant={isFollowing ? "outline" : "default"}
+                      className="gap-2"
+                      data-testid={`button-follow-${profile.id}`}
+                    >
+                      {isFollowing ? (
+                        <>
+                          <UserMinus className="h-4 w-4" />
+                          Unfollow
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4" />
+                          Follow
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right side: Stats Grid */}
+            <div className="grid grid-cols-3 md:grid-cols-2 gap-2 md:gap-3 md:min-w-[200px]">
+              <div className="text-center p-2">
+                <div className="text-lg md:text-2xl font-bold" data-testid={`text-prompts-count-${profile.id}`}>
+                  {stats?.totalPrompts || 0}
+                </div>
+                <div className="text-xs md:text-sm text-gray-500">Prompts</div>
+              </div>
+              <div className="text-center p-2">
+                <div className="text-lg md:text-2xl font-bold" data-testid={`text-likes-count-${profile.id}`}>
+                  {stats?.totalLikes || 0}
+                </div>
+                <div className="text-xs md:text-sm text-gray-500">Likes</div>
+              </div>
+              <div className="text-center p-2">
+                <div className="text-lg md:text-2xl font-bold" data-testid={`text-collections-count-${profile.id}`}>
+                  {stats?.collections || 0}
+                </div>
+                <div className="text-xs md:text-sm text-gray-500">Collections</div>
+              </div>
+              <div className="text-center p-2">
+                <div className="text-lg md:text-2xl font-bold" data-testid={`text-forks-count-${profile.id}`}>
+                  {stats?.forksCreated || 0}
+                </div>
+                <div className="text-xs md:text-sm text-gray-500">Forks</div>
+              </div>
+              <div className="text-center p-2">
+                <div className="text-lg md:text-2xl font-bold" data-testid={`text-followers-count-${profile.id}`}>
+                  {stats?.followers || 0}
+                </div>
+                <div className="text-xs md:text-sm text-gray-500">Followers</div>
+              </div>
+              <div className="text-center p-2">
+                <div className="text-lg md:text-2xl font-bold" data-testid={`text-following-count-${profile.id}`}>
+                  {stats?.following || 0}
+                </div>
+                <div className="text-xs md:text-sm text-gray-500">Following</div>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-4 mb-4 md:mb-6">
-        <Card>
-          <CardContent className="p-2 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold" data-testid={`text-prompts-count-${profile.id}`}>
-              {stats?.totalPrompts || 0}
-            </div>
-            <div className="text-xs md:text-sm text-gray-500">Prompts</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-2 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold" data-testid={`text-likes-count-${profile.id}`}>
-              {stats?.totalLikes || 0}
-            </div>
-            <div className="text-xs md:text-sm text-gray-500">Likes</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-2 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold" data-testid={`text-collections-count-${profile.id}`}>
-              {stats?.collections || 0}
-            </div>
-            <div className="text-xs md:text-sm text-gray-500">Collections</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-2 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold" data-testid={`text-forks-count-${profile.id}`}>
-              {stats?.forksCreated || 0}
-            </div>
-            <div className="text-xs md:text-sm text-gray-500">Forks</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-2 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold" data-testid={`text-followers-count-${profile.id}`}>
-              {stats?.followers || 0}
-            </div>
-            <div className="text-xs md:text-sm text-gray-500">Followers</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-2 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold" data-testid={`text-following-count-${profile.id}`}>
-              {stats?.following || 0}
-            </div>
-            <div className="text-xs md:text-sm text-gray-500">Following</div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Tabs */}
       <Tabs defaultValue="prompts" className="space-y-6">
