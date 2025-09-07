@@ -232,23 +232,23 @@ export default function Community() {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="prompts" data-testid="tab-prompts">
+          <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
             <BookOpen className="h-4 w-4 mr-2" />
             Prompts
           </TabsTrigger>
-          <TabsTrigger value="users" data-testid="tab-users">
+          <TabsTrigger value="users" className="text-xs md:text-sm" data-testid="tab-users">
             <Users className="h-4 w-4 mr-2" />
             Users
           </TabsTrigger>
-          <TabsTrigger value="followed" data-testid="tab-followed">
+          <TabsTrigger value="followed" className="text-xs md:text-sm" data-testid="tab-followed">
             <UserPlus className="h-4 w-4 mr-2" />
             Followed
           </TabsTrigger>
-          <TabsTrigger value="activity" data-testid="tab-activity">
+          <TabsTrigger value="activity" className="text-xs md:text-sm" data-testid="tab-activity">
             <Activity className="h-4 w-4 mr-2" />
             Activity
           </TabsTrigger>

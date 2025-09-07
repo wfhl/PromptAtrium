@@ -100,10 +100,10 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-4 md:px-6 md:py-8">
+      <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
         {/* Dashboard Header */}
-        <div className="mb-4 md:mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-6">
+        <div className="mb-2 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 md:mb-6">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2" data-testid="text-welcome">
                 Welcome back, {user?.firstName || (user?.email ? user.email.split("@")[0] : "") || "User"}
@@ -111,7 +111,7 @@ export default function Dashboard() {
               <p className="text-sm md:text-base text-muted-foreground">Manage your AI prompts and discover community favorites</p>
             </div>
             
-            <div className="mt-3 md:mt-0 flex items-center space-x-4">
+            <div className="mt-2 md:mt-0 flex items-center space-x-2 md:space-x-4">
               <div className="relative w-full md:w-auto">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -162,7 +162,7 @@ export default function Dashboard() {
         </div>
         
         {/* Quick Actions for Mobile - Show at top on mobile */}
-        <div className="block md:hidden mb-6">
+        <div className="block md:hidden mb-3">
           <QuickActions
             onCreatePrompt={handleCreatePrompt}
             onCreateCollection={handleCreateCollection}
@@ -171,7 +171,7 @@ export default function Dashboard() {
           />
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4 lg:gap-8">
           <div className="lg:col-span-2">
             {/* Recent Prompts */}
             <div className="mb-6 md:mb-8">

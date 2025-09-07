@@ -428,20 +428,20 @@ export default function Library() {
 
   return (
     <>
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="prompts" data-testid="tab-my-prompts">
+            <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-my-prompts">
               My Prompts
             </TabsTrigger>
-            <TabsTrigger value="bookmarked" data-testid="tab-bookmarked">
+            <TabsTrigger value="bookmarked" className="text-xs md:text-sm" data-testid="tab-bookmarked">
               Bookmarked
             </TabsTrigger>
-            <TabsTrigger value="collections" data-testid="tab-collections">
+            <TabsTrigger value="collections" className="text-xs md:text-sm" data-testid="tab-collections">
               Collections
             </TabsTrigger>
-            <TabsTrigger value="archive" data-testid="tab-archive">
+            <TabsTrigger value="archive" className="text-xs md:text-sm" data-testid="tab-archive">
               Archive
             </TabsTrigger>
           </TabsList>

@@ -101,9 +101,9 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-3">
+        <div className="container mx-auto px-2 sm:px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-4 md:space-x-8">
+            <div className="flex items-center space-x-2 md:space-x-3">
               <img 
                 src="/ATRIUM2 090725.png" 
                 alt="PromptAtrium Logo" 
@@ -147,7 +147,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             </nav>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             <Button
               className="hidden md:flex items-center space-x-2"
               onClick={onCreatePrompt || handleDefaultCreatePrompt}
@@ -242,11 +242,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             {/* Mobile Menu Button - Now on the right */}
             <Button
               variant="ghost"
-              className="md:hidden"
+              className="md:hidden h-8 w-8 p-0"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -254,7 +254,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-card border-b border-border">
-            <nav className="container mx-auto px-6 py-4 flex flex-col space-y-3">
+            <nav className="container mx-auto px-2 sm:px-4 py-2 flex flex-col space-y-1">
               <Link 
                 href="/" 
                 className={isActiveRoute("/") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 

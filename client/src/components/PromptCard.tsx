@@ -735,7 +735,7 @@ export function PromptCard({
         )}
       </Button>
       
-      <CardContent className="p-6">
+      <CardContent className="p-2 sm:p-3 md:p-6">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
@@ -1178,9 +1178,9 @@ export function PromptCard({
         </div>
 
         {/* Additional Prompt Information */}
-        <div className="mt-4 space-y-3" data-testid={`additional-info-${prompt.id}`}>
+        <div className="mt-2 md:mt-4 space-y-2 md:space-y-3" data-testid={`additional-info-${prompt.id}`}>
           {/* Row 1: User, Types, Styles, Categories, Tags */}
-          <div className="grid grid-cols-3 lg:grid-cols-5 gap-3 text-xs" data-testid={`info-row-1-${prompt.id}`}>
+          <div className="grid grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 text-xs" data-testid={`info-row-1-${prompt.id}`}>
             {/* User who created/shared */}
             <div>
               <span className="font-medium text-muted-foreground">Creator:</span>
@@ -1312,7 +1312,7 @@ export function PromptCard({
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut", delay: 0.1 }}
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs overflow-hidden" 
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 text-xs overflow-hidden" 
                 data-testid={`info-row-2-${prompt.id}`}
               >
             {/* Intended Generator */}
@@ -1403,7 +1403,7 @@ export function PromptCard({
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut", delay: 0.2 }}
-                className="grid grid-cols-3 gap-3 text-xs overflow-hidden" 
+                className="grid grid-cols-3 gap-2 md:gap-3 text-xs overflow-hidden" 
                 data-testid={`info-row-3-${prompt.id}`}
               >
             {/* Notes */}
