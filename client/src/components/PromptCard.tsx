@@ -31,6 +31,8 @@ interface PromptCardProps {
   allowInlineEdit?: boolean;
   // Community page flag
   isCommunityPage?: boolean;
+  // Profile page flag
+  isProfilePage?: boolean;
 }
 
 export function PromptCard({ 
@@ -41,7 +43,8 @@ export function PromptCard({
   isSelected = false,
   onSelectionChange,
   allowInlineEdit = false,
-  isCommunityPage = false
+  isCommunityPage = false,
+  isProfilePage = false
 }: PromptCardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -783,8 +786,8 @@ export function PromptCard({
                   {prompt.isPublic ? "Public" : "Private"}
                 </Button>
               ) : (
-                // Hide "Public" badge on community page since all prompts there are inherently public
-                !showActions && !isCommunityPage && (
+                // Hide "Public" badge on community page and profile page
+                !showActions && !isCommunityPage && !isProfilePage && (
                   <Badge 
                     variant={prompt.isPublic ? "default" : "secondary"} 
                     className={prompt.isPublic ? "bg-blue-500" : ""}

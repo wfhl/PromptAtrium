@@ -299,7 +299,7 @@ export default function UserProfile() {
           ) : prompts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {prompts.map((prompt: Prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} />
+                <PromptCard key={prompt.id} prompt={prompt} isProfilePage={true} />
               ))}
             </div>
           ) : (
