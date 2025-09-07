@@ -115,7 +115,7 @@ export default function ProfileSettings() {
     mutationFn: async (data: ProfileFormData) => {
       const profileData = {
         ...data,
-        birthday: data.birthday || null, // Keep as string, don't convert to Date
+        birthday: data.birthday ? new Date(data.birthday) : null, // Convert string to Date object
         customSocials,
       };
       const response = await apiRequest("PUT", "/api/profile", profileData);
