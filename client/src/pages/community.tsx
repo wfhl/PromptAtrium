@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ export default function Community() {
   const isSuperAdmin = (user as any)?.role === "super_admin";
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [activeTab, setActiveTab] = useState("prompts");
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
@@ -262,63 +263,97 @@ export default function Community() {
 
         {/* Prompts Tab */}
         <TabsContent value="prompts" className="space-y-4">
-          {/* Filters */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Filter className="h-5 w-5" />
-                <span>Discover & Filter</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    type="text"
-                    placeholder="Search community prompts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-search"
-                  />
+          {/* Search Bar with Filter Dropdown */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search community prompts..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  // Auto-apply search on type
+                  setTimeout(() => refetch(), 500);
+                }}
+                className="pl-10 pr-4"
+                data-testid="input-search"
+              />
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" data-testid="button-filter">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {/* Category Filter */}
+                <div className="px-2 py-2">
+                  <label className="text-sm font-medium mb-2 block">Category</label>
+                  <Select value={categoryFilter} onValueChange={(value) => {
+                    setCategoryFilter(value);
+                    setTimeout(() => refetch(), 100);
+                  }}>
+                    <SelectTrigger className="w-full" data-testid="select-category">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="Art & Design">Art & Design</SelectItem>
+                      <SelectItem value="Photography">Photography</SelectItem>
+                      <SelectItem value="Character Design">Character Design</SelectItem>
+                      <SelectItem value="Landscape">Landscape</SelectItem>
+                      <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
+                      <SelectItem value="Abstract">Abstract</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger data-testid="select-category">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="Art & Design">Art & Design</SelectItem>
-                    <SelectItem value="Photography">Photography</SelectItem>
-                    <SelectItem value="Character Design">Character Design</SelectItem>
-                    <SelectItem value="Landscape">Landscape</SelectItem>
-                    <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
-                    <SelectItem value="Abstract">Abstract</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <DropdownMenuSeparator />
                 
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger data-testid="select-sort">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="featured">Featured</SelectItem>
-                    <SelectItem value="trending">Trending</SelectItem>
-                    <SelectItem value="recent">Most Recent</SelectItem>
-                    {isSuperAdmin && <SelectItem value="hidden">Hidden</SelectItem>}
-                  </SelectContent>
-                </Select>
+                {/* Sort Filter */}
+                <div className="px-2 py-2">
+                  <label className="text-sm font-medium mb-2 block">Sort By</label>
+                  <Select value={sortBy} onValueChange={(value) => {
+                    setSortBy(value);
+                    setTimeout(() => refetch(), 100);
+                  }}>
+                    <SelectTrigger className="w-full" data-testid="select-sort">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="featured">Featured</SelectItem>
+                      <SelectItem value="trending">Trending</SelectItem>
+                      <SelectItem value="recent">Most Recent</SelectItem>
+                      {isSuperAdmin && <SelectItem value="hidden">Hidden</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
                 
-                <Button onClick={() => refetch()} className="flex items-center space-x-2" data-testid="button-apply-filters">
-                  {getSortIcon()}
-                  <span>Apply Filters</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <DropdownMenuSeparator />
+                
+                {/* Apply Filters Button */}
+                <div className="px-2 py-2">
+                  <Button 
+                    onClick={() => refetch()} 
+                    className="w-full"
+                    size="sm"
+                    data-testid="button-apply-filters"
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      {getSortIcon()}
+                      <span>Apply Filters</span>
+                    </div>
+                  </Button>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Prompts Grid */}
           <div className="space-y-4" data-testid="section-community-prompts">
