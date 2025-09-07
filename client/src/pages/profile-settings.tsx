@@ -85,29 +85,29 @@ export default function ProfileSettings() {
         username: typedUser.username || "",
         firstName: typedUser.firstName || "",
         lastName: typedUser.lastName || "",
-        bio: user.bio || "",
-        birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : "",
-        website: user.website || "",
-        twitterHandle: user.twitterHandle || "",
-        githubHandle: user.githubHandle || "",
-        linkedinHandle: user.linkedinHandle || "",
-        instagramHandle: user.instagramHandle || "",
-        deviantartHandle: user.deviantartHandle || "",
-        blueskyHandle: user.blueskyHandle || "",
-        tiktokHandle: user.tiktokHandle || "",
-        redditHandle: user.redditHandle || "",
-        patreonHandle: user.patreonHandle || "",
-        profileVisibility: user.profileVisibility || "public",
-        emailVisibility: user.emailVisibility || false,
-        showStats: user.showStats !== false, // Default to true
-        showBirthday: user.showBirthday || false,
+        bio: typedUser.bio || "",
+        birthday: typedUser.birthday ? new Date(typedUser.birthday).toISOString().split('T')[0] : "",
+        website: typedUser.website || "",
+        twitterHandle: typedUser.twitterHandle || "",
+        githubHandle: typedUser.githubHandle || "",
+        linkedinHandle: typedUser.linkedinHandle || "",
+        instagramHandle: typedUser.instagramHandle || "",
+        deviantartHandle: typedUser.deviantartHandle || "",
+        blueskyHandle: typedUser.blueskyHandle || "",
+        tiktokHandle: typedUser.tiktokHandle || "",
+        redditHandle: typedUser.redditHandle || "",
+        patreonHandle: typedUser.patreonHandle || "",
+        profileVisibility: typedUser.profileVisibility || "public",
+        emailVisibility: typedUser.emailVisibility || false,
+        showStats: typedUser.showStats !== false, // Default to true
+        showBirthday: typedUser.showBirthday || false,
       });
 
-      if (user.customSocials && Array.isArray(user.customSocials)) {
-        setCustomSocials(user.customSocials);
+      if (typedUser.customSocials && Array.isArray(typedUser.customSocials)) {
+        setCustomSocials(typedUser.customSocials);
       }
     }
-  }, [user, form]);
+  }, [typedUser, form]);
 
 
   // Update profile mutation
