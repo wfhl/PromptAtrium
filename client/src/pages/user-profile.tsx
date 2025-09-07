@@ -181,10 +181,10 @@ export default function UserProfile() {
         <CardContent className="p-4 md:p-6 relative">
           {/* Dropdowns - Top Right */}
           <div className="absolute top-4 right-4 flex flex-col md:flex-row gap-2">
-            {/* Stats Dropdown */}
+            {/* Stats Dropdown - Mobile only */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" data-testid="button-stats-dropdown">
+                <Button variant="ghost" size="icon" className="md:hidden" data-testid="button-stats-dropdown">
                   <BarChart3 className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
