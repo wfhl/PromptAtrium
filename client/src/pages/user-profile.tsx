@@ -237,6 +237,16 @@ export default function UserProfile() {
                     {stats?.following || 0}
                   </span>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="flex justify-between">
+                  <span className="text-sm flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Joined
+                  </span>
+                  <span className="text-sm font-medium">
+                    {formatDate(profile.createdAt)}
+                  </span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -380,10 +390,6 @@ export default function UserProfile() {
                       <Badge variant="secondary">{profile.location}</Badge>
                     </span>
                   )}
-                  <span className="flex items-center gap-1 text-sm text-gray-500">
-                    <Calendar className="h-4 w-4" />
-                    Joined {formatDate(profile.createdAt)}
-                  </span>
                   {!isOwnProfile && currentUser && (
                     <Button
                       onClick={() => followMutation.mutate()}

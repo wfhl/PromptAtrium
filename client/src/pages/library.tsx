@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Lightbulb, Plus, Search, Filter, FolderPlus, Folder, Edit, Trash2, Globe, Lock, MoreHorizontal, SortAsc, SortDesc } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
@@ -468,64 +468,79 @@ export default function Library() {
           </div>
         </div>
 
-        {/* Filters - Hidden on Collections tab */}
+        {/* Search Bar with Filter Dropdown - Hidden on Collections tab */}
         {activeTab !== "collections" && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Filter className="h-5 w-5" />
-                <span>Filters & Search</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    type="text"
-                    placeholder="Search prompts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-search"
-                  />
-                </div>
+          <div className="flex gap-2 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search prompts..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setTimeout(() => refetch(), 500);
+                }}
+                className="pl-10 pr-4"
+                data-testid="input-search"
+              />
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" data-testid="button-filter">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger data-testid="select-category">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="Art & Design">Art & Design</SelectItem>
-                    <SelectItem value="Photography">Photography</SelectItem>
-                    <SelectItem value="Character Design">Character Design</SelectItem>
-                    <SelectItem value="Landscape">Landscape</SelectItem>
-                    <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
-                    <SelectItem value="Abstract">Abstract</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-  {activeTab !== "archive" && (
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger data-testid="select-status">
-                      <SelectValue placeholder="All Status" />
+                {/* Category Filter */}
+                <div className="px-2 py-2">
+                  <label className="text-sm font-medium mb-2 block">Category</label>
+                  <Select value={categoryFilter} onValueChange={(value) => {
+                    setCategoryFilter(value);
+                    setTimeout(() => refetch(), 100);
+                  }}>
+                    <SelectTrigger className="w-full" data-testid="select-category">
+                      <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="Art & Design">Art & Design</SelectItem>
+                      <SelectItem value="Photography">Photography</SelectItem>
+                      <SelectItem value="Character Design">Character Design</SelectItem>
+                      <SelectItem value="Landscape">Landscape</SelectItem>
+                      <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
+                      <SelectItem value="Abstract">Abstract</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
-                )}
+                </div>
                 
-                <Button onClick={() => refetch()} data-testid="button-apply-filters">
-                  Apply Filters
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                {/* Status Filter */}
+                {activeTab !== "archive" && (
+                  <div className="px-2 py-2">
+                    <label className="text-sm font-medium mb-2 block">Status</label>
+                    <Select value={statusFilter} onValueChange={(value) => {
+                      setStatusFilter(value);
+                      setTimeout(() => refetch(), 100);
+                    }}>
+                      <SelectTrigger className="w-full" data-testid="select-status">
+                        <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
 
         {/* Bulk Edit Toolbar */}
