@@ -14,6 +14,7 @@ import Admin from "@/pages/admin";
 import Collections from "@/pages/collections";
 import Invite from "@/pages/invite";
 import ProfileSettings from "@/pages/profile-settings";
+import UserProfile from "@/pages/user-profile";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -48,6 +49,9 @@ function Router() {
           </Route>
         </>
       )}
+      <Route path="/user/:username">
+        {() => <Layout><UserProfile /></Layout>}
+      </Route>
       <Route path="/invite/:code" component={Invite} />
       <Route path="/invite" component={Invite} />
       <Route component={NotFound} />
