@@ -1127,11 +1127,11 @@ export function PromptCard({
               <ImageIcon className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Example Images ({prompt.exampleImagesUrl?.length || 0})</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-1 md:gap-2">
               {prompt.exampleImagesUrl?.slice(0, 4).map((imageUrl: any, index: any) => (
                 <div 
                   key={index} 
-                  className="relative aspect-square overflow-hidden rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
+                  className="relative aspect-square overflow-hidden rounded-md md:rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
                   onClick={() => setSelectedImage(imageUrl)}
                   data-testid={`image-thumbnail-${prompt.id}-${index}`}
                 >
@@ -1158,8 +1158,8 @@ export function PromptCard({
           </div>
         )}
 
-        <div className="relative bg-muted rounded-md p-3 text-sm font-mono text-muted-foreground group" data-testid={`text-content-${prompt.id}`}>
-          <div className="pr-8">
+        <div className="relative bg-muted rounded-md p-2 md:p-3 text-xs md:text-sm font-mono text-muted-foreground group" data-testid={`text-content-${prompt.id}`}>
+          <div className="pr-8 max-h-[10rem] md:max-h-none overflow-y-auto">
             {prompt.promptContent}
           </div>
           <Button
