@@ -129,6 +129,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
     enabled: open,
   });
 
+  // State for optimistic collection updates
+  const [optimisticCollections, setOptimisticCollections] = useState<Collection[]>([]);
+
   const createCollectionMutation = useMutation({
     mutationFn: async (data: { name: string; description?: string; isPublic: boolean }) => {
       const response = await apiRequest("POST", "/api/collections", {
@@ -138,13 +141,18 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
       return await response.json();
     },
     onSuccess: (newCollection: any) => {
-      refetchCollections();
-      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      // Add to optimistic state for immediate UI update
+      setOptimisticCollections(prev => [...prev, newCollection]);
       setFormData({ ...formData, collectionId: newCollection.id });
       setShowCreateCollection(false);
       setNewCollectionName("");
       setNewCollectionDescription("");
       setNewCollectionIsPublic(false);
+      
+      // Still refetch for consistency
+      refetchCollections();
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      
       toast({
         title: "Success",
         description: "Collection created successfully!",
@@ -517,6 +525,11 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Collection
                     </div>
                   </SelectItem>
+                  {optimisticCollections.map((collection) => (
+                    <SelectItem key={`optimistic-${collection.id}`} value={collection.id}>
+                      {collection.name}
+                    </SelectItem>
+                  ))}
                   {collections?.map((collection) => (
                     <SelectItem key={collection.id} value={collection.id}>
                       {collection.name}
