@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -808,14 +809,6 @@ export function PromptCard({
               <Heart className="h-4 w-4 text-red-500 inline mr-1" />
               {prompt.likes}
             </span>
-            <span data-testid={`text-rating-${prompt.id}`}>
-              <Star className="h-4 w-4 text-yellow-500 inline mr-1" />
-              {prompt.qualityScore}
-            </span>
-            <span data-testid={`text-usage-${prompt.id}`}>
-              <Eye className="h-4 w-4 inline mr-1" />
-              {prompt.usageCount}
-            </span>
           </div>
           <div className="flex items-center space-x-1 ml-4">
             {showActions ? (
@@ -1186,14 +1179,20 @@ export function PromptCard({
             {/* User who created/shared */}
             <div>
               <span className="font-medium text-muted-foreground">Creator:</span>
-              <div className="mt-1">
-                <Badge variant="outline" className="text-xs">
-                  {(prompt as any).user?.firstName && (prompt as any).user?.lastName 
-                    ? `${(prompt as any).user.firstName} ${(prompt as any).user.lastName}`
-                    : (prompt as any).user?.email 
-                    ? (prompt as any).user.email
-                    : `User ${prompt.userId.slice(-6)}`}
-                </Badge>
+              <div className="mt-1 flex items-center">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage 
+                    src={(prompt as any).user?.profilePicture} 
+                    alt={`${(prompt as any).user?.firstName || 'User'} ${(prompt as any).user?.lastName || ''}`}
+                  />
+                  <AvatarFallback className="text-xs">
+                    {(prompt as any).user?.firstName && (prompt as any).user?.lastName 
+                      ? `${(prompt as any).user.firstName.charAt(0)}${(prompt as any).user.lastName.charAt(0)}`
+                      : (prompt as any).user?.email 
+                      ? (prompt as any).user.email.charAt(0).toUpperCase()
+                      : 'U'}
+                  </AvatarFallback>
+                </Avatar>
               </div>
             </div>
 
