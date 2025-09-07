@@ -215,8 +215,8 @@ export function PromptCard({
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousFavoritesData) {
-        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
+      if (context?.previousLikesData) {
+        context.previousLikesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
