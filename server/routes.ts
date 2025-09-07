@@ -332,6 +332,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const promptData = insertPromptSchema.parse(requestBody);
       const prompt = await storage.createPrompt(promptData);
+      
+      // Create activity for prompt creation
+      if (prompt.isPublic) {
+        await storage.createActivity({
+          userId,
+          actionType: "created_prompt",
+          targetId: prompt.id,
+          targetType: "prompt",
+          metadata: { promptName: prompt.name }
+        });
+      }
+      
       res.status(201).json(prompt);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -622,7 +634,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/prompts/:id/like', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const isLiked = await storage.toggleLike(userId, req.params.id);
+      const promptId = req.params.id;
+      const isLiked = await storage.toggleLike(userId, promptId);
+      
+      // Create activity for liking (only when liking, not unliking)
+      if (isLiked) {
+        const prompt = await storage.getPrompt(promptId);
+        if (prompt && prompt.isPublic) {
+          await storage.createActivity({
+            userId,
+            actionType: "liked_prompt",
+            targetId: promptId,
+            targetType: "prompt",
+            metadata: { promptName: prompt.name }
+          });
+        }
+      }
+      
       res.json({ liked: isLiked });
     } catch (error) {
       console.error("Error toggling like:", error);
@@ -633,7 +661,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/prompts/:id/favorite', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const isFavorited = await storage.toggleFavorite(userId, req.params.id);
+      const promptId = req.params.id;
+      const isFavorited = await storage.toggleFavorite(userId, promptId);
+      
+      // Create activity for favoriting (only when favoriting, not unfavoriting)
+      if (isFavorited) {
+        const prompt = await storage.getPrompt(promptId);
+        if (prompt && prompt.isPublic) {
+          await storage.createActivity({
+            userId,
+            actionType: "favorited_prompt",
+            targetId: promptId,
+            targetType: "prompt",
+            metadata: { promptName: prompt.name }
+          });
+        }
+      }
+      
       res.json({ favorited: isFavorited });
     } catch (error) {
       console.error("Error toggling favorite:", error);
@@ -830,6 +874,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as any).claims.sub;
       const collectionData = insertCollectionSchema.parse({ ...req.body, userId });
       const collection = await storage.createCollection(collectionData);
+      
+      // Create activity for collection creation
+      await storage.createActivity({
+        userId,
+        actionType: "created_collection",
+        targetId: collection.id,
+        targetType: "collection",
+        metadata: { collectionName: collection.name }
+      });
+      
       res.status(201).json(collection);
     } catch (error) {
       if (error instanceof z.ZodError) {
