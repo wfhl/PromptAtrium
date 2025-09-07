@@ -820,7 +820,7 @@ export function PromptCard({
               title={isLiked ? "Unlike this prompt" : "Like this prompt"}
             >
               <Heart 
-                className={`h-4 w-4 transition-all duration-200 ${isLiked ? 'fill-red-600 animate-pulse' : 'hover:fill-red-200'}`} 
+                className={`h-4 w-4 transition-all duration-200 ${isLiked ? 'fill-red-600' : 'hover:fill-red-200'}`} 
               />
               <span className={`text-sm font-medium transition-colors duration-200 ${isLiked ? 'text-red-600' : 'text-muted-foreground'}`}>
                 {prompt.likes || 0}
