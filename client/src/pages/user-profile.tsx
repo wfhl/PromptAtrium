@@ -178,19 +178,16 @@ export default function UserProfile() {
         <CardContent className="p-4 md:p-6 relative">
           {/* Mobile Dropdowns - Top Right */}
           <div className="absolute top-4 right-4 md:hidden flex gap-2">
-            {/* Social Links Dropdown */}
-            {(profile.website || profile.twitterHandle || profile.githubHandle || profile.linkedinHandle || 
-              profile.instagramHandle || profile.deviantartHandle || profile.blueskyHandle || 
-              profile.tiktokHandle || profile.redditHandle || profile.patreonHandle) && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" data-testid="button-socials-dropdown">
-                    <Link2 className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Links & Socials</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+            {/* Social Links Dropdown - Always visible */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" data-testid="button-socials-dropdown">
+                  <Link2 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Links & Socials</DropdownMenuLabel>
+                <DropdownMenuSeparator />
                   {profile.website && (
                     <DropdownMenuItem asChild>
                       <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
@@ -247,9 +244,15 @@ export default function UserProfile() {
                       </a>
                     </DropdownMenuItem>
                   )}
+                  {!profile.website && !profile.twitterHandle && !profile.githubHandle && 
+                   !profile.linkedinHandle && !profile.instagramHandle && !profile.deviantartHandle && 
+                   !profile.blueskyHandle && (
+                    <DropdownMenuItem disabled className="text-gray-500">
+                      No social links added
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
             
             {/* Stats Dropdown */}
             <DropdownMenu>
@@ -314,8 +317,12 @@ export default function UserProfile() {
           <div className="flex flex-col md:flex-row md:justify-between gap-4">
             {/* Left side: Avatar and Profile Info */}
             <div className="flex items-start gap-4 md:gap-6">
-              {/* Avatar */}
-              <Avatar className="h-16 w-16 md:h-24 md:w-24">
+              {/* Avatar - Clickable to go back to prompts */}
+              <Avatar 
+                className="h-16 w-16 md:h-24 md:w-24 cursor-pointer transition-opacity hover:opacity-80"
+                onClick={() => setActiveSection("prompts")}
+                data-testid="avatar-profile-picture"
+              >
                 <AvatarImage src={profile.profileImageUrl || undefined} alt={profile.firstName || undefined} />
                 <AvatarFallback className="text-lg md:text-2xl">
                   {profile.firstName?.[0]?.toUpperCase() || username?.[0]?.toUpperCase()}
@@ -421,38 +428,12 @@ export default function UserProfile() {
       {/* Content Sections */}
       <div className="space-y-4">
         {/* Section Title */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h2 className="text-xl font-semibold capitalize">
             {activeSection === "prompts" && `Prompts (${prompts.length})`}
             {activeSection === "followers" && `Followers (${followersData?.total || 0})`}
             {activeSection === "following" && `Following (${followingData?.total || 0})`}
           </h2>
-          <div className="flex gap-2">
-            <Button
-              variant={activeSection === "prompts" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveSection("prompts")}
-              data-testid="button-prompts"
-            >
-              Prompts
-            </Button>
-            <Button
-              variant={activeSection === "followers" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveSection("followers")}
-              data-testid="button-followers"
-            >
-              Followers
-            </Button>
-            <Button
-              variant={activeSection === "following" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveSection("following")}
-              data-testid="button-following"
-            >
-              Following
-            </Button>
-          </div>
         </div>
 
         {/* Prompts Section */}
