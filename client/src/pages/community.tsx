@@ -5,14 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lightbulb, Search, Filter, Star, TrendingUp, Clock } from "lucide-react";
+import { Lightbulb, Search, Filter, Star, TrendingUp, Clock, Eye } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Prompt } from "@shared/schema";
 
 export default function Community() {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
+  const isSuperAdmin = (user as any)?.role === "super_admin";
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -40,6 +41,7 @@ export default function Community() {
     if (searchQuery) params.append("search", searchQuery);
     if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
     if (sortBy === "featured") params.append("isFeatured", "true");
+    if (sortBy === "hidden") params.append("isHidden", "true");
     params.append("limit", "20");
     return params.toString();
   };
@@ -138,6 +140,7 @@ export default function Community() {
                   <SelectItem value="featured">Featured</SelectItem>
                   <SelectItem value="trending">Trending</SelectItem>
                   <SelectItem value="recent">Most Recent</SelectItem>
+                  {isSuperAdmin && <SelectItem value="hidden">Hidden</SelectItem>}
                 </SelectContent>
               </Select>
               
@@ -181,6 +184,18 @@ export default function Community() {
             <Clock className="h-4 w-4" />
             <span>Recent</span>
           </Button>
+          {isSuperAdmin && (
+            <Button
+              size="sm"
+              variant={sortBy === "hidden" ? "default" : "ghost"}
+              onClick={() => setSortBy("hidden")}
+              className="flex items-center space-x-2"
+              data-testid="filter-hidden"
+            >
+              <Eye className="h-4 w-4" />
+              <span>Hidden</span>
+            </Button>
+          )}
         </div>
 
         {/* Prompts Grid */}
@@ -190,7 +205,8 @@ export default function Community() {
               <PromptCard
                 key={prompt.id}
                 prompt={prompt}
-                showActions={false}
+                showActions={true}
+                isCommunityPage={true}
               />
             ))
           ) : (

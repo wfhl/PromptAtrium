@@ -50,8 +50,8 @@ export function PromptCard({
   
   // Inline editing state
   const [editingField, setEditingField] = useState<'name' | 'description' | 'notes' | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [originalValue, setOriginalValue] = useState('');
+  const [editValue, setEditValue] = useState<string>('');
+  const [originalValue, setOriginalValue] = useState<string>('');
   
   // Collapse/expand state
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -133,8 +133,8 @@ export function PromptCard({
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousFavoritesData) {
-        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
+      if (context?.previousLikesData) {
+        context.previousLikesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -207,8 +207,8 @@ export function PromptCard({
           queryClient.setQueryData(queryKey, data);
         });
       }
-      if (context?.previousFavoritesData) {
-        context.previousFavoritesData.forEach(([queryKey, data]: [any, any]) => {
+      if (context?.previousLikesData) {
+        context.previousLikesData.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
@@ -904,7 +904,7 @@ export function PromptCard({
                 </Button>
               </div>
             ) : (
-              {/* Community page action buttons - enabled for all users */}
+              /* Community page action buttons - enabled for all users */
               <div className="flex items-center space-x-1" data-testid={`actions-community-${prompt.id}`}>
                 {/* Like */}
                 <Button
