@@ -1182,7 +1182,7 @@ export function PromptCard({
               <div className="mt-1 flex items-center">
                 <Avatar className="h-6 w-6">
                   <AvatarImage 
-                    src={(prompt as any).user?.profilePicture} 
+                    src={(prompt as any).user?.profileImageUrl} 
                     alt={`${(prompt as any).user?.firstName || 'User'} ${(prompt as any).user?.lastName || ''}`}
                   />
                   <AvatarFallback className="text-xs">

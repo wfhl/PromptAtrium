@@ -214,7 +214,7 @@ export default function ProfileSettings() {
           <div className="flex items-center space-x-4">
             <Button
               className="hidden md:flex items-center space-x-2"
-              onClick={handleCreatePrompt}
+              onClick={() => setLocation("/dashboard")}
               data-testid="button-new-prompt"
             >
               <Plus className="h-4 w-4" />
