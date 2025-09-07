@@ -18,15 +18,15 @@ export function CollectionItem({ collection }: CollectionItemProps) {
 
   return (
     <div 
-      className="flex items-center justify-between p-3 hover:bg-accent rounded-md transition-colors cursor-pointer"
+      className="flex items-center justify-between p-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
       data-testid={`collection-item-${collection.id}`}
     >
-      <div className="flex items-center space-x-3">
-        <div className={`w-8 h-8 ${gradientClass} rounded-md flex items-center justify-center`}>
-          <Folder className="h-4 w-4 text-white" />
+      <div className="flex items-center space-x-2">
+        <div className={`w-6 h-6 ${gradientClass} rounded-md flex items-center justify-center`}>
+          <Folder className="h-3 w-3 text-white" />
         </div>
         <div>
-          <p className="font-medium text-foreground text-sm" data-testid={`text-collection-name-${collection.id}`}>
+          <p className="font-medium text-foreground text-xs" data-testid={`text-collection-name-${collection.id}`}>
             {collection.name}
           </p>
           <p className="text-xs text-muted-foreground" data-testid={`text-collection-count-${collection.id}`}>
