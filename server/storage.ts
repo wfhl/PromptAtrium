@@ -10,6 +10,8 @@ import {
   promptLikes,
   promptFavorites,
   promptRatings,
+  follows,
+  activities,
   type User,
   type UpsertUser,
   type Prompt,
@@ -30,6 +32,10 @@ import {
   type InsertPromptRating,
   type PromptLike,
   type PromptFavorite,
+  type Follow,
+  type InsertFollow,
+  type Activity,
+  type InsertActivity,
   type UserRole,
   type CommunityRole,
 } from "@shared/schema";
@@ -114,6 +120,27 @@ export interface IStorage {
     collections: number;
     forksCreated: number;
   }>;
+  
+  // Follow operations
+  followUser(followerId: string, followingId: string): Promise<Follow>;
+  unfollowUser(followerId: string, followingId: string): Promise<void>;
+  isFollowing(followerId: string, followingId: string): Promise<boolean>;
+  getFollowers(userId: string, limit?: number, offset?: number): Promise<User[]>;
+  getFollowing(userId: string, limit?: number, offset?: number): Promise<User[]>;
+  getFollowerCount(userId: string): Promise<number>;
+  getFollowingCount(userId: string): Promise<number>;
+  getFollowedUsersPrompts(userId: string, limit?: number, offset?: number): Promise<Prompt[]>;
+  
+  // Activity operations
+  createActivity(activity: InsertActivity): Promise<Activity>;
+  getActivities(options?: {
+    userId?: string;
+    actionType?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Activity[]>;
+  getRecentActivities(limit?: number): Promise<Activity[]>;
+  getFollowedUsersActivities(userId: string, limit?: number, offset?: number): Promise<Activity[]>;
 
   // User management operations (for Super Admin)
   getAllUsers(options?: {
@@ -748,6 +775,224 @@ export class DatabaseStorage implements IStorage {
       collections: userCollections?.count || 0,
       forksCreated: userForks?.count || 0,
     };
+  }
+
+  // Follow operations
+  async followUser(followerId: string, followingId: string): Promise<Follow> {
+    // Check if already following
+    const existingFollow = await db
+      .select()
+      .from(follows)
+      .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+      .limit(1);
+    
+    if (existingFollow.length > 0) {
+      return existingFollow[0];
+    }
+
+    const [follow] = await db
+      .insert(follows)
+      .values({ followerId, followingId })
+      .returning();
+    
+    // Create activity for follow
+    await this.createActivity({
+      userId: followerId,
+      actionType: "followed_user",
+      targetId: followingId,
+      targetType: "user",
+    });
+    
+    return follow;
+  }
+
+  async unfollowUser(followerId: string, followingId: string): Promise<void> {
+    await db
+      .delete(follows)
+      .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
+  }
+
+  async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+    const [follow] = await db
+      .select()
+      .from(follows)
+      .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+      .limit(1);
+    
+    return !!follow;
+  }
+
+  async getFollowers(userId: string, limit: number = 50, offset: number = 0): Promise<User[]> {
+    const followersResult = await db
+      .select({ user: users })
+      .from(follows)
+      .innerJoin(users, eq(follows.followerId, users.id))
+      .where(eq(follows.followingId, userId))
+      .orderBy(desc(follows.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return followersResult.map(r => r.user);
+  }
+
+  async getFollowing(userId: string, limit: number = 50, offset: number = 0): Promise<User[]> {
+    const followingResult = await db
+      .select({ user: users })
+      .from(follows)
+      .innerJoin(users, eq(follows.followingId, users.id))
+      .where(eq(follows.followerId, userId))
+      .orderBy(desc(follows.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return followingResult.map(r => r.user);
+  }
+
+  async getFollowerCount(userId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(follows)
+      .where(eq(follows.followingId, userId));
+    
+    return result?.count || 0;
+  }
+
+  async getFollowingCount(userId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(follows)
+      .where(eq(follows.followerId, userId));
+    
+    return result?.count || 0;
+  }
+
+  async getFollowedUsersPrompts(userId: string, limit: number = 50, offset: number = 0): Promise<Prompt[]> {
+    // Get the IDs of users that the current user follows
+    const followingIds = await db
+      .select({ followingId: follows.followingId })
+      .from(follows)
+      .where(eq(follows.followerId, userId));
+    
+    if (followingIds.length === 0) {
+      return [];
+    }
+    
+    const followingUserIds = followingIds.map(f => f.followingId);
+    
+    // Get public prompts from followed users, ordered by creation date
+    const followedPrompts = await db
+      .select({
+        prompt: prompts,
+        creator: users,
+      })
+      .from(prompts)
+      .innerJoin(users, eq(prompts.userId, users.id))
+      .where(and(
+        inArray(prompts.userId, followingUserIds),
+        eq(prompts.isPublic, true)
+      ))
+      .orderBy(desc(prompts.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return followedPrompts.map(r => ({
+      ...r.prompt,
+      creator: r.creator
+    } as Prompt & { creator: User }));
+  }
+
+  // Activity operations
+  async createActivity(activity: InsertActivity): Promise<Activity> {
+    const [newActivity] = await db
+      .insert(activities)
+      .values(activity)
+      .returning();
+    
+    return newActivity;
+  }
+
+  async getActivities(options: {
+    userId?: string;
+    actionType?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<Activity[]> {
+    const conditions: any[] = [];
+    
+    if (options.userId) {
+      conditions.push(eq(activities.userId, options.userId));
+    }
+    
+    if (options.actionType) {
+      conditions.push(sql`${activities.actionType} = ${options.actionType}`);
+    }
+    
+    let query = db.select().from(activities);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    query = query.orderBy(desc(activities.createdAt)) as any;
+    
+    if (options.limit) {
+      query = query.limit(options.limit) as any;
+    }
+    
+    if (options.offset) {
+      query = query.offset(options.offset) as any;
+    }
+    
+    return await query;
+  }
+
+  async getRecentActivities(limit: number = 20): Promise<Activity[]> {
+    const recentActivities = await db
+      .select({
+        activity: activities,
+        user: users,
+      })
+      .from(activities)
+      .innerJoin(users, eq(activities.userId, users.id))
+      .orderBy(desc(activities.createdAt))
+      .limit(limit);
+    
+    return recentActivities.map(r => ({
+      ...r.activity,
+      user: r.user
+    } as Activity & { user: User }));
+  }
+
+  async getFollowedUsersActivities(userId: string, limit: number = 50, offset: number = 0): Promise<Activity[]> {
+    // Get the IDs of users that the current user follows
+    const followingIds = await db
+      .select({ followingId: follows.followingId })
+      .from(follows)
+      .where(eq(follows.followerId, userId));
+    
+    if (followingIds.length === 0) {
+      return [];
+    }
+    
+    const followingUserIds = followingIds.map(f => f.followingId);
+    
+    // Get activities from followed users
+    const followedActivities = await db
+      .select({
+        activity: activities,
+        user: users,
+      })
+      .from(activities)
+      .innerJoin(users, eq(activities.userId, users.id))
+      .where(inArray(activities.userId, followingUserIds))
+      .orderBy(desc(activities.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return followedActivities.map(r => ({
+      ...r.activity,
+      user: r.user
+    } as Activity & { user: User }));
   }
 
   // User management operations (for Super Admin)
