@@ -278,6 +278,7 @@ export class DatabaseStorage implements IStorage {
         firstName: users.firstName,
         lastName: users.lastName,
         username: users.username,
+        profileImageUrl: users.profileImageUrl,
       }
     }).from(prompts).leftJoin(users, eq(prompts.userId, users.id));
     
