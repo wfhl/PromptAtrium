@@ -29,7 +29,10 @@ import {
   Linkedin,
   Instagram,
   Palette,
-  AtSign
+  AtSign,
+  Video,
+  MessageCircle,
+  DollarSign
 } from "lucide-react";
 
 export default function UserProfile() {
@@ -177,7 +180,66 @@ export default function UserProfile() {
       <Card className="mb-4 md:mb-6">
         <CardContent className="p-4 md:p-6 relative">
           {/* Mobile Dropdowns - Top Right */}
-          <div className="absolute top-4 right-4 md:hidden flex gap-2">
+          <div className="absolute top-4 right-4 md:hidden flex flex-col gap-2">
+            {/* Stats Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" data-testid="button-stats-dropdown">
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Stats</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="flex justify-between cursor-pointer"
+                  onClick={() => setActiveSection("prompts")}
+                >
+                  <span className="text-sm">Prompts</span>
+                  <span className="font-bold" data-testid={`text-prompts-count-mobile-${profile.id}`}>
+                    {stats?.totalPrompts || 0}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex justify-between">
+                  <span className="text-sm">Likes</span>
+                  <span className="font-bold" data-testid={`text-likes-count-mobile-${profile.id}`}>
+                    {stats?.totalLikes || 0}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex justify-between">
+                  <span className="text-sm">Collections</span>
+                  <span className="font-bold" data-testid={`text-collections-count-mobile-${profile.id}`}>
+                    {stats?.collections || 0}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex justify-between">
+                  <span className="text-sm">Forks</span>
+                  <span className="font-bold" data-testid={`text-forks-count-mobile-${profile.id}`}>
+                    {stats?.forksCreated || 0}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="flex justify-between cursor-pointer"
+                  onClick={() => setActiveSection("followers")}
+                >
+                  <span className="text-sm">Followers</span>
+                  <span className="font-bold" data-testid={`text-followers-count-mobile-${profile.id}`}>
+                    {stats?.followers || 0}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="flex justify-between cursor-pointer"
+                  onClick={() => setActiveSection("following")}
+                >
+                  <span className="text-sm">Following</span>
+                  <span className="font-bold" data-testid={`text-following-count-mobile-${profile.id}`}>
+                    {stats?.following || 0}
+                  </span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Social Links Dropdown - Always visible */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -244,74 +306,40 @@ export default function UserProfile() {
                       </a>
                     </DropdownMenuItem>
                   )}
+                  {profile.tiktokHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://tiktok.com/@${profile.tiktokHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        <span>@{profile.tiktokHandle}</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {profile.redditHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://reddit.com/u/${profile.redditHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4" />
+                        <span>u/{profile.redditHandle}</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {profile.patreonHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://patreon.com/${profile.patreonHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        <span>Patreon</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
                   {!profile.website && !profile.twitterHandle && !profile.githubHandle && 
                    !profile.linkedinHandle && !profile.instagramHandle && !profile.deviantartHandle && 
-                   !profile.blueskyHandle && (
+                   !profile.blueskyHandle && !profile.tiktokHandle && !profile.redditHandle && 
+                   !profile.patreonHandle && (
                     <DropdownMenuItem disabled className="text-gray-500">
                       No social links added
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-            
-            {/* Stats Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" data-testid="button-stats-dropdown">
-                  <BarChart3 className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Stats</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="flex justify-between cursor-pointer"
-                  onClick={() => setActiveSection("prompts")}
-                >
-                  <span className="text-sm">Prompts</span>
-                  <span className="font-bold" data-testid={`text-prompts-count-mobile-${profile.id}`}>
-                    {stats?.totalPrompts || 0}
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex justify-between">
-                  <span className="text-sm">Likes</span>
-                  <span className="font-bold" data-testid={`text-likes-count-mobile-${profile.id}`}>
-                    {stats?.totalLikes || 0}
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex justify-between">
-                  <span className="text-sm">Collections</span>
-                  <span className="font-bold" data-testid={`text-collections-count-mobile-${profile.id}`}>
-                    {stats?.collections || 0}
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex justify-between">
-                  <span className="text-sm">Forks</span>
-                  <span className="font-bold" data-testid={`text-forks-count-mobile-${profile.id}`}>
-                    {stats?.forksCreated || 0}
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="flex justify-between cursor-pointer"
-                  onClick={() => setActiveSection("followers")}
-                >
-                  <span className="text-sm">Followers</span>
-                  <span className="font-bold" data-testid={`text-followers-count-mobile-${profile.id}`}>
-                    {stats?.followers || 0}
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="flex justify-between cursor-pointer"
-                  onClick={() => setActiveSection("following")}
-                >
-                  <span className="text-sm">Following</span>
-                  <span className="font-bold" data-testid={`text-following-count-mobile-${profile.id}`}>
-                    {stats?.following || 0}
-                  </span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           <div className="flex flex-col md:flex-row md:justify-between gap-4">
