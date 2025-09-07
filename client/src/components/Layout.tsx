@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -134,13 +134,6 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 Community
               </Link>
-              <Link 
-                href="/projects" 
-                className={isActiveRoute("/projects") ? "text-primary font-medium border-b-2 border-primary pb-4 -mb-4" : "text-muted-foreground hover:text-foreground transition-colors"} 
-                data-testid="nav-projects"
-              >
-                Projects
-              </Link>
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
                   href="/admin" 
@@ -183,7 +176,6 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   <span className="hidden md:block text-sm font-medium" data-testid="text-username">
                     {typedUser?.firstName || typedUser?.email?.split("@")[0] || "User"}
                   </span>
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" data-testid="dropdown-user-menu">
@@ -200,8 +192,15 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 <DropdownMenuSeparator />
                 
                 <DropdownMenuItem asChild>
-                  <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
+                  <Link href={`/user/${typedUser?.username}`} className="flex items-center cursor-pointer" data-testid="menu-view-profile">
                     <UserIcon className="mr-2 h-4 w-4" />
+                    View Profile
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem asChild>
+                  <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
+                    <Settings className="mr-2 h-4 w-4" />
                     Profile Settings
                   </Link>
                 </DropdownMenuItem>
@@ -279,14 +278,6 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 data-testid="mobile-nav-community"
               >
                 Community
-              </Link>
-              <Link 
-                href="/projects" 
-                className={isActiveRoute("/projects") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 
-                onClick={() => setMobileMenuOpen(false)}
-                data-testid="mobile-nav-projects"
-              >
-                Projects
               </Link>
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
