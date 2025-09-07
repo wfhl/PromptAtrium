@@ -21,13 +21,22 @@ import {
   UserPlus,
   UserMinus,
   BarChart3,
-  MoreVertical
+  MoreVertical,
+  Link2,
+  Globe,
+  Twitter,
+  Github,
+  Linkedin,
+  Instagram,
+  Palette,
+  AtSign
 } from "lucide-react";
 
 export default function UserProfile() {
   const { username } = useParams();
   const { toast } = useToast();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [activeSection, setActiveSection] = useState<"prompts" | "followers" | "following">("prompts");
 
   // Fetch user profile
   const { data: profile, isLoading: profileLoading } = useQuery<User>({
@@ -167,8 +176,82 @@ export default function UserProfile() {
       {/* Profile Header with Stats */}
       <Card className="mb-4 md:mb-6">
         <CardContent className="p-4 md:p-6 relative">
-          {/* Mobile Stats Dropdown - Top Right */}
-          <div className="absolute top-4 right-4 md:hidden">
+          {/* Mobile Dropdowns - Top Right */}
+          <div className="absolute top-4 right-4 md:hidden flex gap-2">
+            {/* Social Links Dropdown */}
+            {(profile.website || profile.twitterHandle || profile.githubHandle || profile.linkedinHandle || 
+              profile.instagramHandle || profile.deviantartHandle || profile.blueskyHandle || 
+              profile.tiktokHandle || profile.redditHandle || profile.patreonHandle) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" data-testid="button-socials-dropdown">
+                    <Link2 className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Links & Socials</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {profile.website && (
+                    <DropdownMenuItem asChild>
+                      <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        <span>Website</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {profile.twitterHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://twitter.com/${profile.twitterHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <Twitter className="h-4 w-4" />
+                        <span>@{profile.twitterHandle}</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {profile.githubHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://github.com/${profile.githubHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <Github className="h-4 w-4" />
+                        <span>@{profile.githubHandle}</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {profile.linkedinHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://linkedin.com/in/${profile.linkedinHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <Linkedin className="h-4 w-4" />
+                        <span>LinkedIn</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {profile.instagramHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://instagram.com/${profile.instagramHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <Instagram className="h-4 w-4" />
+                        <span>@{profile.instagramHandle}</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {profile.deviantartHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://deviantart.com/${profile.deviantartHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <Palette className="h-4 w-4" />
+                        <span>DeviantArt</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                  {profile.blueskyHandle && (
+                    <DropdownMenuItem asChild>
+                      <a href={`https://bsky.app/profile/${profile.blueskyHandle}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <AtSign className="h-4 w-4" />
+                        <span>@{profile.blueskyHandle}</span>
+                      </a>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
+            {/* Stats Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" data-testid="button-stats-dropdown">
@@ -178,7 +261,10 @@ export default function UserProfile() {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel>Stats</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex justify-between">
+                <DropdownMenuItem 
+                  className="flex justify-between cursor-pointer"
+                  onClick={() => setActiveSection("prompts")}
+                >
                   <span className="text-sm">Prompts</span>
                   <span className="font-bold" data-testid={`text-prompts-count-mobile-${profile.id}`}>
                     {stats?.totalPrompts || 0}
@@ -203,13 +289,19 @@ export default function UserProfile() {
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex justify-between">
+                <DropdownMenuItem 
+                  className="flex justify-between cursor-pointer"
+                  onClick={() => setActiveSection("followers")}
+                >
                   <span className="text-sm">Followers</span>
                   <span className="font-bold" data-testid={`text-followers-count-mobile-${profile.id}`}>
                     {stats?.followers || 0}
                   </span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="flex justify-between">
+                <DropdownMenuItem 
+                  className="flex justify-between cursor-pointer"
+                  onClick={() => setActiveSection("following")}
+                >
                   <span className="text-sm">Following</span>
                   <span className="font-bold" data-testid={`text-following-count-mobile-${profile.id}`}>
                     {stats?.following || 0}
@@ -326,82 +418,110 @@ export default function UserProfile() {
       </Card>
 
 
-      {/* Tabs */}
-      <Tabs defaultValue="prompts" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="prompts" data-testid="tab-prompts">
-            Prompts ({prompts.length})
-          </TabsTrigger>
-          <TabsTrigger value="followers" data-testid="tab-followers">
-            Followers ({followersData?.total || 0})
-          </TabsTrigger>
-          <TabsTrigger value="following" data-testid="tab-following">
-            Following ({followingData?.total || 0})
-          </TabsTrigger>
-        </TabsList>
+      {/* Content Sections */}
+      <div className="space-y-4">
+        {/* Section Title */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold capitalize">
+            {activeSection === "prompts" && `Prompts (${prompts.length})`}
+            {activeSection === "followers" && `Followers (${followersData?.total || 0})`}
+            {activeSection === "following" && `Following (${followingData?.total || 0})`}
+          </h2>
+          <div className="flex gap-2">
+            <Button
+              variant={activeSection === "prompts" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveSection("prompts")}
+              data-testid="button-prompts"
+            >
+              Prompts
+            </Button>
+            <Button
+              variant={activeSection === "followers" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveSection("followers")}
+              data-testid="button-followers"
+            >
+              Followers
+            </Button>
+            <Button
+              variant={activeSection === "following" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveSection("following")}
+              data-testid="button-following"
+            >
+              Following
+            </Button>
+          </div>
+        </div>
 
-        {/* Prompts Tab */}
-        <TabsContent value="prompts" className="space-y-4">
-          {promptsLoading ? (
-            <div className="text-center py-10 text-gray-500">Loading prompts...</div>
-          ) : prompts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {prompts.map((prompt: Prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} isProfilePage={true} />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-10">
-                <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-500">No public prompts yet</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+        {/* Prompts Section */}
+        {activeSection === "prompts" && (
+          <>
+            {promptsLoading ? (
+              <div className="text-center py-10 text-gray-500">Loading prompts...</div>
+            ) : prompts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {prompts.map((prompt: Prompt) => (
+                  <PromptCard key={prompt.id} prompt={prompt} isProfilePage={true} />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-10">
+                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-500">No public prompts yet</p>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
 
-        {/* Followers Tab */}
-        <TabsContent value="followers" className="space-y-4">
-          {followersData?.followers?.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {followersData.followers.map((follower: User) => (
-                <Card key={follower.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={follower.profileImageUrl || undefined} />
-                        <AvatarFallback>
-                          {follower.firstName?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <a
-                          href={`/user/${follower.username}`}
-                          className="font-semibold hover:underline"
-                          data-testid={`link-follower-${follower.id}`}
-                        >
-                          {follower.firstName} {follower.lastName}
-                        </a>
-                        <p className="text-sm text-gray-500">@{follower.username}</p>
+        {/* Followers Section */}
+        {activeSection === "followers" && (
+          <>
+            {followersData?.followers && followersData.followers.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {followersData.followers.map((follower: User) => (
+                  <Card key={follower.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={follower.profileImageUrl || undefined} />
+                          <AvatarFallback>
+                            {follower.firstName?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <a
+                            href={`/user/${follower.username}`}
+                            className="font-semibold hover:underline"
+                            data-testid={`link-follower-${follower.id}`}
+                          >
+                            {follower.firstName} {follower.lastName}
+                          </a>
+                          <p className="text-sm text-gray-500">@{follower.username}</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-10">
-                <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-500">No followers yet</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-10">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-500">No followers yet</p>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
 
-        {/* Following Tab */}
-        <TabsContent value="following" className="space-y-4">
-          {followingData?.following?.length > 0 ? (
+        {/* Following Section */}
+        {activeSection === "following" && (
+          <>
+            {followingData?.following && followingData.following.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {followingData.following.map((following: User) => (
                 <Card key={following.id}>
@@ -435,9 +555,10 @@ export default function UserProfile() {
                 <p className="text-gray-500">Not following anyone yet</p>
               </CardContent>
             </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
