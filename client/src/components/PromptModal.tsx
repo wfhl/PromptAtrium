@@ -37,6 +37,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
   const [newIntendedGeneratorName, setNewIntendedGeneratorName] = useState("");
   const [showCreateRecommendedModel, setShowCreateRecommendedModel] = useState(false);
   const [newRecommendedModelName, setNewRecommendedModelName] = useState("");
+
+  // Arrays to store custom options
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [customPromptTypes, setCustomPromptTypes] = useState<string[]>([]);
+  const [customPromptStyles, setCustomPromptStyles] = useState<string[]>([]);
+  const [customIntendedGenerators, setCustomIntendedGenerators] = useState<string[]>([]);
+  const [customRecommendedModels, setCustomRecommendedModels] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     name: prompt?.name || "",
@@ -369,6 +376,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Category
                     </div>
                   </SelectItem>
+                  {customCategories.map((category) => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
                   <SelectItem value="Art & Design">Art & Design</SelectItem>
                   <SelectItem value="Photography">Photography</SelectItem>
                   <SelectItem value="Character Design">Character Design</SelectItem>
@@ -399,6 +409,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Type
                     </div>
                   </SelectItem>
+                  {customPromptTypes.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
                   <SelectItem value="text-to-image">Text to Image</SelectItem>
                   <SelectItem value="image-to-image">Image to Image</SelectItem>
                   <SelectItem value="text-generation">Text Generation</SelectItem>
@@ -428,6 +441,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Style
                     </div>
                   </SelectItem>
+                  {customPromptStyles.map((style) => (
+                    <SelectItem key={style} value={style}>{style}</SelectItem>
+                  ))}
                   <SelectItem value="detailed">Detailed</SelectItem>
                   <SelectItem value="simple">Simple</SelectItem>
                   <SelectItem value="artistic">Artistic</SelectItem>
@@ -594,6 +610,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Generator
                     </div>
                   </SelectItem>
+                  {customIntendedGenerators.map((generator) => (
+                    <SelectItem key={generator} value={generator}>{generator}</SelectItem>
+                  ))}
                   <SelectItem value="midjourney">Midjourney</SelectItem>
                   <SelectItem value="dalle">DALL-E</SelectItem>
                   <SelectItem value="stable-diffusion">Stable Diffusion</SelectItem>
@@ -625,6 +644,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Model
                     </div>
                   </SelectItem>
+                  {customRecommendedModels.map((model) => (
+                    <SelectItem key={model} value={model}>{model}</SelectItem>
+                  ))}
                   <SelectItem value="GPT-4">GPT-4</SelectItem>
                   <SelectItem value="Claude-3">Claude-3</SelectItem>
                   <SelectItem value="SDXL">SDXL</SelectItem>
@@ -807,7 +829,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newCategoryName.trim()) {
-                  setFormData({ ...formData, category: newCategoryName.trim() });
+                  const newCategory = newCategoryName.trim();
+                  setCustomCategories(prev => [...prev, newCategory]);
+                  setFormData({ ...formData, category: newCategory });
                   setNewCategoryName("");
                   setShowCreateCategory(false);
                 }
@@ -845,7 +869,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newPromptTypeName.trim()) {
-                  setFormData({ ...formData, promptType: newPromptTypeName.trim() });
+                  const newType = newPromptTypeName.trim();
+                  setCustomPromptTypes(prev => [...prev, newType]);
+                  setFormData({ ...formData, promptType: newType });
                   setNewPromptTypeName("");
                   setShowCreatePromptType(false);
                 }
@@ -883,7 +909,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newPromptStyleName.trim()) {
-                  setFormData({ ...formData, promptStyle: newPromptStyleName.trim() });
+                  const newStyle = newPromptStyleName.trim();
+                  setCustomPromptStyles(prev => [...prev, newStyle]);
+                  setFormData({ ...formData, promptStyle: newStyle });
                   setNewPromptStyleName("");
                   setShowCreatePromptStyle(false);
                 }
@@ -921,7 +949,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newIntendedGeneratorName.trim()) {
-                  setFormData({ ...formData, intendedGenerator: newIntendedGeneratorName.trim() });
+                  const newGenerator = newIntendedGeneratorName.trim();
+                  setCustomIntendedGenerators(prev => [...prev, newGenerator]);
+                  setFormData({ ...formData, intendedGenerator: newGenerator });
                   setNewIntendedGeneratorName("");
                   setShowCreateIntendedGenerator(false);
                 }
@@ -959,7 +989,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newRecommendedModelName.trim()) {
-                  setFormData({ ...formData, recommendedModels: newRecommendedModelName.trim() });
+                  const newModel = newRecommendedModelName.trim();
+                  setCustomRecommendedModels(prev => [...prev, newModel]);
+                  setFormData({ ...formData, recommendedModels: newModel });
                   setNewRecommendedModelName("");
                   setShowCreateRecommendedModel(false);
                 }
