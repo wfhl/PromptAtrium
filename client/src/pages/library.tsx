@@ -42,7 +42,7 @@ export default function Library() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [activeTab, setActiveTab] = useState<"prompts" | "bookmarked" | "collections" | "archive">("prompts");
+  const [activeTab, setActiveTab] = useState<string>("prompts");
   
   // Bulk editing state
   const [isBulkMode, setIsBulkMode] = useState(false);
@@ -54,8 +54,8 @@ export default function Library() {
   const [editCollectionModalOpen, setEditCollectionModalOpen] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
-  const [collectionFilterType, setCollectionFilterType] = useState<"all" | "public" | "private">("all");
-  const [collectionSortBy, setCollectionSortBy] = useState<"name" | "date" | "type">("date");
+  const [collectionFilterType, setCollectionFilterType] = useState<string>("all");
+  const [collectionSortBy, setCollectionSortBy] = useState<string>("date");
   const [collectionSortOrder, setCollectionSortOrder] = useState<"asc" | "desc">("desc");
 
   // Collection forms
@@ -95,7 +95,7 @@ export default function Library() {
   // Build query string
   const buildQuery = () => {
     const params = new URLSearchParams();
-    if (user?.id) params.append("userId", user.id);
+    if ((user as any)?.id) params.append("userId", (user as any).id);
     if (searchQuery) params.append("search", searchQuery);
     if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
     
