@@ -26,6 +26,18 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
   const [newCollectionDescription, setNewCollectionDescription] = useState("");
   const [newCollectionIsPublic, setNewCollectionIsPublic] = useState(false);
   
+  // States for creating new options
+  const [showCreateCategory, setShowCreateCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [showCreatePromptType, setShowCreatePromptType] = useState(false);
+  const [newPromptTypeName, setNewPromptTypeName] = useState("");
+  const [showCreatePromptStyle, setShowCreatePromptStyle] = useState(false);
+  const [newPromptStyleName, setNewPromptStyleName] = useState("");
+  const [showCreateIntendedGenerator, setShowCreateIntendedGenerator] = useState(false);
+  const [newIntendedGeneratorName, setNewIntendedGeneratorName] = useState("");
+  const [showCreateRecommendedModel, setShowCreateRecommendedModel] = useState(false);
+  const [newRecommendedModelName, setNewRecommendedModelName] = useState("");
+  
   const [formData, setFormData] = useState({
     name: prompt?.name || "",
     description: prompt?.description || "",
@@ -35,7 +47,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
     promptType: prompt?.promptType || "",
     promptStyle: prompt?.promptStyle || "",
     tags: prompt?.tags?.join(", ") || "",
-    isPublic: prompt?.isPublic ?? true,
+    isPublic: prompt?.isPublic ?? false,
     collectionId: prompt?.collectionId || "none",
     license: prompt?.license || "CC0 (Public Domain)",
     status: prompt?.status || "published",
@@ -86,7 +98,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         promptType: "",
         promptStyle: "",
         tags: "",
-        isPublic: true,
+        isPublic: false,
         collectionId: "none",
         license: "CC0 (Public Domain)",
         status: "published",
@@ -340,11 +352,23 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
 
             <div>
               <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+              <Select value={formData.category} onValueChange={(value) => {
+                if (value === "create-new") {
+                  setShowCreateCategory(true);
+                } else {
+                  setFormData({ ...formData, category: value });
+                }
+              }}>
                 <SelectTrigger data-testid="select-category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create New Category
+                    </div>
+                  </SelectItem>
                   <SelectItem value="Art & Design">Art & Design</SelectItem>
                   <SelectItem value="Photography">Photography</SelectItem>
                   <SelectItem value="Character Design">Character Design</SelectItem>
@@ -358,11 +382,23 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
 
             <div>
               <Label htmlFor="promptType">Prompt Type</Label>
-              <Select value={formData.promptType} onValueChange={(value) => setFormData({ ...formData, promptType: value })}>
+              <Select value={formData.promptType} onValueChange={(value) => {
+                if (value === "create-new") {
+                  setShowCreatePromptType(true);
+                } else {
+                  setFormData({ ...formData, promptType: value });
+                }
+              }}>
                 <SelectTrigger data-testid="select-prompt-type">
                   <SelectValue placeholder="Select prompt type" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create New Type
+                    </div>
+                  </SelectItem>
                   <SelectItem value="text-to-image">Text to Image</SelectItem>
                   <SelectItem value="image-to-image">Image to Image</SelectItem>
                   <SelectItem value="text-generation">Text Generation</SelectItem>
@@ -375,11 +411,23 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
 
             <div>
               <Label htmlFor="promptStyle">Prompt Style</Label>
-              <Select value={formData.promptStyle} onValueChange={(value) => setFormData({ ...formData, promptStyle: value })}>
+              <Select value={formData.promptStyle} onValueChange={(value) => {
+                if (value === "create-new") {
+                  setShowCreatePromptStyle(true);
+                } else {
+                  setFormData({ ...formData, promptStyle: value });
+                }
+              }}>
                 <SelectTrigger data-testid="select-prompt-style">
                   <SelectValue placeholder="Select prompt style" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create New Style
+                    </div>
+                  </SelectItem>
                   <SelectItem value="detailed">Detailed</SelectItem>
                   <SelectItem value="simple">Simple</SelectItem>
                   <SelectItem value="artistic">Artistic</SelectItem>
@@ -529,11 +577,23 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="intendedGenerator">Intended Generator</Label>
-              <Select value={formData.intendedGenerator} onValueChange={(value) => setFormData({ ...formData, intendedGenerator: value })}>
+              <Select value={formData.intendedGenerator} onValueChange={(value) => {
+                if (value === "create-new") {
+                  setShowCreateIntendedGenerator(true);
+                } else {
+                  setFormData({ ...formData, intendedGenerator: value });
+                }
+              }}>
                 <SelectTrigger data-testid="select-intended-generator">
                   <SelectValue placeholder="Select AI generator" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create New Generator
+                    </div>
+                  </SelectItem>
                   <SelectItem value="midjourney">Midjourney</SelectItem>
                   <SelectItem value="dalle">DALL-E</SelectItem>
                   <SelectItem value="stable-diffusion">Stable Diffusion</SelectItem>
@@ -548,14 +608,32 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
 
             <div>
               <Label htmlFor="recommendedModels">Recommended Models</Label>
-              <Input
-                id="recommendedModels"
-                value={formData.recommendedModels}
-                onChange={(e) => setFormData({ ...formData, recommendedModels: e.target.value })}
-                placeholder="GPT-4, Claude-3, SDXL..."
-                data-testid="input-recommended-models"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Separate models with commas</p>
+              <Select value={formData.recommendedModels} onValueChange={(value) => {
+                if (value === "create-new") {
+                  setShowCreateRecommendedModel(true);
+                } else {
+                  setFormData({ ...formData, recommendedModels: value });
+                }
+              }}>
+                <SelectTrigger data-testid="select-recommended-models">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create New Model
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="GPT-4">GPT-4</SelectItem>
+                  <SelectItem value="Claude-3">Claude-3</SelectItem>
+                  <SelectItem value="SDXL">SDXL</SelectItem>
+                  <SelectItem value="Midjourney v6">Midjourney v6</SelectItem>
+                  <SelectItem value="DALL-E 3">DALL-E 3</SelectItem>
+                  <SelectItem value="Stable Diffusion">Stable Diffusion</SelectItem>
+                  <SelectItem value="Leonardo AI">Leonardo AI</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -701,6 +779,196 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
           >
             {createCollectionMutation.isPending ? "Creating..." : "Create Collection"}
           </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Create Category Dialog */}
+    <Dialog open={showCreateCategory} onOpenChange={setShowCreateCategory}>
+      <DialogContent className="max-w-md" data-testid="modal-create-category">
+        <DialogHeader>
+          <DialogTitle>Create New Category</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="newCategory">Category Name</Label>
+            <Input
+              id="newCategory"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Enter category name..."
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCreateCategory(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (newCategoryName.trim()) {
+                  setFormData({ ...formData, category: newCategoryName.trim() });
+                  setNewCategoryName("");
+                  setShowCreateCategory(false);
+                }
+              }}
+              disabled={!newCategoryName.trim()}
+            >
+              Create
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Create Prompt Type Dialog */}
+    <Dialog open={showCreatePromptType} onOpenChange={setShowCreatePromptType}>
+      <DialogContent className="max-w-md" data-testid="modal-create-prompt-type">
+        <DialogHeader>
+          <DialogTitle>Create New Prompt Type</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="newPromptType">Prompt Type Name</Label>
+            <Input
+              id="newPromptType"
+              value={newPromptTypeName}
+              onChange={(e) => setNewPromptTypeName(e.target.value)}
+              placeholder="Enter prompt type name..."
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCreatePromptType(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (newPromptTypeName.trim()) {
+                  setFormData({ ...formData, promptType: newPromptTypeName.trim() });
+                  setNewPromptTypeName("");
+                  setShowCreatePromptType(false);
+                }
+              }}
+              disabled={!newPromptTypeName.trim()}
+            >
+              Create
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Create Prompt Style Dialog */}
+    <Dialog open={showCreatePromptStyle} onOpenChange={setShowCreatePromptStyle}>
+      <DialogContent className="max-w-md" data-testid="modal-create-prompt-style">
+        <DialogHeader>
+          <DialogTitle>Create New Prompt Style</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="newPromptStyle">Prompt Style Name</Label>
+            <Input
+              id="newPromptStyle"
+              value={newPromptStyleName}
+              onChange={(e) => setNewPromptStyleName(e.target.value)}
+              placeholder="Enter prompt style name..."
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCreatePromptStyle(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (newPromptStyleName.trim()) {
+                  setFormData({ ...formData, promptStyle: newPromptStyleName.trim() });
+                  setNewPromptStyleName("");
+                  setShowCreatePromptStyle(false);
+                }
+              }}
+              disabled={!newPromptStyleName.trim()}
+            >
+              Create
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Create Intended Generator Dialog */}
+    <Dialog open={showCreateIntendedGenerator} onOpenChange={setShowCreateIntendedGenerator}>
+      <DialogContent className="max-w-md" data-testid="modal-create-intended-generator">
+        <DialogHeader>
+          <DialogTitle>Create New AI Generator</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="newIntendedGenerator">Generator Name</Label>
+            <Input
+              id="newIntendedGenerator"
+              value={newIntendedGeneratorName}
+              onChange={(e) => setNewIntendedGeneratorName(e.target.value)}
+              placeholder="Enter AI generator name..."
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCreateIntendedGenerator(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (newIntendedGeneratorName.trim()) {
+                  setFormData({ ...formData, intendedGenerator: newIntendedGeneratorName.trim() });
+                  setNewIntendedGeneratorName("");
+                  setShowCreateIntendedGenerator(false);
+                }
+              }}
+              disabled={!newIntendedGeneratorName.trim()}
+            >
+              Create
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Create Recommended Model Dialog */}
+    <Dialog open={showCreateRecommendedModel} onOpenChange={setShowCreateRecommendedModel}>
+      <DialogContent className="max-w-md" data-testid="modal-create-recommended-model">
+        <DialogHeader>
+          <DialogTitle>Create New Model</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="newRecommendedModel">Model Name</Label>
+            <Input
+              id="newRecommendedModel"
+              value={newRecommendedModelName}
+              onChange={(e) => setNewRecommendedModelName(e.target.value)}
+              placeholder="Enter model name..."
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCreateRecommendedModel(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (newRecommendedModelName.trim()) {
+                  setFormData({ ...formData, recommendedModels: newRecommendedModelName.trim() });
+                  setNewRecommendedModelName("");
+                  setShowCreateRecommendedModel(false);
+                }
+              }}
+              disabled={!newRecommendedModelName.trim()}
+            >
+              Create
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
