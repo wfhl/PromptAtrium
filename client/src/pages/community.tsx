@@ -26,6 +26,7 @@ export default function Community() {
   const isSuperAdmin = (user as any)?.role === "super_admin";
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [activeTab, setActiveTab] = useState("prompts");
@@ -383,8 +384,32 @@ export default function Community() {
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">
+          {/* Search Bar for Users */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search users by username..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+                className="pl-10 pr-4"
+                data-testid="input-search-users"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {allUsers.filter(u => u.id !== currentUserId).map((u) => (
+            {allUsers
+              .filter(u => u.id !== currentUserId)
+              .filter(u => {
+                if (!userSearchQuery) return true;
+                const searchLower = userSearchQuery.toLowerCase();
+                return u.username?.toLowerCase().includes(searchLower) ||
+                       u.firstName?.toLowerCase().includes(searchLower) ||
+                       u.lastName?.toLowerCase().includes(searchLower);
+              })
+              .map((u) => (
               <Card key={u.id}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
