@@ -81,9 +81,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center mx-auto mb-4">
-            <Lightbulb className="h-4 w-4 text-primary-foreground animate-pulse" />
-          </div>
+          <img 
+            src="/logo/ATRIUM2 090725.png" 
+            alt="PromptAtrium Logo" 
+            className="w-8 h-8 object-contain mx-auto mb-4 animate-pulse"
+          />
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -101,9 +103,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-                <Lightbulb className="h-4 w-4 text-primary-foreground" />
-              </div>
+              <img 
+                src="/logo/ATRIUM2 090725.png" 
+                alt="PromptAtrium Logo" 
+                className="w-8 h-8 object-contain"
+              />
               <h1 className="text-xl font-bold text-foreground">PromptAtrium</h1>
             </div>
             
