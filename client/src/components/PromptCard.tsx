@@ -27,6 +27,8 @@ interface PromptCardProps {
   onSelectionChange?: (promptId: string, selected: boolean) => void;
   // Inline editing functionality
   allowInlineEdit?: boolean;
+  // Community page flag
+  isCommunityPage?: boolean;
 }
 
 export function PromptCard({ 
@@ -36,7 +38,8 @@ export function PromptCard({
   isSelectable = false,
   isSelected = false,
   onSelectionChange,
-  allowInlineEdit = false
+  allowInlineEdit = false,
+  isCommunityPage = false
 }: PromptCardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -700,14 +703,17 @@ export function PromptCard({
                   {prompt.isPublic ? "Public" : "Private"}
                 </Button>
               ) : (
-                <Badge 
-                  variant={prompt.isPublic ? "default" : "secondary"} 
-                  className={prompt.isPublic ? "bg-blue-500" : ""}
-                  data-testid={`badge-visibility-${prompt.id}`}
-                >
-                  <Globe className="h-3 w-3 mr-1" />
-                  {prompt.isPublic ? "Public" : "Private"}
-                </Badge>
+                // Hide "Public" badge on community page since all prompts there are inherently public
+                !isCommunityPage && (
+                  <Badge 
+                    variant={prompt.isPublic ? "default" : "secondary"} 
+                    className={prompt.isPublic ? "bg-blue-500" : ""}
+                    data-testid={`badge-visibility-${prompt.id}`}
+                  >
+                    <Globe className="h-3 w-3 mr-1" />
+                    {prompt.isPublic ? "Public" : "Private"}
+                  </Badge>
+                )
               )}
               {prompt.isFeatured && (
                 <Badge className="bg-yellow-100 text-yellow-800" data-testid={`badge-featured-${prompt.id}`}>
