@@ -17,6 +17,7 @@ import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "wouter";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -1180,20 +1181,43 @@ export function PromptCard({
             {/* User who created/shared */}
             <div>
               <span className="font-medium text-muted-foreground">Creator:</span>
-              <div className="mt-1 flex items-center">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage 
-                    src={(prompt as any).user?.profileImageUrl} 
-                    alt={`${(prompt as any).user?.firstName || 'User'} ${(prompt as any).user?.lastName || ''}`}
-                  />
-                  <AvatarFallback className="text-xs">
-                    {(prompt as any).user?.firstName && (prompt as any).user?.lastName 
-                      ? `${(prompt as any).user.firstName.charAt(0)}${(prompt as any).user.lastName.charAt(0)}`
-                      : (prompt as any).user?.email 
-                      ? (prompt as any).user.email.charAt(0).toUpperCase()
-                      : 'U'}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="mt-1 flex items-center gap-2">
+                {(prompt as any).user?.username ? (
+                  <Link href={`/user/${(prompt as any).user.username}`}>
+                    <a className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid={`link-creator-${prompt.id}`}>
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage 
+                          src={(prompt as any).user?.profileImageUrl} 
+                          alt={`${(prompt as any).user?.firstName || 'User'} ${(prompt as any).user?.lastName || ''}`}
+                        />
+                        <AvatarFallback className="text-xs">
+                          {(prompt as any).user?.firstName && (prompt as any).user?.lastName 
+                            ? `${(prompt as any).user.firstName.charAt(0)}${(prompt as any).user.lastName.charAt(0)}`
+                            : (prompt as any).user?.email 
+                            ? (prompt as any).user.email.charAt(0).toUpperCase()
+                            : 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs text-muted-foreground hover:text-foreground">
+                        {(prompt as any).user?.firstName || (prompt as any).user?.username || 'User'}
+                      </span>
+                    </a>
+                  </Link>
+                ) : (
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage 
+                      src={(prompt as any).user?.profileImageUrl} 
+                      alt={`${(prompt as any).user?.firstName || 'User'} ${(prompt as any).user?.lastName || ''}`}
+                    />
+                    <AvatarFallback className="text-xs">
+                      {(prompt as any).user?.firstName && (prompt as any).user?.lastName 
+                        ? `${(prompt as any).user.firstName.charAt(0)}${(prompt as any).user.lastName.charAt(0)}`
+                        : (prompt as any).user?.email 
+                        ? (prompt as any).user.email.charAt(0).toUpperCase()
+                        : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
               </div>
             </div>
 
