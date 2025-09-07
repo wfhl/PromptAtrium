@@ -617,7 +617,7 @@ export function PromptCard({
     }
   };
 
-  const canEdit = allowInlineEdit && user && user.id === prompt.userId;
+  const canEdit = allowInlineEdit && typedUser && typedUser.id === prompt.userId;
 
   const handleCopyPrompt = async () => {
     try {
@@ -628,7 +628,7 @@ export function PromptCard({
         description: "Prompt content copied to clipboard",
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Failed to copy",
         description: "Could not copy prompt to clipboard",
@@ -645,7 +645,7 @@ export function PromptCard({
         title: "Copied!",
         description: "Shareable link copied to clipboard",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Failed to copy",
         description: "Could not copy link to clipboard",
