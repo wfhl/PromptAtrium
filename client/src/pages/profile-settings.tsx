@@ -515,7 +515,6 @@ export default function ProfileSettings() {
             </Button>
           </div>
         </form>
-      </div>
     </div>
   );
 }
