@@ -763,7 +763,7 @@ export function PromptCard({
                   {prompt.name}
                 </h3>
               )}
-{showActions ? (
+{showActions && !isCommunityPage ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -781,7 +781,7 @@ export function PromptCard({
                 </Button>
               ) : (
                 // Hide "Public" badge on community page since all prompts there are inherently public
-                !isCommunityPage && (
+                !showActions && !isCommunityPage && (
                   <Badge 
                     variant={prompt.isPublic ? "default" : "secondary"} 
                     className={prompt.isPublic ? "bg-blue-500" : ""}
