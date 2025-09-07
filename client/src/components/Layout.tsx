@@ -82,7 +82,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <img 
-            src="/logo/ATRIUM2 090725.png" 
+            src="/ATRIUM2 090725.png" 
             alt="PromptAtrium Logo" 
             className="w-8 h-8 object-contain mx-auto mb-4 animate-pulse"
           />
@@ -104,7 +104,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
           <div className="flex items-center space-x-8">
             <div className="flex items-center space-x-3">
               <img 
-                src="/logo/ATRIUM2 090725.png" 
+                src="/ATRIUM2 090725.png" 
                 alt="PromptAtrium Logo" 
                 className="w-8 h-8 object-contain"
               />

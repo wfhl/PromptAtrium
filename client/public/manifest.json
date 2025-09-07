@@ -10,13 +10,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/logo/ATRIUM SQUARE 090725.png",
+      "src": "/ATRIUM SQUARE 090725.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo/ATRIUM SQUARE 090725.png",
+      "src": "/ATRIUM SQUARE 090725.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -35,7 +35,7 @@
       "url": "/library",
       "icons": [
         {
-          "src": "/logo/ATRIUM SQUARE 090725.png",
+          "src": "/ATRIUM SQUARE 090725.png",
           "sizes": "96x96"
         }
       ]
@@ -47,7 +47,7 @@
       "url": "/community",
       "icons": [
         {
-          "src": "/logo/ATRIUM SQUARE 090725.png",
+          "src": "/ATRIUM SQUARE 090725.png",
           "sizes": "96x96"
         }
       ]

@@ -10,7 +10,7 @@ export default function Landing() {
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img 
-              src="/logo/ATRIUM2 090725.png" 
+              src="/ATRIUM2 090725.png" 
               alt="PromptAtrium Logo" 
               className="w-8 h-8 object-contain"
             />
