@@ -458,7 +458,7 @@ export default function Library() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setTimeout(() => refetch(), 500);
+                    refetch();
                   }}
                   className="pl-10 pr-4"
                   data-testid="input-search"
@@ -480,7 +480,7 @@ export default function Library() {
                     <label className="text-sm font-medium mb-2 block">Category</label>
                     <Select value={categoryFilter} onValueChange={(value) => {
                       setCategoryFilter(value);
-                      setTimeout(() => refetch(), 100);
+                      refetch();
                     }}>
                       <SelectTrigger className="w-full" data-testid="select-category">
                         <SelectValue placeholder="All Categories" />
@@ -503,7 +503,7 @@ export default function Library() {
                     <label className="text-sm font-medium mb-2 block">Status</label>
                     <Select value={statusFilter} onValueChange={(value) => {
                       setStatusFilter(value);
-                      setTimeout(() => refetch(), 100);
+                      refetch();
                     }}>
                       <SelectTrigger className="w-full" data-testid="select-status">
                         <SelectValue placeholder="All Status" />
@@ -577,7 +577,7 @@ export default function Library() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setTimeout(() => refetch(), 500);
+                    refetch();
                   }}
                   className="pl-10 pr-4"
                   data-testid="input-search"
@@ -897,7 +897,7 @@ export default function Library() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setTimeout(() => refetch(), 500);
+                    refetch();
                   }}
                   className="pl-10 pr-4"
                   data-testid="input-search"

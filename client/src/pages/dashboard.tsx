@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
+import { queryClient, prefetchCommonData } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,13 @@ export default function Dashboard() {
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Prefetch common data for faster navigation
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      prefetchCommonData(user.id);
+    }
+  }, [isAuthenticated, user?.id]);
+
   // Fetch user stats
   const { data: userStats } = useQuery<{
     totalPrompts: number;
@@ -38,6 +46,7 @@ export default function Dashboard() {
   }>({
     queryKey: ["/api/user/stats"],
     enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
   });
 
@@ -45,6 +54,7 @@ export default function Dashboard() {
   const { data: userPrompts = [] } = useQuery<Prompt[]>({
     queryKey: [`/api/prompts?userId=${user?.id || ''}&limit=3&statusNotEqual=archived`],
     enabled: isAuthenticated && !!user?.id,
+    staleTime: 2 * 60 * 1000, // 2 minutes
     retry: false,
   });
 
@@ -59,6 +69,7 @@ export default function Dashboard() {
   const { data: collections = [] } = useQuery<Collection[]>({
     queryKey: ["/api/collections"],
     enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
   });
 
@@ -66,6 +77,7 @@ export default function Dashboard() {
   const { data: favoritePrompts = [] } = useQuery<Prompt[]>({
     queryKey: ["/api/user/favorites"],
     enabled: isAuthenticated,
+    staleTime: 3 * 60 * 1000, // 3 minutes
     retry: false,
   });
 

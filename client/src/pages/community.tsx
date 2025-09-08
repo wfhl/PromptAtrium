@@ -267,7 +267,7 @@ export default function Community() {
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   // Auto-apply search on type
-                  setTimeout(() => refetch(), 500);
+                  refetch();
                 }}
                 className="pl-10 pr-4"
                 data-testid="input-search"
@@ -289,7 +289,7 @@ export default function Community() {
                   <label className="text-sm font-medium mb-2 block">Category</label>
                   <Select value={categoryFilter} onValueChange={(value) => {
                     setCategoryFilter(value);
-                    setTimeout(() => refetch(), 100);
+                    refetch();
                   }}>
                     <SelectTrigger className="w-full" data-testid="select-category">
                       <SelectValue placeholder="All Categories" />
@@ -314,7 +314,7 @@ export default function Community() {
                   <label className="text-sm font-medium mb-2 block">Sort By</label>
                   <Select value={sortBy} onValueChange={(value) => {
                     setSortBy(value);
-                    setTimeout(() => refetch(), 100);
+                    refetch();
                   }}>
                     <SelectTrigger className="w-full" data-testid="select-sort">
                       <SelectValue placeholder="Sort by" />

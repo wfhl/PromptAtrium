@@ -46,8 +46,9 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      refetchOnWindowFocus: true,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
       retry: false,
     },
     mutations: {
@@ -55,3 +56,26 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Prefetch helper function for commonly accessed data
+export const prefetchCommonData = async (userId?: string) => {
+  // Prefetch user stats
+  queryClient.prefetchQuery({
+    queryKey: ["/api/user/stats"],
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  // Prefetch collections
+  queryClient.prefetchQuery({
+    queryKey: ["/api/collections"],
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  // Prefetch user prompts
+  if (userId) {
+    queryClient.prefetchQuery({
+      queryKey: [`/api/prompts?userId=${userId}&statusNotEqual=archived`],
+      staleTime: 2 * 60 * 1000,
+    });
+  }
+};
