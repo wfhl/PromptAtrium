@@ -69,6 +69,13 @@ export default function Dashboard() {
     retry: false,
   });
 
+  // Fetch recent activities
+  const { data: recentActivities = [] } = useQuery<any[]>({
+    queryKey: ["/api/activities/recent?limit=3"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
   const handleCreatePrompt = () => {
     setEditingPrompt(null);
     setPromptModalOpen(true);
@@ -314,27 +321,22 @@ export default function Dashboard() {
                 <CardTitle>Community Activity</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ActivityItem
-                  type="fork"
-                  user="@mike_creates"
-                  promptName="Anime Character Design"
-                  timestamp="2 hours ago"
-                  testId="activity-1"
-                />
-                <ActivityItem
-                  type="like"
-                  user="@designpro"
-                  promptName="Logo Design Prompt"
-                  timestamp="4 hours ago"
-                  testId="activity-2"
-                />
-                <ActivityItem
-                  type="create"
-                  user="@artisan_ai"
-                  promptName="Minimalist Architecture"
-                  timestamp="6 hours ago"
-                  testId="activity-3"
-                />
+                {recentActivities.length > 0 ? (
+                  recentActivities.map((activity, index) => (
+                    <ActivityItem
+                      key={activity.id || index}
+                      type={activity.type}
+                      user={`@${activity.username || 'user'}`}
+                      promptName={activity.promptName || activity.details?.promptName || ''}
+                      timestamp={activity.timestamp || new Date(activity.createdAt).toLocaleString()}
+                      testId={`activity-${index + 1}`}
+                    />
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No recent activity yet.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
