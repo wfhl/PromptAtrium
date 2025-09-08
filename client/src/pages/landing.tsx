@@ -1,8 +1,41 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lightbulb, Users, Search, Shield } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Lightbulb, Users, Search, Shield, Moon, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Landing() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin');
+
+  // Initialize dark theme on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'dark';
+    setTheme(savedTheme);
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(savedTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+
+  const handleAuthClick = (tab: 'signin' | 'signup') => {
+    setAuthTab(tab);
+    setAuthDialogOpen(true);
+  };
+
+  const handleAuthenticate = () => {
+    // Both sign in and sign up use the same Replit auth flow
+    window.location.href = '/api/login';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -17,9 +50,19 @@ export default function Landing() {
             <h1 className="text-xl font-bold text-foreground">PromptAtrium</h1>
           </div>
           
-          <Button asChild data-testid="button-login">
-            <a href="/api/login">Sign In</a>
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              data-testid="button-theme-toggle"
+            >
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </Button>
+            <Button onClick={() => handleAuthClick('signin')} data-testid="button-login">
+              Sign In
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -33,8 +76,8 @@ export default function Landing() {
             PromptAtrium is an open, central space for managing, sharing, and refining AI prompts. 
             Join creators, teams, and communities to cultivate ideas together.
           </p>
-          <Button size="lg" asChild data-testid="button-get-started">
-            <a href="/api/login">Get Started</a>
+          <Button size="lg" onClick={() => handleAuthClick('signup')} data-testid="button-get-started">
+            Get Started
           </Button>
         </div>
       </section>
@@ -115,8 +158,8 @@ export default function Landing() {
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-cta-description">
             Join thousands of creators managing their AI prompts with PromptAtrium.
           </p>
-          <Button size="lg" asChild data-testid="button-cta">
-            <a href="/api/login">Sign Up Now</a>
+          <Button size="lg" onClick={() => handleAuthClick('signup')} data-testid="button-cta">
+            Sign Up Now
           </Button>
         </div>
       </section>
@@ -127,6 +170,63 @@ export default function Landing() {
           <p data-testid="text-footer">© 2024 PromptAtrium. Built for the AI community.</p>
         </div>
       </footer>
+
+      {/* Auth Dialog */}
+      <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Welcome to PromptAtrium</DialogTitle>
+            <DialogDescription>
+              Join our community to manage, share, and discover AI prompts.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Tabs value={authTab} onValueChange={(value) => setAuthTab(value as 'signin' | 'signup')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="signin" data-testid="tab-signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" data-testid="tab-signup">Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="signin" className="space-y-4">
+              <div className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Welcome back! Sign in to access your prompt library and continue where you left off.
+                </p>
+                <Button 
+                  onClick={handleAuthenticate} 
+                  className="w-full" 
+                  size="lg"
+                  data-testid="button-signin-replit"
+                >
+                  Continue with Replit
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  By signing in, you agree to our terms of service and privacy policy.
+                </p>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="signup" className="space-y-4">
+              <div className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Create your account to start building your AI prompt library and join our creative community.
+                </p>
+                <Button 
+                  onClick={handleAuthenticate} 
+                  className="w-full" 
+                  size="lg"
+                  data-testid="button-signup-replit"
+                >
+                  Sign up with Replit
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  By signing up, you agree to our terms of service and privacy policy.
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
