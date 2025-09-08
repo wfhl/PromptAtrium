@@ -178,24 +178,24 @@ export default function Community() {
   };
 
   const getActivityDescription = (activity: ActivityType & { user: User }) => {
-    const userName = activity.user?.firstName || activity.user?.username || "Someone";
+    const userName = activity.user?.username || "Someone";
     switch (activity.actionType) {
       case "created_prompt":
-        return `${userName} created a new prompt`;
+        return `@${userName} created a new prompt`;
       case "shared_prompt":
-        return `${userName} shared a prompt`;
+        return `@${userName} shared a prompt`;
       case "liked_prompt":
-        return `${userName} liked a prompt`;
+        return `@${userName} liked a prompt`;
       case "favorited_prompt":
-        return `${userName} favorited a prompt`;
+        return `@${userName} favorited a prompt`;
       case "followed_user":
-        return `${userName} started following someone`;
+        return `@${userName} started following someone`;
       case "joined_community":
-        return `${userName} joined the community`;
+        return `@${userName} joined the community`;
       case "created_collection":
-        return `${userName} created a new collection`;
+        return `@${userName} created a new collection`;
       default:
-        return `${userName} performed an action`;
+        return `@${userName} performed an action`;
     }
   };
 
