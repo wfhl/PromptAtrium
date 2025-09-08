@@ -5,17 +5,18 @@ import { queryClient, prefetchCommonData } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, FileText, Heart, Folder, GitBranch, Plus } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Search, FileText, Heart, Folder, GitBranch, Plus, ChevronDown, ChevronUp, BookOpen, Share2, Star, UserPlus, Users, Activity } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { QuickActions } from "@/components/QuickActions";
 import { BulkImportModal } from "@/components/BulkImportModal";
 import { StatsCard } from "@/components/StatsCard";
 import { CollectionItem } from "@/components/CollectionItem";
-import { ActivityItem } from "@/components/ActivityItem";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Prompt, Collection } from "@shared/schema";
+import type { Prompt, Collection, User } from "@shared/schema";
 
 interface DashboardProps {
   onCreatePrompt?: () => void;
@@ -29,6 +30,26 @@ export default function Dashboard() {
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Initialize collapsible state from localStorage for the specific user
+  const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
+
+  // Load collapsed state from localStorage once user is available
+  useEffect(() => {
+    if (user?.id) {
+      const stored = localStorage.getItem(`statsCollapsed_${user.id}`);
+      if (stored !== null) {
+        setIsStatsCollapsed(stored === 'true');
+      }
+    }
+  }, [user?.id]);
+
+  // Update localStorage when the collapsed state changes
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`statsCollapsed_${user.id}`, isStatsCollapsed.toString());
+    }
+  }, [isStatsCollapsed, user?.id]);
 
   // Prefetch common data for faster navigation
   useEffect(() => {
@@ -81,9 +102,18 @@ export default function Dashboard() {
     retry: false,
   });
 
-  // Fetch recent activities
-  const { data: recentActivities = [] } = useQuery<any[]>({
-    queryKey: ["/api/activities/recent?limit=3"],
+  // Fetch recent activities with user data
+  interface ActivityType {
+    id: string;
+    actionType: string;
+    userId: string;
+    details?: any;
+    createdAt: string;
+    user?: User;
+  }
+  
+  const { data: recentActivities = [] } = useQuery<ActivityType[]>({
+    queryKey: ["/api/activities/recent"],
     enabled: isAuthenticated,
     retry: false,
   });
@@ -111,6 +141,65 @@ export default function Dashboard() {
 
   const handleImportPrompts = () => {
     setBulkImportModalOpen(true);
+  };
+
+  // Helper functions for activity display
+  const getActivityIcon = (actionType: string) => {
+    switch (actionType) {
+      case "created_prompt":
+        return <BookOpen className="h-4 w-4" />;
+      case "shared_prompt":
+        return <Share2 className="h-4 w-4" />;
+      case "liked_prompt":
+        return <Heart className="h-4 w-4" />;
+      case "favorited_prompt":
+        return <Star className="h-4 w-4" />;
+      case "followed_user":
+        return <UserPlus className="h-4 w-4" />;
+      case "joined_community":
+        return <Users className="h-4 w-4" />;
+      case "created_collection":
+        return <Folder className="h-4 w-4" />;
+      default:
+        return <Activity className="h-4 w-4" />;
+    }
+  };
+
+  const getActivityDescription = (activity: ActivityType) => {
+    const userName = activity.user?.firstName || activity.user?.username || "Someone";
+    switch (activity.actionType) {
+      case "created_prompt":
+        return `${userName} created a new prompt`;
+      case "shared_prompt":
+        return `${userName} shared a prompt`;
+      case "liked_prompt":
+        return `${userName} liked a prompt`;
+      case "favorited_prompt":
+        return `${userName} favorited a prompt`;
+      case "followed_user":
+        return `${userName} started following someone`;
+      case "joined_community":
+        return `${userName} joined the community`;
+      case "created_collection":
+        return `${userName} created a new collection`;
+      default:
+        return `${userName} performed an action`;
+    }
+  };
+
+  const formatDate = (date: string | Date) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return "just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return d.toLocaleDateString();
   };
 
   if (!isAuthenticated) {
@@ -145,39 +234,65 @@ export default function Dashboard() {
             </div>
           </div>
           
-          {/* Stats Cards - Hidden on mobile */}
-          <div className="hidden md:grid md:grid-cols-4 gap-4 mb-6">
-            <Link href="/library" className="hover:scale-105 transition-transform cursor-pointer">
-              <StatsCard
-                title="Your Prompts"
-                value={userStats?.totalPrompts || 0}
-                icon={FileText}
-                iconColor="bg-primary/10 text-primary"
-                testId="stat-prompts"
-              />
-            </Link>
-            <StatsCard
-              title="Total Likes"
-              value={userStats?.totalLikes || 0}
-              icon={Heart}
-              iconColor="bg-red-500/10 text-red-500"
-              testId="stat-likes"
-            />
-            <StatsCard
-              title="Collections"
-              value={userStats?.collections || 0}
-              icon={Folder}
-              iconColor="bg-green-500/10 text-green-500"
-              testId="stat-collections"
-            />
-            <StatsCard
-              title="Forks Created"
-              value={userStats?.forksCreated || 0}
-              icon={GitBranch}
-              iconColor="bg-blue-500/10 text-blue-500"
-              testId="stat-forks"
-            />
-          </div>
+          {/* Stats Cards - Collapsible, Hidden on mobile */}
+          <Collapsible
+            open={!isStatsCollapsed}
+            onOpenChange={(open) => setIsStatsCollapsed(!open)}
+            className="hidden md:block mb-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Your Statistics</h2>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" data-testid="button-toggle-stats">
+                  {isStatsCollapsed ? (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-2" />
+                      Show Stats
+                    </>
+                  ) : (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-2" />
+                      Hide Stats
+                    </>
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+            <CollapsibleContent>
+              <div className="grid grid-cols-4 gap-4">
+                <Link href="/library" className="hover:scale-105 transition-transform cursor-pointer">
+                  <StatsCard
+                    title="Your Prompts"
+                    value={userStats?.totalPrompts || 0}
+                    icon={FileText}
+                    iconColor="bg-primary/10 text-primary"
+                    testId="stat-prompts"
+                  />
+                </Link>
+                <StatsCard
+                  title="Total Likes"
+                  value={userStats?.totalLikes || 0}
+                  icon={Heart}
+                  iconColor="bg-red-500/10 text-red-500"
+                  testId="stat-likes"
+                />
+                <StatsCard
+                  title="Collections"
+                  value={userStats?.collections || 0}
+                  icon={Folder}
+                  iconColor="bg-green-500/10 text-green-500"
+                  testId="stat-collections"
+                />
+                <StatsCard
+                  title="Forks Created"
+                  value={userStats?.forksCreated || 0}
+                  icon={GitBranch}
+                  iconColor="bg-blue-500/10 text-blue-500"
+                  testId="stat-forks"
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
         
         {/* Quick Actions for Mobile - Show at top on mobile */}
@@ -330,24 +445,45 @@ export default function Dashboard() {
             {/* Community Activity */}
             <Card data-testid="card-activity">
               <CardHeader>
-                <CardTitle>Community Activity</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Community Activity</CardTitle>
+                  <Link href="/community?tab=activity">
+                    <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-activity">
+                      View all
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 {recentActivities.length > 0 ? (
-                  recentActivities.map((activity, index) => (
-                    <ActivityItem
-                      key={activity.id || index}
-                      type={activity.type}
-                      user={`@${activity.username || 'user'}`}
-                      promptName={activity.promptName || activity.details?.promptName || ''}
-                      timestamp={activity.timestamp || new Date(activity.createdAt).toLocaleString()}
-                      testId={`activity-${index + 1}`}
-                    />
-                  ))
+                  <div className="space-y-4">
+                    {recentActivities.slice(0, 5).map((activity) => (
+                      <div key={activity.id} className="flex items-start gap-3 pb-4 border-b last:border-0">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={activity.user?.profileImageUrl || undefined} />
+                          <AvatarFallback>
+                            {activity.user?.firstName?.[0]?.toUpperCase() || activity.user?.username?.[0]?.toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {getActivityIcon(activity.actionType)}
+                            <p className="text-sm">
+                              {getActivityDescription(activity)}
+                            </p>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {activity.createdAt ? formatDate(activity.createdAt) : 'recently'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No recent activity yet.
-                  </p>
+                  <div className="text-center py-10">
+                    <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">No recent activity yet</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
