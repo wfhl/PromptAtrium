@@ -496,6 +496,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Docs/Sheets import endpoint
+  app.post('/api/prompts/google-import', isAuthenticated, async (req: any, res) => {
+    try {
+      const { url, type } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ message: "URL is required" });
+      }
+
+      // Extract document/spreadsheet ID from the URL
+      let docId: string | null = null;
+      let exportUrl: string = "";
+
+      if (type === "docs" || url.includes("docs.google.com/document")) {
+        // Extract Google Docs ID
+        const docMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (!docMatch) {
+          return res.status(400).json({ message: "Invalid Google Docs URL" });
+        }
+        docId = docMatch[1];
+        // Export as plain text
+        exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
+      } else if (type === "sheets" || url.includes("docs.google.com/spreadsheets")) {
+        // Extract Google Sheets ID
+        const sheetMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (!sheetMatch) {
+          return res.status(400).json({ message: "Invalid Google Sheets URL" });
+        }
+        docId = sheetMatch[1];
+        // Export as CSV
+        exportUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv`;
+      } else {
+        return res.status(400).json({ message: "Unsupported Google document type" });
+      }
+
+      // Fetch the document content
+      const response = await fetch(exportUrl);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return res.status(404).json({ message: "Document not found. Make sure the document is publicly accessible." });
+        }
+        return res.status(500).json({ message: "Failed to fetch document content" });
+      }
+
+      const content = await response.text();
+      
+      // Return the content for client-side parsing
+      res.json({ 
+        content,
+        type: type === "sheets" || url.includes("spreadsheets") ? "csv" : "txt",
+        docId 
+      });
+      
+    } catch (error) {
+      console.error("Error importing from Google:", error);
+      res.status(500).json({ message: "Failed to import from Google document" });
+    }
+  });
+
   // Bulk operations endpoint
   app.post('/api/prompts/bulk-operations', isAuthenticated, async (req: any, res) => {
     try {

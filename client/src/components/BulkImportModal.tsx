@@ -20,7 +20,8 @@ import {
   CheckCircle,
   AlertCircle,
   XCircle,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -70,8 +71,10 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const [txtParseMode, setTxtParseMode] = useState<"lines" | "paragraphs" | "delimiter">("lines");
   const [customDelimiter, setCustomDelimiter] = useState("---");
   
-  // Google Docs
-  const [googleDocsUrl, setGoogleDocsUrl] = useState("");
+  // Google Docs/Sheets
+  const [googleUrl, setGoogleUrl] = useState("");
+  const [isImportingGoogle, setIsImportingGoogle] = useState(false);
+  const [googleType, setGoogleType] = useState<"auto" | "docs" | "sheets">("auto");
   
   const resetModal = () => {
     setFile(null);
@@ -80,7 +83,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     setStep("upload");
     setImportProgress(0);
     setImportResults(null);
-    setGoogleDocsUrl("");
+    setGoogleUrl("");
   };
 
   const handleFileUpload = useCallback((uploadedFile: File) => {
@@ -218,6 +221,57 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     bulkImportMutation.mutate(parsedData);
   };
 
+  const handleGoogleImport = async () => {
+    if (!googleUrl) return;
+    
+    setIsImportingGoogle(true);
+    try {
+      const response = await apiRequest("POST", "/api/prompts/google-import", {
+        url: googleUrl,
+        type: googleType
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to import from Google");
+      }
+      
+      // Parse the content based on the type
+      if (data.type === "csv") {
+        const result = Papa.parse(data.content, { header: true });
+        const parsed = result.data.map((row: any, index: number) => ({
+          name: row.name || row.title || `Prompt ${index + 1}`,
+          promptContent: row.prompt || row.content || row.description || "",
+          description: row.description || "",
+          category: row.category || "",
+          tags: row.tags ? row.tags.split(',').map((t: string) => t.trim()) : [],
+          status: (row.status === "published" ? "published" : "draft") as "draft" | "published",
+          isPublic: row.isPublic === "true" || row.public === "true"
+        }));
+        setParsedData(parsed.filter(p => p.promptContent.trim() !== ""));
+      } else {
+        // Parse as text (Google Docs)
+        const parsed = parseTxtContent(data.content);
+        setParsedData(parsed);
+      }
+      
+      setStep("preview");
+      toast({
+        title: "Import Successful",
+        description: `Successfully fetched content from Google ${data.type === "csv" ? "Sheets" : "Docs"}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Failed to import from Google. Make sure the document is publicly accessible.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImportingGoogle(false);
+    }
+  };
+
   const renderUploadStep = () => (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -235,7 +289,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         </TabsTrigger>
         <TabsTrigger value="google" className="flex items-center space-x-2">
           <ExternalLink className="h-4 w-4" />
-          <span>Google Docs</span>
+          <span>Google Import</span>
         </TabsTrigger>
       </TabsList>
 
@@ -353,22 +407,66 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
       </TabsContent>
 
       <TabsContent value="google" className="space-y-4">
-        <div>
-          <Label>Google Docs URL</Label>
-          <div className="flex space-x-2">
-            <Input
-              value={googleDocsUrl}
-              onChange={(e) => setGoogleDocsUrl(e.target.value)}
-              placeholder="https://docs.google.com/document/d/..."
-            />
-            <Button variant="outline" disabled>
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Import
-            </Button>
+        <div className="space-y-4">
+          <div>
+            <Label>Document Type</Label>
+            <Select value={googleType} onValueChange={(value: "auto" | "docs" | "sheets") => setGoogleType(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select document type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto-detect</SelectItem>
+                <SelectItem value="docs">Google Docs</SelectItem>
+                <SelectItem value="sheets">Google Sheets</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Google Docs integration coming soon!
-          </p>
+          
+          <div>
+            <Label>Google Document URL</Label>
+            <div className="flex space-x-2">
+              <Input
+                value={googleUrl}
+                onChange={(e) => setGoogleUrl(e.target.value)}
+                placeholder="https://docs.google.com/document/d/... or spreadsheets/d/..."
+                disabled={isImportingGoogle}
+              />
+              <Button 
+                variant="outline" 
+                onClick={handleGoogleImport}
+                disabled={!googleUrl || isImportingGoogle}
+              >
+                {isImportingGoogle ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Import
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Make sure your Google Doc or Sheet is publicly accessible (Anyone with link can view)
+            </p>
+          </div>
+
+          <Card className="bg-muted/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Supported Formats</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <strong>Google Docs:</strong> Each paragraph becomes a separate prompt. The first line is used as the name.
+              </div>
+              <div>
+                <strong>Google Sheets:</strong> Expects columns: name, prompt/content, description, category, tags
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </TabsContent>
     </Tabs>
