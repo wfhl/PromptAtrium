@@ -1211,85 +1211,93 @@ export function PromptCard({
             </div>
 
             {/* Prompt Types */}
-            <div>
-              {!isCollapsed && <span className="font-medium text-muted-foreground">Types:</span>}
-              <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
-                {prompt.promptTypes && prompt.promptTypes.length > 0 ? (
-                  prompt.promptTypes.map((type, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {type}
+            {((!isCollapsed) || (prompt.promptTypes && prompt.promptTypes.length > 0) || prompt.promptType) && (
+              <div>
+                {!isCollapsed && <span className="font-medium text-muted-foreground">Types:</span>}
+                <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
+                  {prompt.promptTypes && prompt.promptTypes.length > 0 ? (
+                    prompt.promptTypes.map((type, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {type}
+                      </Badge>
+                    ))
+                  ) : prompt.promptType ? (
+                    <Badge variant="secondary" className="text-xs">
+                      {prompt.promptType}
                     </Badge>
-                  ))
-                ) : prompt.promptType ? (
-                  <Badge variant="secondary" className="text-xs">
-                    {prompt.promptType}
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground text-xs">None</span>
-                )}
+                  ) : (
+                    !isCollapsed && <span className="text-muted-foreground text-xs">None</span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Prompt Styles */}
-            <div>
-              {!isCollapsed && <span className="font-medium text-muted-foreground">Styles:</span>}
-              <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
-                {prompt.promptStyles && prompt.promptStyles.length > 0 ? (
-                  prompt.promptStyles.map((style, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {style}
+            {((!isCollapsed) || (prompt.promptStyles && prompt.promptStyles.length > 0) || prompt.promptStyle) && (
+              <div>
+                {!isCollapsed && <span className="font-medium text-muted-foreground">Styles:</span>}
+                <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
+                  {prompt.promptStyles && prompt.promptStyles.length > 0 ? (
+                    prompt.promptStyles.map((style, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {style}
+                      </Badge>
+                    ))
+                  ) : prompt.promptStyle ? (
+                    <Badge variant="secondary" className="text-xs">
+                      {prompt.promptStyle}
                     </Badge>
-                  ))
-                ) : prompt.promptStyle ? (
-                  <Badge variant="secondary" className="text-xs">
-                    {prompt.promptStyle}
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground text-xs">None</span>
-                )}
+                  ) : (
+                    !isCollapsed && <span className="text-muted-foreground text-xs">None</span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Prompt Categories */}
-            <div>
-              {!isCollapsed && <span className="font-medium text-muted-foreground">Categories:</span>}
-              <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
-                {prompt.categories && prompt.categories.length > 0 ? (
-                  prompt.categories.map((category, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {category}
+            {((!isCollapsed) || (prompt.categories && prompt.categories.length > 0) || prompt.category) && (
+              <div>
+                {!isCollapsed && <span className="font-medium text-muted-foreground">Categories:</span>}
+                <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
+                  {prompt.categories && prompt.categories.length > 0 ? (
+                    prompt.categories.map((category, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {category}
+                      </Badge>
+                    ))
+                  ) : prompt.category ? (
+                    <Badge variant="outline" className="text-xs">
+                      {prompt.category}
                     </Badge>
-                  ))
-                ) : prompt.category ? (
-                  <Badge variant="outline" className="text-xs">
-                    {prompt.category}
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground text-xs">None</span>
-                )}
+                  ) : (
+                    !isCollapsed && <span className="text-muted-foreground text-xs">None</span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Tags */}
-            <div>
-              {!isCollapsed && <span className="font-medium text-muted-foreground">Tags:</span>}
-              <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
-                {prompt.tags && prompt.tags.length > 0 ? (
-                  prompt.tags.slice(0, 3).map((tag, index) => (
-                    <Badge key={index} variant="default" className="text-xs">
-                      {tag}
+            {((!isCollapsed) || (prompt.tags && prompt.tags.length > 0)) && (
+              <div>
+                {!isCollapsed && <span className="font-medium text-muted-foreground">Tags:</span>}
+                <div className={!isCollapsed ? "flex flex-wrap gap-1 mt-1" : "flex flex-wrap gap-1"}>
+                  {prompt.tags && prompt.tags.length > 0 ? (
+                    prompt.tags.slice(0, 3).map((tag, index) => (
+                      <Badge key={index} variant="default" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))
+                  ) : (
+                    !isCollapsed && <span className="text-muted-foreground text-xs">None</span>
+                  )}
+                  {prompt.tags && prompt.tags.length > 3 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{prompt.tags.length - 3}
                     </Badge>
-                  ))
-                ) : (
-                  <span className="text-muted-foreground text-xs">None</span>
-                )}
-                {prompt.tags && prompt.tags.length > 3 && (
-                  <Badge variant="secondary" className="text-xs">
-                    +{prompt.tags.length - 3}
-                  </Badge>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Row 2: Intended Generator, Recommended Models, Technical Parameters, Variables */}
