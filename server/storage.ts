@@ -1150,7 +1150,35 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
   } = {}): Promise<User[]> {
-    let query = db.select().from(users).$dynamic();
+    // Explicitly select user columns to ensure consistent return type
+    let query = db.select({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      profileImageUrl: users.profileImageUrl,
+      role: users.role,
+      username: users.username,
+      bio: users.bio,
+      birthday: users.birthday,
+      website: users.website,
+      twitterHandle: users.twitterHandle,
+      githubHandle: users.githubHandle,
+      linkedinHandle: users.linkedinHandle,
+      instagramHandle: users.instagramHandle,
+      deviantartHandle: users.deviantartHandle,
+      blueskyHandle: users.blueskyHandle,
+      tiktokHandle: users.tiktokHandle,
+      redditHandle: users.redditHandle,
+      patreonHandle: users.patreonHandle,
+      customSocials: users.customSocials,
+      profileVisibility: users.profileVisibility,
+      emailVisibility: users.emailVisibility,
+      showStats: users.showStats,
+      showBirthday: users.showBirthday,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    }).from(users).$dynamic();
 
     const conditions: any[] = [];
     
@@ -1168,15 +1196,14 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(users.role, options.role));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+    if (options.communityId) {
+      // If filtering by community, join with userCommunities but only select user columns
+      query = query.innerJoin(userCommunities, eq(users.id, userCommunities.userId));
+      conditions.push(eq(userCommunities.communityId, options.communityId));
     }
 
-    if (options.communityId) {
-      // If filtering by community, join with userCommunities
-      query = query
-        .innerJoin(userCommunities, eq(users.id, userCommunities.userId))
-        .where(eq(userCommunities.communityId, options.communityId));
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
     }
 
     query = query.orderBy(desc(users.createdAt));
