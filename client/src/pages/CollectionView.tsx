@@ -170,14 +170,25 @@ export default function CollectionView() {
       promptIds: string[];
       data?: BulkEditPrompt;
     }) => {
-      const response = await apiRequest("POST", "/api/prompts/bulk", {
+      const response = await apiRequest("POST", "/api/prompts/bulk-operations", {
         operation,
         promptIds,
-        data,
+        updateData: data,
       });
-      return response.json();
+      
+      // Check if response has content before parsing
+      const text = await response.text();
+      if (!text) {
+        return { success: 0, total: 0, failed: 0 };
+      }
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error('Failed to parse response:', text);
+        throw new Error('Server returned invalid response');
+      }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
       const { operation } = variables;
       let message = "";
       
@@ -194,22 +205,33 @@ export default function CollectionView() {
         case "publish":
           message = "Prompts published successfully";
           break;
-        case "unpublish":
+        case "draft":
           message = "Prompts unpublished successfully";
           break;
-        case "edit":
+        case "update":
           message = "Prompts updated successfully";
+          break;
+        case "makePublic":
+          message = "Prompts made public successfully";
+          break;
+        case "makePrivate":
+          message = "Prompts made private successfully";
           break;
       }
       
       toast({
-        title: "Success",
-        description: message,
+        title: "Bulk Operation Complete",
+        description: `${result.success} of ${result.total} ${message.toLowerCase()}${result.failed > 0 ? `. ${result.failed} failed.` : '.'}`,
+        variant: result.failed > 0 ? "destructive" : "default",
       });
       
       setSelectedPromptIds(new Set());
       setIsBulkMode(false);
       refetchPrompts();
+      
+      // Invalidate queries to update counts
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error: any) => {
       toast({
@@ -260,7 +282,7 @@ export default function CollectionView() {
   const handleBulkOperation = (operation: BulkOperationType) => {
     if (selectedPromptIds.size === 0) return;
     
-    if (operation === "edit") {
+    if (operation === "update") {
       setBulkEditModalOpen(true);
     } else {
       bulkOperationMutation.mutate({
@@ -272,7 +294,7 @@ export default function CollectionView() {
 
   const handleBulkEdit = (data: BulkEditPrompt) => {
     bulkOperationMutation.mutate({
-      operation: "edit",
+      operation: "update",
       promptIds: Array.from(selectedPromptIds),
       data,
     });
