@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema } from "@shared/schema";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -1043,6 +1043,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting collection:", error);
       res.status(500).json({ message: "Failed to delete collection" });
+    }
+  });
+
+  // Category routes
+  app.get('/api/categories', async (req, res) => {
+    try {
+      const { userId, type, isActive } = req.query;
+      const categories = await storage.getCategories({
+        userId: userId as string,
+        type: type as string,
+        isActive: isActive === 'true'
+      });
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.post('/api/categories', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const categoryData = insertCategorySchema.parse({ ...req.body, userId, type: 'user' });
+      const category = await storage.createCategory(categoryData);
+      res.status(201).json(category);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid category data", errors: error.errors });
+      }
+      console.error("Error creating category:", error);
+      res.status(500).json({ message: "Failed to create category" });
+    }
+  });
+
+  // Prompt type routes
+  app.get('/api/prompt-types', async (req, res) => {
+    try {
+      const { userId, type, isActive } = req.query;
+      const promptTypes = await storage.getPromptTypes({
+        userId: userId as string,
+        type: type as string,
+        isActive: isActive === 'true'
+      });
+      res.json(promptTypes);
+    } catch (error) {
+      console.error("Error fetching prompt types:", error);
+      res.status(500).json({ message: "Failed to fetch prompt types" });
+    }
+  });
+
+  app.post('/api/prompt-types', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const promptTypeData = insertPromptTypeSchema.parse({ ...req.body, userId, type: 'user' });
+      const promptType = await storage.createPromptType(promptTypeData);
+      res.status(201).json(promptType);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid prompt type data", errors: error.errors });
+      }
+      console.error("Error creating prompt type:", error);
+      res.status(500).json({ message: "Failed to create prompt type" });
+    }
+  });
+
+  // Prompt style routes
+  app.get('/api/prompt-styles', async (req, res) => {
+    try {
+      const { userId, type, isActive } = req.query;
+      const promptStyles = await storage.getPromptStyles({
+        userId: userId as string,
+        type: type as string,
+        isActive: isActive === 'true'
+      });
+      res.json(promptStyles);
+    } catch (error) {
+      console.error("Error fetching prompt styles:", error);
+      res.status(500).json({ message: "Failed to fetch prompt styles" });
+    }
+  });
+
+  app.post('/api/prompt-styles', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const promptStyleData = insertPromptStyleSchema.parse({ ...req.body, userId, type: 'user' });
+      const promptStyle = await storage.createPromptStyle(promptStyleData);
+      res.status(201).json(promptStyle);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid prompt style data", errors: error.errors });
+      }
+      console.error("Error creating prompt style:", error);
+      res.status(500).json({ message: "Failed to create prompt style" });
+    }
+  });
+
+  // Intended generator routes
+  app.get('/api/intended-generators', async (req, res) => {
+    try {
+      const { userId, type, isActive } = req.query;
+      const generators = await storage.getIntendedGenerators({
+        userId: userId as string,
+        type: type as string,
+        isActive: isActive === 'true'
+      });
+      res.json(generators);
+    } catch (error) {
+      console.error("Error fetching intended generators:", error);
+      res.status(500).json({ message: "Failed to fetch intended generators" });
+    }
+  });
+
+  app.post('/api/intended-generators', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const generatorData = insertIntendedGeneratorSchema.parse({ ...req.body, userId, type: 'user' });
+      const generator = await storage.createIntendedGenerator(generatorData);
+      res.status(201).json(generator);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid intended generator data", errors: error.errors });
+      }
+      console.error("Error creating intended generator:", error);
+      res.status(500).json({ message: "Failed to create intended generator" });
+    }
+  });
+
+  // Recommended model routes
+  app.get('/api/recommended-models', async (req, res) => {
+    try {
+      const { userId, type, isActive } = req.query;
+      const models = await storage.getRecommendedModels({
+        userId: userId as string,
+        type: type as string,
+        isActive: isActive === 'true'
+      });
+      res.json(models);
+    } catch (error) {
+      console.error("Error fetching recommended models:", error);
+      res.status(500).json({ message: "Failed to fetch recommended models" });
+    }
+  });
+
+  app.post('/api/recommended-models', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const modelData = insertRecommendedModelSchema.parse({ ...req.body, userId, type: 'user' });
+      const model = await storage.createRecommendedModel(modelData);
+      res.status(201).json(model);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid recommended model data", errors: error.errors });
+      }
+      console.error("Error creating recommended model:", error);
+      res.status(500).json({ message: "Failed to create recommended model" });
     }
   });
 
