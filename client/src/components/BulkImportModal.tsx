@@ -635,7 +635,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
                 )}
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm mt-2 text-[#d94cac]">
               Make sure your Google Doc or Sheet is publicly accessible (Anyone with link can view)
             </p>
           </div>
