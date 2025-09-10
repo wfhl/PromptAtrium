@@ -198,8 +198,24 @@ export default function Landing() {
                   size="lg"
                   data-testid="button-signin-replit"
                 >
-                  Continue with Replit
+                  Sign In
                 </Button>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Sign in with:
+                  </p>
+                  <div className="flex justify-center gap-2 text-xs text-muted-foreground">
+                    <span>Google</span>
+                    <span>•</span>
+                    <span>GitHub</span>
+                    <span>•</span>
+                    <span>X</span>
+                    <span>•</span>
+                    <span>Apple</span>
+                    <span>•</span>
+                    <span>Email</span>
+                  </div>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   By signing in, you agree to our terms of service and privacy policy.
                 </p>
@@ -217,8 +233,24 @@ export default function Landing() {
                   size="lg"
                   data-testid="button-signup-replit"
                 >
-                  Sign up with Replit
+                  Create Account
                 </Button>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Sign up with:
+                  </p>
+                  <div className="flex justify-center gap-2 text-xs text-muted-foreground">
+                    <span>Google</span>
+                    <span>•</span>
+                    <span>GitHub</span>
+                    <span>•</span>
+                    <span>X</span>
+                    <span>•</span>
+                    <span>Apple</span>
+                    <span>•</span>
+                    <span>Email</span>
+                  </div>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   By signing up, you agree to our terms of service and privacy policy.
                 </p>
