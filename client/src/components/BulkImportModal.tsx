@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +90,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const [customRecommendedModels, setCustomRecommendedModels] = useState<string[]>([]);
   
   // States for creating new options
+  const [showCreateCollection, setShowCreateCollection] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [newCollectionDescription, setNewCollectionDescription] = useState("");
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showCreatePromptType, setShowCreatePromptType] = useState(false);
@@ -105,6 +108,49 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const [googleUrl, setGoogleUrl] = useState("");
   const [isImportingGoogle, setIsImportingGoogle] = useState(false);
   const [googleType, setGoogleType] = useState<"auto" | "docs" | "sheets">("auto");
+  
+  // Fetch existing collections
+  const { data: fetchedCollections, refetch: refetchCollections } = useQuery<Collection[]>({
+    queryKey: ["/api/collections"],
+    enabled: open,
+  });
+  
+  // Merge provided collections with fetched ones to avoid duplicates
+  const allCollections = [...collections, ...(fetchedCollections || [])].filter(
+    (collection, index, self) => 
+      index === self.findIndex((c) => c.id === collection.id)
+  );
+  
+  // Mutation for creating new collection
+  const createCollectionMutation = useMutation({
+    mutationFn: async (data: { name: string; description?: string }) => {
+      const response = await apiRequest("POST", "/api/collections", {
+        ...data,
+        type: "user",
+        isPublic: false,
+      });
+      return await response.json();
+    },
+    onSuccess: (newCollection: Collection) => {
+      setDefaultCollection(newCollection.id);
+      setShowCreateCollection(false);
+      setNewCollectionName("");
+      setNewCollectionDescription("");
+      refetchCollections();
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      toast({
+        title: "Success",
+        description: "Collection created successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create collection",
+        variant: "destructive",
+      });
+    },
+  });
   
   const resetModal = () => {
     setFile(null);
@@ -139,6 +185,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     setCustomRecommendedModels([]);
     
     // Reset create dialogs
+    setShowCreateCollection(false);
+    setNewCollectionName("");
+    setNewCollectionDescription("");
     setShowCreateCategory(false);
     setNewCategoryName("");
     setShowCreatePromptType(false);
@@ -622,13 +671,25 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Default Collection</Label>
-            <Select value={defaultCollection} onValueChange={setDefaultCollection}>
+            <Select value={defaultCollection} onValueChange={(value) => {
+              if (value === "create-new") {
+                setShowCreateCollection(true);
+              } else {
+                setDefaultCollection(value);
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="No collection" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No collection</SelectItem>
-                {collections.map((collection) => (
+                <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create New Collection
+                  </div>
+                </SelectItem>
+                {allCollections.map((collection) => (
                   <SelectItem key={collection.id} value={collection.id}>
                     {collection.name}
                   </SelectItem>
@@ -961,6 +1022,59 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
             {step === "preview" && renderPreviewStep()}
             {step === "import" && renderImportStep()}
             {step === "results" && renderResultsStep()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Collection Dialog */}
+      <Dialog open={showCreateCollection} onOpenChange={setShowCreateCollection}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newCollectionName">Collection Name *</Label>
+              <Input
+                id="newCollectionName"
+                value={newCollectionName}
+                onChange={(e) => setNewCollectionName(e.target.value)}
+                placeholder="Enter collection name..."
+                autoFocus
+              />
+            </div>
+            <div>
+              <Label htmlFor="newCollectionDescription">Description (Optional)</Label>
+              <Textarea
+                id="newCollectionDescription"
+                value={newCollectionDescription}
+                onChange={(e) => setNewCollectionDescription(e.target.value)}
+                placeholder="Enter collection description..."
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setShowCreateCollection(false);
+                setNewCollectionName("");
+                setNewCollectionDescription("");
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (newCollectionName.trim()) {
+                    createCollectionMutation.mutate({
+                      name: newCollectionName.trim(),
+                      description: newCollectionDescription.trim() || undefined,
+                    });
+                  }
+                }}
+                disabled={!newCollectionName.trim() || createCollectionMutation.isPending}
+              >
+                {createCollectionMutation.isPending ? "Creating..." : "Create"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
