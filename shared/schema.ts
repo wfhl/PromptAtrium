@@ -134,6 +134,66 @@ export const collections = pgTable("collections", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Categories table
+export const categories = pgTable("categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  userId: varchar("user_id").references(() => users.id),
+  type: varchar("type", { enum: ["user", "global"] }).notNull().default("user"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Prompt types table
+export const promptTypes = pgTable("prompt_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  userId: varchar("user_id").references(() => users.id),
+  type: varchar("type", { enum: ["user", "global"] }).notNull().default("user"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Prompt styles table
+export const promptStyles = pgTable("prompt_styles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  userId: varchar("user_id").references(() => users.id),
+  type: varchar("type", { enum: ["user", "global"] }).notNull().default("user"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Intended generators table
+export const intendedGenerators = pgTable("intended_generators", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  userId: varchar("user_id").references(() => users.id),
+  type: varchar("type", { enum: ["user", "global"] }).notNull().default("user"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Recommended models table
+export const recommendedModels = pgTable("recommended_models", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  userId: varchar("user_id").references(() => users.id),
+  type: varchar("type", { enum: ["user", "global"] }).notNull().default("user"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Main prompts table
 export const prompts = pgTable("prompts", {
   id: char("id", { length: 10 }).primaryKey(),
@@ -345,6 +405,36 @@ export const insertCollectionSchema = createInsertSchema(collections).omit({
   updatedAt: true,
 });
 
+export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPromptTypeSchema = createInsertSchema(promptTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPromptStyleSchema = createInsertSchema(promptStyles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertIntendedGeneratorSchema = createInsertSchema(intendedGenerators).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRecommendedModelSchema = createInsertSchema(recommendedModels).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCommunitySchema = createInsertSchema(communities).omit({
   id: true,
   createdAt: true,
@@ -452,6 +542,16 @@ export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertCollection = z.infer<typeof insertCollectionSchema>;
 export type Collection = typeof collections.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type Category = typeof categories.$inferSelect;
+export type InsertPromptType = z.infer<typeof insertPromptTypeSchema>;
+export type PromptType = typeof promptTypes.$inferSelect;
+export type InsertPromptStyle = z.infer<typeof insertPromptStyleSchema>;
+export type PromptStyle = typeof promptStyles.$inferSelect;
+export type InsertIntendedGenerator = z.infer<typeof insertIntendedGeneratorSchema>;
+export type IntendedGenerator = typeof intendedGenerators.$inferSelect;
+export type InsertRecommendedModel = z.infer<typeof insertRecommendedModelSchema>;
+export type RecommendedModel = typeof recommendedModels.$inferSelect;
 export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
 export type Community = typeof communities.$inferSelect;
 export type InsertUserCommunity = z.infer<typeof insertUserCommunitySchema>;
