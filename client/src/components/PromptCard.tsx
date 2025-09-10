@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -61,6 +61,14 @@ export function PromptCard({
   
   // Collapse/expand state
   const [isCollapsed, setIsCollapsed] = useState(true);
+  
+  // Delete confirmation dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteRelatedData, setDeleteRelatedData] = useState<{
+    likesCount: number;
+    favoritesCount: number;
+    ratingsCount: number;
+  } | null>(null);
   
   const toggleCollapsed = () => {
     setIsCollapsed(!isCollapsed);
@@ -389,6 +397,20 @@ export function PromptCard({
     },
   });
 
+  // Function to handle delete button click
+  const handleDeleteClick = async () => {
+    // Check for related data first
+    try {
+      const response = await apiRequest("GET", `/api/prompts/${prompt.id}/related-data`);
+      const data = await response.json();
+      setDeleteRelatedData(data);
+    } catch (error) {
+      // If we can't get related data, just set defaults
+      setDeleteRelatedData({ likesCount: 0, favoritesCount: 0, ratingsCount: 0 });
+    }
+    setShowDeleteDialog(true);
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("DELETE", `/api/prompts/${prompt.id}`);
@@ -409,6 +431,9 @@ export function PromptCard({
       return { previousData };
     },
     onSuccess: () => {
+      // Close the dialog
+      setShowDeleteDialog(false);
+      
       // Invalidate all prompt-related queries to ensure immediate UI updates
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -958,7 +983,7 @@ export function PromptCard({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => deleteMutation.mutate()}
+                    onClick={handleDeleteClick}
                     disabled={deleteMutation.isPending}
                     className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid={`button-delete-${prompt.id}`}
@@ -1492,6 +1517,52 @@ export function PromptCard({
                 </Button>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent data-testid={`modal-delete-confirm-${prompt.id}`}>
+            <DialogHeader>
+              <DialogTitle>Delete Prompt</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{prompt.name}"?
+                {deleteRelatedData && (deleteRelatedData.likesCount > 0 || deleteRelatedData.favoritesCount > 0 || deleteRelatedData.ratingsCount > 0) && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+                    <p className="font-semibold text-amber-800 dark:text-amber-200 mb-2">This prompt has related data that will also be deleted:</p>
+                    <ul className="text-sm space-y-1 text-amber-700 dark:text-amber-300">
+                      {deleteRelatedData.likesCount > 0 && (
+                        <li>• {deleteRelatedData.likesCount} like{deleteRelatedData.likesCount !== 1 ? 's' : ''}</li>
+                      )}
+                      {deleteRelatedData.favoritesCount > 0 && (
+                        <li>• {deleteRelatedData.favoritesCount} bookmark{deleteRelatedData.favoritesCount !== 1 ? 's' : ''}</li>
+                      )}
+                      {deleteRelatedData.ratingsCount > 0 && (
+                        <li>• {deleteRelatedData.ratingsCount} rating{deleteRelatedData.ratingsCount !== 1 ? 's' : ''}</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                <p className="mt-3 text-sm text-muted-foreground">This action cannot be undone.</p>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+                data-testid={`button-cancel-delete-${prompt.id}`}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+                data-testid={`button-confirm-delete-${prompt.id}`}
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardContent>

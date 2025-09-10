@@ -392,6 +392,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get related data counts for a prompt (likes, favorites, ratings)
+  app.get('/api/prompts/:id/related-data', isAuthenticated, async (req: any, res) => {
+    try {
+      const relatedData = await storage.getPromptRelatedData(req.params.id);
+      res.json(relatedData);
+    } catch (error) {
+      console.error("Error getting prompt related data:", error);
+      res.status(500).json({ message: "Failed to get prompt related data" });
+    }
+  });
+
   app.delete('/api/prompts/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
