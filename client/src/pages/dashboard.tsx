@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { queryClient, prefetchCommonData, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -45,6 +46,7 @@ export default function Dashboard() {
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
+  const [communityTab, setCommunityTab] = useState("featured");
 
   // Initialize collapsible state from localStorage for the specific user
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
@@ -433,17 +435,19 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-[#a328c9]">Community Highlights</h2>
-                <div className="flex items-center space-x-2">
-                  <Button size="sm" className="bg-primary text-primary-foreground" data-testid="filter-featured">
-                    Featured
-                  </Button>
-                  <Button size="sm" variant="ghost" data-testid="filter-trending">
-                    Trending
-                  </Button>
-                  <Button size="sm" variant="ghost" data-testid="filter-recent">
-                    Recent
-                  </Button>
-                </div>
+                <Tabs value={communityTab} onValueChange={setCommunityTab}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="featured" className="text-xs" data-testid="filter-featured">
+                      Featured
+                    </TabsTrigger>
+                    <TabsTrigger value="trending" className="text-xs" data-testid="filter-trending">
+                      Trending
+                    </TabsTrigger>
+                    <TabsTrigger value="recent" className="text-xs" data-testid="filter-recent">
+                      Recent
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
 
               <div className="space-y-4" data-testid="section-community-highlights">

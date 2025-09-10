@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -148,14 +148,43 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
-            <Button
-              className="hidden md:flex items-center space-x-2"
-              onClick={onCreatePrompt || handleDefaultCreatePrompt}
-              data-testid="button-new-prompt"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Prompt</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  className="hidden md:flex h-9 w-9"
+                  data-testid="button-new-menu"
+                >
+                  <Plus className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-new-menu">
+                <DropdownMenuItem 
+                  onClick={onCreatePrompt || handleDefaultCreatePrompt}
+                  className="cursor-pointer"
+                  data-testid="menu-new-prompt"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Prompt
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => alert('New Collection functionality coming soon!')}
+                  className="cursor-pointer"
+                  data-testid="menu-new-collection"
+                >
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  New Collection
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => alert('Import Prompts functionality coming soon!')}
+                  className="cursor-pointer"
+                  data-testid="menu-import-prompts"
+                >
+                  <FileUp className="mr-2 h-4 w-4" />
+                  Import Prompts
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
