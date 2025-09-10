@@ -288,17 +288,23 @@ export default function Library() {
       }
     },
     onSuccess: (result) => {
-      // Invalidate all prompt queries to refresh data
+      // Invalidate all prompt-related queries to refresh UI immediately across all pages
       queryClient.invalidateQueries({ 
         predicate: (query) => {
           const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user");
+          return queryKey?.includes("/api/prompts") || 
+                 queryKey?.includes("/api/user") ||
+                 queryKey?.includes("/api/collections") ||
+                 queryKey?.includes("/api/activities");
         }
       });
       
-      // Also invalidate collections to update prompt counts
+      // Also specifically invalidate commonly used queries for immediate updates
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
       
       // Manually refetch to ensure immediate updates
       refetch();
