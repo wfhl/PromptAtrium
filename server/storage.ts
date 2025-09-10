@@ -67,6 +67,11 @@ export interface IStorage {
   createPrompt(prompt: InsertPrompt): Promise<Prompt>;
   updatePrompt(id: string, prompt: Partial<InsertPrompt>): Promise<Prompt>;
   deletePrompt(id: string): Promise<void>;
+  getPromptRelatedData(id: string): Promise<{
+    likesCount: number;
+    favoritesCount: number;
+    ratingsCount: number;
+  }>;
   forkPrompt(promptId: string, userId: string): Promise<Prompt>;
   
   // Project operations
@@ -415,7 +420,56 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePrompt(id: string): Promise<void> {
+    // First delete all related records to avoid foreign key constraint violations
+    // Delete all likes for this prompt
+    await db.delete(promptLikes).where(eq(promptLikes.promptId, id));
+    
+    // Delete all favorites for this prompt
+    await db.delete(promptFavorites).where(eq(promptFavorites.promptId, id));
+    
+    // Delete all ratings for this prompt
+    await db.delete(promptRatings).where(eq(promptRatings.promptId, id));
+    
+    // Delete all activities related to this prompt
+    await db.delete(activities).where(
+      and(
+        eq(activities.targetId, id),
+        eq(activities.targetType, "prompt")
+      )
+    );
+    
+    // Now delete the prompt itself
     await db.delete(prompts).where(eq(prompts.id, id));
+  }
+
+  async getPromptRelatedData(id: string): Promise<{
+    likesCount: number;
+    favoritesCount: number;
+    ratingsCount: number;
+  }> {
+    // Count likes for this prompt
+    const likesResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(promptLikes)
+      .where(eq(promptLikes.promptId, id));
+    
+    // Count favorites for this prompt
+    const favoritesResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(promptFavorites)
+      .where(eq(promptFavorites.promptId, id));
+    
+    // Count ratings for this prompt
+    const ratingsResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(promptRatings)
+      .where(eq(promptRatings.promptId, id));
+    
+    return {
+      likesCount: Number(likesResult[0]?.count || 0),
+      favoritesCount: Number(favoritesResult[0]?.count || 0),
+      ratingsCount: Number(ratingsResult[0]?.count || 0),
+    };
   }
 
   async forkPrompt(promptId: string, userId: string): Promise<Prompt> {
