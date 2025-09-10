@@ -1105,11 +1105,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/categories', async (req, res) => {
     try {
       const { userId, type, isActive } = req.query;
-      const categories = await storage.getCategories({
-        userId: userId as string,
-        type: type as string,
-        isActive: isActive === 'true'
-      });
+      const options: any = {};
+      
+      if (userId) options.userId = userId as string;
+      if (type) options.type = type as string;
+      if (isActive !== undefined) options.isActive = isActive === 'true';
+      
+      const categories = await storage.getCategories(options);
       res.json(categories);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -1136,11 +1138,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/prompt-types', async (req, res) => {
     try {
       const { userId, type, isActive } = req.query;
-      const promptTypes = await storage.getPromptTypes({
-        userId: userId as string,
-        type: type as string,
-        isActive: isActive === 'true'
-      });
+      const options: any = {};
+      
+      if (userId) options.userId = userId as string;
+      if (type) options.type = type as string;
+      if (isActive !== undefined) options.isActive = isActive === 'true';
+      
+      const promptTypes = await storage.getPromptTypes(options);
       res.json(promptTypes);
     } catch (error) {
       console.error("Error fetching prompt types:", error);
@@ -1167,11 +1171,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/prompt-styles', async (req, res) => {
     try {
       const { userId, type, isActive } = req.query;
-      const promptStyles = await storage.getPromptStyles({
-        userId: userId as string,
-        type: type as string,
-        isActive: isActive === 'true'
-      });
+      const options: any = {};
+      
+      if (userId) options.userId = userId as string;
+      if (type) options.type = type as string;
+      if (isActive !== undefined) options.isActive = isActive === 'true';
+      
+      const promptStyles = await storage.getPromptStyles(options);
       res.json(promptStyles);
     } catch (error) {
       console.error("Error fetching prompt styles:", error);
@@ -1198,11 +1204,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/intended-generators', async (req, res) => {
     try {
       const { userId, type, isActive } = req.query;
-      const generators = await storage.getIntendedGenerators({
-        userId: userId as string,
-        type: type as string,
-        isActive: isActive === 'true'
-      });
+      const options: any = {};
+      
+      if (userId) options.userId = userId as string;
+      if (type) options.type = type as string;
+      if (isActive !== undefined) options.isActive = isActive === 'true';
+      
+      const generators = await storage.getIntendedGenerators(options);
       res.json(generators);
     } catch (error) {
       console.error("Error fetching intended generators:", error);
@@ -1229,11 +1237,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/recommended-models', async (req, res) => {
     try {
       const { userId, type, isActive } = req.query;
-      const models = await storage.getRecommendedModels({
-        userId: userId as string,
-        type: type as string,
-        isActive: isActive === 'true'
-      });
+      const options: any = {};
+      
+      if (userId) options.userId = userId as string;
+      if (type) options.type = type as string;
+      if (isActive !== undefined) options.isActive = isActive === 'true';
+      
+      const models = await storage.getRecommendedModels(options);
       res.json(models);
     } catch (error) {
       console.error("Error fetching recommended models:", error);
