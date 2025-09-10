@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Initialize collapsible state from localStorage for the specific user
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
 
@@ -111,7 +111,7 @@ export default function Dashboard() {
     createdAt: string;
     user?: User;
   }
-  
+
   const { data: recentActivities = [] } = useQuery<ActivityType[]>({
     queryKey: ["/api/activities/recent"],
     enabled: isAuthenticated,
@@ -194,7 +194,7 @@ export default function Dashboard() {
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
+
     if (minutes < 1) return "just now";
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
@@ -218,7 +218,7 @@ export default function Dashboard() {
               </h1>
               <p className="text-sm md:text-base text-muted-foreground">Manage your AI prompts and discover community favorites</p>
             </div>
-            
+
             <div className="mt-2 md:mt-0 flex items-center space-x-2 md:space-x-4">
               <div className="relative w-full md:w-auto">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -233,7 +233,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          
+
           {/* Stats Cards - Collapsible, Hidden on mobile */}
           <Collapsible
             open={!isStatsCollapsed}
@@ -294,7 +294,7 @@ export default function Dashboard() {
             </CollapsibleContent>
           </Collapsible>
         </div>
-        
+
         {/* Quick Actions for Mobile - Show at top on mobile */}
         <div className="block md:hidden mb-3">
           <QuickActions
@@ -304,7 +304,7 @@ export default function Dashboard() {
             onImportPrompts={handleImportPrompts}
           />
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4 lg:gap-8">
           <div className="lg:col-span-2">
             {/* Recent Prompts */}
@@ -317,7 +317,7 @@ export default function Dashboard() {
                   </Button>
                 </Link>
               </div>
-              
+
               <div className="space-y-4" data-testid="section-recent-prompts">
                 {userPrompts.length > 0 ? (
                   userPrompts.map((prompt) => (
@@ -341,7 +341,7 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-            
+
             {/* Bookmarked Prompts */}
             <div className="mb-6 md:mb-8">
               <div className="flex items-center justify-between mb-3 md:mb-4">
@@ -352,7 +352,7 @@ export default function Dashboard() {
                   </Button>
                 </Link>
               </div>
-              
+
               <div className="space-y-4" data-testid="section-favorite-prompts">
                 {favoritePrompts.length > 0 ? (
                   favoritePrompts.slice(0, 3).map((prompt) => (
@@ -371,7 +371,7 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-            
+
             {/* Community Highlights */}
             <div>
               <div className="flex items-center justify-between mb-3 md:mb-4">
@@ -388,7 +388,7 @@ export default function Dashboard() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="space-y-4" data-testid="section-community-highlights">
                 {communityPrompts.length > 0 ? (
                   communityPrompts.map((prompt) => (
@@ -404,7 +404,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          
+
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-4 md:space-y-6">
             {/* Quick Actions - Hidden on mobile (shown at top) */}
@@ -416,7 +416,7 @@ export default function Dashboard() {
                 onImportPrompts={handleImportPrompts}
               />
             </div>
-            
+
             {/* Collections */}
             <Card data-testid="card-collections">
               <CardHeader>
@@ -441,7 +441,7 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-            
+
             {/* Community Activity */}
             <Card data-testid="card-activity">
               <CardHeader>

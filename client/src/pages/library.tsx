@@ -54,7 +54,7 @@ export default function Library() {
     if (tabFromQuery && ['prompts', 'bookmarked', 'collections', 'archive'].includes(tabFromQuery)) {
       setActiveTab(tabFromQuery);
     }
-  }, [tabFromQuery]);
+  }, [tabFromQuery, location.search]);
   
   // Bulk editing state
   const [isBulkMode, setIsBulkMode] = useState(false);
