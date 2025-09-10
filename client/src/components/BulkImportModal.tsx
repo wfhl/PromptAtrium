@@ -115,6 +115,36 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     enabled: open,
   });
   
+  // Fetch categories from database
+  const { data: categories = [] } = useQuery({
+    queryKey: ["/api/categories"],
+    enabled: open,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+  
+  // Fetch prompt types from database
+  const { data: promptTypes = [] } = useQuery({
+    queryKey: ["/api/prompt-types"],
+    enabled: open,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+  
+  // Fetch prompt styles from database
+  const { data: promptStyles = [] } = useQuery({
+    queryKey: ["/api/prompt-styles"],
+    enabled: open,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+  
+  // Fetch intended generators from database
+  const { data: intendedGenerators = [] } = useQuery({
+    queryKey: ["/api/intended-generators"],
+    enabled: open,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+  
+  // Fetch recommended models from database
+  const { data: recommendedModels = [] } = useQuery({
+    queryKey: ["/api/recommended-models"],
+    enabled: open,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+  
   // Merge provided collections with fetched ones to avoid duplicates
   const allCollections = [...collections, ...(fetchedCollections || [])].filter(
     (collection, index, self) => 
@@ -718,16 +748,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
                     Create New Category
                   </div>
                 </SelectItem>
-                {customCategories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                 ))}
-                <SelectItem value="Art & Design">Art & Design</SelectItem>
-                <SelectItem value="Photography">Photography</SelectItem>
-                <SelectItem value="Character Design">Character Design</SelectItem>
-                <SelectItem value="Landscape">Landscape</SelectItem>
-                <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
-                <SelectItem value="Abstract">Abstract</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -758,15 +781,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
                     Create New Type
                   </div>
                 </SelectItem>
-                {customPromptTypes.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                {promptTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                 ))}
-                <SelectItem value="text-to-image">Text to Image</SelectItem>
-                <SelectItem value="image-to-image">Image to Image</SelectItem>
-                <SelectItem value="text-generation">Text Generation</SelectItem>
-                <SelectItem value="code-generation">Code Generation</SelectItem>
-                <SelectItem value="creative-writing">Creative Writing</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -791,15 +808,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
                     Create New Style
                   </div>
                 </SelectItem>
-                {customPromptStyles.map((style) => (
-                  <SelectItem key={style} value={style}>{style}</SelectItem>
+                {promptStyles.map((style) => (
+                  <SelectItem key={style.id} value={style.name}>{style.name}</SelectItem>
                 ))}
-                <SelectItem value="detailed">Detailed</SelectItem>
-                <SelectItem value="simple">Simple</SelectItem>
-                <SelectItem value="artistic">Artistic</SelectItem>
-                <SelectItem value="photorealistic">Photorealistic</SelectItem>
-                <SelectItem value="abstract">Abstract</SelectItem>
-                <SelectItem value="minimalist">Minimalist</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -872,15 +883,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
                     Create New Generator
                   </div>
                 </SelectItem>
-                {customIntendedGenerators.map((gen) => (
-                  <SelectItem key={gen} value={gen}>{gen}</SelectItem>
+                {intendedGenerators.map((gen) => (
+                  <SelectItem key={gen.id} value={gen.name}>{gen.name}</SelectItem>
                 ))}
-                <SelectItem value="Stable Diffusion">Stable Diffusion</SelectItem>
-                <SelectItem value="Midjourney">Midjourney</SelectItem>
-                <SelectItem value="DALL-E">DALL-E</SelectItem>
-                <SelectItem value="GPT-4">GPT-4</SelectItem>
-                <SelectItem value="Claude">Claude</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
