@@ -70,6 +70,9 @@ export function PromptCard({
     ratingsCount: number;
   } | null>(null);
   
+  // Archive confirmation dialog state
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  
   const toggleCollapsed = () => {
     setIsCollapsed(!isCollapsed);
   };
@@ -474,6 +477,17 @@ export function PromptCard({
     },
   });
 
+  // Function to handle archive button click
+  const handleArchiveClick = () => {
+    if (prompt.status === 'archived') {
+      // Unarchiving doesn't need confirmation
+      archiveMutation.mutate();
+    } else {
+      // Show confirmation dialog for archiving
+      setShowArchiveDialog(true);
+    }
+  };
+
   const archiveMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/archive`);
@@ -495,6 +509,9 @@ export function PromptCard({
       return { previousData };
     },
     onSuccess: (data) => {
+      // Close the dialog
+      setShowArchiveDialog(false);
+      
       // Invalidate ALL prompt queries - Dashboard, Library, any page
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -503,9 +520,18 @@ export function PromptCard({
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
+      
+      let description = data.archived ? "Prompt archived successfully!" : "Prompt restored from archive!";
+      if (data.archived && data.madePrivate) {
+        description += " It has been made private.";
+      }
+      if (data.archived && data.removedBookmarks) {
+        description += " All bookmarks have been removed.";
+      }
+      
       toast({
         title: "Success",
-        description: data.archived ? "Prompt archived successfully!" : "Prompt restored from archive!",
+        description,
       });
     },
     onError: (error, variables, context) => {
@@ -958,7 +984,7 @@ export function PromptCard({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => archiveMutation.mutate()}
+                    onClick={handleArchiveClick}
                     disabled={archiveMutation.isPending}
                     className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid={`button-archive-${prompt.id}`}
@@ -1567,6 +1593,61 @@ export function PromptCard({
                 data-testid={`button-confirm-delete-${prompt.id}`}
               >
                 {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Archive Confirmation Dialog */}
+        <Dialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
+          <DialogContent data-testid={`modal-archive-confirm-${prompt.id}`}>
+            <DialogHeader>
+              <DialogTitle>Archive Prompt</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to archive "{prompt.name}"?
+                
+                {prompt.isPublic && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md">
+                    <p className="font-semibold text-blue-800 dark:text-blue-200 mb-1">⚠️ This is a public prompt</p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">It will be made private when archived.</p>
+                  </div>
+                )}
+                
+                {isFavorited && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+                    <p className="font-semibold text-amber-800 dark:text-amber-200 mb-1">📌 This prompt is bookmarked</p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">All bookmarks will be removed when archived.</p>
+                  </div>
+                )}
+                
+                <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-950/20 rounded-md">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Archived prompts will only be visible in the "Archived" section of your library and won't appear in:
+                  </p>
+                  <ul className="text-sm text-gray-600 dark:text-gray-400 mt-1 ml-4">
+                    <li>• My Prompts</li>
+                    <li>• Dashboard</li>
+                    <li>• Community Prompts</li>
+                    <li>• Bookmarked Prompts</li>
+                  </ul>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowArchiveDialog(false)}
+                data-testid={`button-cancel-archive-${prompt.id}`}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                onClick={() => archiveMutation.mutate()}
+                disabled={archiveMutation.isPending}
+                data-testid={`button-confirm-archive-${prompt.id}`}
+              >
+                {archiveMutation.isPending ? "Archiving..." : "Archive"}
               </Button>
             </DialogFooter>
           </DialogContent>
