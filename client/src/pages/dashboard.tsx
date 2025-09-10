@@ -375,7 +375,7 @@ export default function Dashboard() {
             {/* Community Highlights */}
             <div>
               <div className="flex items-center justify-between mb-3 md:mb-4">
-                <h2 className="text-lg md:text-xl font-semibold text-foreground">Community Highlights</h2>
+                <h2 className="text-lg md:text-xl font-semibold text-[#a328c9]">Community Highlights</h2>
                 <div className="flex items-center space-x-2">
                   <Button size="sm" className="bg-primary text-primary-foreground" data-testid="filter-featured">
                     Featured
@@ -490,7 +490,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
       {/* Prompt Modal */}
       <PromptModal
         open={promptModalOpen}
@@ -498,7 +497,6 @@ export default function Dashboard() {
         prompt={editingPrompt}
         mode={editingPrompt ? "edit" : "create"}
       />
-
       {/* Bulk Import Modal */}
       <BulkImportModal
         open={bulkImportModalOpen}
