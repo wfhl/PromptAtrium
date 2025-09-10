@@ -364,7 +364,7 @@ export default function Dashboard() {
                 ) : (
                   <Card>
                     <CardContent className="p-6 text-center">
-                      <p className="text-muted-foreground mb-4">You haven't favorited any prompts yet.</p>
+                      <p className="text-muted-foreground mb-4">You haven't bookmarked any prompts yet.</p>
                       <p className="text-sm text-muted-foreground">Click the star icon on any prompt to add it to your favorites!</p>
                     </CardContent>
                   </Card>
