@@ -181,10 +181,10 @@ export default function UserProfile() {
         <CardContent className="p-4 md:p-6 relative">
           {/* Dropdowns - Top Right */}
           <div className="absolute top-4 right-4 flex flex-col md:flex-row gap-2">
-            {/* Stats Dropdown - Mobile only */}
+            {/* Stats Dropdown - Now for both mobile and desktop */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden" data-testid="button-stats-dropdown">
+                <Button variant="ghost" size="icon" data-testid="button-stats-dropdown">
                   <BarChart3 className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -352,106 +352,64 @@ export default function UserProfile() {
               </DropdownMenu>
           </div>
 
-          <div className="flex flex-col md:flex-row md:justify-between gap-4">
-            {/* Left side: Avatar and Profile Info */}
-            <div className="flex items-start gap-4 md:gap-6">
-              {/* Avatar - Clickable to go back to prompts */}
-              <Avatar 
-                className="h-16 w-16 md:h-24 md:w-24 cursor-pointer transition-opacity hover:opacity-80"
-                onClick={() => setActiveSection("prompts")}
-                data-testid="avatar-profile-picture"
-              >
-                <AvatarImage src={profile.profileImageUrl || undefined} alt={profile.firstName || undefined} />
-                <AvatarFallback className="text-lg md:text-2xl">
-                  {profile.firstName?.[0]?.toUpperCase() || username?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+          {/* Avatar and Profile Info */}
+          <div className="flex items-start gap-4">
+            {/* Avatar - Clickable to go back to prompts */}
+            <Avatar 
+              className="h-16 w-16 cursor-pointer transition-opacity hover:opacity-80"
+              onClick={() => setActiveSection("prompts")}
+              data-testid="avatar-profile-picture"
+            >
+              <AvatarImage src={profile.profileImageUrl || undefined} alt={profile.firstName || undefined} />
+              <AvatarFallback className="text-lg">
+                {profile.firstName?.[0]?.toUpperCase() || username?.[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
 
-              {/* Profile Info */}
-              <div className="flex-1 pr-12 md:pr-0">
-                <div className="mb-2">
-                  <h1 className="text-xl md:text-3xl font-bold">
-                    @{profile.username}
-                  </h1>
-                  {(profile.firstName || profile.lastName) && (
-                    <p className="text-sm md:text-base text-gray-500">
-                      {profile.firstName} {profile.lastName}
-                    </p>
-                  )}
-                </div>
-
-                {profile.bio && (
-                  <p className="text-gray-700 mb-4">{profile.bio}</p>
+            {/* Profile Info */}
+            <div className="flex-1 pr-12">
+              <div className="mb-2">
+                <h1 className="text-xl font-bold">
+                  @{profile.username}
+                </h1>
+                {(profile.firstName || profile.lastName) && (
+                  <p className="text-sm text-gray-500">
+                    {profile.firstName} {profile.lastName}
+                  </p>
                 )}
+              </div>
 
-                <div className="flex items-center gap-4 flex-wrap">
-                  {profile.location && (
-                    <span className="flex items-center gap-1">
-                      <Badge variant="secondary">{profile.location}</Badge>
-                    </span>
-                  )}
-                  {!isOwnProfile && currentUser && (
-                    <Button
-                      onClick={() => followMutation.mutate()}
-                      disabled={followMutation.isPending}
-                      variant={isFollowing ? "outline" : "default"}
-                      className="gap-2"
-                      data-testid={`button-follow-${profile.id}`}
-                    >
-                      {isFollowing ? (
-                        <>
-                          <UserMinus className="h-4 w-4" />
-                          Unfollow
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-4 w-4" />
-                          Follow
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
+              {profile.bio && (
+                <p className="text-gray-700 mb-4">{profile.bio}</p>
+              )}
 
-            {/* Right side: Stats Grid - Hidden on mobile */}
-            <div className="hidden md:grid md:grid-cols-2 gap-2 md:gap-3 md:min-w-[280px] self-start">
-              <div className="text-center p-2">
-                <div className="text-lg md:text-2xl font-bold" data-testid={`text-prompts-count-${profile.id}`}>
-                  {stats?.totalPrompts || 0}
-                </div>
-                <div className="text-xs md:text-sm text-gray-500">Prompts</div>
-              </div>
-              <div className="text-center p-2">
-                <div className="text-lg md:text-2xl font-bold" data-testid={`text-likes-count-${profile.id}`}>
-                  {stats?.totalLikes || 0}
-                </div>
-                <div className="text-xs md:text-sm text-gray-500">Likes</div>
-              </div>
-              <div className="text-center p-2">
-                <div className="text-lg md:text-2xl font-bold" data-testid={`text-collections-count-${profile.id}`}>
-                  {stats?.collections || 0}
-                </div>
-                <div className="text-xs md:text-sm text-gray-500">Collections</div>
-              </div>
-              <div className="text-center p-2">
-                <div className="text-lg md:text-2xl font-bold" data-testid={`text-forks-count-${profile.id}`}>
-                  {stats?.forksCreated || 0}
-                </div>
-                <div className="text-xs md:text-sm text-gray-500">Forks</div>
-              </div>
-              <div className="text-center p-2">
-                <div className="text-lg md:text-2xl font-bold" data-testid={`text-followers-count-${profile.id}`}>
-                  {stats?.followers || 0}
-                </div>
-                <div className="text-xs md:text-sm text-gray-500">Followers</div>
-              </div>
-              <div className="text-center p-2">
-                <div className="text-lg md:text-2xl font-bold" data-testid={`text-following-count-${profile.id}`}>
-                  {stats?.following || 0}
-                </div>
-                <div className="text-xs md:text-sm text-gray-500">Following</div>
+              <div className="flex items-center gap-4 flex-wrap">
+                {profile.location && (
+                  <span className="flex items-center gap-1">
+                    <Badge variant="secondary">{profile.location}</Badge>
+                  </span>
+                )}
+                {!isOwnProfile && currentUser && (
+                  <Button
+                    onClick={() => followMutation.mutate()}
+                    disabled={followMutation.isPending}
+                    variant={isFollowing ? "outline" : "default"}
+                    className="gap-2"
+                    data-testid={`button-follow-${profile.id}`}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserMinus className="h-4 w-4" />
+                        Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
