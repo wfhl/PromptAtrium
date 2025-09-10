@@ -21,7 +21,8 @@ import {
   AlertCircle,
   XCircle,
   Download,
-  Loader2
+  Loader2,
+  Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -71,6 +72,35 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const [txtParseMode, setTxtParseMode] = useState<"lines" | "paragraphs" | "delimiter">("lines");
   const [customDelimiter, setCustomDelimiter] = useState("---");
   
+  // Additional default fields
+  const [defaultPromptType, setDefaultPromptType] = useState<string>("");
+  const [defaultPromptStyle, setDefaultPromptStyle] = useState<string>("");
+  const [defaultAuthor, setDefaultAuthor] = useState<string>("");
+  const [defaultLicense, setDefaultLicense] = useState<string>("CC0 (Public Domain)");
+  const [defaultTags, setDefaultTags] = useState<string>("");
+  const [defaultSourceUrl, setDefaultSourceUrl] = useState<string>("");
+  const [defaultIntendedGenerator, setDefaultIntendedGenerator] = useState<string>("");
+  const [defaultRecommendedModels, setDefaultRecommendedModels] = useState<string>("");
+  
+  // Custom options for dropdowns
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [customPromptTypes, setCustomPromptTypes] = useState<string[]>([]);
+  const [customPromptStyles, setCustomPromptStyles] = useState<string[]>([]);
+  const [customIntendedGenerators, setCustomIntendedGenerators] = useState<string[]>([]);
+  const [customRecommendedModels, setCustomRecommendedModels] = useState<string[]>([]);
+  
+  // States for creating new options
+  const [showCreateCategory, setShowCreateCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [showCreatePromptType, setShowCreatePromptType] = useState(false);
+  const [newPromptTypeName, setNewPromptTypeName] = useState("");
+  const [showCreatePromptStyle, setShowCreatePromptStyle] = useState(false);
+  const [newPromptStyleName, setNewPromptStyleName] = useState("");
+  const [showCreateIntendedGenerator, setShowCreateIntendedGenerator] = useState(false);
+  const [newIntendedGeneratorName, setNewIntendedGeneratorName] = useState("");
+  const [showCreateRecommendedModel, setShowCreateRecommendedModel] = useState(false);
+  const [newRecommendedModelName, setNewRecommendedModelName] = useState("");
+  
   // Google Docs/Sheets
   const [googleUrl, setGoogleUrl] = useState("");
   const [isImportingGoogle, setIsImportingGoogle] = useState(false);
@@ -84,6 +114,41 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     setImportProgress(0);
     setImportResults(null);
     setGoogleUrl("");
+    setIsImportingGoogle(false);
+    setGoogleType("auto");
+    setActiveTab("file");
+    
+    // Reset all default fields
+    setDefaultCollection("");
+    setDefaultCategory("");
+    setDefaultIsPublic(false);
+    setDefaultPromptType("");
+    setDefaultPromptStyle("");
+    setDefaultAuthor("");
+    setDefaultLicense("CC0 (Public Domain)");
+    setDefaultTags("");
+    setDefaultSourceUrl("");
+    setDefaultIntendedGenerator("");
+    setDefaultRecommendedModels("");
+    
+    // Reset custom options
+    setCustomCategories([]);
+    setCustomPromptTypes([]);
+    setCustomPromptStyles([]);
+    setCustomIntendedGenerators([]);
+    setCustomRecommendedModels([]);
+    
+    // Reset create dialogs
+    setShowCreateCategory(false);
+    setNewCategoryName("");
+    setShowCreatePromptType(false);
+    setNewPromptTypeName("");
+    setShowCreatePromptStyle(false);
+    setNewPromptStyleName("");
+    setShowCreateIntendedGenerator(false);
+    setNewIntendedGeneratorName("");
+    setShowCreateRecommendedModel(false);
+    setNewRecommendedModelName("");
   };
 
   const handleFileUpload = useCallback((uploadedFile: File) => {
@@ -241,7 +306,18 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           ...p,
           collectionId: defaultCollection && defaultCollection !== "none" ? defaultCollection : null,
           category: p.category || (defaultCategory && defaultCategory !== "none" ? defaultCategory : ""),
-          isPublic: p.isPublic ?? defaultIsPublic
+          isPublic: p.isPublic ?? defaultIsPublic,
+          promptType: defaultPromptType && defaultPromptType !== "none" ? defaultPromptType : "",
+          promptStyle: defaultPromptStyle && defaultPromptStyle !== "none" ? defaultPromptStyle : "",
+          author: defaultAuthor || "",
+          license: defaultLicense || "CC0 (Public Domain)",
+          sourceUrl: defaultSourceUrl || "",
+          intendedGenerator: defaultIntendedGenerator && defaultIntendedGenerator !== "none" ? defaultIntendedGenerator : "",
+          tags: [
+            ...(p.tags || []),
+            ...(defaultTags ? defaultTags.split(",").map(t => t.trim()).filter(t => t) : [])
+          ],
+          recommendedModels: defaultRecommendedModels ? defaultRecommendedModels.split(",").map(m => m.trim()).filter(m => m) : []
         }))
       });
       
@@ -540,45 +616,227 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         <Badge variant="secondary">{parsedData.length} prompts found</Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>Default Collection</Label>
-          <Select value={defaultCollection} onValueChange={setDefaultCollection}>
-            <SelectTrigger>
-              <SelectValue placeholder="No collection" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No collection</SelectItem>
-              {collections.map((collection) => (
-                <SelectItem key={collection.id} value={collection.id}>
-                  {collection.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Organization Section */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-medium text-muted-foreground">Organization</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Default Collection</Label>
+            <Select value={defaultCollection} onValueChange={setDefaultCollection}>
+              <SelectTrigger>
+                <SelectValue placeholder="No collection" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No collection</SelectItem>
+                {collections.map((collection) => (
+                  <SelectItem key={collection.id} value={collection.id}>
+                    {collection.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div>
-          <Label>Default Category</Label>
-          <Select value={defaultCategory} onValueChange={setDefaultCategory}>
-            <SelectTrigger>
-              <SelectValue placeholder="No category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No category</SelectItem>
-              <SelectItem value="Art & Design">Art & Design</SelectItem>
-              <SelectItem value="Photography">Photography</SelectItem>
-              <SelectItem value="Character Design">Character Design</SelectItem>
-              <SelectItem value="Landscape">Landscape</SelectItem>
-              <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
-              <SelectItem value="Abstract">Abstract</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <Label>Default Category</Label>
+            <Select value={defaultCategory} onValueChange={(value) => {
+              if (value === "create-new") {
+                setShowCreateCategory(true);
+              } else {
+                setDefaultCategory(value);
+              }
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="No category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No category</SelectItem>
+                <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create New Category
+                  </div>
+                </SelectItem>
+                {customCategories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+                <SelectItem value="Art & Design">Art & Design</SelectItem>
+                <SelectItem value="Photography">Photography</SelectItem>
+                <SelectItem value="Character Design">Character Design</SelectItem>
+                <SelectItem value="Landscape">Landscape</SelectItem>
+                <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
+                <SelectItem value="Abstract">Abstract</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      <div className="max-h-96 overflow-y-auto border rounded-lg">
+      {/* Metadata Section */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-medium text-muted-foreground">Metadata</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Prompt Type</Label>
+            <Select value={defaultPromptType} onValueChange={(value) => {
+              if (value === "create-new") {
+                setShowCreatePromptType(true);
+              } else {
+                setDefaultPromptType(value);
+              }
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="No type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No type</SelectItem>
+                <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create New Type
+                  </div>
+                </SelectItem>
+                {customPromptTypes.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+                <SelectItem value="text-to-image">Text to Image</SelectItem>
+                <SelectItem value="image-to-image">Image to Image</SelectItem>
+                <SelectItem value="text-generation">Text Generation</SelectItem>
+                <SelectItem value="code-generation">Code Generation</SelectItem>
+                <SelectItem value="creative-writing">Creative Writing</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Prompt Style</Label>
+            <Select value={defaultPromptStyle} onValueChange={(value) => {
+              if (value === "create-new") {
+                setShowCreatePromptStyle(true);
+              } else {
+                setDefaultPromptStyle(value);
+              }
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="No style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No style</SelectItem>
+                <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create New Style
+                  </div>
+                </SelectItem>
+                {customPromptStyles.map((style) => (
+                  <SelectItem key={style} value={style}>{style}</SelectItem>
+                ))}
+                <SelectItem value="detailed">Detailed</SelectItem>
+                <SelectItem value="simple">Simple</SelectItem>
+                <SelectItem value="artistic">Artistic</SelectItem>
+                <SelectItem value="photorealistic">Photorealistic</SelectItem>
+                <SelectItem value="abstract">Abstract</SelectItem>
+                <SelectItem value="minimalist">Minimalist</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Author</Label>
+            <Input
+              value={defaultAuthor}
+              onChange={(e) => setDefaultAuthor(e.target.value)}
+              placeholder="Author name..."
+            />
+          </div>
+
+          <div>
+            <Label>License</Label>
+            <Select value={defaultLicense} onValueChange={setDefaultLicense}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CC0 (Public Domain)">CC0 (Public Domain)</SelectItem>
+                <SelectItem value="CC BY (Attribution)">CC BY (Attribution)</SelectItem>
+                <SelectItem value="CC BY-SA (Share Alike)">CC BY-SA (Share Alike)</SelectItem>
+                <SelectItem value="All Rights Reserved">All Rights Reserved</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Source URL</Label>
+            <Input
+              value={defaultSourceUrl}
+              onChange={(e) => setDefaultSourceUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <Label>Tags (comma-separated)</Label>
+            <Input
+              value={defaultTags}
+              onChange={(e) => setDefaultTags(e.target.value)}
+              placeholder="tag1, tag2, tag3..."
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Technical Section */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-medium text-muted-foreground">Technical Settings</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Intended Generator</Label>
+            <Select value={defaultIntendedGenerator} onValueChange={(value) => {
+              if (value === "create-new") {
+                setShowCreateIntendedGenerator(true);
+              } else {
+                setDefaultIntendedGenerator(value);
+              }
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="No generator" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No generator</SelectItem>
+                <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create New Generator
+                  </div>
+                </SelectItem>
+                {customIntendedGenerators.map((gen) => (
+                  <SelectItem key={gen} value={gen}>{gen}</SelectItem>
+                ))}
+                <SelectItem value="Stable Diffusion">Stable Diffusion</SelectItem>
+                <SelectItem value="Midjourney">Midjourney</SelectItem>
+                <SelectItem value="DALL-E">DALL-E</SelectItem>
+                <SelectItem value="GPT-4">GPT-4</SelectItem>
+                <SelectItem value="Claude">Claude</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Recommended Models (comma-separated)</Label>
+            <Input
+              value={defaultRecommendedModels}
+              onChange={(e) => setDefaultRecommendedModels(e.target.value)}
+              placeholder="model1, model2..."
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Preview Section */}
+      <div className="max-h-64 overflow-y-auto border rounded-lg">
         <div className="space-y-2 p-4">
           {parsedData.slice(0, 5).map((prompt, index) => (
             <div key={index} className="p-3 bg-muted rounded-lg">
@@ -688,22 +946,225 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   );
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      onOpenChange(newOpen);
-      if (!newOpen) resetModal();
-    }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Bulk Import Prompts</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={(newOpen) => {
+        onOpenChange(newOpen);
+        if (!newOpen) resetModal();
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bulk Import Prompts</DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {step === "upload" && renderUploadStep()}
-          {step === "preview" && renderPreviewStep()}
-          {step === "import" && renderImportStep()}
-          {step === "results" && renderResultsStep()}
-        </div>
-      </DialogContent>
-    </Dialog>
+          <div className="space-y-6">
+            {step === "upload" && renderUploadStep()}
+            {step === "preview" && renderPreviewStep()}
+            {step === "import" && renderImportStep()}
+            {step === "results" && renderResultsStep()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Category Dialog */}
+      <Dialog open={showCreateCategory} onOpenChange={setShowCreateCategory}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newCategory">Category Name</Label>
+              <Input
+                id="newCategory"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Enter category name..."
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCreateCategory(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (newCategoryName.trim()) {
+                    const newCategory = newCategoryName.trim();
+                    setCustomCategories(prev => [...prev, newCategory]);
+                    setDefaultCategory(newCategory);
+                    setNewCategoryName("");
+                    setShowCreateCategory(false);
+                  }
+                }}
+                disabled={!newCategoryName.trim()}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Prompt Type Dialog */}
+      <Dialog open={showCreatePromptType} onOpenChange={setShowCreatePromptType}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Prompt Type</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newPromptType">Prompt Type Name</Label>
+              <Input
+                id="newPromptType"
+                value={newPromptTypeName}
+                onChange={(e) => setNewPromptTypeName(e.target.value)}
+                placeholder="Enter prompt type name..."
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCreatePromptType(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (newPromptTypeName.trim()) {
+                    const newType = newPromptTypeName.trim();
+                    setCustomPromptTypes(prev => [...prev, newType]);
+                    setDefaultPromptType(newType);
+                    setNewPromptTypeName("");
+                    setShowCreatePromptType(false);
+                  }
+                }}
+                disabled={!newPromptTypeName.trim()}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Prompt Style Dialog */}
+      <Dialog open={showCreatePromptStyle} onOpenChange={setShowCreatePromptStyle}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Prompt Style</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newPromptStyle">Prompt Style Name</Label>
+              <Input
+                id="newPromptStyle"
+                value={newPromptStyleName}
+                onChange={(e) => setNewPromptStyleName(e.target.value)}
+                placeholder="Enter prompt style name..."
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCreatePromptStyle(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (newPromptStyleName.trim()) {
+                    const newStyle = newPromptStyleName.trim();
+                    setCustomPromptStyles(prev => [...prev, newStyle]);
+                    setDefaultPromptStyle(newStyle);
+                    setNewPromptStyleName("");
+                    setShowCreatePromptStyle(false);
+                  }
+                }}
+                disabled={!newPromptStyleName.trim()}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Intended Generator Dialog */}
+      <Dialog open={showCreateIntendedGenerator} onOpenChange={setShowCreateIntendedGenerator}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Intended Generator</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newIntendedGenerator">Generator Name</Label>
+              <Input
+                id="newIntendedGenerator"
+                value={newIntendedGeneratorName}
+                onChange={(e) => setNewIntendedGeneratorName(e.target.value)}
+                placeholder="Enter generator name..."
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCreateIntendedGenerator(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (newIntendedGeneratorName.trim()) {
+                    const newGenerator = newIntendedGeneratorName.trim();
+                    setCustomIntendedGenerators(prev => [...prev, newGenerator]);
+                    setDefaultIntendedGenerator(newGenerator);
+                    setNewIntendedGeneratorName("");
+                    setShowCreateIntendedGenerator(false);
+                  }
+                }}
+                disabled={!newIntendedGeneratorName.trim()}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Recommended Model Dialog */}
+      <Dialog open={showCreateRecommendedModel} onOpenChange={setShowCreateRecommendedModel}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Recommended Model</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newRecommendedModel">Model Name</Label>
+              <Input
+                id="newRecommendedModel"
+                value={newRecommendedModelName}
+                onChange={(e) => setNewRecommendedModelName(e.target.value)}
+                placeholder="Enter model name..."
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCreateRecommendedModel(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (newRecommendedModelName.trim()) {
+                    const newModel = newRecommendedModelName.trim();
+                    const currentModels = defaultRecommendedModels ? defaultRecommendedModels.split(",").map(m => m.trim()) : [];
+                    const updatedModels = [...currentModels, newModel].join(", ");
+                    setDefaultRecommendedModels(updatedModels);
+                    setNewRecommendedModelName("");
+                    setShowCreateRecommendedModel(false);
+                  }
+                }}
+                disabled={!newRecommendedModelName.trim()}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
