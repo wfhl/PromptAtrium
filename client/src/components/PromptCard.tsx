@@ -1527,6 +1527,12 @@ export function PromptCard({
               <DialogTitle>Delete Prompt</DialogTitle>
               <DialogDescription>
                 Are you sure you want to delete "{prompt.name}"?
+                {prompt.isPublic && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md">
+                    <p className="font-semibold text-blue-800 dark:text-blue-200 mb-1">⚠️ This is a public prompt</p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">Other users may be using or have bookmarked this prompt. Consider making it private instead of deleting it.</p>
+                  </div>
+                )}
                 {deleteRelatedData && (deleteRelatedData.likesCount > 0 || deleteRelatedData.favoritesCount > 0 || deleteRelatedData.ratingsCount > 0) && (
                   <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md">
                     <p className="font-semibold text-amber-800 dark:text-amber-200 mb-2">This prompt has related data that will also be deleted:</p>
