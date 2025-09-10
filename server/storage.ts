@@ -320,57 +320,7 @@ export class DatabaseStorage implements IStorage {
     offset?: number;
     promptIds?: string[];
   } = {}): Promise<any[]> {
-    // Use select with join to include user data
-    let selectQuery = db.select({
-      id: prompts.id,
-      name: prompts.name,
-      description: prompts.description,
-      category: prompts.category,
-      promptType: prompts.promptType,
-      promptStyle: prompts.promptStyle,
-      categories: prompts.categories,
-      promptTypes: prompts.promptTypes,
-      promptStyles: prompts.promptStyles,
-      tags: prompts.tags,
-      tagsNormalized: prompts.tagsNormalized,
-      isPublic: prompts.isPublic,
-      isFeatured: prompts.isFeatured,
-      status: prompts.status,
-      exampleImagesUrl: prompts.exampleImagesUrl,
-      notes: prompts.notes,
-      author: prompts.author,
-      sourceUrl: prompts.sourceUrl,
-      version: prompts.version,
-      forkOf: prompts.forkOf,
-      usageCount: prompts.usageCount,
-      likes: prompts.likes,
-      qualityScore: prompts.qualityScore,
-      intendedGenerator: prompts.intendedGenerator,
-      intendedGenerators: prompts.intendedGenerators,
-      recommendedModels: prompts.recommendedModels,
-      technicalParams: prompts.technicalParams,
-      variables: prompts.variables,
-      projectId: prompts.projectId,
-      collectionId: prompts.collectionId,
-      collectionIds: prompts.collectionIds,
-      relatedPrompts: prompts.relatedPrompts,
-      license: prompts.license,
-      lastUsedAt: prompts.lastUsedAt,
-      userId: prompts.userId,
-      createdAt: prompts.createdAt,
-      updatedAt: prompts.updatedAt,
-      promptContent: prompts.promptContent,
-      negativePrompt: prompts.negativePrompt,
-      user: {
-        id: users.id,
-        email: users.email,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        username: users.username,
-        profileImageUrl: users.profileImageUrl,
-      }
-    }).from(prompts).leftJoin(users, eq(prompts.userId, users.id));
-    
+    // Build conditions first
     const conditions = [];
     
     if (options.userId) {
@@ -440,22 +390,80 @@ export class DatabaseStorage implements IStorage {
     if (options.promptIds && options.promptIds.length > 0) {
       conditions.push(inArray(prompts.id, options.promptIds));
     }
+
+    // Build query step by step to avoid TypeScript issues
+    let queryBuilder = db.select({
+      id: prompts.id,
+      name: prompts.name,
+      description: prompts.description,
+      category: prompts.category,
+      promptType: prompts.promptType,
+      promptStyle: prompts.promptStyle,
+      categories: prompts.categories,
+      promptTypes: prompts.promptTypes,
+      promptStyles: prompts.promptStyles,
+      tags: prompts.tags,
+      tagsNormalized: prompts.tagsNormalized,
+      isPublic: prompts.isPublic,
+      isFeatured: prompts.isFeatured,
+      status: prompts.status,
+      exampleImagesUrl: prompts.exampleImagesUrl,
+      notes: prompts.notes,
+      author: prompts.author,
+      sourceUrl: prompts.sourceUrl,
+      version: prompts.version,
+      forkOf: prompts.forkOf,
+      usageCount: prompts.usageCount,
+      likes: prompts.likes,
+      qualityScore: prompts.qualityScore,
+      intendedGenerator: prompts.intendedGenerator,
+      intendedGenerators: prompts.intendedGenerators,
+      recommendedModels: prompts.recommendedModels,
+      technicalParams: prompts.technicalParams,
+      variables: prompts.variables,
+      projectId: prompts.projectId,
+      collectionId: prompts.collectionId,
+      collectionIds: prompts.collectionIds,
+      relatedPrompts: prompts.relatedPrompts,
+      license: prompts.license,
+      lastUsedAt: prompts.lastUsedAt,
+      userId: prompts.userId,
+      createdAt: prompts.createdAt,
+      updatedAt: prompts.updatedAt,
+      promptContent: prompts.promptContent,
+      negativePrompt: prompts.negativePrompt,
+      user: {
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        username: users.username,
+        profileImageUrl: users.profileImageUrl,
+      }
+    })
+    .from(prompts)
+    .leftJoin(users, eq(prompts.userId, users.id))
+    .$dynamic();
     
+    // Apply conditions if any
     if (conditions.length > 0) {
-      selectQuery = selectQuery.where(and(...conditions));
+      queryBuilder = queryBuilder.where(and(...conditions));
     }
     
-    selectQuery = selectQuery.orderBy(desc(prompts.updatedAt));
+    // Apply ordering
+    queryBuilder = queryBuilder.orderBy(desc(prompts.updatedAt));
     
+    // Apply limit if specified
     if (options.limit) {
-      selectQuery = selectQuery.limit(options.limit);
+      queryBuilder = queryBuilder.limit(options.limit);
     }
     
+    // Apply offset if specified
     if (options.offset) {
-      selectQuery = selectQuery.offset(options.offset);
+      queryBuilder = queryBuilder.offset(options.offset);
     }
     
-    return await selectQuery.execute();
+    return await queryBuilder;
   }
 
   async getPrompt(id: string): Promise<Prompt | undefined> {
@@ -603,7 +611,7 @@ export class DatabaseStorage implements IStorage {
 
   // Collection operations
   async getCollections(options: { userId?: string; communityId?: string; type?: string } = {}): Promise<(Collection & { promptCount?: number })[]> {
-    let query = db.select().from(collections);
+    let query = db.select().from(collections).$dynamic();
     
     const conditions = [];
     
@@ -1066,7 +1074,7 @@ export class DatabaseStorage implements IStorage {
       conditions.push(sql`${activities.actionType} = ${options.actionType}`);
     }
     
-    let query = db.select().from(activities);
+    let query = db.select().from(activities).$dynamic();
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions)) as any;
@@ -1142,7 +1150,7 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
   } = {}): Promise<User[]> {
-    let query = db.select().from(users);
+    let query = db.select().from(users).$dynamic();
 
     const conditions: any[] = [];
     
@@ -1285,7 +1293,7 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
   } = {}): Promise<CommunityInvite[]> {
-    let query = db.select().from(communityInvites);
+    let query = db.select().from(communityInvites).$dynamic();
 
     const conditions: any[] = [];
     
@@ -1330,7 +1338,7 @@ export class DatabaseStorage implements IStorage {
 
   // Category operations
   async getCategories(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<Category[]> {
-    let query = db.select().from(categories);
+    let query = db.select().from(categories).$dynamic();
     
     const conditions = [];
     
@@ -1383,7 +1391,7 @@ export class DatabaseStorage implements IStorage {
 
   // Prompt type operations
   async getPromptTypes(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<PromptType[]> {
-    let query = db.select().from(promptTypes);
+    let query = db.select().from(promptTypes).$dynamic();
     
     const conditions = [];
     
@@ -1436,7 +1444,7 @@ export class DatabaseStorage implements IStorage {
 
   // Prompt style operations
   async getPromptStyles(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<PromptStyle[]> {
-    let query = db.select().from(promptStyles);
+    let query = db.select().from(promptStyles).$dynamic();
     
     const conditions = [];
     
@@ -1489,7 +1497,7 @@ export class DatabaseStorage implements IStorage {
 
   // Intended generator operations
   async getIntendedGenerators(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<IntendedGenerator[]> {
-    let query = db.select().from(intendedGenerators);
+    let query = db.select().from(intendedGenerators).$dynamic();
     
     const conditions = [];
     
@@ -1542,7 +1550,7 @@ export class DatabaseStorage implements IStorage {
 
   // Recommended model operations
   async getRecommendedModels(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<RecommendedModel[]> {
-    let query = db.select().from(recommendedModels);
+    let query = db.select().from(recommendedModels).$dynamic();
     
     const conditions = [];
     
