@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { queryClient, prefetchCommonData } from "@/lib/queryClient";
+import { queryClient, prefetchCommonData, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 import { Search, FileText, Heart, Folder, GitBranch, Plus, ChevronDown, ChevronUp, BookOpen, Share2, Star, UserPlus, Users, Activity } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
@@ -16,7 +19,18 @@ import { StatsCard } from "@/components/StatsCard";
 import { CollectionItem } from "@/components/CollectionItem";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import type { Prompt, Collection, User } from "@shared/schema";
+
+const collectionSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  isPublic: z.boolean().default(false),
+});
+
+type CollectionFormData = z.infer<typeof collectionSchema>;
 
 interface DashboardProps {
   onCreatePrompt?: () => void;
@@ -30,6 +44,7 @@ export default function Dashboard() {
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
 
   // Initialize collapsible state from localStorage for the specific user
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
@@ -128,8 +143,50 @@ export default function Dashboard() {
     setPromptModalOpen(true);
   };
 
+  // Collection form
+  const createCollectionForm = useForm<CollectionFormData>({
+    resolver: zodResolver(collectionSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      isPublic: false,
+    },
+  });
+
+  // Collection creation mutation
+  const createCollectionMutation = useMutation({
+    mutationFn: async (data: CollectionFormData) => {
+      return await apiRequest("POST", "/api/collections", {
+        ...data,
+        type: "user",
+      });
+    },
+    onSuccess: () => {
+      // Invalidate and refetch collections to show new collection immediately
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      createCollectionForm.reset();
+      setCreateCollectionModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Collection created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create collection",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateCollection = () => {
-    setLocation("/collections");
+    setCreateCollectionModalOpen(true);
+  };
+
+  const onCreateCollectionSubmit = (data: CollectionFormData) => {
+    createCollectionMutation.mutate(data);
   };
 
   const handleStartProject = () => {
@@ -503,6 +560,80 @@ export default function Dashboard() {
         onOpenChange={setBulkImportModalOpen}
         collections={collections}
       />
+      
+      {/* Create Collection Modal */}
+      <Dialog open={createCollectionModalOpen} onOpenChange={setCreateCollectionModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Collection</DialogTitle>
+          </DialogHeader>
+          <Form {...createCollectionForm}>
+            <form onSubmit={createCollectionForm.handleSubmit(onCreateCollectionSubmit)} className="space-y-4">
+              <FormField
+                control={createCollectionForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Collection Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Creative Writing, Business Ideas" {...field} data-testid="input-collection-name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createCollectionForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe what this collection contains..."
+                        {...field}
+                        data-testid="textarea-collection-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createCollectionForm.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Make Public</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Allow others to view and use this collection
+                      </p>
+                    </div>
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4"
+                        data-testid="checkbox-collection-public"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setCreateCollectionModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createCollectionMutation.isPending}>
+                  {createCollectionMutation.isPending ? "Creating..." : "Create Collection"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

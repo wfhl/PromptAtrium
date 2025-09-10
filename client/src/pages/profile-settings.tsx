@@ -288,10 +288,10 @@ export default function ProfileSettings() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="twitterHandle">Twitter/X Handle</Label>
+                  <Label htmlFor="twitterHandle">Twitter/X Handle @</Label>
                   <Input
                     id="twitterHandle"
-                    placeholder="@username"
+                    placeholder="username"
                     {...form.register("twitterHandle")}
                     data-testid="input-twitter"
                   />
@@ -318,10 +318,10 @@ export default function ProfileSettings() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="instagramHandle">Instagram Handle</Label>
+                  <Label htmlFor="instagramHandle">Instagram Handle @</Label>
                   <Input
                     id="instagramHandle"
-                    placeholder="@username"
+                    placeholder="username"
                     {...form.register("instagramHandle")}
                     data-testid="input-instagram"
                   />
@@ -336,10 +336,10 @@ export default function ProfileSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="blueskyHandle">Bluesky Handle</Label>
+                  <Label htmlFor="blueskyHandle">Bluesky Handle @</Label>
                   <Input
                     id="blueskyHandle"
-                    placeholder="@username.bsky.social"
+                    placeholder="username.bsky.social"
                     {...form.register("blueskyHandle")}
                     data-testid="input-bluesky"
                   />
@@ -348,19 +348,19 @@ export default function ProfileSettings() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tiktokHandle">TikTok Handle</Label>
+                  <Label htmlFor="tiktokHandle">TikTok Handle @</Label>
                   <Input
                     id="tiktokHandle"
-                    placeholder="@username"
+                    placeholder="username"
                     {...form.register("tiktokHandle")}
                     data-testid="input-tiktok"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="redditHandle">Reddit Handle</Label>
+                  <Label htmlFor="redditHandle">Reddit Handle u/</Label>
                   <Input
                     id="redditHandle"
-                    placeholder="u/username"
+                    placeholder="username"
                     {...form.register("redditHandle")}
                     data-testid="input-reddit"
                   />
