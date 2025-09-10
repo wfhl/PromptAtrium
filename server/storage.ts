@@ -3,6 +3,11 @@ import {
   prompts,
   projects,
   collections,
+  categories,
+  promptTypes,
+  promptStyles,
+  intendedGenerators,
+  recommendedModels,
   communities,
   userCommunities,
   communityAdmins,
@@ -20,6 +25,16 @@ import {
   type InsertProject,
   type Collection,
   type InsertCollection,
+  type Category,
+  type InsertCategory,
+  type PromptType,
+  type InsertPromptType,
+  type PromptStyle,
+  type InsertPromptStyle,
+  type IntendedGenerator,
+  type InsertIntendedGenerator,
+  type RecommendedModel,
+  type InsertRecommendedModel,
   type Community,
   type InsertCommunity,
   type UserCommunity,
@@ -177,6 +192,46 @@ export interface IStorage {
     offset?: number;
   }): Promise<CommunityInvite[]>;
   deactivateInvite(id: string): Promise<void>;
+
+  // Category operations
+  getCategories(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<Category[]>;
+  getCategory(id: string): Promise<Category | undefined>;
+  getCategoryByName(name: string): Promise<Category | undefined>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: string, category: Partial<InsertCategory>): Promise<Category>;
+  deleteCategory(id: string): Promise<void>;
+
+  // Prompt type operations
+  getPromptTypes(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<PromptType[]>;
+  getPromptType(id: string): Promise<PromptType | undefined>;
+  getPromptTypeByName(name: string): Promise<PromptType | undefined>;
+  createPromptType(promptType: InsertPromptType): Promise<PromptType>;
+  updatePromptType(id: string, promptType: Partial<InsertPromptType>): Promise<PromptType>;
+  deletePromptType(id: string): Promise<void>;
+
+  // Prompt style operations
+  getPromptStyles(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<PromptStyle[]>;
+  getPromptStyle(id: string): Promise<PromptStyle | undefined>;
+  getPromptStyleByName(name: string): Promise<PromptStyle | undefined>;
+  createPromptStyle(promptStyle: InsertPromptStyle): Promise<PromptStyle>;
+  updatePromptStyle(id: string, promptStyle: Partial<InsertPromptStyle>): Promise<PromptStyle>;
+  deletePromptStyle(id: string): Promise<void>;
+
+  // Intended generator operations
+  getIntendedGenerators(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<IntendedGenerator[]>;
+  getIntendedGenerator(id: string): Promise<IntendedGenerator | undefined>;
+  getIntendedGeneratorByName(name: string): Promise<IntendedGenerator | undefined>;
+  createIntendedGenerator(generator: InsertIntendedGenerator): Promise<IntendedGenerator>;
+  updateIntendedGenerator(id: string, generator: Partial<InsertIntendedGenerator>): Promise<IntendedGenerator>;
+  deleteIntendedGenerator(id: string): Promise<void>;
+
+  // Recommended model operations
+  getRecommendedModels(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<RecommendedModel[]>;
+  getRecommendedModel(id: string): Promise<RecommendedModel | undefined>;
+  getRecommendedModelByName(name: string): Promise<RecommendedModel | undefined>;
+  createRecommendedModel(model: InsertRecommendedModel): Promise<RecommendedModel>;
+  updateRecommendedModel(id: string, model: Partial<InsertRecommendedModel>): Promise<RecommendedModel>;
+  deleteRecommendedModel(id: string): Promise<void>;
 }
 
 function generatePromptId(): string {
@@ -1247,6 +1302,271 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(communityInvites.id, id));
+  }
+
+  // Category operations
+  async getCategories(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<Category[]> {
+    let query = db.select().from(categories);
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(categories.userId, options.userId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(categories.type, options.type as any));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(categories.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(categories.name);
+  }
+
+  async getCategory(id: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category;
+  }
+
+  async getCategoryByName(name: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.name, name));
+    return category;
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [newCategory] = await db.insert(categories).values(category).returning();
+    return newCategory;
+  }
+
+  async updateCategory(id: string, category: Partial<InsertCategory>): Promise<Category> {
+    const [updatedCategory] = await db
+      .update(categories)
+      .set({ ...category, updatedAt: new Date() })
+      .where(eq(categories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    await db.delete(categories).where(eq(categories.id, id));
+  }
+
+  // Prompt type operations
+  async getPromptTypes(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<PromptType[]> {
+    let query = db.select().from(promptTypes);
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(promptTypes.userId, options.userId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(promptTypes.type, options.type as any));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(promptTypes.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(promptTypes.name);
+  }
+
+  async getPromptType(id: string): Promise<PromptType | undefined> {
+    const [promptType] = await db.select().from(promptTypes).where(eq(promptTypes.id, id));
+    return promptType;
+  }
+
+  async getPromptTypeByName(name: string): Promise<PromptType | undefined> {
+    const [promptType] = await db.select().from(promptTypes).where(eq(promptTypes.name, name));
+    return promptType;
+  }
+
+  async createPromptType(promptType: InsertPromptType): Promise<PromptType> {
+    const [newPromptType] = await db.insert(promptTypes).values(promptType).returning();
+    return newPromptType;
+  }
+
+  async updatePromptType(id: string, promptType: Partial<InsertPromptType>): Promise<PromptType> {
+    const [updatedPromptType] = await db
+      .update(promptTypes)
+      .set({ ...promptType, updatedAt: new Date() })
+      .where(eq(promptTypes.id, id))
+      .returning();
+    return updatedPromptType;
+  }
+
+  async deletePromptType(id: string): Promise<void> {
+    await db.delete(promptTypes).where(eq(promptTypes.id, id));
+  }
+
+  // Prompt style operations
+  async getPromptStyles(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<PromptStyle[]> {
+    let query = db.select().from(promptStyles);
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(promptStyles.userId, options.userId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(promptStyles.type, options.type as any));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(promptStyles.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(promptStyles.name);
+  }
+
+  async getPromptStyle(id: string): Promise<PromptStyle | undefined> {
+    const [promptStyle] = await db.select().from(promptStyles).where(eq(promptStyles.id, id));
+    return promptStyle;
+  }
+
+  async getPromptStyleByName(name: string): Promise<PromptStyle | undefined> {
+    const [promptStyle] = await db.select().from(promptStyles).where(eq(promptStyles.name, name));
+    return promptStyle;
+  }
+
+  async createPromptStyle(promptStyle: InsertPromptStyle): Promise<PromptStyle> {
+    const [newPromptStyle] = await db.insert(promptStyles).values(promptStyle).returning();
+    return newPromptStyle;
+  }
+
+  async updatePromptStyle(id: string, promptStyle: Partial<InsertPromptStyle>): Promise<PromptStyle> {
+    const [updatedPromptStyle] = await db
+      .update(promptStyles)
+      .set({ ...promptStyle, updatedAt: new Date() })
+      .where(eq(promptStyles.id, id))
+      .returning();
+    return updatedPromptStyle;
+  }
+
+  async deletePromptStyle(id: string): Promise<void> {
+    await db.delete(promptStyles).where(eq(promptStyles.id, id));
+  }
+
+  // Intended generator operations
+  async getIntendedGenerators(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<IntendedGenerator[]> {
+    let query = db.select().from(intendedGenerators);
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(intendedGenerators.userId, options.userId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(intendedGenerators.type, options.type as any));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(intendedGenerators.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(intendedGenerators.name);
+  }
+
+  async getIntendedGenerator(id: string): Promise<IntendedGenerator | undefined> {
+    const [generator] = await db.select().from(intendedGenerators).where(eq(intendedGenerators.id, id));
+    return generator;
+  }
+
+  async getIntendedGeneratorByName(name: string): Promise<IntendedGenerator | undefined> {
+    const [generator] = await db.select().from(intendedGenerators).where(eq(intendedGenerators.name, name));
+    return generator;
+  }
+
+  async createIntendedGenerator(generator: InsertIntendedGenerator): Promise<IntendedGenerator> {
+    const [newGenerator] = await db.insert(intendedGenerators).values(generator).returning();
+    return newGenerator;
+  }
+
+  async updateIntendedGenerator(id: string, generator: Partial<InsertIntendedGenerator>): Promise<IntendedGenerator> {
+    const [updatedGenerator] = await db
+      .update(intendedGenerators)
+      .set({ ...generator, updatedAt: new Date() })
+      .where(eq(intendedGenerators.id, id))
+      .returning();
+    return updatedGenerator;
+  }
+
+  async deleteIntendedGenerator(id: string): Promise<void> {
+    await db.delete(intendedGenerators).where(eq(intendedGenerators.id, id));
+  }
+
+  // Recommended model operations
+  async getRecommendedModels(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<RecommendedModel[]> {
+    let query = db.select().from(recommendedModels);
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(recommendedModels.userId, options.userId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(recommendedModels.type, options.type as any));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(recommendedModels.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(recommendedModels.name);
+  }
+
+  async getRecommendedModel(id: string): Promise<RecommendedModel | undefined> {
+    const [model] = await db.select().from(recommendedModels).where(eq(recommendedModels.id, id));
+    return model;
+  }
+
+  async getRecommendedModelByName(name: string): Promise<RecommendedModel | undefined> {
+    const [model] = await db.select().from(recommendedModels).where(eq(recommendedModels.name, name));
+    return model;
+  }
+
+  async createRecommendedModel(model: InsertRecommendedModel): Promise<RecommendedModel> {
+    const [newModel] = await db.insert(recommendedModels).values(model).returning();
+    return newModel;
+  }
+
+  async updateRecommendedModel(id: string, model: Partial<InsertRecommendedModel>): Promise<RecommendedModel> {
+    const [updatedModel] = await db
+      .update(recommendedModels)
+      .set({ ...model, updatedAt: new Date() })
+      .where(eq(recommendedModels.id, id))
+      .returning();
+    return updatedModel;
+  }
+
+  async deleteRecommendedModel(id: string): Promise<void> {
+    await db.delete(recommendedModels).where(eq(recommendedModels.id, id));
   }
 }
 
