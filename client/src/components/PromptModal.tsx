@@ -129,6 +129,32 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
     enabled: open,
   });
 
+  // Fetch option data from database
+  const { data: categories = [] } = useQuery<any[]>({
+    queryKey: ["/api/categories"],
+    enabled: open,
+  });
+
+  const { data: promptTypes = [] } = useQuery<any[]>({
+    queryKey: ["/api/prompt-types"],
+    enabled: open,
+  });
+
+  const { data: promptStyles = [] } = useQuery<any[]>({
+    queryKey: ["/api/prompt-styles"],
+    enabled: open,
+  });
+
+  const { data: intendedGenerators = [] } = useQuery<any[]>({
+    queryKey: ["/api/intended-generators"],
+    enabled: open,
+  });
+
+  const { data: recommendedModels = [] } = useQuery<any[]>({
+    queryKey: ["/api/recommended-models"],
+    enabled: open,
+  });
+
   // State for optimistic collection updates
   const [optimisticCollections, setOptimisticCollections] = useState<Collection[]>([]);
 
@@ -162,6 +188,122 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
       toast({
         title: "Error",
         description: error.message || "Failed to create collection",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutations for creating new option types
+  const createCategoryMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/categories", { name });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      setShowCreateCategory(false);
+      setNewCategoryName("");
+      toast({
+        title: "Success",
+        description: "Category created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createPromptTypeMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/prompt-types", { name });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompt-types"] });
+      setShowCreatePromptType(false);
+      setNewPromptTypeName("");
+      toast({
+        title: "Success",
+        description: "Prompt type created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create prompt type",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createPromptStyleMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/prompt-styles", { name });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompt-styles"] });
+      setShowCreatePromptStyle(false);
+      setNewPromptStyleName("");
+      toast({
+        title: "Success",
+        description: "Prompt style created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create prompt style",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createIntendedGeneratorMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/intended-generators", { name });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/intended-generators"] });
+      setShowCreateIntendedGenerator(false);
+      setNewIntendedGeneratorName("");
+      toast({
+        title: "Success",
+        description: "Intended generator created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create intended generator",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createRecommendedModelMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/recommended-models", { name });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recommended-models"] });
+      setShowCreateRecommendedModel(false);
+      setNewRecommendedModelName("");
+      toast({
+        title: "Success",
+        description: "Recommended model created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create recommended model",
         variant: "destructive",
       });
     },
@@ -384,16 +526,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Category
                     </div>
                   </SelectItem>
-                  {customCategories.map((category) => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
                   ))}
-                  <SelectItem value="Art & Design">Art & Design</SelectItem>
-                  <SelectItem value="Photography">Photography</SelectItem>
-                  <SelectItem value="Character Design">Character Design</SelectItem>
-                  <SelectItem value="Landscape">Landscape</SelectItem>
-                  <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
-                  <SelectItem value="Abstract">Abstract</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -417,15 +552,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Type
                     </div>
                   </SelectItem>
-                  {customPromptTypes.map((type) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  {promptTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                   ))}
-                  <SelectItem value="text-to-image">Text to Image</SelectItem>
-                  <SelectItem value="image-to-image">Image to Image</SelectItem>
-                  <SelectItem value="text-generation">Text Generation</SelectItem>
-                  <SelectItem value="code-generation">Code Generation</SelectItem>
-                  <SelectItem value="creative-writing">Creative Writing</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -449,15 +578,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Style
                     </div>
                   </SelectItem>
-                  {customPromptStyles.map((style) => (
-                    <SelectItem key={style} value={style}>{style}</SelectItem>
+                  {promptStyles.map((style) => (
+                    <SelectItem key={style.id} value={style.name}>{style.name}</SelectItem>
                   ))}
-                  <SelectItem value="detailed">Detailed</SelectItem>
-                  <SelectItem value="simple">Simple</SelectItem>
-                  <SelectItem value="artistic">Artistic</SelectItem>
-                  <SelectItem value="photorealistic">Photorealistic</SelectItem>
-                  <SelectItem value="abstract">Abstract</SelectItem>
-                  <SelectItem value="minimalist">Minimalist</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -623,17 +746,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Generator
                     </div>
                   </SelectItem>
-                  {customIntendedGenerators.map((generator) => (
-                    <SelectItem key={generator} value={generator}>{generator}</SelectItem>
+                  {intendedGenerators.map((generator) => (
+                    <SelectItem key={generator.id} value={generator.name}>{generator.name}</SelectItem>
                   ))}
-                  <SelectItem value="midjourney">Midjourney</SelectItem>
-                  <SelectItem value="dalle">DALL-E</SelectItem>
-                  <SelectItem value="stable-diffusion">Stable Diffusion</SelectItem>
-                  <SelectItem value="leonardo">Leonardo AI</SelectItem>
-                  <SelectItem value="firefly">Adobe Firefly</SelectItem>
-                  <SelectItem value="chatgpt">ChatGPT</SelectItem>
-                  <SelectItem value="claude">Claude</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -657,16 +772,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
                       Create New Model
                     </div>
                   </SelectItem>
-                  {customRecommendedModels.map((model) => (
-                    <SelectItem key={model} value={model}>{model}</SelectItem>
+                  {recommendedModels.map((model) => (
+                    <SelectItem key={model.id} value={model.name}>{model.name}</SelectItem>
                   ))}
-                  <SelectItem value="GPT-4">GPT-4</SelectItem>
-                  <SelectItem value="Claude-3">Claude-3</SelectItem>
-                  <SelectItem value="SDXL">SDXL</SelectItem>
-                  <SelectItem value="Midjourney v6">Midjourney v6</SelectItem>
-                  <SelectItem value="DALL-E 3">DALL-E 3</SelectItem>
-                  <SelectItem value="Stable Diffusion">Stable Diffusion</SelectItem>
-                  <SelectItem value="Leonardo AI">Leonardo AI</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -842,16 +950,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newCategoryName.trim()) {
-                  const newCategory = newCategoryName.trim();
-                  setCustomCategories(prev => [...prev, newCategory]);
-                  setFormData({ ...formData, category: newCategory });
-                  setNewCategoryName("");
-                  setShowCreateCategory(false);
+                  createCategoryMutation.mutate(newCategoryName.trim());
+                  setFormData({ ...formData, category: newCategoryName.trim() });
                 }
               }}
-              disabled={!newCategoryName.trim()}
+              disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
             >
-              Create
+              {createCategoryMutation.isPending ? "Creating..." : "Create"}
             </Button>
           </div>
         </div>
@@ -882,16 +987,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newPromptTypeName.trim()) {
-                  const newType = newPromptTypeName.trim();
-                  setCustomPromptTypes(prev => [...prev, newType]);
-                  setFormData({ ...formData, promptType: newType });
-                  setNewPromptTypeName("");
-                  setShowCreatePromptType(false);
+                  createPromptTypeMutation.mutate(newPromptTypeName.trim());
+                  setFormData({ ...formData, promptType: newPromptTypeName.trim() });
                 }
               }}
-              disabled={!newPromptTypeName.trim()}
+              disabled={!newPromptTypeName.trim() || createPromptTypeMutation.isPending}
             >
-              Create
+              {createPromptTypeMutation.isPending ? "Creating..." : "Create"}
             </Button>
           </div>
         </div>
@@ -922,16 +1024,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newPromptStyleName.trim()) {
-                  const newStyle = newPromptStyleName.trim();
-                  setCustomPromptStyles(prev => [...prev, newStyle]);
-                  setFormData({ ...formData, promptStyle: newStyle });
-                  setNewPromptStyleName("");
-                  setShowCreatePromptStyle(false);
+                  createPromptStyleMutation.mutate(newPromptStyleName.trim());
+                  setFormData({ ...formData, promptStyle: newPromptStyleName.trim() });
                 }
               }}
-              disabled={!newPromptStyleName.trim()}
+              disabled={!newPromptStyleName.trim() || createPromptStyleMutation.isPending}
             >
-              Create
+              {createPromptStyleMutation.isPending ? "Creating..." : "Create"}
             </Button>
           </div>
         </div>
@@ -962,16 +1061,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newIntendedGeneratorName.trim()) {
-                  const newGenerator = newIntendedGeneratorName.trim();
-                  setCustomIntendedGenerators(prev => [...prev, newGenerator]);
-                  setFormData({ ...formData, intendedGenerator: newGenerator });
-                  setNewIntendedGeneratorName("");
-                  setShowCreateIntendedGenerator(false);
+                  createIntendedGeneratorMutation.mutate(newIntendedGeneratorName.trim());
+                  setFormData({ ...formData, intendedGenerator: newIntendedGeneratorName.trim() });
                 }
               }}
-              disabled={!newIntendedGeneratorName.trim()}
+              disabled={!newIntendedGeneratorName.trim() || createIntendedGeneratorMutation.isPending}
             >
-              Create
+              {createIntendedGeneratorMutation.isPending ? "Creating..." : "Create"}
             </Button>
           </div>
         </div>
@@ -1002,16 +1098,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
             <Button 
               onClick={() => {
                 if (newRecommendedModelName.trim()) {
-                  const newModel = newRecommendedModelName.trim();
-                  setCustomRecommendedModels(prev => [...prev, newModel]);
-                  setFormData({ ...formData, recommendedModels: newModel });
-                  setNewRecommendedModelName("");
-                  setShowCreateRecommendedModel(false);
+                  createRecommendedModelMutation.mutate(newRecommendedModelName.trim());
+                  setFormData({ ...formData, recommendedModels: newRecommendedModelName.trim() });
                 }
               }}
-              disabled={!newRecommendedModelName.trim()}
+              disabled={!newRecommendedModelName.trim() || createRecommendedModelMutation.isPending}
             >
-              Create
+              {createRecommendedModelMutation.isPending ? "Creating..." : "Create"}
             </Button>
           </div>
         </div>
