@@ -45,7 +45,8 @@ export default function Library() {
   const [statusFilter, setStatusFilter] = useState("");
   
   // Parse query parameters to get the tab
-  const queryParams = new URLSearchParams(location.search || '');
+  const searchString = location.search || '';
+  const queryParams = new URLSearchParams(searchString);
   const tabFromQuery = queryParams.get('tab');
   const [activeTab, setActiveTab] = useState<string>(tabFromQuery || "prompts");
   
@@ -274,7 +275,17 @@ export default function Library() {
         operation,
         updateData,
       });
-      return response.json();
+      // Check if response has content before parsing
+      const text = await response.text();
+      if (!text) {
+        return { success: 0, total: 0, failed: 0 };
+      }
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error('Failed to parse response:', text);
+        throw new Error('Server returned invalid response');
+      }
     },
     onSuccess: (result) => {
       // Invalidate all prompt queries to refresh data
@@ -284,6 +295,14 @@ export default function Library() {
           return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user");
         }
       });
+      
+      // Also invalidate collections to update prompt counts
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      
+      // Manually refetch to ensure immediate updates
+      refetch();
+      refetchCollections();
       
       toast({
         title: "Bulk Operation Complete",
@@ -852,19 +871,24 @@ export default function Library() {
                         )}
                         
                         <div className="flex items-center justify-between">
-                          <Badge variant={collection.isPublic ? "default" : "secondary"}>
-                            {collection.isPublic ? (
-                              <>
-                                <Globe className="h-3 w-3 mr-1" />
-                                Public
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="h-3 w-3 mr-1" />
-                                Private
-                              </>
-                            )}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={collection.isPublic ? "default" : "secondary"}>
+                              {collection.isPublic ? (
+                                <>
+                                  <Globe className="h-3 w-3 mr-1" />
+                                  Public
+                                </>
+                              ) : (
+                                <>
+                                  <Lock className="h-3 w-3 mr-1" />
+                                  Private
+                                </>
+                              )}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {collection.promptCount || 0} prompts
+                            </span>
+                          </div>
                           <span className="text-xs text-muted-foreground">
                             {new Date(collection.createdAt).toLocaleDateString()}
                           </span>

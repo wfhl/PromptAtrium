@@ -83,7 +83,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Respect privacy settings
         email: user.emailVisibility ? user.email : null,
         birthday: user.showBirthday ? user.birthday : null,
-        location: user.location,
       };
 
       // Only return profile if it's public or user is viewing their own profile
@@ -958,7 +957,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type) options.type = type as string;
       
       const collections = await storage.getCollections(options);
-      res.json(collections);
+      
+      // Add prompt count to each collection
+      const collectionsWithCounts = await Promise.all(
+        collections.map(async (collection) => {
+          const prompts = await storage.getPrompts({ collectionId: collection.id });
+          return {
+            ...collection,
+            promptCount: prompts.length
+          };
+        })
+      );
+      
+      res.json(collectionsWithCounts);
     } catch (error) {
       console.error("Error fetching collections:", error);
       res.status(500).json({ message: "Failed to fetch collections" });

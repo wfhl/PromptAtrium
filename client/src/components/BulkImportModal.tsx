@@ -539,7 +539,24 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     onSuccess: (result: ImportResult) => {
       setImportResults(result);
       setStep("results");
+      
+      // Invalidate all prompt-related queries to refresh UI immediately
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || 
+                 queryKey?.includes("/api/user") ||
+                 queryKey?.includes("/api/collections") ||
+                 queryKey?.includes("/api/activities");
+        }
+      });
+      
+      // Specifically invalidate commonly used queries
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities/recent"] });
+      
       toast({
         title: "Import Complete",
         description: `Successfully imported ${result.success} of ${result.total} prompts.`,
