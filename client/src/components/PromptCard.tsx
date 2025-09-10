@@ -1229,31 +1229,29 @@ export function PromptCard({
                     <Avatar className="h-6 w-6">
                       <AvatarImage 
                         src={(prompt as any).user?.profileImageUrl} 
-                        alt={`${(prompt as any).user?.firstName || 'User'} ${(prompt as any).user?.lastName || ''}`}
+                        alt={`@${(prompt as any).user?.username || 'User'}`}
                       />
                       <AvatarFallback className="text-xs">
-                        {(prompt as any).user?.firstName && (prompt as any).user?.lastName 
-                          ? `${(prompt as any).user.firstName.charAt(0)}${(prompt as any).user.lastName.charAt(0)}`
-                          : (prompt as any).user?.email 
-                          ? (prompt as any).user.email.charAt(0).toUpperCase()
+                        {(prompt as any).user?.username 
+                          ? (prompt as any).user.username.charAt(0).toUpperCase()
                           : 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline text-xs text-muted-foreground hover:text-foreground">
-                      {(prompt as any).user?.firstName || (prompt as any).user?.username || 'User'}
-                    </span>
+                    {!isCollapsed && (
+                      <span className="text-xs text-muted-foreground hover:text-foreground">
+                        @{(prompt as any).user?.username || 'User'}
+                      </span>
+                    )}
                   </Link>
                 ) : (
                   <Avatar className="h-6 w-6">
                     <AvatarImage 
                       src={(prompt as any).user?.profileImageUrl} 
-                      alt={`${(prompt as any).user?.firstName || 'User'} ${(prompt as any).user?.lastName || ''}`}
+                      alt="User"
                     />
                     <AvatarFallback className="text-xs">
-                      {(prompt as any).user?.firstName && (prompt as any).user?.lastName 
-                        ? `${(prompt as any).user.firstName.charAt(0)}${(prompt as any).user.lastName.charAt(0)}`
-                        : (prompt as any).user?.email 
-                        ? (prompt as any).user.email.charAt(0).toUpperCase()
+                      {(prompt as any).user?.username 
+                        ? (prompt as any).user.username.charAt(0).toUpperCase()
                         : 'U'}
                     </AvatarFallback>
                   </Avatar>

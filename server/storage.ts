@@ -602,7 +602,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Collection operations
-  async getCollections(options: { userId?: string; communityId?: string; type?: string } = {}): Promise<Collection[]> {
+  async getCollections(options: { userId?: string; communityId?: string; type?: string } = {}): Promise<(Collection & { promptCount?: number })[]> {
     let query = db.select().from(collections);
     
     const conditions = [];
@@ -623,7 +623,25 @@ export class DatabaseStorage implements IStorage {
       query = query.where(and(...conditions));
     }
     
-    return await query.orderBy(desc(collections.updatedAt));
+    const collectionsData = await query.orderBy(desc(collections.updatedAt));
+    
+    // Add prompt count for each collection
+    const collectionsWithCount = await Promise.all(
+      collectionsData.map(async (collection) => {
+        const promptCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(prompts)
+          .where(eq(prompts.collectionId, collection.id))
+          .then(result => result[0]?.count || 0);
+        
+        return {
+          ...collection,
+          promptCount
+        };
+      })
+    );
+    
+    return collectionsWithCount;
   }
 
   async getCollection(id: string): Promise<Collection | undefined> {
