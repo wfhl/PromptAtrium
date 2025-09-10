@@ -170,6 +170,67 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     });
   };
 
+  const parseGoogleDocsContent = (content: string): ParsedPrompt[] => {
+    // First, try to detect if the content has numbered prompts (1., 2., etc.)
+    const numberedPattern = /^\d+\.\s+/m;
+    const hasNumberedPrompts = numberedPattern.test(content);
+    
+    let prompts: ParsedPrompt[] = [];
+    
+    if (hasNumberedPrompts) {
+      // Split by numbered list items (1., 2., 3., etc.)
+      const chunks = content.split(/\n(?=\d+\.\s+)/).filter(chunk => chunk.trim() !== "");
+      
+      prompts = chunks.map((chunk, index) => {
+        // Remove the number prefix from the first line
+        const cleanedChunk = chunk.replace(/^\d+\.\s+/, '').trim();
+        const lines = cleanedChunk.split('\n');
+        const firstLine = lines[0].trim();
+        const restContent = lines.slice(1).join('\n').trim();
+        
+        // Extract name from quotes if present, otherwise use first line
+        let name = firstLine;
+        const quotedMatch = firstLine.match(/[""]([^""]+)[""]/);
+        if (quotedMatch) {
+          name = quotedMatch[1];
+        } else if (firstLine.length > 50) {
+          name = `${firstLine.substring(0, 50)}...`;
+        }
+        
+        return {
+          name: name || `Prompt ${index + 1}`,
+          promptContent: restContent || firstLine,
+          description: "",
+          category: defaultCategory,
+          tags: [],
+          status: "draft" as const,
+          isPublic: defaultIsPublic
+        };
+      });
+    } else {
+      // Fall back to splitting by double line breaks (paragraphs)
+      const chunks = content.split('\n\n').filter(chunk => chunk.trim() !== "");
+      
+      prompts = chunks.map((chunk, index) => {
+        const lines = chunk.trim().split('\n');
+        const firstLine = lines[0].trim();
+        const restContent = lines.slice(1).join('\n').trim();
+        
+        return {
+          name: firstLine.length > 50 ? `${firstLine.substring(0, 50)}...` : firstLine || `Prompt ${index + 1}`,
+          promptContent: restContent || firstLine,
+          description: "",
+          category: defaultCategory,
+          tags: [],
+          status: "draft" as const,
+          isPublic: defaultIsPublic
+        };
+      });
+    }
+    
+    return prompts;
+  };
+
   const bulkImportMutation = useMutation({
     mutationFn: async (prompts: ParsedPrompt[]): Promise<ImportResult> => {
       // Start progress at 10%
@@ -252,7 +313,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         setParsedData(parsed.filter(p => p.promptContent.trim() !== ""));
       } else {
         // Parse as text (Google Docs)
-        const parsed = parseTxtContent(data.content);
+        const parsed = parseGoogleDocsContent(data.content);
         setParsedData(parsed);
       }
       
