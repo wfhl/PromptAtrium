@@ -342,10 +342,10 @@ export default function Dashboard() {
               </div>
             </div>
             
-            {/* Favorite Prompts */}
+            {/* Bookmarked Prompts */}
             <div className="mb-6 md:mb-8">
               <div className="flex items-center justify-between mb-3 md:mb-4">
-                <h2 className="text-lg md:text-xl font-semibold text-foreground">Favorite Prompts</h2>
+                <h2 className="text-lg md:text-xl font-semibold text-[#3089e3]">Bookmarked Prompts</h2>
                 <Link href="/library?section=favorites">
                   <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-favorites">
                     View all
