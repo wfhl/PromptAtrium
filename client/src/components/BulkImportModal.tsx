@@ -182,6 +182,132 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     },
   });
   
+  // Mutation for creating new category
+  const createCategoryMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/categories", { name });
+      return await response.json();
+    },
+    onSuccess: (newCategory: any) => {
+      setDefaultCategory(newCategory.name);
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      setShowCreateCategory(false);
+      setNewCategoryName("");
+      toast({
+        title: "Success",
+        description: "Category created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create category",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for creating new prompt type
+  const createPromptTypeMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/prompt-types", { name });
+      return await response.json();
+    },
+    onSuccess: (newPromptType: any) => {
+      setDefaultPromptType(newPromptType.name);
+      queryClient.invalidateQueries({ queryKey: ["/api/prompt-types"] });
+      setShowCreatePromptType(false);
+      setNewPromptTypeName("");
+      toast({
+        title: "Success",
+        description: "Prompt type created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create prompt type",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for creating new prompt style
+  const createPromptStyleMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/prompt-styles", { name });
+      return await response.json();
+    },
+    onSuccess: (newPromptStyle: any) => {
+      setDefaultPromptStyle(newPromptStyle.name);
+      queryClient.invalidateQueries({ queryKey: ["/api/prompt-styles"] });
+      setShowCreatePromptStyle(false);
+      setNewPromptStyleName("");
+      toast({
+        title: "Success",
+        description: "Prompt style created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create prompt style",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for creating new intended generator
+  const createIntendedGeneratorMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/intended-generators", { name });
+      return await response.json();
+    },
+    onSuccess: (newGenerator: any) => {
+      setDefaultIntendedGenerator(newGenerator.name);
+      queryClient.invalidateQueries({ queryKey: ["/api/intended-generators"] });
+      setShowCreateIntendedGenerator(false);
+      setNewIntendedGeneratorName("");
+      toast({
+        title: "Success",
+        description: "Intended generator created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create intended generator",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for creating new recommended model
+  const createRecommendedModelMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("POST", "/api/recommended-models", { name });
+      return await response.json();
+    },
+    onSuccess: (newModel: any) => {
+      setCustomRecommendedModels(prev => [...prev, newModel.name]);
+      setDefaultRecommendedModels(newModel.name);
+      queryClient.invalidateQueries({ queryKey: ["/api/recommended-models"] });
+      setShowCreateRecommendedModel(false);
+      setNewRecommendedModelName("");
+      toast({
+        title: "Success",
+        description: "Recommended model created successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create recommended model",
+        variant: "destructive",
+      });
+    },
+  });
+  
   const resetModal = () => {
     setFile(null);
     setFileContent("");
@@ -1108,16 +1234,12 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
               <Button 
                 onClick={() => {
                   if (newCategoryName.trim()) {
-                    const newCategory = newCategoryName.trim();
-                    setCustomCategories(prev => [...prev, newCategory]);
-                    setDefaultCategory(newCategory);
-                    setNewCategoryName("");
-                    setShowCreateCategory(false);
+                    createCategoryMutation.mutate(newCategoryName.trim());
                   }
                 }}
-                disabled={!newCategoryName.trim()}
+                disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
               >
-                Create
+                {createCategoryMutation.isPending ? "Creating..." : "Create"}
               </Button>
             </div>
           </div>
@@ -1148,16 +1270,12 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
               <Button 
                 onClick={() => {
                   if (newPromptTypeName.trim()) {
-                    const newType = newPromptTypeName.trim();
-                    setCustomPromptTypes(prev => [...prev, newType]);
-                    setDefaultPromptType(newType);
-                    setNewPromptTypeName("");
-                    setShowCreatePromptType(false);
+                    createPromptTypeMutation.mutate(newPromptTypeName.trim());
                   }
                 }}
-                disabled={!newPromptTypeName.trim()}
+                disabled={!newPromptTypeName.trim() || createPromptTypeMutation.isPending}
               >
-                Create
+                {createPromptTypeMutation.isPending ? "Creating..." : "Create"}
               </Button>
             </div>
           </div>
@@ -1188,14 +1306,10 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
               <Button 
                 onClick={() => {
                   if (newPromptStyleName.trim()) {
-                    const newStyle = newPromptStyleName.trim();
-                    setCustomPromptStyles(prev => [...prev, newStyle]);
-                    setDefaultPromptStyle(newStyle);
-                    setNewPromptStyleName("");
-                    setShowCreatePromptStyle(false);
+                    createPromptStyleMutation.mutate(newPromptStyleName.trim());
                   }
                 }}
-                disabled={!newPromptStyleName.trim()}
+                disabled={!newPromptStyleName.trim() || createPromptStyleMutation.isPending}
               >
                 Create
               </Button>
