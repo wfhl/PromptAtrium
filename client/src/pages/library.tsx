@@ -45,17 +45,18 @@ export default function Library() {
   const [statusFilter, setStatusFilter] = useState("");
   
   // Parse query parameters to get the tab
-  const searchString = location.search || '';
-  const queryParams = new URLSearchParams(searchString);
+  const queryParams = new URLSearchParams(window.location.search);
   const tabFromQuery = queryParams.get('tab');
   const [activeTab, setActiveTab] = useState<string>(tabFromQuery || "prompts");
   
   // Update tab when query parameter changes
   useEffect(() => {
-    if (tabFromQuery && ['prompts', 'bookmarked', 'collections', 'archive'].includes(tabFromQuery)) {
-      setActiveTab(tabFromQuery);
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['prompts', 'bookmarked', 'collections', 'archive'].includes(tab)) {
+      setActiveTab(tab);
     }
-  }, [tabFromQuery, location.search]);
+  }, [location]);
   
   // Bulk editing state
   const [isBulkMode, setIsBulkMode] = useState(false);
