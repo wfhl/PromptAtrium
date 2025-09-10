@@ -98,7 +98,7 @@ export default function UserProfile() {
   });
 
   // Get current user
-  const { data: currentUser } = useQuery({
+  const { data: currentUser } = useQuery<User>({
     queryKey: ["/api/auth/user"],
   });
 
@@ -180,7 +180,7 @@ export default function UserProfile() {
       <Card className="mb-4 md:mb-6">
         <CardContent className="p-4 md:p-6 relative">
           {/* Dropdowns - Top Right */}
-          <div className="absolute top-4 right-4 flex flex-col md:flex-row gap-2">
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex flex-row gap-1 sm:gap-2">
             {/* Stats Dropdown - Now for both mobile and desktop */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -244,7 +244,7 @@ export default function UserProfile() {
                     Joined
                   </span>
                   <span className="text-sm font-medium">
-                    {formatDate(profile.createdAt)}
+                    {profile.createdAt ? formatDate(profile.createdAt) : 'Recently'}
                   </span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -367,7 +367,7 @@ export default function UserProfile() {
             </Avatar>
 
             {/* Profile Info */}
-            <div className="flex-1 pr-12">
+            <div className="flex-1 pr-20 sm:pr-12">
               <div className="mb-2">
                 <h1 className="text-xl font-bold">
                   @{profile.username}
@@ -384,11 +384,6 @@ export default function UserProfile() {
               )}
 
               <div className="flex items-center gap-4 flex-wrap">
-                {profile.location && (
-                  <span className="flex items-center gap-1">
-                    <Badge variant="secondary">{profile.location}</Badge>
-                  </span>
-                )}
                 {!isOwnProfile && currentUser && (
                   <Button
                     onClick={() => followMutation.mutate()}
