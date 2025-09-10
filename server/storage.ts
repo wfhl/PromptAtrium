@@ -112,6 +112,7 @@ export interface IStorage {
   // Social operations
   toggleLike(userId: string, promptId: string): Promise<boolean>;
   toggleFavorite(userId: string, promptId: string): Promise<boolean>;
+  removeAllFavorites(promptId: string): Promise<void>;
   checkIfLiked(userId: string, promptId: string): Promise<boolean>;
   checkIfFavorited(userId: string, promptId: string): Promise<boolean>;
   ratePrompt(rating: InsertPromptRating): Promise<PromptRating>;
@@ -751,6 +752,11 @@ export class DatabaseStorage implements IStorage {
       await db.insert(promptFavorites).values({ userId, promptId });
       return true;
     }
+  }
+
+  async removeAllFavorites(promptId: string): Promise<void> {
+    // Remove all bookmarks/favorites for this prompt
+    await db.delete(promptFavorites).where(eq(promptFavorites.promptId, promptId));
   }
 
   async checkIfLiked(userId: string, promptId: string): Promise<boolean> {

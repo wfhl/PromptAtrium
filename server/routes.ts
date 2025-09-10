@@ -868,10 +868,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Prompt not found or not authorized" });
       }
 
-      const newStatus = prompt.status === 'archived' ? 'published' : 'archived';
-      const updatedPrompt = await storage.updatePrompt(req.params.id, { status: newStatus });
-      
-      res.json({ archived: newStatus === 'archived', status: newStatus });
+      if (prompt.status === 'archived') {
+        // Unarchiving: restore to published status (keeping it private)
+        const updatedPrompt = await storage.updatePrompt(req.params.id, { status: 'published' });
+        res.json({ archived: false, status: 'published' });
+      } else {
+        // Archiving: set to archived, make private, and remove all bookmarks
+        // First remove all bookmarks/favorites for this prompt
+        await storage.removeAllFavorites(req.params.id);
+        
+        // Then update the prompt to be archived and private
+        const updatedPrompt = await storage.updatePrompt(req.params.id, { 
+          status: 'archived',
+          isPublic: false 
+        });
+        
+        res.json({ 
+          archived: true, 
+          status: 'archived',
+          madePrivate: prompt.isPublic === true,
+          removedBookmarks: true
+        });
+      }
     } catch (error) {
       console.error("Error toggling archive:", error);
       res.status(500).json({ message: "Failed to toggle archive" });
