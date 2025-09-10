@@ -243,7 +243,7 @@ export default function UserProfile() {
                     <Calendar className="h-3 w-3" />
                     Joined
                   </span>
-                  <span className="text-sm font-medium">
+                  <span className="font-medium text-[12px] text-[#66676b]">
                     {profile.createdAt ? formatDate(profile.createdAt) : 'Recently'}
                   </span>
                 </DropdownMenuItem>
@@ -410,8 +410,6 @@ export default function UserProfile() {
           </div>
         </CardContent>
       </Card>
-
-
       {/* Content Sections */}
       <div className="space-y-4">
         {/* Section Title */}
