@@ -1,4 +1,5 @@
 import { ChevronRight, Folder } from "lucide-react";
+import { Link } from "wouter";
 import type { Collection } from "@shared/schema";
 
 interface CollectionItemProps {
@@ -17,24 +18,26 @@ export function CollectionItem({ collection }: CollectionItemProps) {
   const gradientClass = gradientClasses[Math.abs(collection.id.charCodeAt(0)) % gradientClasses.length];
 
   return (
-    <div 
-      className="flex items-center justify-between p-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
-      data-testid={`collection-item-${collection.id}`}
-    >
-      <div className="flex items-center space-x-2">
-        <div className={`w-6 h-6 ${gradientClass} rounded-md flex items-center justify-center`}>
-          <Folder className="h-3 w-3 text-white" />
+    <Link href={`/collection/${collection.id}`}>
+      <div 
+        className="flex items-center justify-between p-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
+        data-testid={`collection-item-${collection.id}`}
+      >
+        <div className="flex items-center space-x-2">
+          <div className={`w-6 h-6 ${gradientClass} rounded-md flex items-center justify-center`}>
+            <Folder className="h-3 w-3 text-white" />
+          </div>
+          <div>
+            <p className="font-medium text-foreground text-xs" data-testid={`text-collection-name-${collection.id}`}>
+              {collection.name}
+            </p>
+            <p className="text-xs text-muted-foreground" data-testid={`text-collection-count-${collection.id}`}>
+              {collection.promptCount || 0} prompts
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-medium text-foreground text-xs" data-testid={`text-collection-name-${collection.id}`}>
-            {collection.name}
-          </p>
-          <p className="text-xs text-muted-foreground" data-testid={`text-collection-count-${collection.id}`}>
-            {collection.promptCount || 0} prompts
-          </p>
-        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
       </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-    </div>
+    </Link>
   );
 }

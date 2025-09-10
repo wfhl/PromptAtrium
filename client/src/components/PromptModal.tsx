@@ -18,9 +18,10 @@ interface PromptModalProps {
   onOpenChange: (open: boolean) => void;
   prompt?: Prompt | null;
   mode: "create" | "edit";
+  defaultCollectionId?: string;
 }
 
-export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalProps) {
+export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectionId }: PromptModalProps) {
   const [showCreateCollection, setShowCreateCollection] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDescription, setNewCollectionDescription] = useState("");
@@ -106,7 +107,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         promptStyle: "",
         tags: "",
         isPublic: false,
-        collectionId: "none",
+        collectionId: defaultCollectionId || "none",
         license: "CC0 (Public Domain)",
         status: "published",
         exampleImages: [],
@@ -119,7 +120,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode }: PromptModalPro
         variables: "",
       });
     }
-  }, [prompt, mode]);
+  }, [prompt, mode, defaultCollectionId]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();

@@ -813,13 +813,15 @@ export default function Library() {
               ) : filteredAndSortedCollections.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredAndSortedCollections.map((collection: any) => (
-                    <Card key={collection.id} className="hover:shadow-md transition-shadow">
+                    <Card key={collection.id} className="hover:shadow-md transition-shadow cursor-pointer">
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <Folder className="h-4 w-4 text-primary" />
-                            <h3 className="font-semibold text-sm">{collection.name}</h3>
-                          </div>
+                          <Link href={`/collection/${collection.id}`} className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Folder className="h-4 w-4 text-primary" />
+                              <h3 className="font-semibold text-sm">{collection.name}</h3>
+                            </div>
+                          </Link>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm" data-testid={`button-collection-menu-${collection.id}`}>

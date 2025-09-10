@@ -12,6 +12,7 @@ import Community from "@/pages/community";
 import Projects from "@/pages/projects";
 import Admin from "@/pages/admin";
 import Collections from "@/pages/collections";
+import CollectionView from "@/pages/CollectionView";
 import Invite from "@/pages/invite";
 import ProfileSettings from "@/pages/profile-settings";
 import UserProfile from "@/pages/user-profile";
@@ -40,6 +41,9 @@ function Router() {
           </Route>
           <Route path="/collections">
             {() => <Layout><Collections /></Layout>}
+          </Route>
+          <Route path="/collection/:id">
+            {() => <Layout><CollectionView /></Layout>}
           </Route>
           <Route path="/admin">
             {() => <Layout><Admin /></Layout>}

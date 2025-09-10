@@ -965,6 +965,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get a single collection by ID
+  app.get('/api/collections/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const collection = await storage.getCollection(req.params.id);
+      
+      if (!collection) {
+        return res.status(404).json({ message: "Collection not found" });
+      }
+      
+      // Check if user has access to this collection
+      const isOwner = collection.userId === userId;
+      const isPublic = collection.isPublic;
+      
+      if (!isOwner && !isPublic) {
+        return res.status(403).json({ message: "Not authorized to view this collection" });
+      }
+      
+      res.json(collection);
+    } catch (error) {
+      console.error("Error fetching collection:", error);
+      res.status(500).json({ message: "Failed to fetch collection" });
+    }
+  });
+
+  // Get all prompts in a collection
+  app.get('/api/collections/:id/prompts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const collectionId = req.params.id;
+      
+      // First check if collection exists and user has access
+      const collection = await storage.getCollection(collectionId);
+      
+      if (!collection) {
+        return res.status(404).json({ message: "Collection not found" });
+      }
+      
+      // Check if user has access to this collection
+      const isOwner = collection.userId === userId;
+      const isPublic = collection.isPublic;
+      
+      if (!isOwner && !isPublic) {
+        return res.status(403).json({ message: "Not authorized to view this collection" });
+      }
+      
+      // Fetch prompts with the collectionId filter
+      const prompts = await storage.getPrompts({ collectionIds: [collectionId] });
+      res.json(prompts);
+    } catch (error) {
+      console.error("Error fetching collection prompts:", error);
+      res.status(500).json({ message: "Failed to fetch collection prompts" });
+    }
+  });
+
   app.post('/api/collections', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
