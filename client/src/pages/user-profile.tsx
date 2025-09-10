@@ -239,7 +239,7 @@ export default function UserProfile() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="flex justify-between">
-                  <span className="text-sm flex items-center gap-1">
+                  <span className="text-sm flex items-center gap-1 text-[#66676b]">
                     <Calendar className="h-3 w-3" />
                     Joined
                   </span>
