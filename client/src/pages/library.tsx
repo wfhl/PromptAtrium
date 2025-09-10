@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -37,12 +37,24 @@ export default function Library() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [location] = useLocation();
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [activeTab, setActiveTab] = useState<string>("prompts");
+  
+  // Parse query parameters to get the tab
+  const queryParams = new URLSearchParams(location.search || '');
+  const tabFromQuery = queryParams.get('tab');
+  const [activeTab, setActiveTab] = useState<string>(tabFromQuery || "prompts");
+  
+  // Update tab when query parameter changes
+  useEffect(() => {
+    if (tabFromQuery && ['prompts', 'bookmarked', 'collections', 'archive'].includes(tabFromQuery)) {
+      setActiveTab(tabFromQuery);
+    }
+  }, [tabFromQuery]);
   
   // Bulk editing state
   const [isBulkMode, setIsBulkMode] = useState(false);

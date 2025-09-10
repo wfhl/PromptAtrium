@@ -422,7 +422,7 @@ export default function Dashboard() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>My Collections</CardTitle>
-                  <Link href="/collections">
+                  <Link href="/library?tab=collections">
                     <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-collections">
                       View all
                     </Button>
