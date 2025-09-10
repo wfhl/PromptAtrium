@@ -1012,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch prompts with the collectionId filter
-      const prompts = await storage.getPrompts({ collectionIds: [collectionId] });
+      const prompts = await storage.getPrompts({ collectionId });
       res.json(prompts);
     } catch (error) {
       console.error("Error fetching collection prompts:", error);

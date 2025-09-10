@@ -314,6 +314,7 @@ export class DatabaseStorage implements IStorage {
     promptStyles?: string[];
     intendedGenerators?: string[];
     collectionIds?: string[];
+    collectionId?: string;
     search?: string;
     limit?: number;
     offset?: number;
@@ -419,6 +420,11 @@ export class DatabaseStorage implements IStorage {
     
     if (options.collectionIds && options.collectionIds.length > 0) {
       conditions.push(sql`${prompts.collectionIds} && ${options.collectionIds}`);
+    }
+    
+    // Filter by single collectionId field
+    if (options.collectionId) {
+      conditions.push(eq(prompts.collectionId, options.collectionId));
     }
     
     if (options.search) {
