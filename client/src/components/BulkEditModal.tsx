@@ -63,11 +63,41 @@ export function BulkEditModal({
     enabled: isOpen,
   }) as { data: any[] };
 
-  // Get existing options for dropdowns
-  const { data: options = { tags: [], models: [], categories: [], promptTypes: [], promptStyles: [], intendedGenerators: [] } } = useQuery({
+  // Get categories from database
+  const { data: categories = [] } = useQuery({
+    queryKey: ["/api/categories"],
+    enabled: isOpen,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+
+  // Get prompt types from database
+  const { data: promptTypes = [] } = useQuery({
+    queryKey: ["/api/prompt-types"],
+    enabled: isOpen,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+
+  // Get prompt styles from database
+  const { data: promptStyles = [] } = useQuery({
+    queryKey: ["/api/prompt-styles"],
+    enabled: isOpen,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+
+  // Get intended generators from database
+  const { data: intendedGenerators = [] } = useQuery({
+    queryKey: ["/api/intended-generators"],
+    enabled: isOpen,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+
+  // Get recommended models from database
+  const { data: recommendedModels = [] } = useQuery({
+    queryKey: ["/api/recommended-models"],
+    enabled: isOpen,
+  }) as { data: Array<{ id: string; name: string; description?: string }> };
+
+  // Get existing options for dropdowns (for tags and other non-db fields)
+  const { data: options = { tags: [] } } = useQuery({
     queryKey: ["/api/prompts/options"],
     enabled: isOpen,
-  }) as { data: { tags: string[]; models: string[]; categories: string[]; promptTypes: string[]; promptStyles: string[]; intendedGenerators: string[] } };
+  }) as { data: { tags: string[] } };
 
   const form = useForm<ModalBulkEditForm>({
     resolver: zodResolver(modalBulkEditSchema),
@@ -299,19 +329,19 @@ export function BulkEditModal({
                       <CommandList>
                         <CommandEmpty>No categories found.</CommandEmpty>
                         <CommandGroup>
-                          {options.categories.filter(category => !watchedCategories.includes(category)).map((category) => (
+                          {categories.filter(category => !watchedCategories.includes(category.name)).map((category) => (
                             <CommandItem
-                              key={category}
-                              value={category}
-                              onSelect={() => addCategory(category)}
+                              key={category.id}
+                              value={category.name}
+                              onSelect={() => addCategory(category.name)}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  watchedCategories.includes(category) ? "opacity-100" : "opacity-0"
+                                  watchedCategories.includes(category.name) ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {category}
+                              {category.name}
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -378,19 +408,19 @@ export function BulkEditModal({
                       <CommandList>
                         <CommandEmpty>No prompt types found.</CommandEmpty>
                         <CommandGroup>
-                          {options.promptTypes.filter(type => !watchedPromptTypes.includes(type)).map((type) => (
+                          {promptTypes.filter(type => !watchedPromptTypes.includes(type.name)).map((type) => (
                             <CommandItem
-                              key={type}
-                              value={type}
-                              onSelect={() => addPromptType(type)}
+                              key={type.id}
+                              value={type.name}
+                              onSelect={() => addPromptType(type.name)}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  watchedPromptTypes.includes(type) ? "opacity-100" : "opacity-0"
+                                  watchedPromptTypes.includes(type.name) ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {type}
+                              {type.name}
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -457,19 +487,19 @@ export function BulkEditModal({
                       <CommandList>
                         <CommandEmpty>No prompt styles found.</CommandEmpty>
                         <CommandGroup>
-                          {options.promptStyles.filter(style => !watchedPromptStyles.includes(style)).map((style) => (
+                          {promptStyles.filter(style => !watchedPromptStyles.includes(style.name)).map((style) => (
                             <CommandItem
-                              key={style}
-                              value={style}
-                              onSelect={() => addPromptStyle(style)}
+                              key={style.id}
+                              value={style.name}
+                              onSelect={() => addPromptStyle(style.name)}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  watchedPromptStyles.includes(style) ? "opacity-100" : "opacity-0"
+                                  watchedPromptStyles.includes(style.name) ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {style}
+                              {style.name}
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -536,19 +566,19 @@ export function BulkEditModal({
                       <CommandList>
                         <CommandEmpty>No intended generators found.</CommandEmpty>
                         <CommandGroup>
-                          {options.intendedGenerators.filter(generator => !watchedIntendedGenerators.includes(generator)).map((generator) => (
+                          {intendedGenerators.filter(generator => !watchedIntendedGenerators.includes(generator.name)).map((generator) => (
                             <CommandItem
-                              key={generator}
-                              value={generator}
-                              onSelect={() => addIntendedGenerator(generator)}
+                              key={generator.id}
+                              value={generator.name}
+                              onSelect={() => addIntendedGenerator(generator.name)}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  watchedIntendedGenerators.includes(generator) ? "opacity-100" : "opacity-0"
+                                  watchedIntendedGenerators.includes(generator.name) ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {generator}
+                              {generator.name}
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -777,19 +807,19 @@ export function BulkEditModal({
                       <CommandList>
                         <CommandEmpty>No models found.</CommandEmpty>
                         <CommandGroup>
-                          {options.models.filter(model => !watchedModels.includes(model)).map((model) => (
+                          {recommendedModels.filter(model => !watchedModels.includes(model.name)).map((model) => (
                             <CommandItem
-                              key={model}
-                              value={model}
-                              onSelect={() => addModel(model)}
+                              key={model.id}
+                              value={model.name}
+                              onSelect={() => addModel(model.name)}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  watchedModels.includes(model) ? "opacity-100" : "opacity-0"
+                                  watchedModels.includes(model.name) ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {model}
+                              {model.name}
                             </CommandItem>
                           ))}
                         </CommandGroup>
