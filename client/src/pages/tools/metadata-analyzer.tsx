@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -446,7 +445,7 @@ export default function MetadataAnalyzerPage() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <Card className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <CardHeader className="pb-4">
@@ -909,6 +908,6 @@ export default function MetadataAnalyzerPage() {
           });
         }}
       />
-    </Layout>
+    </>
   );
 }
