@@ -117,9 +117,9 @@ export default function Community() {
   const followMutation = useMutation({
     mutationFn: async ({ userId, isFollowing }: { userId: string; isFollowing: boolean }) => {
       if (isFollowing) {
-        return await apiRequest(`/api/users/${userId}/follow`, "DELETE");
+        return await apiRequest("DELETE", `/api/users/${userId}/follow`);
       } else {
-        return await apiRequest(`/api/users/${userId}/follow`, "POST");
+        return await apiRequest("POST", `/api/users/${userId}/follow`);
       }
     },
     onSuccess: (_, { userId, isFollowing }) => {

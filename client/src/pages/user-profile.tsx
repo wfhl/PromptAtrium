@@ -112,9 +112,9 @@ export default function UserProfile() {
   const followMutation = useMutation({
     mutationFn: async () => {
       if (isFollowing) {
-        return await apiRequest(`/api/users/${profile?.id}/follow`, "DELETE");
+        return await apiRequest("DELETE", `/api/users/${profile?.id}/follow`);
       } else {
-        return await apiRequest(`/api/users/${profile?.id}/follow`, "POST");
+        return await apiRequest("POST", `/api/users/${profile?.id}/follow`);
       }
     },
     onSuccess: () => {
