@@ -506,58 +506,57 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     // Remove JSON-style prompts from remaining content
     remainingContent = remainingContent.replace(jsonStylePattern, '');
     
-    // Now process the remaining content by splitting into chunks
-    const chunks = remainingContent.split(/\n\s*\n+/).filter(chunk => chunk.trim());
+    // Handle title-content pairs (like "Title\nLong paragraph content")
+    // Split by single newlines to preserve the title-content relationship
+    const lines = remainingContent.split('\n');
+    let i = 0;
     
-    for (const chunk of chunks) {
-      const lines = chunk.trim().split('\n').filter(line => line.trim());
+    while (i < lines.length) {
+      const currentLine = lines[i]?.trim() || '';
       
-      if (lines.length === 0) continue;
+      // Skip empty lines
+      if (!currentLine) {
+        i++;
+        continue;
+      }
       
-      // Skip if this looks like it was already processed
-      const firstLine = lines[0].trim();
-      const contentPreview = lines.slice(1).join('\n').trim().substring(0, 50);
-      const key = `${firstLine}_${contentPreview}`;
+      // Check if this is already processed
+      const contentPreview = lines[i + 1]?.trim().substring(0, 50) || '';
+      const key = `${currentLine}_${contentPreview}`;
       
-      if (processedContent.has(key)) continue;
+      if (processedContent.has(key)) {
+        i++;
+        continue;
+      }
       
-      // Determine if first line is a title
-      const isTitle = firstLine.length < 100 && 
-                     !firstLine.endsWith('.') && 
-                     !firstLine.includes('|') &&
-                     !firstLine.includes('[') &&
-                     !firstLine.startsWith('(') &&
-                     !firstLine.startsWith('{') &&
-                     /^[A-Z]/.test(firstLine) &&
-                     lines.length > 1;
+      // Check if this line looks like a title (short, starts with capital, no ending punctuation)
+      const looksLikeTitle = currentLine.length > 0 && 
+                            currentLine.length < 100 && 
+                            !currentLine.endsWith('.') && 
+                            !currentLine.endsWith('!') &&
+                            !currentLine.endsWith('?') &&
+                            !currentLine.includes('|') &&
+                            !currentLine.includes('[') &&
+                            !currentLine.startsWith('(') &&
+                            !currentLine.startsWith('{') &&
+                            /^[A-Z]/.test(currentLine);
       
-      if (isTitle) {
-        // First line is title, rest is content
-        const title = firstLine;
-        const content = lines.slice(1).join('\n').trim();
-        
-        if (content) {
-          processedContent.add(key);
-          allPrompts.push({
-            name: title,
-            promptContent: content,
-            description: "",
-            category: defaultCategory,
-            tags: [],
-            status: "draft" as const,
-            isPublic: defaultIsPublic,
-            isNsfw: false
-          });
-        }
-      } else if (lines.length === 1 && firstLine.length > 50) {
-        // Single long line - use first words as title
-        const words = firstLine.split(' ');
-        const title = words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
-        
+      // Look ahead to see if next non-empty line is long content
+      let nextLineIndex = i + 1;
+      while (nextLineIndex < lines.length && !lines[nextLineIndex]?.trim()) {
+        nextLineIndex++;
+      }
+      
+      const nextLine = lines[nextLineIndex]?.trim() || '';
+      const nextLineIsContent = nextLine.length > 100 || 
+                                (nextLine.length > 50 && /[.!?]/.test(nextLine));
+      
+      if (looksLikeTitle && nextLineIsContent) {
+        // This is a title-content pair
         processedContent.add(key);
         allPrompts.push({
-          name: title,
-          promptContent: firstLine,
+          name: currentLine,
+          promptContent: nextLine,
           description: "",
           category: defaultCategory,
           tags: [],
@@ -565,41 +564,27 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           isPublic: defaultIsPublic,
           isNsfw: false
         });
-      } else if (lines.length > 1) {
-        // Multiple lines without clear title - use first line as title if short enough
-        if (firstLine.length < 100) {
-          const content = lines.slice(1).join('\n').trim();
-          if (content) {
-            processedContent.add(key);
-            allPrompts.push({
-              name: firstLine,
-              promptContent: content,
-              description: "",
-              category: defaultCategory,
-              tags: [],
-              status: "draft" as const,
-              isPublic: defaultIsPublic,
-              isNsfw: false
-            });
-          }
-        } else {
-          // Use full chunk as content with generated title
-          const fullContent = lines.join('\n').trim();
-          const words = firstLine.split(' ');
-          const title = words.slice(0, 5).join(' ') + '...';
-          
-          processedContent.add(key);
-          allPrompts.push({
-            name: title,
-            promptContent: fullContent,
-            description: "",
-            category: defaultCategory,
-            tags: [],
-            status: "draft" as const,
-            isPublic: defaultIsPublic,
-            isNsfw: false
-          });
-        }
+        i = nextLineIndex + 1;
+      } else if (currentLine.length > 100) {
+        // This is a standalone long line - treat as content with auto-generated title
+        const words = currentLine.split(' ');
+        const title = words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
+        
+        processedContent.add(key);
+        allPrompts.push({
+          name: title,
+          promptContent: currentLine,
+          description: "",
+          category: defaultCategory,
+          tags: [],
+          status: "draft" as const,
+          isPublic: defaultIsPublic,
+          isNsfw: false
+        });
+        i++;
+      } else {
+        // Skip lines that don't fit our patterns
+        i++;
       }
     }
     
