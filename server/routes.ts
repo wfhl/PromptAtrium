@@ -311,7 +311,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get unique tags and models for dropdowns
   app.get('/api/prompts/options', isAuthenticated, async (req: any, res) => {
     try {
-      const allPrompts = await storage.getPrompts({});
+      const userId = (req.user as any).claims.sub;
+      const currentUser = await storage.getUser(userId);
+      const showNsfw = currentUser?.showNsfw ?? true;
+      
+      const allPrompts = await storage.getPrompts({ showNsfw });
       
       // Extract unique values for all array and single fields
       const tagsSet = new Set<string>();
@@ -365,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/prompts', async (req, res) => {
+  app.get('/api/prompts', async (req: any, res) => {
     try {
       const {
         userId,
@@ -380,6 +384,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         offset = "0"
       } = req.query;
 
+      // Get the current user's NSFW preference if authenticated
+      let showNsfw = true; // Default to showing all content
+      if (req.user?.claims?.sub) {
+        const currentUser = await storage.getUser(req.user.claims.sub);
+        showNsfw = currentUser?.showNsfw ?? true;
+      }
+
       const options: any = {
         userId: userId as string,
         isPublic: isPublic === "true" ? true : isPublic === "false" ? false : undefined,
@@ -391,6 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         search: search as string,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: parseInt(offset as string),
+        showNsfw: showNsfw,
       };
 
       const prompts = await storage.getPrompts(options);
@@ -1049,7 +1061,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add prompt count to each collection
       const collectionsWithCounts = await Promise.all(
         collections.map(async (collection) => {
-          const prompts = await storage.getPrompts({ collectionId: collection.id });
+          // Get user's NSFW preference for accurate count
+          let showNsfw = true;
+          if (req.user?.claims?.sub) {
+            const currentUser = await storage.getUser(req.user.claims.sub);
+            showNsfw = currentUser?.showNsfw ?? true;
+          }
+          const prompts = await storage.getPrompts({ collectionId: collection.id, showNsfw });
           return {
             ...collection,
             promptCount: prompts.length
@@ -1110,8 +1128,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Not authorized to view this collection" });
       }
       
+      // Get the current user's NSFW preference if authenticated
+      let showNsfw = true;
+      if (req.user?.claims?.sub) {
+        const currentUser = await storage.getUser(req.user.claims.sub);
+        showNsfw = currentUser?.showNsfw ?? true;
+      }
+      
       // Fetch prompts with the collectionId filter
-      const prompts = await storage.getPrompts({ collectionId });
+      const prompts = await storage.getPrompts({ collectionId, showNsfw });
       res.json(prompts);
     } catch (error) {
       console.error("Error fetching collection prompts:", error);

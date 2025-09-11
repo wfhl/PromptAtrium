@@ -62,6 +62,7 @@ export const users = pgTable("users", {
   emailVisibility: boolean("email_visibility").default(false),
   showStats: boolean("show_stats").default(true),
   showBirthday: boolean("show_birthday").default(false),
+  showNsfw: boolean("show_nsfw").default(true),
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -210,6 +211,7 @@ export const prompts = pgTable("prompts", {
   isPublic: boolean("is_public").default(true),
   isFeatured: boolean("is_featured").default(false),
   isHidden: boolean("is_hidden").default(false),
+  isNsfw: boolean("is_nsfw").default(false),
   status: varchar("status", { enum: ["draft", "published", "archived"] }).default("draft"),
   exampleImagesUrl: text("example_images_url").array(),
   notes: text("notes"),

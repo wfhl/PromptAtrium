@@ -319,6 +319,7 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
     promptIds?: string[];
+    showNsfw?: boolean;
   } = {}): Promise<any[]> {
     // Build conditions first
     const conditions = [];
@@ -390,6 +391,11 @@ export class DatabaseStorage implements IStorage {
     if (options.promptIds && options.promptIds.length > 0) {
       conditions.push(inArray(prompts.id, options.promptIds));
     }
+    
+    // Filter NSFW content based on user preference
+    if (options.showNsfw === false) {
+      conditions.push(eq(prompts.isNsfw, false));
+    }
 
     // Build query step by step to avoid TypeScript issues
     let queryBuilder = db.select({
@@ -406,6 +412,7 @@ export class DatabaseStorage implements IStorage {
       tagsNormalized: prompts.tagsNormalized,
       isPublic: prompts.isPublic,
       isFeatured: prompts.isFeatured,
+      isNsfw: prompts.isNsfw,
       status: prompts.status,
       exampleImagesUrl: prompts.exampleImagesUrl,
       notes: prompts.notes,
