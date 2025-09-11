@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ToastAction } from "@/components/ui/toast";
+import { apiRequest } from "@/lib/queryClient";
 import { saveToGoogleDrive, isGoogleDriveConnected } from "@/utils/googleDrive";
 import { 
   FileImage, Upload, Download, Share2, Plus, 
@@ -24,8 +25,10 @@ import type { Prompt } from "@shared/schema";
 export default function MetadataAnalyzerPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [promptModalOpen, setPromptModalOpen] = useState(false);
@@ -33,6 +36,53 @@ export default function MetadataAnalyzerPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const uploadImageToStorage = async (file: File): Promise<string | null> => {
+    setIsUploading(true);
+    try {
+      // Get upload URL from backend
+      const uploadResponse = await apiRequest("POST", "/api/objects/upload");
+      if (!uploadResponse.ok) {
+        throw new Error(`Failed to get upload URL: ${uploadResponse.status} ${uploadResponse.statusText}`);
+      }
+      const { uploadURL } = await uploadResponse.json();
+
+      // Upload image to object storage
+      const uploadResult = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResult.ok) {
+        throw new Error(`Failed to upload image to storage: ${uploadResult.status} ${uploadResult.statusText}`);
+      }
+
+      // Set ACL policy for the uploaded image
+      const updateResponse = await apiRequest("PUT", "/api/prompt-images", {
+        imageUrl: uploadURL,
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error(`Failed to set ACL policy: ${updateResponse.status} ${updateResponse.statusText}`);
+      }
+
+      const { objectPath } = await updateResponse.json();
+      return objectPath;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload image",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -52,6 +102,12 @@ export default function MetadataAnalyzerPage() {
       setImagePreview(e.target?.result as string);
     };
     reader.readAsDataURL(file);
+    
+    // Upload to storage for later use
+    const uploadedUrl = await uploadImageToStorage(file);
+    if (uploadedUrl) {
+      setUploadedImageUrl(uploadedUrl);
+    }
     
     await analyzeImage(file);
   };
@@ -110,6 +166,7 @@ export default function MetadataAnalyzerPage() {
   const handleReset = () => {
     setSelectedFile(null);
     setImagePreview(null);
+    setUploadedImageUrl(null);
     setMetadata(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -406,10 +463,10 @@ export default function MetadataAnalyzerPage() {
     if (metadata.dalleQuality) technicalParams.dalleQuality = metadata.dalleQuality;
     if (metadata.dalleStyle) technicalParams.dalleStyle = metadata.dalleStyle;
     
-    // Include the image preview for the modal
+    // Use the uploaded image URL instead of base64
     let exampleImages: string[] = [];
-    if (imagePreview) {
-      exampleImages = [imagePreview];
+    if (uploadedImageUrl) {
+      exampleImages = [uploadedImageUrl];
     }
     
     // Prepare prefilled data for the modal
@@ -556,11 +613,20 @@ export default function MetadataAnalyzerPage() {
                         variant="outline" 
                         size="sm"
                         onClick={addToLibrary}
-                        disabled={!metadata || !metadata.isAIGenerated}
+                        disabled={!metadata || !metadata.isAIGenerated || isUploading}
                         data-testid="button-add-library"
                       >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add to Library
+                        {isUploading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add to Library
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
