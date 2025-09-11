@@ -362,7 +362,7 @@ export default function MetadataAnalyzerPage() {
     await handleCopyJSON();
   };
 
-  const addToLibrary = async () => {
+  const addToLibrary = () => {
     if (!metadata) {
       toast({
         title: "Cannot add to library",
@@ -430,8 +430,11 @@ export default function MetadataAnalyzerPage() {
       tags: metadata.aiGenerator ? [metadata.aiGenerator, 'imported', 'metadata-analyzer'] : ['imported', 'metadata-analyzer'],
     };
     
+    // Set the prefilled data first, then open modal after a small delay
     setPrefilledPromptData(prefilled);
-    setPromptModalOpen(true);
+    setTimeout(() => {
+      setPromptModalOpen(true);
+    }, 100);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -462,7 +465,7 @@ export default function MetadataAnalyzerPage() {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Upload className="h-5 w-5" />
-                    Upload Image
+                    Select Image
                   </CardTitle>
                   <CardDescription>
                     Drag and drop an image file or click to browse. Supports all major image formats.
@@ -570,8 +573,8 @@ export default function MetadataAnalyzerPage() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Upload className="h-5 w-5" />
-                        Uploaded Image
+                        <FileImage className="h-5 w-5" />
+                        Image Preview
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
