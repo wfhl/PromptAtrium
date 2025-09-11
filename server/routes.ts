@@ -1147,6 +1147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/collections/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
+      const { updatePrompts } = req.query;
       const collection = await storage.getCollection(req.params.id);
       
       if (!collection) {
@@ -1163,6 +1164,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const collectionData = insertCollectionSchema.partial().parse(req.body);
+      
+      // If updatePrompts is true and privacy is changing, update all prompts in the collection
+      if (updatePrompts === 'true' && collectionData.isPublic !== undefined && collectionData.isPublic !== collection.isPublic) {
+        const promptsInCollection = await storage.getPrompts({ collectionId: req.params.id });
+        
+        // Update each prompt's privacy to match the collection
+        for (const prompt of promptsInCollection) {
+          await storage.updatePrompt(prompt.id, { ...prompt, isPublic: collectionData.isPublic });
+        }
+      }
+      
       const updatedCollection = await storage.updateCollection(req.params.id, collectionData);
       res.json(updatedCollection);
     } catch (error) {

@@ -103,6 +103,9 @@ export default function Library() {
   const [deletingCollection, setDeletingCollection] = useState<Collection | null>(null);
   const [deleteCollectionDialogOpen, setDeleteCollectionDialogOpen] = useState(false);
   const [deleteWithPrompts, setDeleteWithPrompts] = useState(false);
+  const [privacyUpdateDialogOpen, setPrivacyUpdateDialogOpen] = useState(false);
+  const [updatePromptsPrivacy, setUpdatePromptsPrivacy] = useState(false);
+  const [pendingCollectionData, setPendingCollectionData] = useState<CollectionFormData | null>(null);
 
   // Collection forms
   const createCollectionForm = useForm<CollectionFormData>({
@@ -214,17 +217,28 @@ export default function Library() {
   });
 
   const updateCollectionMutation = useMutation({
-    mutationFn: async (data: CollectionFormData) => {
-      return await apiRequest("PUT", `/api/collections/${selectedCollection?.id}`, data);
+    mutationFn: async ({ data, updatePrompts }: { data: CollectionFormData; updatePrompts: boolean }) => {
+      const url = updatePrompts 
+        ? `/api/collections/${selectedCollection?.id}?updatePrompts=true`
+        : `/api/collections/${selectedCollection?.id}`;
+      return await apiRequest("PUT", url, data);
     },
     onSuccess: () => {
       refetchCollections();
       queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      if (updatePromptsPrivacy) {
+        queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      }
       setEditCollectionModalOpen(false);
       setSelectedCollection(null);
+      setPrivacyUpdateDialogOpen(false);
+      setPendingCollectionData(null);
+      setUpdatePromptsPrivacy(false);
       toast({
         title: "Success",
-        description: "Collection updated successfully",
+        description: updatePromptsPrivacy 
+          ? "Collection and prompts privacy updated successfully"
+          : "Collection updated successfully",
       });
     },
     onError: (error: any) => {
@@ -422,7 +436,24 @@ export default function Library() {
   };
 
   const onEditCollectionSubmit = (data: CollectionFormData) => {
-    updateCollectionMutation.mutate(data);
+    // Check if privacy setting is changing
+    if (selectedCollection && selectedCollection.isPublic !== data.isPublic) {
+      // Show dialog to ask about updating prompts
+      setPendingCollectionData(data);
+      setPrivacyUpdateDialogOpen(true);
+    } else {
+      // No privacy change, proceed normally
+      updateCollectionMutation.mutate({ data, updatePrompts: false });
+    }
+  };
+
+  const handlePrivacyUpdateConfirm = () => {
+    if (pendingCollectionData) {
+      updateCollectionMutation.mutate({ 
+        data: pendingCollectionData, 
+        updatePrompts: updatePromptsPrivacy 
+      });
+    }
   };
 
   const openEditCollectionModal = (collection: Collection) => {
@@ -1133,6 +1164,73 @@ export default function Library() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Privacy Update Confirmation Dialog */}
+      <Dialog open={privacyUpdateDialogOpen} onOpenChange={setPrivacyUpdateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Collection Privacy</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              You are changing the collection "{selectedCollection?.name}" to {pendingCollectionData?.isPublic ? 'public' : 'private'}.
+            </p>
+            
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="collection-only"
+                  name="privacy-option"
+                  checked={!updatePromptsPrivacy}
+                  onChange={() => setUpdatePromptsPrivacy(false)}
+                />
+                <label htmlFor="collection-only" className="text-sm cursor-pointer">
+                  <div className="font-medium">Update collection only</div>
+                  <div className="text-muted-foreground">
+                    Change the collection visibility but keep individual prompt privacy settings as they are
+                  </div>
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="collection-and-prompts"
+                  name="privacy-option"
+                  checked={updatePromptsPrivacy}
+                  onChange={() => setUpdatePromptsPrivacy(true)}
+                />
+                <label htmlFor="collection-and-prompts" className="text-sm cursor-pointer">
+                  <div className="font-medium">Update collection and all prompts</div>
+                  <div className="text-muted-foreground">
+                    Make all prompts in this collection {pendingCollectionData?.isPublic ? 'public' : 'private'} as well
+                  </div>
+                </label>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPrivacyUpdateDialogOpen(false);
+                  setPendingCollectionData(null);
+                  setUpdatePromptsPrivacy(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handlePrivacyUpdateConfirm}
+                disabled={updateCollectionMutation.isPending}
+              >
+                {updateCollectionMutation.isPending ? "Updating..." : "Update"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
