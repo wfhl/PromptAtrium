@@ -9,16 +9,35 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import type { User } from "@shared/schema";
+import { PromptModal } from "@/components/PromptModal";
+import { BulkImportModal } from "@/components/BulkImportModal";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { User, Collection } from "@shared/schema";
 
 interface LayoutProps {
   children: React.ReactNode;
   onCreatePrompt?: () => void;
 }
+
+const collectionSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  isPublic: z.boolean().default(false),
+});
+
+type CollectionFormData = z.infer<typeof collectionSchema>;
 
 export function Layout({ children, onCreatePrompt }: LayoutProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -32,6 +51,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     }
     return 'dark';
   });
+  
+  // Modal states
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
+  const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
 
   // Apply theme to document
   useEffect(() => {
@@ -64,11 +88,65 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const handleDefaultCreatePrompt = () => {
-    toast({
-      title: "Create Prompt",
-      description: "Navigate to Dashboard to create new prompts",
-    });
+  // Fetch user collections for the import modal
+  const { data: collections = [] } = useQuery<Collection[]>({
+    queryKey: ["/api/collections"],
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  // Collection form
+  const createCollectionForm = useForm<CollectionFormData>({
+    resolver: zodResolver(collectionSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      isPublic: false,
+    },
+  });
+
+  // Collection creation mutation
+  const createCollectionMutation = useMutation({
+    mutationFn: async (data: CollectionFormData) => {
+      return await apiRequest("POST", "/api/collections", {
+        ...data,
+        type: "user",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      createCollectionForm.reset();
+      setCreateCollectionModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Collection created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create collection",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreatePrompt = () => {
+    setPromptModalOpen(true);
+  };
+
+  const handleCreateCollection = () => {
+    setCreateCollectionModalOpen(true);
+  };
+
+  const handleImportPrompts = () => {
+    setBulkImportModalOpen(true);
+  };
+
+  const onCreateCollectionSubmit = (data: CollectionFormData) => {
+    createCollectionMutation.mutate(data);
   };
 
   // Helper function to determine if a nav link is active
@@ -160,7 +238,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-new-menu">
                 <DropdownMenuItem 
-                  onClick={onCreatePrompt || handleDefaultCreatePrompt}
+                  onClick={handleCreatePrompt}
                   className="cursor-pointer"
                   data-testid="menu-new-prompt"
                 >
@@ -168,7 +246,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   New Prompt
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => setLocation('/library?action=new-collection')}
+                  onClick={handleCreateCollection}
                   className="cursor-pointer"
                   data-testid="menu-new-collection"
                 >
@@ -176,7 +254,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   New Collection
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => setLocation('/library?action=import')}
+                  onClick={handleImportPrompts}
                   className="cursor-pointer"
                   data-testid="menu-import-prompts"
                 >
@@ -322,7 +400,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               <Button
                 className="w-full flex items-center justify-center space-x-2 mt-2"
                 onClick={() => {
-                  onCreatePrompt ? onCreatePrompt() : handleDefaultCreatePrompt();
+                  handleCreatePrompt();
                   setMobileMenuOpen(false);
                 }}
                 data-testid="mobile-button-new-prompt"
@@ -339,6 +417,94 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
       <main>
         {children}
       </main>
+      
+      {/* Global Modals */}
+      <PromptModal
+        open={promptModalOpen}
+        onOpenChange={setPromptModalOpen}
+        prompt={null}
+        mode="create"
+      />
+      
+      <BulkImportModal
+        open={bulkImportModalOpen}
+        onOpenChange={setBulkImportModalOpen}
+        collections={collections}
+      />
+      
+      {/* Create Collection Modal */}
+      <Dialog open={createCollectionModalOpen} onOpenChange={setCreateCollectionModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Collection</DialogTitle>
+          </DialogHeader>
+          <Form {...createCollectionForm}>
+            <form onSubmit={createCollectionForm.handleSubmit(onCreateCollectionSubmit)} className="space-y-4">
+              <FormField
+                control={createCollectionForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Collection Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Creative Writing, Business Ideas" {...field} data-testid="input-collection-name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createCollectionForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe what this collection contains..."
+                        {...field}
+                        data-testid="textarea-collection-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createCollectionForm.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Make Public</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Allow others to view and use this collection
+                      </p>
+                    </div>
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4"
+                        data-testid="checkbox-collection-public"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setCreateCollectionModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createCollectionMutation.isPending}>
+                  {createCollectionMutation.isPending ? "Creating..." : "Create Collection"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
