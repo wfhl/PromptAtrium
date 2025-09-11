@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -18,56 +19,83 @@ import ProfileSettings from "@/pages/profile-settings";
 import UserProfile from "@/pages/user-profile";
 import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
+import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
+import type { User } from "@shared/schema";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const [showIntroModal, setShowIntroModal] = useState(false);
+  
+  useEffect(() => {
+    // Show intro modal if user is authenticated and hasn't completed intro
+    if (isAuthenticated && user && !(user as User).hasCompletedIntro && !(user as User).username) {
+      setShowIntroModal(true);
+    }
+  }, [isAuthenticated, user]);
+  
+  const handleIntroComplete = () => {
+    setShowIntroModal(false);
+    // Refresh user data to reflect the changes
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+  };
 
   return (
-    <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/">
-            {() => <Layout><Dashboard /></Layout>}
-          </Route>
-          <Route path="/library">
-            {() => <Layout><Library /></Layout>}
-          </Route>
-          <Route path="/community">
-            {() => <Layout><Community /></Layout>}
-          </Route>
-          <Route path="/projects">
-            {() => <Layout><Projects /></Layout>}
-          </Route>
-          <Route path="/collections">
-            {() => <Layout><Collections /></Layout>}
-          </Route>
-          <Route path="/collection/:id">
-            {() => <Layout><CollectionView /></Layout>}
-          </Route>
-          <Route path="/admin">
-            {() => <Layout><Admin /></Layout>}
-          </Route>
-          <Route path="/profile/settings">
-            {() => <Layout><ProfileSettings /></Layout>}
-          </Route>
-          <Route path="/tools/aspect-ratio-calculator">
-            {() => <Layout><AspectRatioCalculatorPage /></Layout>}
-          </Route>
-          <Route path="/tools/metadata-analyzer">
-            {() => <Layout><MetadataAnalyzerPage /></Layout>}
-          </Route>
-        </>
+    <>
+      {/* Introduction Modal for new users */}
+      {isAuthenticated && user && (
+        <IntroductionModal
+          open={showIntroModal}
+          onComplete={handleIntroComplete}
+          user={user}
+        />
       )}
-      <Route path="/user/:username">
-        {() => <Layout><UserProfile /></Layout>}
-      </Route>
-      <Route path="/invite/:code" component={Invite} />
-      <Route path="/invite" component={Invite} />
-      <Route component={NotFound} />
-    </Switch>
+      
+      <Switch>
+        {isLoading || !isAuthenticated ? (
+          <Route path="/" component={Landing} />
+        ) : (
+          <>
+            <Route path="/">
+              {() => <Layout><Dashboard /></Layout>}
+            </Route>
+            <Route path="/library">
+              {() => <Layout><Library /></Layout>}
+            </Route>
+            <Route path="/community">
+              {() => <Layout><Community /></Layout>}
+            </Route>
+            <Route path="/projects">
+              {() => <Layout><Projects /></Layout>}
+            </Route>
+            <Route path="/collections">
+              {() => <Layout><Collections /></Layout>}
+            </Route>
+            <Route path="/collection/:id">
+              {() => <Layout><CollectionView /></Layout>}
+            </Route>
+            <Route path="/admin">
+              {() => <Layout><Admin /></Layout>}
+            </Route>
+            <Route path="/profile/settings">
+              {() => <Layout><ProfileSettings /></Layout>}
+            </Route>
+            <Route path="/tools/aspect-ratio-calculator">
+              {() => <Layout><AspectRatioCalculatorPage /></Layout>}
+            </Route>
+            <Route path="/tools/metadata-analyzer">
+              {() => <Layout><MetadataAnalyzerPage /></Layout>}
+            </Route>
+          </>
+        )}
+        <Route path="/user/:username">
+          {() => <Layout><UserProfile /></Layout>}
+        </Route>
+        <Route path="/invite/:code" component={Invite} />
+        <Route path="/invite" component={Invite} />
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
