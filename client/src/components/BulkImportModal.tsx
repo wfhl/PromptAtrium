@@ -443,95 +443,115 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   };
 
   const parseGoogleDocsContent = (content: string): ParsedPrompt[] => {
-    // First, try to detect if the content has markdown headers (# Title)
-    const markdownHeaderPattern = /^#\s+/m;
-    const hasMarkdownHeaders = markdownHeaderPattern.test(content);
+    console.log("Google Docs content length:", content.length);
     
-    // Check for numbered prompts (1., 2., etc.)
-    const numberedPattern = /^\d+\.\s+/m;
-    const hasNumberedPrompts = numberedPattern.test(content);
+    let allPrompts: ParsedPrompt[] = [];
     
-    let prompts: ParsedPrompt[] = [];
+    // First, handle special formatted prompts with emoji markers
+    const emojiPromptPattern = /🧿\s*Prompt Name:\s*([^\n]+)\s*\nCode:\s*([^\n]+)\s*\n+([\s\S]*?)(?=(?:🧿\s*Prompt Name:|$))/g;
+    let match;
     
-    if (hasMarkdownHeaders) {
-      // Split by markdown headers (# at the beginning of a line)
-      // This regex matches lines that start with one or more # followed by space
-      const chunks = content.split(/\n(?=#+\s+)/).filter(chunk => chunk.trim() !== "");
+    while ((match = emojiPromptPattern.exec(content)) !== null) {
+      const [fullMatch, name, code, promptContent] = match;
       
-      prompts = chunks.map((chunk, index) => {
-        // Remove the # prefix from the first line to get the title
-        const lines = chunk.split('\n');
-        const firstLine = lines[0].replace(/^#+\s+/, '').trim();
-        const restContent = lines.slice(1).join('\n').trim();
-        
-        // Use the header as the name, truncate if too long
-        let name = firstLine;
-        if (name.length > 50) {
-          name = `${name.substring(0, 50)}...`;
-        }
-        
-        return {
-          name: name || `Prompt ${index + 1}`,
-          promptContent: restContent || firstLine,
+      if (name && promptContent) {
+        allPrompts.push({
+          name: name.trim(),
+          promptContent: promptContent.trim(),
           description: "",
           category: defaultCategory,
           tags: [],
           status: "draft" as const,
-          isPublic: defaultIsPublic
-        };
-      });
-    } else if (hasNumberedPrompts) {
-      // Split by numbered list items (1., 2., 3., etc.)
-      const chunks = content.split(/\n(?=\d+\.\s+)/).filter(chunk => chunk.trim() !== "");
-      
-      prompts = chunks.map((chunk, index) => {
-        // Remove the number prefix from the first line
-        const cleanedChunk = chunk.replace(/^\d+\.\s+/, '').trim();
-        const lines = cleanedChunk.split('\n');
-        const firstLine = lines[0].trim();
-        const restContent = lines.slice(1).join('\n').trim();
-        
-        // Extract name from quotes if present, otherwise use first line
-        let name = firstLine;
-        const quotedMatch = firstLine.match(/[""]([^""]+)[""]/);
-        if (quotedMatch) {
-          name = quotedMatch[1];
-        } else if (firstLine.length > 50) {
-          name = `${firstLine.substring(0, 50)}...`;
-        }
-        
-        return {
-          name: name || `Prompt ${index + 1}`,
-          promptContent: restContent || firstLine,
-          description: "",
-          category: defaultCategory,
-          tags: [],
-          status: "draft" as const,
-          isPublic: defaultIsPublic
-        };
-      });
-    } else {
-      // Fall back to splitting by double line breaks (paragraphs)
-      const chunks = content.split('\n\n').filter(chunk => chunk.trim() !== "");
-      
-      prompts = chunks.map((chunk, index) => {
-        const lines = chunk.trim().split('\n');
-        const firstLine = lines[0].trim();
-        const restContent = lines.slice(1).join('\n').trim();
-        
-        return {
-          name: firstLine.length > 50 ? `${firstLine.substring(0, 50)}...` : firstLine || `Prompt ${index + 1}`,
-          promptContent: restContent || firstLine,
-          description: "",
-          category: defaultCategory,
-          tags: [],
-          status: "draft" as const,
-          isPublic: defaultIsPublic
-        };
-      });
+          isPublic: defaultIsPublic,
+          isNsfw: false
+        });
+      }
     }
     
-    return prompts.filter(p => p.promptContent.trim() !== "");
+    // Remove the emoji formatted prompts from content to process the rest
+    let remainingContent = content.replace(emojiPromptPattern, '');
+    
+    // Now split the remaining content by blank lines to find regular prompts
+    const lines = remainingContent.split('\n');
+    let currentPrompt: { title: string; content: string[] } | null = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Skip empty lines
+      if (line === '') {
+        // If we have a current prompt being built, save it
+        if (currentPrompt && currentPrompt.content.length > 0) {
+          const promptContent = currentPrompt.content.join('\n').trim();
+          if (promptContent) {
+            allPrompts.push({
+              name: currentPrompt.title,
+              promptContent: promptContent,
+              description: "",
+              category: defaultCategory,
+              tags: [],
+              status: "draft" as const,
+              isPublic: defaultIsPublic,
+              isNsfw: false
+            });
+          }
+          currentPrompt = null;
+        }
+        continue;
+      }
+      
+      // Check if this line looks like a title (short, no punctuation at end except colon, not a sentence)
+      const looksLikeTitle = line.length < 50 && 
+                             !line.endsWith('.') && 
+                             !line.includes('|') &&
+                             !line.includes('[') &&
+                             !/^(A |An |The |In |On |At |Inside |Outside |Within |Behind |Under |Above |Below |Through |Around |Across |Between |Among |During |After |Before |While |Despite |Although |Because |Since |Until |Unless |Whether |Whenever |Wherever |However |Moreover |Furthermore |Nevertheless |Nonetheless |Otherwise |Therefore |Thus |Hence |Consequently |Accordingly |Meanwhile |Subsequently |Eventually |Finally |Initially |Originally |Ultimately |Generally |Specifically |Particularly |Especially |Primarily |Mainly |Mostly |Largely |Partly |Barely |Hardly |Scarcely |Nearly |Almost |Quite |Rather |Very |Extremely |Absolutely |Completely |Entirely |Totally |Fully |Partially |Slightly |Somewhat )/.test(line) &&
+                             /^[A-Z]/.test(line);
+      
+      if (looksLikeTitle && !currentPrompt) {
+        // Start a new prompt
+        currentPrompt = { title: line, content: [] };
+      } else if (currentPrompt) {
+        // Add to current prompt content
+        currentPrompt.content.push(line);
+      } else if (line.length > 100) {
+        // This is likely a standalone prompt without a title
+        // Use the first few words as the title
+        const words = line.split(' ');
+        const title = words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
+        allPrompts.push({
+          name: title,
+          promptContent: line,
+          description: "",
+          category: defaultCategory,
+          tags: [],
+          status: "draft" as const,
+          isPublic: defaultIsPublic,
+          isNsfw: false
+        });
+      }
+    }
+    
+    // Don't forget the last prompt if there is one
+    if (currentPrompt && currentPrompt.content.length > 0) {
+      const promptContent = currentPrompt.content.join('\n').trim();
+      if (promptContent) {
+        allPrompts.push({
+          name: currentPrompt.title,
+          promptContent: promptContent,
+          description: "",
+          category: defaultCategory,
+          tags: [],
+          status: "draft" as const,
+          isPublic: defaultIsPublic,
+          isNsfw: false
+        });
+      }
+    }
+    
+    console.log("Total prompts parsed:", allPrompts.length);
+    
+    return allPrompts;
   };
 
   const bulkImportMutation = useMutation({
