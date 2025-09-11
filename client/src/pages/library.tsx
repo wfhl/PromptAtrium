@@ -100,6 +100,9 @@ export default function Library() {
   const [collectionFilterType, setCollectionFilterType] = useState<string>("all");
   const [collectionSortBy, setCollectionSortBy] = useState<string>("date");
   const [collectionSortOrder, setCollectionSortOrder] = useState<"asc" | "desc">("desc");
+  const [deletingCollection, setDeletingCollection] = useState<Collection | null>(null);
+  const [deleteCollectionDialogOpen, setDeleteCollectionDialogOpen] = useState(false);
+  const [deleteWithPrompts, setDeleteWithPrompts] = useState(false);
 
   // Collection forms
   const createCollectionForm = useForm<CollectionFormData>({
@@ -234,15 +237,24 @@ export default function Library() {
   });
 
   const deleteCollectionMutation = useMutation({
-    mutationFn: async (collectionId: string) => {
-      return await apiRequest("DELETE", `/api/collections/${collectionId}`);
+    mutationFn: async ({ collectionId, deletePrompts }: { collectionId: string; deletePrompts: boolean }) => {
+      const url = deletePrompts 
+        ? `/api/collections/${collectionId}?deletePrompts=true`
+        : `/api/collections/${collectionId}?deletePrompts=false`;
+      return await apiRequest("DELETE", url);
     },
     onSuccess: () => {
       refetchCollections();
       queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      setDeleteCollectionDialogOpen(false);
+      setDeletingCollection(null);
+      setDeleteWithPrompts(false);
       toast({
         title: "Success",
-        description: "Collection deleted successfully",
+        description: deleteWithPrompts 
+          ? "Collection and all its prompts deleted successfully"
+          : "Collection deleted successfully. Prompts have been preserved.",
       });
     },
     onError: (error: any) => {
@@ -890,7 +902,10 @@ export default function Library() {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
-                                onClick={() => deleteCollectionMutation.mutate(collection.id)}
+                                onClick={() => {
+                                  setDeletingCollection(collection);
+                                  setDeleteCollectionDialogOpen(true);
+                                }}
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -1118,6 +1133,83 @@ export default function Library() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Collection Confirmation Dialog */}
+      <Dialog open={deleteCollectionDialogOpen} onOpenChange={setDeleteCollectionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete the collection "{deletingCollection?.name}"?
+            </p>
+            
+            {deletingCollection && (
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="delete-collection-only"
+                    name="delete-option"
+                    checked={!deleteWithPrompts}
+                    onChange={() => setDeleteWithPrompts(false)}
+                  />
+                  <label htmlFor="delete-collection-only" className="text-sm cursor-pointer">
+                    <div className="font-medium">Delete collection only</div>
+                    <div className="text-muted-foreground">
+                      Remove the collection but keep all prompts (they will no longer be organized in this collection)
+                    </div>
+                  </label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="delete-collection-and-prompts"
+                    name="delete-option"
+                    checked={deleteWithPrompts}
+                    onChange={() => setDeleteWithPrompts(true)}
+                  />
+                  <label htmlFor="delete-collection-and-prompts" className="text-sm cursor-pointer">
+                    <div className="font-medium text-destructive">Delete collection and all prompts</div>
+                    <div className="text-muted-foreground">
+                      Permanently delete the collection and all prompts within it
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeleteCollectionDialogOpen(false);
+                  setDeletingCollection(null);
+                  setDeleteWithPrompts(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (deletingCollection) {
+                    deleteCollectionMutation.mutate({
+                      collectionId: deletingCollection.id,
+                      deletePrompts: deleteWithPrompts,
+                    });
+                  }
+                }}
+                disabled={deleteCollectionMutation.isPending}
+              >
+                {deleteCollectionMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

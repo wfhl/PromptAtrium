@@ -375,6 +375,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
       
       // Call custom onSuccess callback if provided
       if (onSuccess) {
@@ -447,6 +448,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
       toast({
         title: "Success",
         description: "Prompt updated successfully!",

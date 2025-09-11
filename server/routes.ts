@@ -1177,6 +1177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/collections/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
+      const { deletePrompts } = req.query;
       const collection = await storage.getCollection(req.params.id);
       
       if (!collection) {
@@ -1190,6 +1191,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isSuperAdmin && collection.userId !== userId && 
           !(isCommunityAdmin && collection.type === "community")) {
         return res.status(403).json({ message: "Not authorized to delete this collection" });
+      }
+
+      // Get prompts in this collection
+      const promptsInCollection = await storage.getPrompts({ collectionId: req.params.id });
+      
+      if (deletePrompts === 'true') {
+        // Delete all prompts in the collection first
+        for (const prompt of promptsInCollection) {
+          await storage.deletePrompt(prompt.id);
+        }
+      } else {
+        // Remove collection reference from prompts (set collectionId to null)
+        for (const prompt of promptsInCollection) {
+          await storage.updatePrompt(prompt.id, { ...prompt, collectionId: null });
+        }
       }
 
       await storage.deleteCollection(req.params.id);
