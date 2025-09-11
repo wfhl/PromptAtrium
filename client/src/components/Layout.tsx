@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -212,6 +212,54 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 Community
               </Link>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    data-testid="nav-resources"
+                  >
+                    Resources
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48" data-testid="dropdown-resources">
+                  <DropdownMenuItem 
+                    onClick={() => toast({
+                      title: "Coming Soon",
+                      description: "AI Services will be available soon!",
+                    })}
+                    className="cursor-pointer"
+                    data-testid="menu-ai-services"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    AI Services
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => toast({
+                      title: "Coming Soon",
+                      description: "Learning Resources will be available soon!",
+                    })}
+                    className="cursor-pointer"
+                    data-testid="menu-learning-resources"
+                  >
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                    Learning Resources
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => toast({
+                      title: "Coming Soon",
+                      description: "Assets will be available soon!",
+                    })}
+                    className="cursor-pointer"
+                    data-testid="menu-assets"
+                  >
+                    <Image className="mr-2 h-4 w-4" />
+                    Assets
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
                   href="/admin" 
@@ -386,6 +434,63 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 Community
               </Link>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="text-muted-foreground hover:text-foreground transition-colors py-2 w-full justify-between"
+                    data-testid="mobile-nav-resources"
+                  >
+                    <span>Resources</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48" data-testid="mobile-dropdown-resources">
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "AI Services will be available soon!",
+                      });
+                      setMobileMenuOpen(false);
+                    }}
+                    className="cursor-pointer"
+                    data-testid="mobile-menu-ai-services"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    AI Services
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Learning Resources will be available soon!",
+                      });
+                      setMobileMenuOpen(false);
+                    }}
+                    className="cursor-pointer"
+                    data-testid="mobile-menu-learning-resources"
+                  >
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                    Learning Resources
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Assets will be available soon!",
+                      });
+                      setMobileMenuOpen(false);
+                    }}
+                    className="cursor-pointer"
+                    data-testid="mobile-menu-assets"
+                  >
+                    <Image className="mr-2 h-4 w-4" />
+                    Assets
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
                   href="/admin" 
