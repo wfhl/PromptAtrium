@@ -385,6 +385,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
+      // Also fetch collections for the dropdown
+      const collections = await storage.getCollections({ 
+        userId: userId,
+        isPublic: true 
+      });
+      
       const tags = Array.from(tagsSet).sort();
       const models = Array.from(modelsSet).sort();
       const categories = Array.from(categoriesSet).sort();
@@ -392,7 +398,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const promptStyles = Array.from(promptStylesSet).sort();
       const intendedGenerators = Array.from(intendedGeneratorsSet).sort();
       
-      res.json({ tags, models, categories, promptTypes, promptStyles, intendedGenerators });
+      res.json({ 
+        tags, 
+        models, 
+        categories, 
+        promptTypes, 
+        promptStyles, 
+        intendedGenerators,
+        collections: collections.map(c => ({ id: c.id, name: c.name })) 
+      });
     } catch (error) {
       console.error('Error fetching prompt options:', error);
       res.status(500).json({ message: 'Failed to fetch options' });
@@ -406,10 +420,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPublic,
         isFeatured,
         category,
+        type,
+        style,
+        generator,
+        model,
+        collection,
         status,
         statusNotEqual,
         tags,
         search,
+        sortBy,
         limit,
         offset = "0"
       } = req.query;
@@ -426,14 +446,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPublic: isPublic === "true" ? true : isPublic === "false" ? false : undefined,
         isFeatured: isFeatured === "true",
         category: category as string,
+        promptType: type as string,
+        promptStyle: style as string,
+        intendedGenerator: generator as string,
+        collectionId: collection as string,
         status: status as string,
         statusNotEqual: statusNotEqual as string,
         tags: tags ? (tags as string).split(",") : undefined,
         search: search as string,
+        sortBy: sortBy as string,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: parseInt(offset as string),
         showNsfw: showNsfw,
       };
+      
+      // Handle recommended models filter (array)
+      if (model) {
+        options.recommendedModels = [model as string];
+      }
 
       const prompts = await storage.getPrompts(options);
       res.json(prompts);
