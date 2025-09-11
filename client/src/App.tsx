@@ -16,6 +16,8 @@ import CollectionView from "@/pages/CollectionView";
 import Invite from "@/pages/invite";
 import ProfileSettings from "@/pages/profile-settings";
 import UserProfile from "@/pages/user-profile";
+import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
+import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -51,6 +53,8 @@ function Router() {
           <Route path="/profile/settings">
             {() => <Layout><ProfileSettings /></Layout>}
           </Route>
+          <Route path="/tools/aspect-ratio-calculator" component={AspectRatioCalculatorPage} />
+          <Route path="/tools/metadata-analyzer" component={MetadataAnalyzerPage} />
         </>
       )}
       <Route path="/user/:username">

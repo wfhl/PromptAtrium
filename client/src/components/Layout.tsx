@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -260,6 +260,34 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-[16px]"
+                    data-testid="nav-tools"
+                  >
+                    Tools
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48" data-testid="dropdown-tools">
+                  <DropdownMenuItem asChild>
+                    <Link href="/tools/aspect-ratio-calculator" className="flex items-center cursor-pointer" data-testid="menu-aspect-ratio-calculator">
+                      <Image className="mr-2 h-4 w-4" />
+                      Aspect Ratio Calculator
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/tools/metadata-analyzer" className="flex items-center cursor-pointer" data-testid="menu-metadata-analyzer">
+                      <FileSearch className="mr-2 h-4 w-4" />
+                      Metadata Analyzer
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
                   href="/admin" 
@@ -491,6 +519,44 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="text-muted-foreground hover:text-foreground transition-colors py-2 w-full justify-between"
+                    data-testid="mobile-nav-tools"
+                  >
+                    <span>Tools</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48" data-testid="mobile-dropdown-tools">
+                  <DropdownMenuItem asChild>
+                    <Link 
+                      href="/tools/aspect-ratio-calculator" 
+                      className="flex items-center cursor-pointer" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      data-testid="mobile-menu-aspect-ratio-calculator"
+                    >
+                      <Image className="mr-2 h-4 w-4" />
+                      Aspect Ratio Calculator
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link 
+                      href="/tools/metadata-analyzer" 
+                      className="flex items-center cursor-pointer" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      data-testid="mobile-menu-metadata-analyzer"
+                    >
+                      <FileSearch className="mr-2 h-4 w-4" />
+                      Metadata Analyzer
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
                   href="/admin" 

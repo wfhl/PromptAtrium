@@ -1,0 +1,247 @@
+{
+  "name": "image-metadata-analyzer",
+  "version": "1.0.0",
+  "description": "Standalone Image Metadata Analyzer with comprehensive AI detection",
+  "dependencies": {
+    "frontend": {
+      "react": {
+        "version": "^18.2.0",
+        "required": true,
+        "description": "Core React library for UI components"
+      },
+      "react-dom": {
+        "version": "^18.2.0",
+        "required": true,
+        "description": "React DOM rendering"
+      },
+      "@tanstack/react-query": {
+        "version": "^5.0.0",
+        "required": true,
+        "description": "Data fetching and caching library"
+      },
+      "react-dropzone": {
+        "version": "^14.2.0",
+        "required": true,
+        "description": "File upload with drag & drop functionality"
+      },
+      "lucide-react": {
+        "version": "^0.400.0",
+        "required": true,
+        "description": "Icon library for UI components"
+      },
+      "@radix-ui/react-accordion": {
+        "version": "^1.1.0",
+        "required": true,
+        "description": "Accessible accordion component"
+      },
+      "@radix-ui/react-dialog": {
+        "version": "^1.0.0",
+        "required": true,
+        "description": "Modal dialog component"
+      },
+      "@radix-ui/react-dropdown-menu": {
+        "version": "^2.0.0",
+        "required": true,
+        "description": "Dropdown menu component"
+      },
+      "@radix-ui/react-slot": {
+        "version": "^1.0.0",
+        "required": true,
+        "description": "Flexible component composition"
+      },
+      "class-variance-authority": {
+        "version": "^0.7.0",
+        "required": true,
+        "description": "Component variant utility"
+      },
+      "clsx": {
+        "version": "^2.0.0",
+        "required": true,
+        "description": "Conditional className utility"
+      },
+      "tailwind-merge": {
+        "version": "^2.0.0",
+        "required": true,
+        "description": "Tailwind CSS class merging utility"
+      }
+    },
+    "backend": {
+      "express": {
+        "version": "^4.18.0",
+        "required": true,
+        "description": "Web application framework for Node.js"
+      },
+      "multer": {
+        "version": "^1.4.0",
+        "required": true,
+        "description": "Multipart form data handling for file uploads"
+      },
+      "sharp": {
+        "version": "^0.32.0",
+        "required": true,
+        "description": "High-performance image processing library"
+      },
+      "exif-reader": {
+        "version": "^2.0.0",
+        "required": false,
+        "description": "EXIF data reading (alternative to ExifTool)"
+      }
+    },
+    "devDependencies": {
+      "typescript": {
+        "version": "^5.0.0",
+        "required": true,
+        "description": "TypeScript compiler"
+      },
+      "@types/express": {
+        "version": "^4.17.0",
+        "required": true,
+        "description": "TypeScript types for Express"
+      },
+      "@types/multer": {
+        "version": "^1.4.0",
+        "required": true,
+        "description": "TypeScript types for Multer"
+      },
+      "@types/node": {
+        "version": "^20.0.0",
+        "required": true,
+        "description": "TypeScript types for Node.js"
+      },
+      "@types/react": {
+        "version": "^18.2.0",
+        "required": true,
+        "description": "TypeScript types for React"
+      },
+      "@types/react-dom": {
+        "version": "^18.2.0",
+        "required": true,
+        "description": "TypeScript types for React DOM"
+      }
+    },
+    "peerDependencies": {
+      "tailwindcss": {
+        "version": "^3.0.0",
+        "required": true,
+        "description": "CSS framework for component styling"
+      },
+      "autoprefixer": {
+        "version": "^10.0.0",
+        "required": true,
+        "description": "CSS vendor prefixing"
+      },
+      "postcss": {
+        "version": "^8.0.0",
+        "required": true,
+        "description": "CSS processing tool"
+      }
+    },
+    "optionalDependencies": {
+      "redis": {
+        "version": "^4.0.0",
+        "required": false,
+        "description": "Redis client for caching (performance optimization)"
+      },
+      "bull": {
+        "version": "^4.0.0",
+        "required": false,
+        "description": "Background job processing queue"
+      },
+      "winston": {
+        "version": "^3.0.0",
+        "required": false,
+        "description": "Logging library for production use"
+      },
+      "helmet": {
+        "version": "^7.0.0",
+        "required": false,
+        "description": "Security middleware for Express"
+      },
+      "express-rate-limit": {
+        "version": "^7.0.0",
+        "required": false,
+        "description": "Rate limiting middleware"
+      },
+      "cors": {
+        "version": "^2.8.0",
+        "required": false,
+        "description": "Cross-origin resource sharing"
+      }
+    }
+  },
+  "systemDependencies": {
+    "exiftool": {
+      "version": "^12.0.0",
+      "required": true,
+      "description": "System utility for reading image metadata",
+      "installation": {
+        "ubuntu": "sudo apt-get install exiftool",
+        "macos": "brew install exiftool",
+        "windows": "Download from https://exiftool.org/",
+        "docker": "RUN apt-get update && apt-get install -y exiftool"
+      }
+    },
+    "node": {
+      "version": "^18.0.0",
+      "required": true,
+      "description": "Node.js runtime (minimum version 18.0.0)"
+    }
+  },
+  "packageManagerCommands": {
+    "npm": {
+      "install_all": "npm install @tanstack/react-query react-dropzone lucide-react @radix-ui/react-accordion @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-slot class-variance-authority clsx tailwind-merge express multer sharp typescript @types/express @types/multer @types/node @types/react @types/react-dom",
+      "install_frontend": "npm install @tanstack/react-query react-dropzone lucide-react @radix-ui/react-accordion @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-slot class-variance-authority clsx tailwind-merge",
+      "install_backend": "npm install express multer sharp",
+      "install_types": "npm install -D typescript @types/express @types/multer @types/node @types/react @types/react-dom",
+      "install_optional": "npm install redis bull winston helmet express-rate-limit cors"
+    },
+    "yarn": {
+      "install_all": "yarn add @tanstack/react-query react-dropzone lucide-react @radix-ui/react-accordion @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-slot class-variance-authority clsx tailwind-merge express multer sharp typescript @types/express @types/multer @types/node @types/react @types/react-dom",
+      "install_frontend": "yarn add @tanstack/react-query react-dropzone lucide-react @radix-ui/react-accordion @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-slot class-variance-authority clsx tailwind-merge",
+      "install_backend": "yarn add express multer sharp",
+      "install_types": "yarn add -D typescript @types/express @types/multer @types/node @types/react @types/react-dom",
+      "install_optional": "yarn add redis bull winston helmet express-rate-limit cors"
+    },
+    "pnpm": {
+      "install_all": "pnpm add @tanstack/react-query react-dropzone lucide-react @radix-ui/react-accordion @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-slot class-variance-authority clsx tailwind-merge express multer sharp typescript @types/express @types/multer @types/node @types/react @types/react-dom",
+      "install_frontend": "pnpm add @tanstack/react-query react-dropzone lucide-react @radix-ui/react-accordion @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-slot class-variance-authority clsx tailwind-merge",
+      "install_backend": "pnpm add express multer sharp",
+      "install_types": "pnpm add -D typescript @types/express @types/multer @types/node @types/react @types/react-dom",
+      "install_optional": "pnpm add redis bull winston helmet express-rate-limit cors"
+    }
+  },
+  "compatibility": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0",
+    "react": ">=18.0.0",
+    "typescript": ">=5.0.0"
+  },
+  "alternatives": {
+    "ui_frameworks": {
+      "chakra-ui": "Alternative to Radix UI components",
+      "material-ui": "Google's Material Design components",
+      "ant-design": "Enterprise UI library",
+      "mantine": "Modern React components library"
+    },
+    "styling": {
+      "styled-components": "CSS-in-JS alternative to Tailwind",
+      "emotion": "Performant CSS-in-JS library",
+      "sass": "CSS preprocessor alternative"
+    },
+    "state_management": {
+      "swr": "Alternative to React Query",
+      "apollo-client": "GraphQL client with caching",
+      "zustand": "Lightweight state management"
+    }
+  },
+  "bundleSize": {
+    "frontend_minimal": "~2.5MB gzipped",
+    "frontend_full": "~4.2MB gzipped",
+    "backend": "~15MB including node_modules"
+  },
+  "performance": {
+    "analysis_time": "200-1000ms per image",
+    "memory_usage": "50-200MB per analysis",
+    "concurrent_limit": "5 analyses recommended"
+  }
+}
