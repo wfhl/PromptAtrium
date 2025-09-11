@@ -55,6 +55,7 @@ const profileSchema = z.object({
   emailVisibility: z.boolean().default(false),
   showStats: z.boolean().default(true),
   showBirthday: z.boolean().default(false),
+  showNsfw: z.boolean().default(true),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -101,6 +102,7 @@ export default function ProfileSettings() {
         emailVisibility: typedUser.emailVisibility || false,
         showStats: typedUser.showStats !== false, // Default to true
         showBirthday: typedUser.showBirthday || false,
+        showNsfw: typedUser.showNsfw !== false, // Default to true
       });
 
       if (typedUser.customSocials && Array.isArray(typedUser.customSocials)) {
@@ -506,6 +508,19 @@ export default function ProfileSettings() {
                   checked={form.watch("showBirthday")}
                   onCheckedChange={(checked) => form.setValue("showBirthday", checked)}
                   data-testid="switch-show-birthday"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="showNsfw">Show NSFW Content</Label>
+                  <p className="text-sm text-muted-foreground">Display prompts marked as NSFW in your feed</p>
+                </div>
+                <Switch
+                  id="showNsfw"
+                  checked={form.watch("showNsfw")}
+                  onCheckedChange={(checked) => form.setValue("showNsfw", checked)}
+                  data-testid="switch-show-nsfw"
                 />
               </div>
             </CardContent>
