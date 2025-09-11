@@ -22,6 +22,7 @@ interface ImageMetadata {
   steps?: number;
   cfgScale?: number;
   sampler?: string;
+  scheduler?: string;
   seed?: string | number;
   model?: string;
   
@@ -551,6 +552,12 @@ export class MetadataExtractor {
     const samplerMatch = params.match(/Sampler:\s*([^,\n]+)/i);
     if (samplerMatch) {
       metadata.sampler = samplerMatch[1].trim();
+    }
+    
+    // Extract scheduler (also called Schedule type)
+    const schedulerMatch = params.match(/(?:Schedule type|Scheduler):\s*([^,\n]+)/i);
+    if (schedulerMatch) {
+      metadata.scheduler = schedulerMatch[1].trim();
     }
     
     // Extract model

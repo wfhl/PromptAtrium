@@ -523,6 +523,12 @@ export default function MetadataAnalyzerPage() {
                                     <span>{metadata.sampler}</span>
                                   </div>
                                 )}
+                                {metadata.scheduler && (
+                                  <div className="flex justify-between py-1 col-span-2">
+                                    <span className="text-muted-foreground">Scheduler:</span>
+                                    <span>{metadata.scheduler}</span>
+                                  </div>
+                                )}
                                 {metadata.model && (
                                   <div className="flex justify-between py-1 col-span-2">
                                     <span className="text-muted-foreground">Model:</span>
