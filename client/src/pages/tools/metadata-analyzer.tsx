@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { ToastAction } from "@/components/ui/toast";
 import { 
   FileImage, Upload, Download, RotateCcw, Share2, Plus, 
   Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch, ArrowRight 
@@ -706,6 +707,20 @@ export default function MetadataAnalyzerPage() {
         onOpenChange={setPromptModalOpen}
         prompt={prefilledPromptData as any}
         mode="create"
+        onSuccess={(createdPrompt) => {
+          toast({
+            title: "Prompt Added to Library!",
+            description: `"${createdPrompt.name}" has been successfully saved to your library.`,
+            action: (
+              <ToastAction 
+                altText="View in Library"
+                onClick={() => setLocation(`/library?highlight=${createdPrompt.id}`)}
+              >
+                View in Library
+              </ToastAction>
+            ),
+          });
+        }}
       />
     </Layout>
   );

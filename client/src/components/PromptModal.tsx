@@ -19,9 +19,10 @@ interface PromptModalProps {
   prompt?: Prompt | null;
   mode: "create" | "edit";
   defaultCollectionId?: string;
+  onSuccess?: (prompt: Prompt) => void;
 }
 
-export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectionId }: PromptModalProps) {
+export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectionId, onSuccess }: PromptModalProps) {
   const [showCreateCollection, setShowCreateCollection] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDescription, setNewCollectionDescription] = useState("");
@@ -336,9 +337,10 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           }
         })() : null,
       };
-      await apiRequest("POST", "/api/prompts", payload);
+      const response = await apiRequest("POST", "/api/prompts", payload);
+      return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (createdPrompt) => {
       // Invalidate all prompt-related queries to ensure immediate UI updates
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -347,10 +349,17 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
-      toast({
-        title: "Success",
-        description: "Prompt created successfully!",
-      });
+      
+      // Call custom onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess(createdPrompt);
+      } else {
+        toast({
+          title: "Success",
+          description: "Prompt created successfully!",
+        });
+      }
+      
       onOpenChange(false);
       resetForm();
     },
