@@ -406,9 +406,11 @@ export default function MetadataAnalyzerPage() {
     if (metadata.dalleQuality) technicalParams.dalleQuality = metadata.dalleQuality;
     if (metadata.dalleStyle) technicalParams.dalleStyle = metadata.dalleStyle;
     
-    // Don't include the base64 image directly as it can be too large
-    // Users can add images to the prompt after creation if needed
+    // Include the image preview for the modal
     let exampleImages: string[] = [];
+    if (imagePreview) {
+      exampleImages = [imagePreview];
+    }
     
     // Prepare prefilled data for the modal
     const prefilled: Partial<Prompt> = {
