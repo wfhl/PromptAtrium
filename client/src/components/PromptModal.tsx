@@ -725,18 +725,6 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="nsfw"
-              checked={formData.isNsfw}
-              onCheckedChange={(checked) => setFormData({ ...formData, isNsfw: !!checked })}
-              data-testid="checkbox-nsfw"
-            />
-            <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Mark as NSFW (Not Safe For Work)
-            </Label>
-          </div>
-
           <div>
             <Label htmlFor="tags">Tags</Label>
             <Input
@@ -848,6 +836,18 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">Upload up to 5 example images to showcase your prompt results</p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="nsfw"
+              checked={formData.isNsfw}
+              onCheckedChange={(checked) => setFormData({ ...formData, isNsfw: !!checked })}
+              data-testid="checkbox-nsfw"
+            />
+            <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Mark as NSFW (Not Safe For Work)
+            </Label>
           </div>
 
           <div>
