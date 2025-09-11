@@ -70,8 +70,10 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     variables: "",
   });
 
-  // Update form data when prompt or mode changes
+  // Update form data when prompt or mode changes or modal opens
   useEffect(() => {
+    if (!open) return; // Don't update if modal is closed
+    
     if (mode === "edit" && prompt) {
       // Populate form with existing prompt data for editing
       setFormData({
@@ -147,7 +149,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         });
       }
     }
-  }, [prompt, mode, defaultCollectionId]);
+  }, [prompt, mode, defaultCollectionId, open]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();

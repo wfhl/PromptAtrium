@@ -257,8 +257,12 @@ export default function CollectionView() {
   });
 
   const handleEditPrompt = (prompt: Prompt) => {
+    // Ensure prompt is set before opening modal
     setEditingPrompt(prompt);
-    setPromptModalOpen(true);
+    // Use setTimeout to ensure state is updated before opening modal
+    setTimeout(() => {
+      setPromptModalOpen(true);
+    }, 0);
   };
 
   const handleCreatePrompt = () => {
