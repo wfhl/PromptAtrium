@@ -35,7 +35,7 @@ const CardBeamAnimation = () => {
     {
       category: "1 Architecture",
       colors: ["#667eea", "#764ba2"],
-      image: "PromptCardBeamImages/0_1villa.jpg", // YOUR IMAGE HERE
+      image: "client/public/PromptCardBeamImages/0_1villa.jpg", // YOUR IMAGE HERE
       text: `// AI Architecture Generator
 const generateMansion = async () => {
   const prompt = \`Luxurious mansion in Monaco villa style, 
