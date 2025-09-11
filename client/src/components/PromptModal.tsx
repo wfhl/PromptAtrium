@@ -378,11 +378,14 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       queryClient.invalidateQueries({ 
         predicate: (query) => {
           const key = query.queryKey[0];
-          return typeof key === 'string' && key.startsWith('/api/prompts');
+          return typeof key === 'string' && (
+            key.startsWith('/api/prompts') || 
+            key.includes('/prompts') || // This catches /api/collections/:id/prompts
+            key.startsWith('/api/collections')
+          );
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
       
       // Call custom onSuccess callback if provided
       if (onSuccess) {
@@ -450,12 +453,15 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       queryClient.invalidateQueries({ 
         predicate: (query) => {
           const key = query.queryKey[0];
-          return typeof key === 'string' && key.startsWith('/api/prompts');
+          return typeof key === 'string' && (
+            key.startsWith('/api/prompts') || 
+            key.includes('/prompts') || // This catches /api/collections/:id/prompts
+            key.startsWith('/api/collections')
+          );
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
       toast({
         title: "Success",
         description: "Prompt updated successfully!",
