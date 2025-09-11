@@ -18,7 +18,7 @@ import {
 import { PromptCard } from "@/components/PromptCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Prompt, User, Activity as ActivityType } from "@shared/schema";
+import type { Prompt, User, Activity as ActivityType, Collection } from "@shared/schema";
 
 export default function Community() {
   const { isLoading, isAuthenticated, user } = useAuth();
@@ -26,6 +26,7 @@ export default function Community() {
   const isSuperAdmin = (user as any)?.role === "super_admin";
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -112,6 +113,13 @@ export default function Community() {
       refetch();
     }
   }, [promptsSubTab, activeTab, isAuthenticated]);
+  
+  // Fetch public collections
+  const { data: publicCollections = [] } = useQuery<(Collection & { promptCount?: number; user?: User })[]>({
+    queryKey: [`/api/collections?isPublic=true&search=${collectionSearchQuery}&limit=50`],
+    enabled: isAuthenticated && activeTab === "collections",
+    retry: false,
+  });
   
   // Fetch filter options from API
   useEffect(() => {
@@ -301,22 +309,31 @@ export default function Community() {
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
-            <BookOpen className="h-4 w-4 mr-2" />
-            Prompts
+            <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Prompts</span>
+            <span className="sm:hidden">Prompts</span>
+          </TabsTrigger>
+          <TabsTrigger value="collections" className="text-xs md:text-sm" data-testid="tab-collections">
+            <Folder className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Collections</span>
+            <span className="sm:hidden">Collect</span>
           </TabsTrigger>
           <TabsTrigger value="users" className="text-xs md:text-sm" data-testid="tab-users">
-            <Users className="h-4 w-4 mr-2" />
-            Users
+            <Users className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Users</span>
+            <span className="sm:hidden">Users</span>
           </TabsTrigger>
           <TabsTrigger value="followed" className="text-xs md:text-sm" data-testid="tab-followed">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Followed
+            <UserPlus className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Followed</span>
+            <span className="sm:hidden">Follow</span>
           </TabsTrigger>
           <TabsTrigger value="activity" className="text-xs md:text-sm" data-testid="tab-activity">
-            <Activity className="h-4 w-4 mr-2" />
-            Activity
+            <Activity className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Activity</span>
+            <span className="sm:hidden">Active</span>
           </TabsTrigger>
         </TabsList>
 
@@ -553,6 +570,98 @@ export default function Community() {
                   </Link>
                 </CardContent>
               </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Collections Tab */}
+        <TabsContent value="collections" className="space-y-4">
+          {/* Search Bar for Collections */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search public collections..."
+                value={collectionSearchQuery}
+                onChange={(e) => setCollectionSearchQuery(e.target.value)}
+                className="pl-10 pr-4"
+                data-testid="input-search-collections"
+              />
+            </div>
+          </div>
+
+          {/* Collections Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="section-community-collections">
+            {publicCollections.length > 0 ? (
+              publicCollections.map((collection) => (
+                <Link key={collection.id} href={`/collection/${collection.id}`}>
+                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer" data-testid={`collection-card-${collection.id}`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <Folder className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg text-foreground line-clamp-1" data-testid={`text-collection-name-${collection.id}`}>
+                              {collection.name}
+                            </h3>
+                            {collection.user && (
+                              <p className="text-sm text-muted-foreground">
+                                by @{collection.user.username || collection.user.firstName}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {collection.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3" data-testid={`text-collection-desc-${collection.id}`}>
+                          {collection.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <BookOpen className="h-3 w-3" />
+                            <span>{collection.promptCount || 0} prompts</span>
+                          </div>
+                        </div>
+                        {collection.type === "community" && (
+                          <Badge variant="secondary">Community</Badge>
+                        )}
+                        {collection.type === "global" && (
+                          <Badge variant="default">Global</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-full">
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Folder className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No public collections found</h3>
+                    <p className="text-muted-foreground mb-6">
+                      {collectionSearchQuery
+                        ? "Try adjusting your search to discover more collections."
+                        : "Be the first to share a collection with the community!"}
+                    </p>
+                    <Link href="/collections">
+                      <Button data-testid="button-visit-collections">
+                        <Folder className="h-4 w-4 mr-2" />
+                        Create a Collection
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         </TabsContent>

@@ -97,7 +97,7 @@ export interface IStorage {
   deleteProject(id: string): Promise<void>;
   
   // Collection operations
-  getCollections(options?: { userId?: string; communityId?: string; type?: string }): Promise<Collection[]>;
+  getCollections(options?: { userId?: string; communityId?: string; type?: string; isPublic?: boolean; search?: string; limit?: number; offset?: number; }): Promise<Collection[]>;
   getCollection(id: string): Promise<Collection | undefined>;
   createCollection(collection: InsertCollection): Promise<Collection>;
   updateCollection(id: string, collection: Partial<InsertCollection>): Promise<Collection>;
@@ -620,7 +620,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Collection operations
-  async getCollections(options: { userId?: string; communityId?: string; type?: string } = {}): Promise<(Collection & { promptCount?: number })[]> {
+  async getCollections(options: { userId?: string; communityId?: string; type?: string; isPublic?: boolean; search?: string; limit?: number; offset?: number; } = {}): Promise<(Collection & { promptCount?: number })[]> {
     let query = db.select().from(collections).$dynamic();
     
     const conditions = [];
@@ -637,11 +637,34 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(collections.type, options.type as any));
     }
     
+    if (options.isPublic !== undefined) {
+      conditions.push(eq(collections.isPublic, options.isPublic));
+    }
+    
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(collections.name, `%${options.search}%`),
+          ilike(collections.description, `%${options.search}%`)
+        )
+      );
+    }
+    
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
     
-    const collectionsData = await query.orderBy(desc(collections.updatedAt));
+    let collectionsQuery = query.orderBy(desc(collections.updatedAt));
+    
+    if (options.limit) {
+      collectionsQuery = collectionsQuery.limit(options.limit);
+    }
+    
+    if (options.offset) {
+      collectionsQuery = collectionsQuery.offset(options.offset);
+    }
+    
+    const collectionsData = await collectionsQuery;
     
     // Add prompt count for each collection
     const collectionsWithCount = await Promise.all(

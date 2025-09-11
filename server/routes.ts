@@ -1106,19 +1106,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/collections', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const { communityId, type } = req.query;
+      const { communityId, type, isPublic, search, limit, offset } = req.query;
       
       const options: any = {};
-      if (!communityId && !type) {
+      if (isPublic === 'true') {
+        // For public collections, don't filter by userId
+        options.isPublic = true;
+      } else if (!communityId && !type) {
         // Default: get user's personal collections
         options.userId = userId;
       }
       if (communityId) options.communityId = communityId as string;
       if (type) options.type = type as string;
+      if (search) options.search = search as string;
+      if (limit) options.limit = parseInt(limit as string, 10);
+      if (offset) options.offset = parseInt(offset as string, 10);
       
       const collections = await storage.getCollections(options);
       
-      // Add prompt count to each collection
+      // Add prompt count and user info to each collection
       const collectionsWithCounts = await Promise.all(
         collections.map(async (collection) => {
           // Get user's NSFW preference for accurate count
@@ -1128,9 +1134,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             showNsfw = currentUser?.showNsfw ?? true;
           }
           const prompts = await storage.getPrompts({ collectionId: collection.id, showNsfw });
+          
+          // Get user info if this is a public collection
+          let user = null;
+          if (collection.userId) {
+            user = await storage.getUser(collection.userId);
+          }
+          
           return {
             ...collection,
-            promptCount: prompts.length
+            promptCount: prompts.length,
+            user: user ? {
+              id: user.id,
+              username: user.username,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              profileImageUrl: user.profileImageUrl
+            } : null
           };
         })
       );
