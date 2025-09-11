@@ -2,7 +2,7 @@
 
 ## Overview
 
-PromptAtrium is a multi-user web application that serves as a central hub for managing, sharing, and refining AI prompts. It combines the structure of a library with the communal energy of a creative platform, allowing users to store, discover, rate, and collaborate on AI prompts. The application supports personal and shared prompt libraries, advanced metadata management, community features like ratings and favorites, and project/collection organization.
+PromptAtrium is a multi-user web application that serves as a central hub for managing, sharing, and refining AI prompts. It combines the structure of a library with the communal energy of a creative platform, allowing users to store, discover, rate, and collaborate on AI prompts. The application supports personal and shared prompt libraries, advanced metadata management, community features like ratings and favorites, project/collection organization, and comprehensive NSFW content management.
 
 ## User Preferences
 
@@ -53,6 +53,13 @@ Preferred communication style: Simple, everyday language.
 - **Validation**: Zod schemas for request/response validation
 - **Error Handling**: Centralized error middleware with structured error responses
 - **Logging**: Request/response logging with timing and JSON response capture
+
+### NSFW Content Management
+- **Database Schema**: Prompts have `is_nsfw` boolean field (default false), Users have `show_nsfw` preference (default true)
+- **Content Filtering**: Backend automatically filters NSFW prompts based on user preferences across all endpoints
+- **User Controls**: Toggle in profile settings to show/hide NSFW content, checkbox in prompt creation/edit forms
+- **Bulk Import**: CSV import supports NSFW field for marking content during bulk operations
+- **Default Behavior**: Users see all content by default, must opt-out of NSFW content visibility
 
 ## External Dependencies
 
