@@ -773,7 +773,6 @@ export function PromptCard({
       isPublic: prompt.isPublic,
       intendedGenerator: prompt.intendedGenerator,
       technicalParams: prompt.technicalParams,
-      imageMetadata: prompt.imageMetadata,
     };
     
     const dataStr = JSON.stringify(promptData, null, 2);
