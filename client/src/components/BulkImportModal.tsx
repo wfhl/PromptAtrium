@@ -443,13 +443,44 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   };
 
   const parseGoogleDocsContent = (content: string): ParsedPrompt[] => {
-    // First, try to detect if the content has numbered prompts (1., 2., etc.)
+    // First, try to detect if the content has markdown headers (# Title)
+    const markdownHeaderPattern = /^#\s+/m;
+    const hasMarkdownHeaders = markdownHeaderPattern.test(content);
+    
+    // Check for numbered prompts (1., 2., etc.)
     const numberedPattern = /^\d+\.\s+/m;
     const hasNumberedPrompts = numberedPattern.test(content);
     
     let prompts: ParsedPrompt[] = [];
     
-    if (hasNumberedPrompts) {
+    if (hasMarkdownHeaders) {
+      // Split by markdown headers (# at the beginning of a line)
+      // This regex matches lines that start with one or more # followed by space
+      const chunks = content.split(/\n(?=#+\s+)/).filter(chunk => chunk.trim() !== "");
+      
+      prompts = chunks.map((chunk, index) => {
+        // Remove the # prefix from the first line to get the title
+        const lines = chunk.split('\n');
+        const firstLine = lines[0].replace(/^#+\s+/, '').trim();
+        const restContent = lines.slice(1).join('\n').trim();
+        
+        // Use the header as the name, truncate if too long
+        let name = firstLine;
+        if (name.length > 50) {
+          name = `${name.substring(0, 50)}...`;
+        }
+        
+        return {
+          name: name || `Prompt ${index + 1}`,
+          promptContent: restContent || firstLine,
+          description: "",
+          category: defaultCategory,
+          tags: [],
+          status: "draft" as const,
+          isPublic: defaultIsPublic
+        };
+      });
+    } else if (hasNumberedPrompts) {
       // Split by numbered list items (1., 2., 3., etc.)
       const chunks = content.split(/\n(?=\d+\.\s+)/).filter(chunk => chunk.trim() !== "");
       
@@ -500,7 +531,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
       });
     }
     
-    return prompts;
+    return prompts.filter(p => p.promptContent.trim() !== "");
   };
 
   const bulkImportMutation = useMutation({
@@ -822,7 +853,12 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div>
-                <strong>Google Docs:</strong> Each paragraph becomes a separate prompt. The first line is used as the name.
+                <strong>Google Docs:</strong> Supports multiple formats:
+                <ul className="ml-4 mt-1 text-xs">
+                  <li>• Markdown headers (# Title) - Each header starts a new prompt</li>
+                  <li>• Numbered lists (1., 2., 3.) - Each number starts a new prompt</li>
+                  <li>• Paragraphs - Each double line break creates a new prompt</li>
+                </ul>
               </div>
               <div>
                 <strong>Google Sheets:</strong> Expects columns: name, prompt/content, description, category, tags
