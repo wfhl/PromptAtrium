@@ -141,6 +141,55 @@ export default function MetadataAnalyzerPage() {
     }
   };
 
+  const shareResults = async () => {
+    if (!metadata) return;
+    
+    // Create a shareable URL with the metadata
+    const shareableData = {
+      image: selectedFile?.name,
+      ...metadata
+    };
+    
+    // For now, copy a summary to clipboard
+    const shareText = `Image Metadata Analysis\n\nFile: ${selectedFile?.name}\n${
+      metadata.isAIGenerated ? `AI Generator: ${metadata.aiGenerator}\n` : ''
+    }${
+      metadata.prompt ? `Prompt: ${metadata.prompt.substring(0, 100)}...\n` : ''
+    }Dimensions: ${metadata.dimensionString}\nAspect Ratio: ${metadata.aspectRatio}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast({
+        title: "Share Ready",
+        description: "Analysis summary copied to clipboard",
+      });
+    } catch (err) {
+      toast({
+        title: "Share failed",
+        description: "Unable to prepare share data",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const addToLibrary = async () => {
+    if (!metadata || !metadata.prompt) {
+      toast({
+        title: "Cannot add to library",
+        description: "No AI prompt found in image metadata",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // For now, show a success message
+    // In the future, this would integrate with the prompts library
+    toast({
+      title: "Added to Library",
+      description: `Prompt from ${selectedFile?.name} has been saved to your library`,
+    });
+  };
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -240,7 +289,8 @@ export default function MetadataAnalyzerPage() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        disabled
+                        onClick={shareResults}
+                        disabled={!metadata}
                         data-testid="button-share"
                       >
                         <Share2 className="h-4 w-4 mr-2" />
@@ -249,7 +299,8 @@ export default function MetadataAnalyzerPage() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        disabled
+                        onClick={addToLibrary}
+                        disabled={!metadata || !metadata.isAIGenerated}
                         data-testid="button-add-library"
                       >
                         <Plus className="h-4 w-4 mr-2" />
@@ -258,11 +309,7 @@ export default function MetadataAnalyzerPage() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => {
-                          if (fileInputRef.current) {
-                            fileInputRef.current.click();
-                          }
-                        }}
+                        onClick={handleReset}
                         data-testid="button-analyze-new"
                       >
                         <FileSearch className="h-4 w-4 mr-2" />
