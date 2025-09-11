@@ -29,8 +29,12 @@ function Router() {
   
   useEffect(() => {
     // Show intro modal if user is authenticated and hasn't completed intro
+    // Only show if they don't have a username set
     if (isAuthenticated && user && !(user as User).hasCompletedIntro && !(user as User).username) {
       setShowIntroModal(true);
+    } else if (isAuthenticated && user && (user as User).hasCompletedIntro) {
+      // If intro is completed, make sure modal is closed
+      setShowIntroModal(false);
     }
   }, [isAuthenticated, user]);
   
