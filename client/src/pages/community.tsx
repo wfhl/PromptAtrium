@@ -30,6 +30,7 @@ export default function Community() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [activeTab, setActiveTab] = useState("prompts");
+  const [promptsSubTab, setPromptsSubTab] = useState("featured");
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
 
   // Redirect if not authenticated
@@ -53,7 +54,16 @@ export default function Community() {
     params.append("isPublic", "true");
     if (searchQuery) params.append("search", searchQuery);
     if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
-    if (sortBy === "featured") params.append("isFeatured", "true");
+    
+    // Use promptsSubTab instead of sortBy for filtering
+    if (promptsSubTab === "featured") {
+      params.append("isFeatured", "true");
+    } else if (promptsSubTab === "trending") {
+      params.append("sortBy", "trending");
+    } else if (promptsSubTab === "recent") {
+      params.append("sortBy", "recent");
+    }
+    
     if (sortBy === "hidden") params.append("isHidden", "true");
     params.append("limit", "20");
     return params.toString();
@@ -65,6 +75,13 @@ export default function Community() {
     enabled: isAuthenticated && activeTab === "prompts",
     retry: false,
   });
+
+  // Refetch prompts when sub-tab changes
+  useEffect(() => {
+    if (activeTab === "prompts" && isAuthenticated) {
+      refetch();
+    }
+  }, [promptsSubTab, activeTab, isAuthenticated]);
 
   // Fetch all users
   const { data: allUsers = [] } = useQuery<User[]>({
@@ -347,6 +364,21 @@ export default function Community() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+          {/* Sub-tabs styled like dashboard */}
+          <Tabs value={promptsSubTab} onValueChange={setPromptsSubTab}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="featured" className="text-xs" data-testid="filter-featured">
+                Featured
+              </TabsTrigger>
+              <TabsTrigger value="trending" className="text-xs" data-testid="filter-trending">
+                Trending
+              </TabsTrigger>
+              <TabsTrigger value="recent" className="text-xs" data-testid="filter-recent">
+                Recent
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           {/* Prompts Grid */}
           <div className="space-y-4" data-testid="section-community-prompts">
