@@ -7,6 +7,7 @@ import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, re
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { z } from "zod";
+import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -21,6 +22,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Google Drive OAuth routes
+  app.get('/api/auth/google', (req, res) => {
+    const state = req.query.returnUrl || '/';
+    const authUrl = getAuthUrl(state as string);
+    res.redirect(authUrl);
+  });
+
+  app.get('/api/auth/google/callback', async (req, res) => {
+    const { code, state } = req.query;
+    
+    if (!code) {
+      return res.redirect('/?error=google_auth_failed');
+    }
+    
+    try {
+      const tokens = await getTokens(code as string);
+      
+      // Store tokens in session
+      (req.session as any).googleTokens = tokens;
+      
+      // Redirect to the return URL or close the popup
+      const returnUrl = state || '/';
+      res.send(`
+        <html>
+          <body>
+            <script>
+              if (window.opener) {
+                window.opener.postMessage({ type: 'google-auth-success', tokens: ${JSON.stringify(tokens)} }, '*');
+                window.close();
+              } else {
+                window.location.href = '${returnUrl}';
+              }
+            </script>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('Error exchanging code for tokens:', error);
+      res.redirect('/?error=google_auth_failed');
+    }
+  });
+
+  // Google Drive API routes
+  app.post('/api/google-drive/save', isAuthenticated, async (req: any, res) => {
+    try {
+      const { fileName, fileContent, mimeType, accessToken } = req.body;
+      
+      if (!accessToken) {
+        return res.status(401).json({ message: "Google Drive not connected" });
+      }
+      
+      const result = await saveToGoogleDrive(
+        accessToken,
+        fileName,
+        fileContent,
+        mimeType || 'application/json'
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error saving to Google Drive:', error);
+      
+      // Check if it's a token expiry error
+      if (error.code === 401 || error.message?.includes('invalid_grant')) {
+        return res.status(401).json({ message: "Google Drive authentication expired", needsReauth: true });
+      }
+      
+      res.status(500).json({ message: "Failed to save to Google Drive" });
+    }
+  });
+
+  app.post('/api/google-drive/refresh-token', isAuthenticated, async (req: any, res) => {
+    try {
+      const { refreshToken } = req.body;
+      
+      if (!refreshToken) {
+        return res.status(400).json({ message: "Refresh token required" });
+      }
+      
+      const accessToken = await refreshAccessToken(refreshToken);
+      res.json({ accessToken });
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      res.status(401).json({ message: "Failed to refresh token", needsReauth: true });
     }
   });
 
