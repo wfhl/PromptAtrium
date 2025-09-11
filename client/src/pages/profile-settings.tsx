@@ -126,6 +126,13 @@ export default function ProfileSettings() {
       toast({
         title: "Success",
         description: "Profile updated successfully!",
+        action: (
+          <Link href="/">
+            <Button variant="outline" size="sm">
+              Go to Dashboard
+            </Button>
+          </Link>
+        ),
       });
     },
     onError: (error: any) => {
