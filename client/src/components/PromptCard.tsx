@@ -731,6 +731,99 @@ export function PromptCard({
       });
     }
   };
+  
+  const handleEmailPrompt = () => {
+    const promptData = {
+      name: prompt.name,
+      description: prompt.description,
+      content: prompt.promptContent,
+      category: prompt.category,
+      tags: prompt.tags,
+    };
+    
+    const subject = encodeURIComponent(`Check out this prompt: ${prompt.name}`);
+    const body = encodeURIComponent(
+      `I found this interesting prompt and wanted to share it with you:\n\n` +
+      `Name: ${prompt.name}\n` +
+      `Category: ${prompt.category}\n` +
+      `Description: ${prompt.description || 'N/A'}\n\n` +
+      `Prompt Content:\n${prompt.promptContent}\n\n` +
+      `Tags: ${prompt.tags?.join(', ') || 'None'}\n\n` +
+      `View it here: ${window.location.origin}/prompt/${prompt.id}`
+    );
+    
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    
+    toast({
+      title: "Opening email client",
+      description: "Your email client should open with the prompt details",
+    });
+  };
+  
+  const handleSaveToGoogleDrive = () => {
+    // Create a file to save to Google Drive
+    const promptData = {
+      name: prompt.name,
+      description: prompt.description,
+      promptContent: prompt.promptContent,
+      negativePrompt: prompt.negativePrompt,
+      category: prompt.category,
+      tags: prompt.tags,
+      status: prompt.status,
+      isPublic: prompt.isPublic,
+      intendedGenerator: prompt.intendedGenerator,
+      technicalParams: prompt.technicalParams,
+      imageMetadata: prompt.imageMetadata,
+    };
+    
+    const dataStr = JSON.stringify(promptData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `prompt_${prompt.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    toast({
+      title: "Download started",
+      description: "Save the file to your Google Drive folder to sync it",
+    });
+  };
+  
+  const handleSystemShare = async () => {
+    const promptUrl = `${window.location.origin}/prompt/${prompt.id}`;
+    const shareData = {
+      title: prompt.name,
+      text: `Check out this AI prompt: ${prompt.description || prompt.name}`,
+      url: promptUrl,
+    };
+    
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+        toast({
+          title: "Shared successfully",
+          description: "The prompt has been shared",
+        });
+      } else {
+        // Fallback to copying the link
+        await navigator.clipboard.writeText(promptUrl);
+        toast({
+          title: "Link copied",
+          description: "Share link copied to clipboard (Web Share API not available)",
+        });
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        toast({
+          title: "Share failed",
+          description: "Could not share the prompt",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const handleDownload = () => {
     const promptData = {
@@ -933,13 +1026,13 @@ export function PromptCard({
                     <DropdownMenuItem onClick={handleCopyJSON}>
                       Copy JSON
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Email sharing coming soon!" })}>
+                    <DropdownMenuItem onClick={handleEmailPrompt}>
                       Email Prompt
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Google Drive integration coming soon!" })}>
+                    <DropdownMenuItem onClick={handleSaveToGoogleDrive}>
                       Save to Google Drive
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "System share coming soon!" })}>
+                    <DropdownMenuItem onClick={handleSystemShare}>
                       System Share
                     </DropdownMenuItem>
                   </DropdownMenuContent>

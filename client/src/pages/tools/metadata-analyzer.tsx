@@ -245,6 +245,93 @@ export default function MetadataAnalyzerPage() {
     }
   };
   
+  const handleEmailPrompt = () => {
+    if (!metadata) return;
+    
+    const promptData = createPromptDataFromMetadata();
+    const fileName = selectedFile?.name || 'image';
+    
+    const subject = encodeURIComponent(`AI Image Metadata: ${fileName}`);
+    const body = encodeURIComponent(
+      `I analyzed this AI-generated image and wanted to share the metadata with you:\n\n` +
+      `File: ${fileName}\n` +
+      `AI Generator: ${metadata.aiGenerator || 'Unknown'}\n` +
+      `Dimensions: ${metadata.dimensionString}\n` +
+      `Aspect Ratio: ${metadata.aspectRatio}\n\n` +
+      (metadata.prompt ? `Prompt:\n${metadata.prompt}\n\n` : '') +
+      (metadata.negativePrompt ? `Negative Prompt:\n${metadata.negativePrompt}\n\n` : '') +
+      (metadata.model ? `Model: ${metadata.model}\n` : '') +
+      (metadata.sampler ? `Sampler: ${metadata.sampler}\n` : '') +
+      (metadata.steps ? `Steps: ${metadata.steps}\n` : '') +
+      (metadata.cfgScale ? `CFG Scale: ${metadata.cfgScale}\n` : '') +
+      (metadata.seed ? `Seed: ${metadata.seed}\n` : '') +
+      `\nAnalyzed using: ${window.location.origin}/tools/metadata-analyzer`
+    );
+    
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    
+    toast({
+      title: "Opening email client",
+      description: "Your email client should open with the metadata details",
+    });
+  };
+  
+  const handleSaveToGoogleDrive = () => {
+    if (!metadata) return;
+    
+    // Create bulk import compatible JSON
+    const promptData = createPromptDataFromMetadata();
+    const dataStr = JSON.stringify(promptData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `prompt_${selectedFile?.name?.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    toast({
+      title: "Download started",
+      description: "Save the file to your Google Drive folder to sync it",
+    });
+  };
+  
+  const handleSystemShare = async () => {
+    if (!metadata) return;
+    
+    const shareUrl = `${window.location.origin}/tools/metadata-analyzer`;
+    const shareData = {
+      title: `AI Image Metadata: ${selectedFile?.name || 'Analysis'}`,
+      text: `${metadata.isAIGenerated ? `AI-generated image (${metadata.aiGenerator})` : 'Image'} - ${metadata.dimensionString}, ${metadata.aspectRatio}`,
+      url: shareUrl,
+    };
+    
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+        toast({
+          title: "Shared successfully",
+          description: "The metadata has been shared",
+        });
+      } else {
+        // Fallback to copying the link
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copied",
+          description: "Tool link copied to clipboard (Web Share API not available)",
+        });
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        toast({
+          title: "Share failed",
+          description: "Could not share the metadata",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+  
   const shareResults = async () => {
     // This is now just a legacy function that calls handleCopyJSON
     await handleCopyJSON();
@@ -427,13 +514,13 @@ export default function MetadataAnalyzerPage() {
                           <DropdownMenuItem onClick={handleCopyJSON}>
                             Copy JSON
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Email sharing coming soon!" })}>
+                          <DropdownMenuItem onClick={handleEmailPrompt}>
                             Email Prompt
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Google Drive integration coming soon!" })}>
+                          <DropdownMenuItem onClick={handleSaveToGoogleDrive}>
                             Save to Google Drive
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "System share coming soon!" })}>
+                          <DropdownMenuItem onClick={handleSystemShare}>
                             System Share
                           </DropdownMenuItem>
                         </DropdownMenuContent>
