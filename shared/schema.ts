@@ -64,6 +64,9 @@ export const users = pgTable("users", {
   showBirthday: boolean("show_birthday").default(false),
   showNsfw: boolean("show_nsfw").default(true),
   
+  // Onboarding tracking
+  hasCompletedIntro: boolean("has_completed_intro").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
