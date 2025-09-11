@@ -210,52 +210,134 @@ export default function MetadataAnalyzerPage() {
               </Card>
             ) : (
               <>
-                {/* Image Preview and File Info */}
+                {/* Analysis Actions - moved to top */}
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="relative group">
-                        <img 
-                          src={imagePreview || ''} 
-                          alt="Preview" 
-                          className="w-32 h-32 object-cover rounded-lg border"
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="absolute top-1 right-1 h-6 w-6 p-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={handleReset}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold truncate flex-1 mr-2">
-                            {selectedFile.name}
-                          </h3>
-                          {metadata?.isAIGenerated && (
-                            <Badge variant="secondary" className="bg-green-500/10 text-green-600">
-                              🤖 AI Generated
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {formatFileSize(selectedFile.size)} • {selectedFile.type}
-                        </p>
-                        {metadata && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {metadata.dimensionString} • Aspect Ratio: {metadata.aspectRatio}
-                          </p>
-                        )}
-                      </div>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Analysis Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleReAnalyze}
+                        disabled={isAnalyzing}
+                        data-testid="button-reanalyze"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Re-analyze
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={downloadMetadata}
+                        disabled={!metadata}
+                        data-testid="button-download-json"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download JSON
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled
+                        data-testid="button-share"
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share Results
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled
+                        data-testid="button-add-library"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add to Library
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          if (fileInputRef.current) {
+                            fileInputRef.current.click();
+                          }
+                        }}
+                        data-testid="button-analyze-new"
+                      >
+                        <FileSearch className="h-4 w-4 mr-2" />
+                        Analyze New Image
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Metadata Results */}
-                {metadata && (
+                {/* Image and Metadata side-by-side */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Left side - Uploaded Image */}
                   <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Upload className="h-5 w-5" />
+                        Uploaded Image
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Image Preview */}
+                        <div className="relative group">
+                          <img 
+                            src={imagePreview || ''} 
+                            alt="Preview" 
+                            className="w-full h-auto max-h-96 object-contain rounded-lg border bg-muted/20"
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="absolute top-2 right-2 h-8 w-8 p-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={handleReset}
+                            data-testid="button-remove-image"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {/* File Info */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-sm truncate flex-1 mr-2">
+                              {selectedFile.name}
+                            </h4>
+                            {metadata?.isAIGenerated && (
+                              <Badge variant="secondary" className="bg-green-500/10 text-green-600">
+                                🤖 AI Generated
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            File Size: <span className="font-medium">{formatFileSize(selectedFile.size)}</span>
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Format: <span className="font-medium">{selectedFile.type}</span>
+                          </p>
+                          {metadata && (
+                            <>
+                              <p className="text-sm text-muted-foreground">
+                                Dimensions: <span className="font-medium">{metadata.dimensionString}</span>
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Aspect Ratio: <span className="font-medium">{metadata.aspectRatio}</span>
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Right side - Metadata Results */}
+                  {metadata && (
+                    <Card>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">Metadata Results</CardTitle>
@@ -318,6 +400,7 @@ export default function MetadataAnalyzerPage() {
                                 🤖 AI Generation ({metadata.aiGenerator === 'stable-diffusion' ? 'Stable Diffusion' : 
                                   metadata.aiGenerator === 'midjourney' ? 'Midjourney' : 
                                   metadata.aiGenerator === 'comfyui' ? 'ComfyUI' : 
+                                  metadata.aiGenerator === 'dall-e' ? 'DALL-E' :
                                   metadata.aiGenerator})
                               </div>
                             </AccordionTrigger>
@@ -457,70 +540,9 @@ export default function MetadataAnalyzerPage() {
                         </AccordionItem>
                       </Accordion>
                     </CardContent>
-                  </Card>
-                )}
-
-                {/* Analysis Actions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Analysis Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleReAnalyze}
-                        disabled={isAnalyzing}
-                        data-testid="button-reanalyze"
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Re-analyze
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={downloadMetadata}
-                        disabled={!metadata}
-                        data-testid="button-download-json"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download JSON
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled
-                        data-testid="button-share"
-                      >
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share Results
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled
-                        data-testid="button-add-library"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add to Library
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          if (fileInputRef.current) {
-                            fileInputRef.current.click();
-                          }
-                        }}
-                        data-testid="button-analyze-new"
-                      >
-                        <FileImage className="h-4 w-4 mr-2" />
-                        Analyze New Image
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </Card>
+                  )}
+                </div>
               </>
             )}
 
