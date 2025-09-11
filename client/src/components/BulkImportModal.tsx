@@ -574,21 +574,33 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
       setStep("results");
       
       // Invalidate all prompt-related queries to refresh UI immediately
+      // Using a predicate to match all variations of the prompt queries
       queryClient.invalidateQueries({ 
         predicate: (query) => {
           const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/prompts") || 
-                 queryKey?.includes("/api/user") ||
-                 queryKey?.includes("/api/collections") ||
-                 queryKey?.includes("/api/activities");
+          return typeof queryKey === 'string' && (
+            queryKey.startsWith("/api/prompts") ||  // Changed from includes to startsWith
+            queryKey.startsWith("/api/user") ||
+            queryKey.startsWith("/api/collections") ||
+            queryKey.startsWith("/api/activities")
+          );
         }
       });
       
-      // Specifically invalidate commonly used queries
+      // Also invalidate base queries without parameters
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
       queryClient.invalidateQueries({ queryKey: ["/api/activities/recent"] });
+      
+      // Force refetch all queries to ensure UI updates
+      queryClient.refetchQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return typeof queryKey === 'string' && queryKey.startsWith("/api/prompts");
+        }
+      });
       
       toast({
         title: "Import Complete",
@@ -1187,7 +1199,18 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         </Card>
       )}
 
-      <Button onClick={() => onOpenChange(false)} className="w-full">
+      <Button onClick={() => {
+        onOpenChange(false);
+        // Trigger one more refresh when closing after successful import
+        if (importResults && importResults.success > 0) {
+          queryClient.refetchQueries({
+            predicate: (query) => {
+              const queryKey = query.queryKey[0] as string;
+              return typeof queryKey === 'string' && queryKey.startsWith("/api/prompts");
+            }
+          });
+        }
+      }} className="w-full">
         Done
       </Button>
     </div>
