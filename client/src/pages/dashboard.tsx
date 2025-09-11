@@ -452,14 +452,14 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-[#a328c9]">Community Highlights</h2>
                 <Tabs value={communityTab} onValueChange={setCommunityTab}>
-                  <TabsList className="inline-flex w-auto">
-                    <TabsTrigger value="featured" className="text-xs px-3" data-testid="filter-featured">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="featured" className="text-xs" data-testid="filter-featured">
                       Featured
                     </TabsTrigger>
-                    <TabsTrigger value="trending" className="text-xs px-3" data-testid="filter-trending">
+                    <TabsTrigger value="trending" className="text-xs" data-testid="filter-trending">
                       Trending
                     </TabsTrigger>
-                    <TabsTrigger value="recent" className="text-xs px-3" data-testid="filter-recent">
+                    <TabsTrigger value="recent" className="text-xs" data-testid="filter-recent">
                       Recent
                     </TabsTrigger>
                   </TabsList>
