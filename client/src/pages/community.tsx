@@ -28,6 +28,11 @@ export default function Community() {
   const [searchQuery, setSearchQuery] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [styleFilter, setStyleFilter] = useState("all");
+  const [generatorFilter, setGeneratorFilter] = useState("all");
+  const [modelFilter, setModelFilter] = useState("all");
+  const [collectionFilter, setCollectionFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [activeTab, setActiveTab] = useState("prompts");
   const [promptsSubTab, setPromptsSubTab] = useState("featured");
@@ -54,10 +59,18 @@ export default function Community() {
     params.append("isPublic", "true");
     if (searchQuery) params.append("search", searchQuery);
     if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
+    if (typeFilter && typeFilter !== "all") params.append("type", typeFilter);
+    if (styleFilter && styleFilter !== "all") params.append("style", styleFilter);
+    if (generatorFilter && generatorFilter !== "all") params.append("generator", generatorFilter);
+    if (modelFilter && modelFilter !== "all") params.append("model", modelFilter);
+    if (collectionFilter && collectionFilter !== "all") params.append("collection", collectionFilter);
     
     // Use promptsSubTab instead of sortBy for filtering
     if (promptsSubTab === "featured") {
       params.append("isFeatured", "true");
+    } else if (promptsSubTab === "all") {
+      // Show all prompts, no special filter
+      params.append("sortBy", "recent");
     } else if (promptsSubTab === "trending") {
       params.append("sortBy", "trending");
     } else if (promptsSubTab === "recent") {
@@ -370,6 +383,9 @@ export default function Community() {
             <TabsList className="inline-flex w-auto">
               <TabsTrigger value="featured" className="text-xs px-3" data-testid="filter-featured">
                 Featured
+              </TabsTrigger>
+              <TabsTrigger value="all" className="text-xs px-3" data-testid="filter-all">
+                All
               </TabsTrigger>
               <TabsTrigger value="trending" className="text-xs px-3" data-testid="filter-trending">
                 Trending
