@@ -43,6 +43,7 @@ interface ImageMetadata {
   
   // Raw metadata
   rawMetadata?: any;
+  warnings?: string[];
 }
 
 export class MetadataExtractor {
@@ -54,7 +55,8 @@ export class MetadataExtractor {
       fileName: file.name,
       fileSize: file.size,
       fileType: file.type,
-      lastModified: new Date(file.lastModified).toLocaleString()
+      lastModified: new Date(file.lastModified).toLocaleString(),
+      warnings: []
     };
 
     // Get image dimensions
@@ -113,21 +115,44 @@ export class MetadataExtractor {
   }
 
   /**
-   * Simple DEFLATE decompressor for zlib-compressed data
+   * Decompress DEFLATE compressed data using browser's DecompressionStream
    */
-  private static inflateSync(compressed: Uint8Array): Uint8Array | null {
+  private static async decompressData(compressed: Uint8Array): Promise<Uint8Array | null> {
     try {
-      // For browser compatibility, we'll use the built-in DecompressionStream if available
-      // Otherwise return null and handle uncompressed data only
-      if (typeof DecompressionStream !== 'undefined') {
-        const ds = new DecompressionStream('deflate');
-        const writer = ds.writable.getWriter();
-        writer.write(compressed);
-        writer.close();
-        
-        return new Response(ds.readable).arrayBuffer().then(buffer => new Uint8Array(buffer)) as any;
+      // Check if DecompressionStream is available
+      if (typeof DecompressionStream === 'undefined') {
+        return null;
       }
-      return null;
+
+      // Create a readable stream from the compressed data
+      const blob = new Blob([compressed]);
+      const stream = blob.stream();
+      
+      // Create decompression stream
+      const ds = new DecompressionStream('deflate');
+      const decompressedStream = stream.pipeThrough(ds);
+      
+      // Read the decompressed data
+      const reader = decompressedStream.getReader();
+      const chunks: Uint8Array[] = [];
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) chunks.push(value);
+      }
+      
+      // Combine chunks
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const result = new Uint8Array(totalLength);
+      let offset = 0;
+      
+      for (const chunk of chunks) {
+        result.set(chunk, offset);
+        offset += chunk.length;
+      }
+      
+      return result;
     } catch (error) {
       console.warn('Decompression failed:', error);
       return null;
@@ -141,7 +166,7 @@ export class MetadataExtractor {
     try {
       const buffer = await file.arrayBuffer();
       const view = new DataView(buffer);
-      const metadata: Partial<ImageMetadata> = {};
+      const metadata: Partial<ImageMetadata> = { warnings: [] };
       
       // Check PNG signature
       const pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -179,9 +204,14 @@ export class MetadataExtractor {
             
             if (compressionMethod === 0) { // DEFLATE compression
               const compressedText = chunkData.slice(nullIndex + 2);
-              // Try to decompress - for now we'll skip compressed chunks in browser
-              // A full implementation would use pako or similar library
-              console.log('Found compressed zTXt chunk:', keyword);
+              const decompressed = await this.decompressData(compressedText);
+              
+              if (decompressed) {
+                const text = new TextDecoder().decode(decompressed);
+                textChunks[keyword] = text;
+              } else {
+                metadata.warnings?.push(`Compressed zTXt chunk '${keyword}' detected but could not be decompressed`);
+              }
             }
           }
         } else if (chunkType === 'iTXt') {
@@ -217,8 +247,15 @@ export class MetadataExtractor {
                   const text = new TextDecoder('utf-8').decode(textData);
                   textChunks[keyword] = text;
                 } else if (compressionFlag === 1 && compressionMethod === 0) {
-                  // DEFLATE compressed - for now we'll skip in browser
-                  console.log('Found compressed iTXt chunk:', keyword);
+                  // DEFLATE compressed
+                  const decompressed = await this.decompressData(textData);
+                  
+                  if (decompressed) {
+                    const text = new TextDecoder('utf-8').decode(decompressed);
+                    textChunks[keyword] = text;
+                  } else {
+                    metadata.warnings?.push(`Compressed iTXt chunk '${keyword}' detected but could not be decompressed`);
+                  }
                 }
               }
             }
@@ -232,19 +269,22 @@ export class MetadataExtractor {
       
       // Process text chunks for AI metadata
       const parametersText = textChunks['parameters'] || textChunks['Parameters'] || 
-                            textChunks['Description'] || textChunks['description'] || '';
+                            textChunks['Description'] || textChunks['description'] || 
+                            textChunks['prompt'] || '';
       
       if (parametersText) {
-        metadata.rawMetadata = { parameters: parametersText };
+        metadata.rawMetadata = { ...metadata.rawMetadata, textChunks };
         
         // Check for Stable Diffusion
-        if (parametersText.includes('Steps:') || parametersText.includes('CFG scale:')) {
+        if (parametersText.includes('Steps:') || parametersText.includes('CFG scale:') || 
+            parametersText.includes('Sampler:')) {
           const sdMetadata = this.parseStableDiffusionParameters(parametersText);
           Object.assign(metadata, sdMetadata);
         }
         
         // Check for Midjourney
-        if (parametersText.includes('--v ') || parametersText.includes('Job ID:')) {
+        if (parametersText.includes('--v ') || parametersText.includes('Job ID:') ||
+            parametersText.includes('--ar ') || parametersText.includes('--chaos ')) {
           const mjMetadata = this.parseMidjourneyParameters(parametersText);
           Object.assign(metadata, mjMetadata);
         }
@@ -256,20 +296,21 @@ export class MetadataExtractor {
           const workflow = JSON.parse(textChunks['workflow']);
           metadata.rawMetadata = { ...metadata.rawMetadata, workflow };
           metadata.aiGenerator = 'comfyui';
+          metadata.isAIGenerated = true;
         } catch (e) {
           console.warn('Failed to parse ComfyUI workflow');
         }
       }
       
       // Direct prompt field
-      if (textChunks['prompt']) {
+      if (textChunks['prompt'] && !metadata.prompt) {
         metadata.prompt = textChunks['prompt'];
       }
       
       return metadata;
     } catch (error) {
       console.error('Error extracting PNG metadata:', error);
-      return {};
+      return { warnings: ['Failed to extract PNG metadata'] };
     }
   }
 
@@ -280,7 +321,7 @@ export class MetadataExtractor {
     try {
       const buffer = await file.arrayBuffer();
       const view = new DataView(buffer);
-      const metadata: Partial<ImageMetadata> = {};
+      const metadata: Partial<ImageMetadata> = { warnings: [] };
       
       // Check for JPEG signature
       if (view.getUint16(0) !== 0xFFD8) {
@@ -289,7 +330,7 @@ export class MetadataExtractor {
       
       let offset = 2;
       
-      while (offset < buffer.byteLength - 2) {
+      while (offset < buffer.byteLength - 4) {
         const marker = view.getUint16(offset);
         offset += 2;
         
@@ -298,17 +339,21 @@ export class MetadataExtractor {
           const length = view.getUint16(offset);
           offset += 2;
           
-          const data = new Uint8Array(buffer, offset, length - 2);
+          if (length < 2) continue;
+          
+          const data = new Uint8Array(buffer, offset, Math.min(length - 2, buffer.byteLength - offset));
           
           // Check for XMP
           const xmpHeader = 'http://ns.adobe.com/xap/1.0/\0';
           const xmpHeaderBytes = new TextEncoder().encode(xmpHeader);
           
-          let isXMP = true;
-          for (let i = 0; i < Math.min(xmpHeaderBytes.length, data.length); i++) {
-            if (data[i] !== xmpHeaderBytes[i]) {
-              isXMP = false;
-              break;
+          let isXMP = data.length >= xmpHeaderBytes.length;
+          if (isXMP) {
+            for (let i = 0; i < xmpHeaderBytes.length; i++) {
+              if (data[i] !== xmpHeaderBytes[i]) {
+                isXMP = false;
+                break;
+              }
             }
           }
           
@@ -317,53 +362,108 @@ export class MetadataExtractor {
             const xmpString = new TextDecoder().decode(data.slice(xmpHeaderBytes.length));
             metadata.rawMetadata = { ...metadata.rawMetadata, xmp: xmpString };
             
-            // Extract description (common location for AI prompts)
-            const descMatch = xmpString.match(/<dc:description[^>]*>(.*?)<\/dc:description>/s);
-            if (descMatch) {
-              const description = descMatch[1]
-                .replace(/<[^>]+>/g, '') // Remove XML tags
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&amp;/g, '&')
-                .replace(/&quot;/g, '"')
-                .replace(/&#x([0-9A-F]+);/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
-                .trim();
+            // Parse XMP as XML
+            try {
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(xmpString, 'text/xml');
               
-              // Check for Midjourney patterns
-              if (description.includes('--v ') || description.includes('Job ID:')) {
-                const mjMetadata = this.parseMidjourneyParameters(description);
-                Object.assign(metadata, mjMetadata);
+              // Look for dc:description
+              const descriptions = xmlDoc.getElementsByTagName('dc:description');
+              if (descriptions.length > 0) {
+                // Get the text content from rdf:Alt/rdf:li
+                const liElements = descriptions[0].getElementsByTagName('rdf:li');
+                let description = '';
+                
+                if (liElements.length > 0) {
+                  description = liElements[0].textContent || '';
+                } else {
+                  description = descriptions[0].textContent || '';
+                }
+                
+                description = description.trim();
+                
+                if (description) {
+                  // Check for Midjourney patterns
+                  if (description.includes('--v ') || description.includes('Job ID:') ||
+                      description.includes('--ar ') || description.includes('--chaos ')) {
+                    const mjMetadata = this.parseMidjourneyParameters(description);
+                    Object.assign(metadata, mjMetadata);
+                    metadata.aiGenerator = 'midjourney';
+                    metadata.isAIGenerated = true;
+                  }
+                  
+                  // Check for DALL-E patterns
+                  if (description.includes('DALL·E') || description.includes('DALL-E') || 
+                      description.includes('OpenAI')) {
+                    const dalleMetadata = this.parseDALLEMetadata(description);
+                    Object.assign(metadata, dalleMetadata);
+                    metadata.aiGenerator = 'dall-e';
+                    metadata.isAIGenerated = true;
+                  }
+                  
+                  // Save as prompt if not already set
+                  if (!metadata.prompt && description) {
+                    metadata.prompt = description;
+                  }
+                }
               }
               
-              // Check for DALL-E patterns
-              if (description.includes('DALL·E') || description.includes('DALL-E') || 
-                  description.includes('OpenAI')) {
-                metadata.prompt = description;
+              // Look for other AI-related XMP fields
+              const checkXMPField = (namespace: string, field: string) => {
+                const elements = xmlDoc.getElementsByTagName(`${namespace}:${field}`);
+                if (elements.length > 0) {
+                  return elements[0].textContent || '';
+                }
+                return '';
+              };
+              
+              // Check for specific AI tool mentions
+              const creator = checkXMPField('dc', 'creator');
+              const software = checkXMPField('xmp', 'CreatorTool');
+              const title = checkXMPField('dc', 'title');
+              
+              if (creator.includes('Midjourney') || software.includes('Midjourney')) {
+                metadata.aiGenerator = 'midjourney';
+                metadata.isAIGenerated = true;
+              }
+              if (creator.includes('Stable Diffusion') || software.includes('Stable Diffusion')) {
+                metadata.aiGenerator = 'stable-diffusion';
+                metadata.isAIGenerated = true;
+              }
+              if (creator.includes('DALL') || software.includes('DALL') || 
+                  creator.includes('OpenAI') || software.includes('OpenAI')) {
                 metadata.aiGenerator = 'dall-e';
+                metadata.isAIGenerated = true;
               }
-            }
-            
-            // Look for other AI-related fields
-            if (xmpString.includes('Midjourney')) {
-              metadata.aiGenerator = 'midjourney';
-            }
-            if (xmpString.includes('Stable Diffusion')) {
-              metadata.aiGenerator = 'stable-diffusion';
-            }
-            if (xmpString.includes('DALL')) {
-              metadata.aiGenerator = 'dall-e';
+              
+            } catch (xmlError) {
+              console.warn('Failed to parse XMP as XML, falling back to text search');
+              
+              // Fallback to text search
+              if (xmpString.includes('Midjourney')) {
+                metadata.aiGenerator = 'midjourney';
+                metadata.isAIGenerated = true;
+              }
+              if (xmpString.includes('Stable Diffusion')) {
+                metadata.aiGenerator = 'stable-diffusion';
+                metadata.isAIGenerated = true;
+              }
+              if (xmpString.includes('DALL') || xmpString.includes('OpenAI')) {
+                metadata.aiGenerator = 'dall-e';
+                metadata.isAIGenerated = true;
+              }
             }
           }
           
           offset += length - 2;
-        } else if (marker === 0xFFE0) {
-          // APP0 (JFIF)
-          const length = view.getUint16(offset);
-          offset += length;
-        } else if ((marker & 0xFF00) === 0xFF00 && marker !== 0xFF00) {
+        } else if ((marker & 0xFF00) === 0xFF00 && marker !== 0xFF00 && marker !== 0xFFFF) {
           // Other markers with length
           if (marker === 0xFFDA) {
             // Start of scan - rest is image data
+            break;
+          }
+          if (marker === 0xFFD9) {
+            // End of image
             break;
           }
           const length = view.getUint16(offset);
@@ -374,7 +474,7 @@ export class MetadataExtractor {
       return metadata;
     } catch (error) {
       console.error('Error extracting JPEG metadata:', error);
-      return {};
+      return { warnings: ['Failed to extract JPEG metadata'] };
     }
   }
 
@@ -385,7 +485,7 @@ export class MetadataExtractor {
     try {
       const buffer = await file.arrayBuffer();
       const view = new DataView(buffer);
-      const metadata: Partial<ImageMetadata> = {};
+      const metadata: Partial<ImageMetadata> = { warnings: [] };
       
       // Check WebP signature
       const riff = this.readString(view, 0, 4);
@@ -395,44 +495,16 @@ export class MetadataExtractor {
         return metadata;
       }
       
-      // WebP may contain EXIF or XMP chunks
-      let offset = 12;
+      metadata.rawMetadata = { format: 'WebP' };
       
-      while (offset < buffer.byteLength - 8) {
-        const chunkType = this.readString(view, offset, 4);
-        const chunkSize = view.getUint32(offset + 4, true); // Little endian
-        
-        if (chunkType === 'EXIF') {
-          // EXIF data
-          const exifData = new Uint8Array(buffer, offset + 8, chunkSize);
-          const exifString = new TextDecoder().decode(exifData);
-          metadata.rawMetadata = { ...metadata.rawMetadata, exif: exifString };
-        } else if (chunkType === 'XMP ') {
-          // XMP data
-          const xmpData = new Uint8Array(buffer, offset + 8, chunkSize);
-          const xmpString = new TextDecoder().decode(xmpData);
-          metadata.rawMetadata = { ...metadata.rawMetadata, xmp: xmpString };
-          
-          // Parse for AI metadata similar to JPEG
-          if (xmpString.includes('Midjourney')) {
-            metadata.aiGenerator = 'midjourney';
-          }
-          if (xmpString.includes('Stable Diffusion')) {
-            metadata.aiGenerator = 'stable-diffusion';
-          }
-          if (xmpString.includes('DALL')) {
-            metadata.aiGenerator = 'dall-e';
-          }
-        }
-        
-        offset += 8 + chunkSize;
-        if (chunkSize % 2 === 1) offset++; // Padding byte for odd-sized chunks
-      }
+      // WebP metadata extraction is limited in browser
+      // Most AI tools don't use WebP for output yet
+      metadata.warnings?.push('WebP metadata extraction is limited');
       
       return metadata;
     } catch (error) {
       console.error('Error extracting WebP metadata:', error);
-      return {};
+      return { warnings: ['Failed to extract WebP metadata'] };
     }
   }
 
@@ -445,7 +517,10 @@ export class MetadataExtractor {
     // Extract prompt (everything before "Negative prompt:" or "Steps:")
     const promptMatch = params.match(/^(.*?)(?:Negative prompt:|Steps:|$)/s);
     if (promptMatch) {
-      metadata.prompt = promptMatch[1].trim();
+      const prompt = promptMatch[1].trim();
+      if (prompt && !prompt.includes('--v ') && !prompt.includes('Job ID:')) {
+        metadata.prompt = prompt;
+      }
     }
     
     // Extract negative prompt
@@ -496,7 +571,11 @@ export class MetadataExtractor {
     // Extract prompt (everything before parameters or Job ID)
     const promptMatch = description.match(/^(.*?)(?:\s--|\sJob ID:|$)/);
     if (promptMatch && promptMatch[1].trim()) {
-      metadata.prompt = promptMatch[1].trim();
+      const prompt = promptMatch[1].trim();
+      // Only set as prompt if it doesn't look like SD parameters
+      if (!prompt.includes('Steps:') && !prompt.includes('CFG scale:')) {
+        metadata.prompt = prompt;
+      }
     }
     
     // Extract version
@@ -557,24 +636,35 @@ export class MetadataExtractor {
     
     // DALL-E typically stores prompt in description
     if (text.includes('DALL·E') || text.includes('DALL-E') || text.includes('OpenAI')) {
-      metadata.prompt = text
+      // Clean up the text to extract just the prompt
+      let cleanedText = text
         .replace(/DALL·E\s*\d*/gi, '')
+        .replace(/DALL-E\s*\d*/gi, '')
         .replace(/OpenAI/gi, '')
         .trim();
       
+      if (cleanedText) {
+        metadata.prompt = cleanedText;
+      }
+      
       // Extract version if present
-      const versionMatch = text.match(/DALL·E\s*(\d+)/i);
+      const versionMatch = text.match(/DALL[·-]E\s*(\d+)/i);
       if (versionMatch) {
         metadata.dalleVersion = versionMatch[1];
       }
       
-      // Look for quality/style indicators
-      if (text.includes('HD') || text.includes('high quality')) {
+      // Look for quality indicators
+      if (text.toLowerCase().includes('hd') || text.toLowerCase().includes('high quality') ||
+          text.toLowerCase().includes('high definition')) {
         metadata.dalleQuality = 'hd';
+      } else if (text.toLowerCase().includes('standard')) {
+        metadata.dalleQuality = 'standard';
       }
-      if (text.includes('vivid')) {
+      
+      // Look for style indicators
+      if (text.toLowerCase().includes('vivid')) {
         metadata.dalleStyle = 'vivid';
-      } else if (text.includes('natural')) {
+      } else if (text.toLowerCase().includes('natural')) {
         metadata.dalleStyle = 'natural';
       }
     }
@@ -596,8 +686,8 @@ export class MetadataExtractor {
     }
     
     // Check for Midjourney patterns
-    if (metadata.mjVersion || metadata.mjJobId || 
-        (metadata.prompt && metadata.prompt.match(/--v\s+\d+|--chaos\s+\d+|--ar\s+\d+:\d+/))) {
+    if (metadata.mjVersion || metadata.mjJobId || metadata.mjAspectRatio ||
+        metadata.mjChaos !== undefined || metadata.mjQuality !== undefined) {
       result.aiGenerator = 'midjourney';
       result.isAIGenerated = true;
       return result;
@@ -605,26 +695,24 @@ export class MetadataExtractor {
     
     // Check for Stable Diffusion patterns
     if (metadata.steps !== undefined || metadata.cfgScale !== undefined || 
-        metadata.sampler || (metadata.prompt && metadata.negativePrompt)) {
+        metadata.sampler || metadata.negativePrompt) {
       result.aiGenerator = 'stable-diffusion';
       result.isAIGenerated = true;
       return result;
     }
     
     // Check for DALL-E patterns
-    if (metadata.dalleVersion || metadata.dalleQuality || metadata.dalleStyle ||
-        (metadata.prompt && (metadata.prompt.includes('DALL') || metadata.prompt.includes('OpenAI')))) {
+    if (metadata.dalleVersion || metadata.dalleQuality || metadata.dalleStyle) {
       result.aiGenerator = 'dall-e';
       result.isAIGenerated = true;
       return result;
     }
     
-    // Check filename patterns for Midjourney
+    // Check filename patterns
     if (metadata.fileName) {
       const filename = metadata.fileName.toLowerCase();
       
       // Discord/Midjourney naming patterns
-      // Format: username_prompt_words_UUID_index.png
       if (filename.match(/^[a-zA-Z0-9_]+_.*_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}_\d+/)) {
         result.aiGenerator = 'midjourney';
         result.isAIGenerated = true;
@@ -638,15 +726,46 @@ export class MetadataExtractor {
       }
       
       // DALL-E naming pattern
-      if (filename.includes('dall-e') || filename.includes('openai')) {
+      if (filename.includes('dall-e') || filename.includes('dall_e') || filename.includes('openai')) {
         result.aiGenerator = 'dall-e';
         result.isAIGenerated = true;
         return result;
       }
       
       // ComfyUI naming pattern
-      if (filename.includes('comfyui') || filename.match(/^\d{5}-\d{6}/)) {
+      if (filename.includes('comfyui') || filename.match(/^ComfyUI_\d+/)) {
         result.aiGenerator = 'comfyui';
+        result.isAIGenerated = true;
+        return result;
+      }
+      
+      // Stable Diffusion patterns
+      if (filename.match(/^\d{5}-\d+/) || filename.includes('sd_')) {
+        result.aiGenerator = 'stable-diffusion';
+        result.isAIGenerated = true;
+        return result;
+      }
+    }
+    
+    // Check prompt content for patterns
+    if (metadata.prompt) {
+      const promptLower = metadata.prompt.toLowerCase();
+      
+      if (promptLower.includes('midjourney') || metadata.prompt.includes('--v ')) {
+        result.aiGenerator = 'midjourney';
+        result.isAIGenerated = true;
+        return result;
+      }
+      
+      if (promptLower.includes('stable diffusion') || promptLower.includes('sdxl')) {
+        result.aiGenerator = 'stable-diffusion';
+        result.isAIGenerated = true;
+        return result;
+      }
+      
+      if (promptLower.includes('dall-e') || promptLower.includes('dall·e') || 
+          promptLower.includes('openai')) {
+        result.aiGenerator = 'dall-e';
         result.isAIGenerated = true;
         return result;
       }
@@ -663,7 +782,9 @@ export class MetadataExtractor {
   private static readString(view: DataView, offset: number, length: number): string {
     let str = '';
     for (let i = 0; i < length; i++) {
-      str += String.fromCharCode(view.getUint8(offset + i));
+      const byte = view.getUint8(offset + i);
+      if (byte === 0) break; // Stop at null terminator
+      str += String.fromCharCode(byte);
     }
     return str;
   }
