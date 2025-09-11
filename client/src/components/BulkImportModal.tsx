@@ -43,6 +43,7 @@ interface ParsedPrompt {
   tags?: string[];
   status?: "draft" | "published";
   isPublic?: boolean;
+  isNsfw?: boolean;
 }
 
 interface ImportResult {
@@ -383,7 +384,8 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           category: row.category || "",
           tags: row.tags ? row.tags.split(',').map((t: string) => t.trim()) : [],
           status: (row.status === "published" ? "published" : "draft") as "draft" | "published",
-          isPublic: row.isPublic === "true" || row.public === "true"
+          isPublic: row.isPublic === "true" || row.public === "true",
+          isNsfw: row.isNsfw === "true" || row.nsfw === "true"
         }));
       } else if (extension === 'json') {
         const jsonData = JSON.parse(content);
@@ -606,7 +608,8 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           category: row.category || "",
           tags: row.tags ? row.tags.split(',').map((t: string) => t.trim()) : [],
           status: (row.status === "published" ? "published" : "draft") as "draft" | "published",
-          isPublic: row.isPublic === "true" || row.public === "true"
+          isPublic: row.isPublic === "true" || row.public === "true",
+          isNsfw: row.isNsfw === "true" || row.nsfw === "true"
         }));
         setParsedData(parsed.filter(p => p.promptContent.trim() !== ""));
       } else {
