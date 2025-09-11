@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
+import { saveToGoogleDrive, isGoogleDriveConnected } from "@/utils/googleDrive";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -760,34 +761,58 @@ export function PromptCard({
     });
   };
   
-  const handleSaveToGoogleDrive = () => {
-    // Create a file to save to Google Drive
-    const promptData = {
-      name: prompt.name,
-      description: prompt.description,
-      promptContent: prompt.promptContent,
-      negativePrompt: prompt.negativePrompt,
-      category: prompt.category,
-      tags: prompt.tags,
-      status: prompt.status,
-      isPublic: prompt.isPublic,
-      intendedGenerator: prompt.intendedGenerator,
-      technicalParams: prompt.technicalParams,
-    };
-    
-    const dataStr = JSON.stringify(promptData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `prompt_${prompt.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-    
-    toast({
-      title: "Download started",
-      description: "Save the file to your Google Drive folder to sync it",
-    });
+  const handleSaveToGoogleDrive = async () => {
+    try {
+      // Create prompt data for Google Drive
+      const promptData = {
+        name: prompt.name,
+        description: prompt.description,
+        promptContent: prompt.promptContent,
+        negativePrompt: prompt.negativePrompt,
+        category: prompt.category,
+        tags: prompt.tags,
+        status: prompt.status,
+        isPublic: prompt.isPublic,
+        intendedGenerator: prompt.intendedGenerator,
+        technicalParams: prompt.technicalParams,
+      };
+      
+      const dataStr = JSON.stringify(promptData, null, 2);
+      const fileName = `prompt_${prompt.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+      
+      toast({
+        title: "Saving to Google Drive...",
+        description: "Please wait while we save your prompt",
+      });
+      
+      const result = await saveToGoogleDrive(fileName, dataStr, 'application/json');
+      
+      toast({
+        title: "Saved to Google Drive!",
+        description: "Your prompt has been saved to the PromptAtrium folder in your Google Drive",
+      });
+      
+      // Optionally open the file in a new tab
+      if (result.webViewLink) {
+        window.open(result.webViewLink, '_blank');
+      }
+    } catch (error: any) {
+      console.error('Error saving to Google Drive:', error);
+      
+      if (error.message === 'Authentication cancelled') {
+        toast({
+          title: "Google Drive connection cancelled",
+          description: "You cancelled the Google Drive connection",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to save to Google Drive",
+          description: error.message || "An error occurred while saving to Google Drive",
+          variant: "destructive",
+        });
+      }
+    }
   };
   
   const handleSystemShare = async () => {

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ToastAction } from "@/components/ui/toast";
+import { saveToGoogleDrive, isGoogleDriveConnected } from "@/utils/googleDrive";
 import { 
   FileImage, Upload, Download, Share2, Plus, 
   Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch, ArrowRight, Share 
@@ -276,24 +277,48 @@ export default function MetadataAnalyzerPage() {
     });
   };
   
-  const handleSaveToGoogleDrive = () => {
+  const handleSaveToGoogleDrive = async () => {
     if (!metadata) return;
     
-    // Create bulk import compatible JSON
-    const promptData = createPromptDataFromMetadata();
-    const dataStr = JSON.stringify(promptData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `prompt_${selectedFile?.name?.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-    
-    toast({
-      title: "Download started",
-      description: "Save the file to your Google Drive folder to sync it",
-    });
+    try {
+      // Create bulk import compatible JSON
+      const promptData = createPromptDataFromMetadata();
+      const dataStr = JSON.stringify(promptData, null, 2);
+      const fileName = `prompt_${selectedFile?.name?.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+      
+      toast({
+        title: "Saving to Google Drive...",
+        description: "Please wait while we save your metadata",
+      });
+      
+      const result = await saveToGoogleDrive(fileName, dataStr, 'application/json');
+      
+      toast({
+        title: "Saved to Google Drive!",
+        description: "Your metadata has been saved to the PromptAtrium folder in your Google Drive",
+      });
+      
+      // Optionally open the file in a new tab
+      if (result.webViewLink) {
+        window.open(result.webViewLink, '_blank');
+      }
+    } catch (error: any) {
+      console.error('Error saving to Google Drive:', error);
+      
+      if (error.message === 'Authentication cancelled') {
+        toast({
+          title: "Google Drive connection cancelled",
+          description: "You cancelled the Google Drive connection",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to save to Google Drive",
+          description: error.message || "An error occurred while saving to Google Drive",
+          variant: "destructive",
+        });
+      }
+    }
   };
   
   const handleSystemShare = async () => {
