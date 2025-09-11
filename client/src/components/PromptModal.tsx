@@ -97,29 +97,55 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
       });
     } else if (mode === "create") {
-      // Reset form for creating new prompt
-      setFormData({
-        name: "",
-        description: "",
-        category: "",
-        promptContent: "",
-        negativePrompt: "",
-        promptType: "",
-        promptStyle: "",
-        tags: "",
-        isPublic: false,
-        collectionId: defaultCollectionId || "none",
-        license: "CC0 (Public Domain)",
-        status: "published",
-        exampleImages: [],
-        notes: "",
-        author: "",
-        sourceUrl: "",
-        intendedGenerator: "",
-        recommendedModels: "",
-        technicalParams: "",
-        variables: "",
-      });
+      // If we have prefilled data (e.g., from metadata analyzer), use it
+      if (prompt) {
+        setFormData({
+          name: prompt.name || "",
+          description: prompt.description || "",
+          category: prompt.category || "",
+          promptContent: prompt.promptContent || "",
+          negativePrompt: prompt.negativePrompt || "",
+          promptType: prompt.promptType || "",
+          promptStyle: prompt.promptStyle || "",
+          tags: prompt.tags?.join(", ") || "",
+          isPublic: prompt.isPublic ?? false,
+          collectionId: prompt.collectionId || defaultCollectionId || "none",
+          license: prompt.license || "CC0 (Public Domain)",
+          status: prompt.status || "published",
+          exampleImages: prompt.exampleImagesUrl || [],
+          notes: prompt.notes || "",
+          author: prompt.author || "",
+          sourceUrl: prompt.sourceUrl || "",
+          intendedGenerator: prompt.intendedGenerator || "",
+          recommendedModels: prompt.recommendedModels?.join(", ") || "",
+          technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
+          variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
+        });
+      } else {
+        // Reset form for creating new prompt without prefilled data
+        setFormData({
+          name: "",
+          description: "",
+          category: "",
+          promptContent: "",
+          negativePrompt: "",
+          promptType: "",
+          promptStyle: "",
+          tags: "",
+          isPublic: false,
+          collectionId: defaultCollectionId || "none",
+          license: "CC0 (Public Domain)",
+          status: "published",
+          exampleImages: [],
+          notes: "",
+          author: "",
+          sourceUrl: "",
+          intendedGenerator: "",
+          recommendedModels: "",
+          technicalParams: "",
+          variables: "",
+        });
+      }
     }
   }, [prompt, mode, defaultCollectionId]);
 
