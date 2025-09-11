@@ -256,7 +256,10 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          ...userData,
+          // Only update fields that should come from auth provider
+          // Don't overwrite user-customized fields like firstName and lastName
+          email: userData.email,
+          profileImageUrl: userData.profileImageUrl,
           updatedAt: new Date(),
         },
       })
