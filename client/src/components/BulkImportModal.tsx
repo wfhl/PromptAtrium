@@ -446,8 +446,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     console.log("Google Docs content length:", content.length);
     
     let allPrompts: ParsedPrompt[] = [];
+    const processedContent = new Set<string>(); // Track processed content to avoid duplicates
     
-    // First, handle special formatted prompts with emoji markers
+    // First, handle special formatted prompts with emoji markers (🧿 format)
     const emojiPromptPattern = /🧿\s*Prompt Name:\s*([^\n]+)\s*\nCode:\s*([^\n]+)\s*\n+([\s\S]*?)(?=(?:🧿\s*Prompt Name:|$))/g;
     let match;
     
@@ -455,9 +456,108 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
       const [fullMatch, name, code, promptContent] = match;
       
       if (name && promptContent) {
+        const key = `${name.trim()}_${promptContent.trim().substring(0, 50)}`;
+        if (!processedContent.has(key)) {
+          processedContent.add(key);
+          allPrompts.push({
+            name: name.trim(),
+            promptContent: promptContent.trim(),
+            description: "",
+            category: defaultCategory,
+            tags: [],
+            status: "draft" as const,
+            isPublic: defaultIsPublic,
+            isNsfw: false
+          });
+        }
+      }
+    }
+    
+    // Remove the emoji formatted prompts from content to process the rest
+    let remainingContent = content.replace(emojiPromptPattern, '');
+    
+    // Try to detect JSON-style prompts (like from the reference file)
+    // These might appear as: name followed by content with "I want you to act as..."
+    const jsonStylePattern = /^([^:\n]{3,100})\n+(I want you to (?:act as|be)|You are|Act as|Pretend|Imagine|Please act)[\s\S]*?(?=\n{2,}[A-Z]|$)/gm;
+    let jsonMatch;
+    
+    while ((jsonMatch = jsonStylePattern.exec(remainingContent)) !== null) {
+      const [fullMatch, title, ...rest] = jsonMatch;
+      const promptContent = fullMatch.substring(title.length).trim();
+      
+      if (title && promptContent) {
+        const key = `${title.trim()}_${promptContent.trim().substring(0, 50)}`;
+        if (!processedContent.has(key)) {
+          processedContent.add(key);
+          allPrompts.push({
+            name: title.trim(),
+            promptContent: promptContent.trim(),
+            description: "",
+            category: defaultCategory,
+            tags: [],
+            status: "draft" as const,
+            isPublic: defaultIsPublic,
+            isNsfw: false
+          });
+        }
+      }
+    }
+    
+    // Remove JSON-style prompts from remaining content
+    remainingContent = remainingContent.replace(jsonStylePattern, '');
+    
+    // Now process the remaining content by splitting into chunks
+    const chunks = remainingContent.split(/\n\s*\n+/).filter(chunk => chunk.trim());
+    
+    for (const chunk of chunks) {
+      const lines = chunk.trim().split('\n').filter(line => line.trim());
+      
+      if (lines.length === 0) continue;
+      
+      // Skip if this looks like it was already processed
+      const firstLine = lines[0].trim();
+      const contentPreview = lines.slice(1).join('\n').trim().substring(0, 50);
+      const key = `${firstLine}_${contentPreview}`;
+      
+      if (processedContent.has(key)) continue;
+      
+      // Determine if first line is a title
+      const isTitle = firstLine.length < 100 && 
+                     !firstLine.endsWith('.') && 
+                     !firstLine.includes('|') &&
+                     !firstLine.includes('[') &&
+                     !firstLine.startsWith('(') &&
+                     !firstLine.startsWith('{') &&
+                     /^[A-Z]/.test(firstLine) &&
+                     lines.length > 1;
+      
+      if (isTitle) {
+        // First line is title, rest is content
+        const title = firstLine;
+        const content = lines.slice(1).join('\n').trim();
+        
+        if (content) {
+          processedContent.add(key);
+          allPrompts.push({
+            name: title,
+            promptContent: content,
+            description: "",
+            category: defaultCategory,
+            tags: [],
+            status: "draft" as const,
+            isPublic: defaultIsPublic,
+            isNsfw: false
+          });
+        }
+      } else if (lines.length === 1 && firstLine.length > 50) {
+        // Single long line - use first words as title
+        const words = firstLine.split(' ');
+        const title = words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
+        
+        processedContent.add(key);
         allPrompts.push({
-          name: name.trim(),
-          promptContent: promptContent.trim(),
+          name: title,
+          promptContent: firstLine,
           description: "",
           category: defaultCategory,
           tags: [],
@@ -465,28 +565,15 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           isPublic: defaultIsPublic,
           isNsfw: false
         });
-      }
-    }
-    
-    // Remove the emoji formatted prompts from content to process the rest
-    let remainingContent = content.replace(emojiPromptPattern, '');
-    
-    // Now split the remaining content by blank lines to find regular prompts
-    const lines = remainingContent.split('\n');
-    let currentPrompt: { title: string; content: string[] } | null = null;
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      
-      // Skip empty lines
-      if (line === '') {
-        // If we have a current prompt being built, save it
-        if (currentPrompt && currentPrompt.content.length > 0) {
-          const promptContent = currentPrompt.content.join('\n').trim();
-          if (promptContent) {
+      } else if (lines.length > 1) {
+        // Multiple lines without clear title - use first line as title if short enough
+        if (firstLine.length < 100) {
+          const content = lines.slice(1).join('\n').trim();
+          if (content) {
+            processedContent.add(key);
             allPrompts.push({
-              name: currentPrompt.title,
-              promptContent: promptContent,
+              name: firstLine,
+              promptContent: content,
               description: "",
               category: defaultCategory,
               tags: [],
@@ -495,61 +582,29 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
               isNsfw: false
             });
           }
-          currentPrompt = null;
+        } else {
+          // Use full chunk as content with generated title
+          const fullContent = lines.join('\n').trim();
+          const words = firstLine.split(' ');
+          const title = words.slice(0, 5).join(' ') + '...';
+          
+          processedContent.add(key);
+          allPrompts.push({
+            name: title,
+            promptContent: fullContent,
+            description: "",
+            category: defaultCategory,
+            tags: [],
+            status: "draft" as const,
+            isPublic: defaultIsPublic,
+            isNsfw: false
+          });
         }
-        continue;
-      }
-      
-      // Check if this line looks like a title (short, no punctuation at end except colon, not a sentence)
-      const looksLikeTitle = line.length < 50 && 
-                             !line.endsWith('.') && 
-                             !line.includes('|') &&
-                             !line.includes('[') &&
-                             !/^(A |An |The |In |On |At |Inside |Outside |Within |Behind |Under |Above |Below |Through |Around |Across |Between |Among |During |After |Before |While |Despite |Although |Because |Since |Until |Unless |Whether |Whenever |Wherever |However |Moreover |Furthermore |Nevertheless |Nonetheless |Otherwise |Therefore |Thus |Hence |Consequently |Accordingly |Meanwhile |Subsequently |Eventually |Finally |Initially |Originally |Ultimately |Generally |Specifically |Particularly |Especially |Primarily |Mainly |Mostly |Largely |Partly |Barely |Hardly |Scarcely |Nearly |Almost |Quite |Rather |Very |Extremely |Absolutely |Completely |Entirely |Totally |Fully |Partially |Slightly |Somewhat )/.test(line) &&
-                             /^[A-Z]/.test(line);
-      
-      if (looksLikeTitle && !currentPrompt) {
-        // Start a new prompt
-        currentPrompt = { title: line, content: [] };
-      } else if (currentPrompt) {
-        // Add to current prompt content
-        currentPrompt.content.push(line);
-      } else if (line.length > 100) {
-        // This is likely a standalone prompt without a title
-        // Use the first few words as the title
-        const words = line.split(' ');
-        const title = words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
-        allPrompts.push({
-          name: title,
-          promptContent: line,
-          description: "",
-          category: defaultCategory,
-          tags: [],
-          status: "draft" as const,
-          isPublic: defaultIsPublic,
-          isNsfw: false
-        });
-      }
-    }
-    
-    // Don't forget the last prompt if there is one
-    if (currentPrompt && currentPrompt.content.length > 0) {
-      const promptContent = currentPrompt.content.join('\n').trim();
-      if (promptContent) {
-        allPrompts.push({
-          name: currentPrompt.title,
-          promptContent: promptContent,
-          description: "",
-          category: defaultCategory,
-          tags: [],
-          status: "draft" as const,
-          isPublic: defaultIsPublic,
-          isNsfw: false
-        });
       }
     }
     
     console.log("Total prompts parsed:", allPrompts.length);
+    console.log("Sample prompts:", allPrompts.slice(0, 3).map(p => ({ name: p.name, contentLength: p.promptContent.length })));
     
     return allPrompts;
   };
