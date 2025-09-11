@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Camera, Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { isUnauthorizedError } from "@/lib/authUtils";
 
 interface ProfilePictureUploadProps {
   currentImageUrl?: string | null;
@@ -201,11 +202,26 @@ export function ProfilePictureUpload({
 
     } catch (error) {
       console.error('Error uploading profile picture:', error);
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload profile picture",
-        variant: "destructive",
-      });
+      
+      // Check if it's an authentication error
+      if (error instanceof Error && isUnauthorizedError(error)) {
+        toast({
+          title: "Session expired",
+          description: "Your session has expired. Redirecting to login...",
+          variant: "destructive",
+        });
+        
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 1500);
+      } else {
+        toast({
+          title: "Upload failed",
+          description: error instanceof Error ? error.message : "Failed to upload profile picture",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsUploading(false);
     }

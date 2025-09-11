@@ -11,6 +11,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  retryCount: number = 0,
 ): Promise<Response> {
   const res = await fetch(url, {
     method,
@@ -18,6 +19,16 @@ export async function apiRequest(
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+
+  // If we get a 401 and haven't retried yet, try once more
+  // This gives the server a chance to refresh the token
+  if (res.status === 401 && retryCount === 0) {
+    // Wait a bit for potential token refresh on server side
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Retry the request once
+    return apiRequest(method, url, data, retryCount + 1);
+  }
 
   await throwIfResNotOk(res);
   return res;
