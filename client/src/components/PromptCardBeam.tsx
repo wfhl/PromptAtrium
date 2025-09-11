@@ -1508,7 +1508,7 @@ fantasy concept art --ar 21:9\`;
       </div>
 
       {/* CSS Styles */}
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .card-wrapper {
           position: relative;
           width: 400px;
@@ -1651,7 +1651,7 @@ fantasy concept art --ar 21:9\`;
         .card-line:active {
           cursor: grabbing;
         }
-      `}</style>
+      `}} />
     </div>
   );
 };

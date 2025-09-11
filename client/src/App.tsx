@@ -53,8 +53,12 @@ function Router() {
           <Route path="/profile/settings">
             {() => <Layout><ProfileSettings /></Layout>}
           </Route>
-          <Route path="/tools/aspect-ratio-calculator" component={AspectRatioCalculatorPage} />
-          <Route path="/tools/metadata-analyzer" component={MetadataAnalyzerPage} />
+          <Route path="/tools/aspect-ratio-calculator">
+            {() => <Layout><AspectRatioCalculatorPage /></Layout>}
+          </Route>
+          <Route path="/tools/metadata-analyzer">
+            {() => <Layout><MetadataAnalyzerPage /></Layout>}
+          </Route>
         </>
       )}
       <Route path="/user/:username">
