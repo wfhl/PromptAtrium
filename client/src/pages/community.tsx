@@ -367,14 +367,14 @@ export default function Community() {
 
           {/* Sub-tabs styled like dashboard */}
           <Tabs value={promptsSubTab} onValueChange={setPromptsSubTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="featured" className="text-xs" data-testid="filter-featured">
+            <TabsList className="inline-flex w-auto">
+              <TabsTrigger value="featured" className="text-xs px-3" data-testid="filter-featured">
                 Featured
               </TabsTrigger>
-              <TabsTrigger value="trending" className="text-xs" data-testid="filter-trending">
+              <TabsTrigger value="trending" className="text-xs px-3" data-testid="filter-trending">
                 Trending
               </TabsTrigger>
-              <TabsTrigger value="recent" className="text-xs" data-testid="filter-recent">
+              <TabsTrigger value="recent" className="text-xs px-3" data-testid="filter-recent">
                 Recent
               </TabsTrigger>
             </TabsList>
