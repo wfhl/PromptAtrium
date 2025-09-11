@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, Users, Search, Shield, Moon, Sun } from "lucide-react";
 import { useState, useEffect } from "react";
+import PromptCardBeam from "@/components/PromptCardBeam";
 
 export default function Landing() {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -66,6 +67,11 @@ export default function Landing() {
             <a href="/api/login">Get Started</a>
           </Button>
         </div>
+      </section>
+
+      {/* Prompt Card Beam Animation */}
+      <section className="py-8">
+        <PromptCardBeam />
       </section>
 
       {/* Features */}
