@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +58,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     promptStyle: "",
     tags: "",
     isPublic: false,
+    isNsfw: false,
     collectionId: "none",
     license: "CC0 (Public Domain)",
     status: "published",
@@ -86,6 +88,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         promptStyle: prompt.promptStyle || "",
         tags: prompt.tags?.join(", ") || "",
         isPublic: prompt.isPublic ?? true,
+        isNsfw: prompt.isNsfw ?? false,
         collectionId: prompt.collectionId || "none",
         license: prompt.license || "CC0 (Public Domain)",
         status: prompt.status || "published",
@@ -111,6 +114,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           promptStyle: prompt.promptStyle || "",
           tags: prompt.tags?.join(", ") || "",
           isPublic: prompt.isPublic ?? false,
+          isNsfw: prompt.isNsfw ?? false,
           collectionId: prompt.collectionId || defaultCollectionId || "none",
           license: prompt.license || "CC0 (Public Domain)",
           status: prompt.status || "published",
@@ -135,6 +139,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           promptStyle: "",
           tags: "",
           isPublic: false,
+          isNsfw: false,
           collectionId: defaultCollectionId || "none",
           license: "CC0 (Public Domain)",
           status: "published",
@@ -718,6 +723,18 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="nsfw"
+              checked={formData.isNsfw}
+              onCheckedChange={(checked) => setFormData({ ...formData, isNsfw: !!checked })}
+              data-testid="checkbox-nsfw"
+            />
+            <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Mark as NSFW (Not Safe For Work)
+            </Label>
           </div>
 
           <div>
