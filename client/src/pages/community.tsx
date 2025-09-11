@@ -33,6 +33,23 @@ export default function Community() {
   const [generatorFilter, setGeneratorFilter] = useState("all");
   const [modelFilter, setModelFilter] = useState("all");
   const [collectionFilter, setCollectionFilter] = useState("all");
+  
+  // State for dynamic filter options
+  const [filterOptions, setFilterOptions] = useState<{
+    categories: string[];
+    promptTypes: string[];
+    promptStyles: string[];
+    intendedGenerators: string[];
+    models: string[];
+    collections: { id: string; name: string }[];
+  }>({
+    categories: [],
+    promptTypes: [],
+    promptStyles: [],
+    intendedGenerators: [],
+    models: [],
+    collections: []
+  });
   const [sortBy, setSortBy] = useState("featured");
   const [activeTab, setActiveTab] = useState("prompts");
   const [promptsSubTab, setPromptsSubTab] = useState("featured");
@@ -95,6 +112,25 @@ export default function Community() {
       refetch();
     }
   }, [promptsSubTab, activeTab, isAuthenticated]);
+  
+  // Fetch filter options from API
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetch('/api/prompts/options')
+        .then(res => res.json())
+        .then(data => {
+          setFilterOptions({
+            categories: data.categories || [],
+            promptTypes: data.promptTypes || [],
+            promptStyles: data.promptStyles || [],
+            intendedGenerators: data.intendedGenerators || [],
+            models: data.models || [],
+            collections: data.collections || []
+          });
+        })
+        .catch(err => console.error('Failed to fetch filter options:', err));
+    }
+  }, [isAuthenticated]);
 
   // Fetch all users
   const { data: allUsers = [] } = useQuery<User[]>({
@@ -326,13 +362,104 @@ export default function Community() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="Art & Design">Art & Design</SelectItem>
-                      <SelectItem value="Photography">Photography</SelectItem>
-                      <SelectItem value="Character Design">Character Design</SelectItem>
-                      <SelectItem value="Landscape">Landscape</SelectItem>
-                      <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
-                      <SelectItem value="Abstract">Abstract</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {filterOptions.categories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Type Filter */}
+                <div className="px-2 py-2">
+                  <label className="text-sm font-medium mb-2 block">Type</label>
+                  <Select value={typeFilter} onValueChange={(value) => {
+                    setTypeFilter(value);
+                    refetch();
+                  }}>
+                    <SelectTrigger className="w-full" data-testid="select-type">
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {filterOptions.promptTypes.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Style Filter */}
+                <div className="px-2 py-2">
+                  <label className="text-sm font-medium mb-2 block">Style</label>
+                  <Select value={styleFilter} onValueChange={(value) => {
+                    setStyleFilter(value);
+                    refetch();
+                  }}>
+                    <SelectTrigger className="w-full" data-testid="select-style">
+                      <SelectValue placeholder="All Styles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Styles</SelectItem>
+                      {filterOptions.promptStyles.map(style => (
+                        <SelectItem key={style} value={style}>{style}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Intended Generator Filter */}
+                <div className="px-2 py-2">
+                  <label className="text-sm font-medium mb-2 block">Intended Generator</label>
+                  <Select value={generatorFilter} onValueChange={(value) => {
+                    setGeneratorFilter(value);
+                    refetch();
+                  }}>
+                    <SelectTrigger className="w-full" data-testid="select-generator">
+                      <SelectValue placeholder="All Generators" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Generators</SelectItem>
+                      {filterOptions.intendedGenerators.map(gen => (
+                        <SelectItem key={gen} value={gen}>{gen}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Recommended Models Filter */}
+                <div className="px-2 py-2">
+                  <label className="text-sm font-medium mb-2 block">Recommended Model</label>
+                  <Select value={modelFilter} onValueChange={(value) => {
+                    setModelFilter(value);
+                    refetch();
+                  }}>
+                    <SelectTrigger className="w-full" data-testid="select-model">
+                      <SelectValue placeholder="All Models" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Models</SelectItem>
+                      {filterOptions.models.map(model => (
+                        <SelectItem key={model} value={model}>{model}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Collection Filter */}
+                <div className="px-2 py-2">
+                  <label className="text-sm font-medium mb-2 block">Collection</label>
+                  <Select value={collectionFilter} onValueChange={(value) => {
+                    setCollectionFilter(value);
+                    refetch();
+                  }}>
+                    <SelectTrigger className="w-full" data-testid="select-collection">
+                      <SelectValue placeholder="All Collections" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Collections</SelectItem>
+                      {filterOptions.collections.map(coll => (
+                        <SelectItem key={coll.id} value={coll.id}>{coll.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
