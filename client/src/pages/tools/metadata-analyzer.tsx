@@ -5,9 +5,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ToastAction } from "@/components/ui/toast";
 import { 
-  FileImage, Upload, Download, RotateCcw, Share2, Plus, 
-  Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch, ArrowRight 
+  FileImage, Upload, Download, Share2, Plus, 
+  Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch, ArrowRight, Share 
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MetadataExtractor } from "@/utils/metadata-extractor";
 import { Badge } from "@/components/ui/badge";
@@ -119,10 +125,12 @@ export default function MetadataAnalyzerPage() {
   const downloadMetadata = () => {
     if (!metadata) return;
     
-    const dataStr = JSON.stringify(metadata, null, 2);
+    // Create bulk import compatible JSON
+    const promptData = createPromptDataFromMetadata();
+    const dataStr = JSON.stringify(promptData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = `metadata-${selectedFile?.name?.replace(/\.[^/.]+$/, "")}.json`;
+    const exportFileDefaultName = `prompt-${selectedFile?.name?.replace(/\.[^/.]+$/, "")}.json`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -148,35 +156,98 @@ export default function MetadataAnalyzerPage() {
     }
   };
 
-  const shareResults = async () => {
-    if (!metadata) return;
+  // Helper function to create prompt data from metadata
+  const createPromptDataFromMetadata = () => {
+    if (!metadata) return null;
     
-    // Create a shareable URL with the metadata
-    const shareableData = {
-      image: selectedFile?.name,
-      ...metadata
+    // Create a prompt object compatible with bulk import
+    const promptData = {
+      name: selectedFile?.name.replace(/\.[^/.]+$/, '') || 'Imported Prompt',
+      promptContent: metadata.prompt || '',
+      description: `AI-generated image prompt${metadata.aiGenerator ? ` from ${metadata.aiGenerator}` : ''}`,
+      category: 'AI Art',
+      tags: metadata.aiGenerator ? [metadata.aiGenerator, 'imported', 'metadata-analyzer'] : ['imported', 'metadata-analyzer'],
+      status: 'published',
+      isPublic: false,
+      negativePrompt: metadata.negativePrompt || '',
+      intendedGenerator: metadata.aiGenerator === 'stable-diffusion' ? 'Stable Diffusion' :
+                        metadata.aiGenerator === 'midjourney' ? 'Midjourney' :
+                        metadata.aiGenerator === 'dall-e' ? 'DALL-E' :
+                        metadata.aiGenerator === 'comfyui' ? 'ComfyUI' : '',
+      technicalParams: {
+        ...(metadata.steps && { steps: metadata.steps }),
+        ...(metadata.cfgScale && { cfgScale: metadata.cfgScale }),
+        ...(metadata.sampler && { sampler: metadata.sampler }),
+        ...(metadata.scheduler && { scheduler: metadata.scheduler }),
+        ...(metadata.seed && { seed: metadata.seed }),
+        ...(metadata.model && { model: metadata.model }),
+        ...(metadata.mjVersion && { mjVersion: metadata.mjVersion }),
+        ...(metadata.mjAspectRatio && { mjAspectRatio: metadata.mjAspectRatio }),
+        ...(metadata.mjChaos && { mjChaos: metadata.mjChaos }),
+        ...(metadata.mjQuality && { mjQuality: metadata.mjQuality }),
+        ...(metadata.mjStylize && { mjStylize: metadata.mjStylize }),
+        ...(metadata.mjWeirdness && { mjWeirdness: metadata.mjWeirdness }),
+        ...(metadata.mjJobId && { mjJobId: metadata.mjJobId }),
+        ...(metadata.dalleVersion && { dalleVersion: metadata.dalleVersion }),
+        ...(metadata.dalleQuality && { dalleQuality: metadata.dalleQuality }),
+        ...(metadata.dalleStyle && { dalleStyle: metadata.dalleStyle }),
+      },
+      imageMetadata: {
+        width: metadata.width,
+        height: metadata.height,
+        fileSize: metadata.fileSize,
+        fileName: metadata.fileName,
+        fileType: metadata.fileType,
+        aspectRatio: metadata.aspectRatio,
+        lastModified: metadata.lastModified,
+      }
     };
     
-    // For now, copy a summary to clipboard
-    const shareText = `Image Metadata Analysis\n\nFile: ${selectedFile?.name}\n${
-      metadata.isAIGenerated ? `AI Generator: ${metadata.aiGenerator}\n` : ''
-    }${
-      metadata.prompt ? `Prompt: ${metadata.prompt.substring(0, 100)}...\n` : ''
-    }Dimensions: ${metadata.dimensionString}\nAspect Ratio: ${metadata.aspectRatio}`;
-    
+    return promptData;
+  };
+  
+  const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareText);
+      // Since this is metadata analysis, we'll share a link to the tools page
+      const shareableLink = `${window.location.origin}/tools/metadata-analyzer`;
+      await navigator.clipboard.writeText(shareableLink);
       toast({
-        title: "Share Ready",
-        description: "Analysis summary copied to clipboard",
+        title: "Copied!",
+        description: "Link to Metadata Analyzer copied to clipboard",
       });
-    } catch (err) {
+    } catch (error) {
       toast({
-        title: "Share failed",
-        description: "Unable to prepare share data",
-        variant: "destructive"
+        title: "Failed to copy",
+        description: "Could not copy link to clipboard",
+        variant: "destructive",
       });
     }
+  };
+  
+  const handleCopyJSON = async () => {
+    if (!metadata) return;
+    
+    // Format metadata as importable prompt JSON
+    const promptData = createPromptDataFromMetadata();
+    
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(promptData, null, 2));
+      toast({
+        title: "Copied!",
+        description: "Prompt JSON copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy JSON to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const shareResults = async () => {
+    // This is now just a legacy function that calls handleCopyJSON
+    await handleCopyJSON();
   };
 
   const addToLibrary = async () => {
@@ -330,16 +401,6 @@ export default function MetadataAnalyzerPage() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={handleReAnalyze}
-                        disabled={isAnalyzing}
-                        data-testid="button-reanalyze"
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Re-analyze
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
                         onClick={downloadMetadata}
                         disabled={!metadata}
                         data-testid="button-download-json"
@@ -347,16 +408,36 @@ export default function MetadataAnalyzerPage() {
                         <Download className="h-4 w-4 mr-2" />
                         Download JSON
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={shareResults}
-                        disabled={!metadata}
-                        data-testid="button-share"
-                      >
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share Results
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={!metadata}
+                            data-testid="button-share"
+                          >
+                            <Share className="h-4 w-4 mr-2" />
+                            Share Results
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={handleCopyLink}>
+                            Share Link
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleCopyJSON}>
+                            Copy JSON
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Email sharing coming soon!" })}>
+                            Email Prompt
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Google Drive integration coming soon!" })}>
+                            Save to Google Drive
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "System share coming soon!" })}>
+                            System Share
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -366,15 +447,6 @@ export default function MetadataAnalyzerPage() {
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add to Library
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleReset}
-                        data-testid="button-analyze-new"
-                      >
-                        <FileSearch className="h-4 w-4 mr-2" />
-                        Analyze New Image
                       </Button>
                     </div>
                   </CardContent>
