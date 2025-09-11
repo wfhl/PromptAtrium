@@ -3,101 +3,84 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { FileSearch, Upload, Download, RotateCcw, FileImage } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface ImageMetadata {
-  basic: {
-    fileName: string;
-    fileSize: string;
-    fileType: string;
-    dimensions: string;
-    aspectRatio: string;
-    lastModified: string;
-  };
-  exif?: Record<string, any>;
-  raw?: Record<string, any>;
-}
+import { 
+  FileImage, Upload, Download, RotateCcw, Share2, Plus, 
+  Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch 
+} from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { MetadataExtractor } from "@/utils/metadata-extractor";
+import { Badge } from "@/components/ui/badge";
 
 export default function MetadataAnalyzerPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<ImageMetadata | null>(null);
+  const [metadata, setMetadata] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    
+    await analyzeImage(file);
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select an image file",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setSelectedFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      analyzeImage(file);
+      handleFileSelect(file);
     }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
   };
 
   const analyzeImage = async (file: File) => {
     setIsAnalyzing(true);
     
     try {
-      // Create an image element to get dimensions
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = url;
-      });
-
-      // Calculate aspect ratio
-      const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
-      const divisor = gcd(img.width, img.height);
-      const aspectRatio = `${img.width / divisor}:${img.height / divisor}`;
-
-      // Basic metadata
-      const basicMetadata = {
-        fileName: file.name,
-        fileSize: formatFileSize(file.size),
-        fileType: file.type,
-        dimensions: `${img.width} × ${img.height}`,
-        aspectRatio: aspectRatio,
-        lastModified: new Date(file.lastModified).toLocaleString()
-      };
-
-      setMetadata({
-        basic: basicMetadata,
-        exif: {},
-        raw: {
-          width: img.width,
-          height: img.height,
-          size: file.size,
-          type: file.type,
-          lastModified: file.lastModified
-        }
-      });
-
-      URL.revokeObjectURL(url);
+      const extractedMetadata = await MetadataExtractor.extractFromFile(file);
+      setMetadata(extractedMetadata);
       
       toast({
         title: "Analysis complete",
-        description: "Image metadata extracted successfully"
+        description: extractedMetadata.isAIGenerated 
+          ? `AI-generated image detected (${extractedMetadata.aiGenerator})`
+          : "Image metadata extracted successfully"
       });
     } catch (error) {
       console.error('Error analyzing image:', error);
@@ -111,20 +94,18 @@ export default function MetadataAnalyzerPage() {
     }
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
   const handleReset = () => {
     setSelectedFile(null);
     setImagePreview(null);
     setMetadata(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleReAnalyze = () => {
+    if (selectedFile) {
+      analyzeImage(selectedFile);
     }
   };
 
@@ -142,11 +123,37 @@ export default function MetadataAnalyzerPage() {
     linkElement.click();
   };
 
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+      toast({
+        title: "Copied",
+        description: `${fieldName} copied to clipboard`,
+      });
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-6xl mx-auto">
-          <CardHeader>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <Card className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <CardHeader className="pb-4">
             <CardTitle className="text-2xl flex items-center gap-2">
               <FileSearch className="h-6 w-6" />
               Image Metadata Analyzer
@@ -156,110 +163,404 @@ export default function MetadataAnalyzerPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Upload Area */}
             {!selectedFile ? (
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center">
-                <FileImage className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Drop your image here</h3>
-                <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  id="file-upload"
-                  data-testid="input-file-upload"
-                />
-                <label htmlFor="file-upload">
-                  <Button asChild>
-                    <span>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Choose Image
-                    </span>
-                  </Button>
-                </label>
-              </div>
+              // Upload Section
+              <Card className="border-2 border-dashed">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Upload Image
+                  </CardTitle>
+                  <CardDescription>
+                    Drag and drop an image file or click to browse. Supports all major image formats.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                      isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+                    }`}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                  >
+                    <FileImage className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Drop your image here or click to browse
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                      id="file-upload"
+                      data-testid="input-file-upload"
+                    />
+                    <label htmlFor="file-upload">
+                      <Button asChild>
+                        <span>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Choose Image
+                        </span>
+                      </Button>
+                    </label>
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               <>
-                {/* Image Preview and Metadata */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Image Preview */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Image Preview</h3>
-                    <div className="border rounded-lg overflow-hidden bg-muted/10">
-                      {imagePreview && (
+                {/* Image Preview and File Info */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="relative group">
                         <img 
-                          src={imagePreview} 
+                          src={imagePreview || ''} 
                           alt="Preview" 
-                          className="w-full h-auto max-h-96 object-contain"
+                          className="w-32 h-32 object-cover rounded-lg border"
                         />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Metadata Display */}
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-lg font-semibold">Metadata</h3>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={downloadMetadata}
-                          disabled={!metadata}
-                          data-testid="button-download-metadata"
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Export
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="absolute top-1 right-1 h-6 w-6 p-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={handleReset}
-                          data-testid="button-reset"
                         >
-                          <RotateCcw className="h-4 w-4 mr-1" />
-                          Reset
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
-                    </div>
-
-                    {isAnalyzing ? (
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground">Analyzing image...</p>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold truncate flex-1 mr-2">
+                            {selectedFile.name}
+                          </h3>
+                          {metadata?.isAIGenerated && (
+                            <Badge variant="secondary" className="bg-green-500/10 text-green-600">
+                              🤖 AI Generated
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {formatFileSize(selectedFile.size)} • {selectedFile.type}
+                        </p>
+                        {metadata && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {metadata.dimensionString} • Aspect Ratio: {metadata.aspectRatio}
+                          </p>
+                        )}
                       </div>
-                    ) : metadata ? (
-                      <Tabs defaultValue="basic" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                          <TabsTrigger value="raw">Raw Data</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="basic" className="space-y-2">
-                          <div className="rounded-lg border p-4 space-y-2">
-                            {Object.entries(metadata.basic).map(([key, value]) => (
-                              <div key={key} className="flex justify-between">
-                                <span className="text-sm font-medium capitalize">
-                                  {key.replace(/([A-Z])/g, ' $1').trim()}:
-                                </span>
-                                <span className="text-sm text-muted-foreground">{value}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Metadata Results */}
+                {metadata && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">Metadata Results</CardTitle>
+                        {metadata.isAIGenerated && (
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            🤖 AI Generated
+                          </Badge>
+                        )}
+                      </div>
+                      <CardDescription>
+                        Comprehensive metadata analysis for {selectedFile.name}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Accordion type="multiple" defaultValue={["basic", "ai"]} className="w-full">
+                        {/* Basic Information */}
+                        <AccordionItem value="basic">
+                          <AccordionTrigger className="text-sm font-semibold text-blue-600">
+                            <div className="flex items-center gap-2">
+                              <FileImage className="h-4 w-4" />
+                              Basic Information
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div className="flex justify-between py-1">
+                                <span className="text-muted-foreground">Filename:</span>
+                                <span className="font-mono text-xs">{metadata.fileName}</span>
                               </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                        <TabsContent value="raw" className="space-y-2">
-                          <div className="rounded-lg border p-4">
-                            <pre className="text-xs overflow-auto max-h-96">
-                              {JSON.stringify(metadata.raw, null, 2)}
-                            </pre>
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                    ) : null}
-                  </div>
-                </div>
+                              <div className="flex justify-between py-1">
+                                <span className="text-muted-foreground">File Size:</span>
+                                <span>{formatFileSize(metadata.fileSize)}</span>
+                              </div>
+                              <div className="flex justify-between py-1">
+                                <span className="text-muted-foreground">Dimensions:</span>
+                                <span>{metadata.dimensionString} px</span>
+                              </div>
+                              <div className="flex justify-between py-1">
+                                <span className="text-muted-foreground">Aspect Ratio:</span>
+                                <span>{metadata.aspectRatio}</span>
+                              </div>
+                              <div className="flex justify-between py-1 col-span-2">
+                                <span className="text-muted-foreground">Format:</span>
+                                <span>{metadata.fileType}</span>
+                              </div>
+                              <div className="flex justify-between py-1 col-span-2">
+                                <span className="text-muted-foreground">Last Modified:</span>
+                                <span className="text-xs">{metadata.lastModified}</span>
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* AI Generation Information */}
+                        {metadata.isAIGenerated && (
+                          <AccordionItem value="ai">
+                            <AccordionTrigger className="text-sm font-semibold text-green-600">
+                              <div className="flex items-center gap-2">
+                                <Cpu className="h-4 w-4" />
+                                🤖 AI Generation ({metadata.aiGenerator === 'stable-diffusion' ? 'Stable Diffusion' : 
+                                  metadata.aiGenerator === 'midjourney' ? 'Midjourney' : 
+                                  metadata.aiGenerator === 'comfyui' ? 'ComfyUI' : 
+                                  metadata.aiGenerator})
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-3">
+                              {metadata.prompt && (
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium">Prompt:</span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 px-2"
+                                      onClick={() => copyToClipboard(metadata.prompt, 'Prompt')}
+                                    >
+                                      {copiedField === 'Prompt' ? (
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      ) : (
+                                        <Copy className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
+                                    <p className="text-sm whitespace-pre-wrap">{metadata.prompt}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {metadata.negativePrompt && (
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium">Negative:</span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 px-2"
+                                      onClick={() => copyToClipboard(metadata.negativePrompt, 'Negative Prompt')}
+                                    >
+                                      {copiedField === 'Negative Prompt' ? (
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      ) : (
+                                        <Copy className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                                    <p className="text-sm whitespace-pre-wrap">{metadata.negativePrompt}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                {metadata.steps && (
+                                  <div className="flex justify-between py-1">
+                                    <span className="text-muted-foreground">Steps:</span>
+                                    <span>{metadata.steps}</span>
+                                  </div>
+                                )}
+                                {metadata.cfgScale && (
+                                  <div className="flex justify-between py-1">
+                                    <span className="text-muted-foreground">CFG:</span>
+                                    <span>{metadata.cfgScale}</span>
+                                  </div>
+                                )}
+                                {metadata.seed && (
+                                  <div className="flex justify-between py-1 col-span-2">
+                                    <span className="text-muted-foreground">Seed:</span>
+                                    <span className="font-mono text-xs">{metadata.seed}</span>
+                                  </div>
+                                )}
+                                {metadata.sampler && (
+                                  <div className="flex justify-between py-1 col-span-2">
+                                    <span className="text-muted-foreground">Sampler:</span>
+                                    <span>{metadata.sampler}</span>
+                                  </div>
+                                )}
+                                {metadata.model && (
+                                  <div className="flex justify-between py-1 col-span-2">
+                                    <span className="text-muted-foreground">Model:</span>
+                                    <span className="text-xs truncate">{metadata.model}</span>
+                                  </div>
+                                )}
+                                
+                                {/* Midjourney specific */}
+                                {metadata.mjVersion && (
+                                  <div className="flex justify-between py-1">
+                                    <span className="text-muted-foreground">Version:</span>
+                                    <span>{metadata.mjVersion}</span>
+                                  </div>
+                                )}
+                                {metadata.mjAspectRatio && (
+                                  <div className="flex justify-between py-1">
+                                    <span className="text-muted-foreground">Aspect Ratio:</span>
+                                    <span>{metadata.mjAspectRatio}</span>
+                                  </div>
+                                )}
+                                {metadata.mjChaos && (
+                                  <div className="flex justify-between py-1">
+                                    <span className="text-muted-foreground">Chaos:</span>
+                                    <span>{metadata.mjChaos}</span>
+                                  </div>
+                                )}
+                                {metadata.mjQuality && (
+                                  <div className="flex justify-between py-1">
+                                    <span className="text-muted-foreground">Quality:</span>
+                                    <span>{metadata.mjQuality}</span>
+                                  </div>
+                                )}
+                                {metadata.mjWeirdness && (
+                                  <div className="flex justify-between py-1">
+                                    <span className="text-muted-foreground">Weirdness:</span>
+                                    <span>{metadata.mjWeirdness}</span>
+                                  </div>
+                                )}
+                                {metadata.mjJobId && (
+                                  <div className="flex justify-between py-1 col-span-2">
+                                    <span className="text-muted-foreground">Job ID:</span>
+                                    <span className="font-mono text-xs">{metadata.mjJobId}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        )}
+
+                        {/* Raw Metadata */}
+                        <AccordionItem value="raw">
+                          <AccordionTrigger className="text-sm font-semibold">
+                            Raw Metadata
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="bg-muted rounded-md p-3 max-h-64 overflow-auto">
+                              <pre className="text-xs">
+                                {JSON.stringify(metadata.rawMetadata || metadata, null, 2)}
+                              </pre>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Analysis Actions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Analysis Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleReAnalyze}
+                        disabled={isAnalyzing}
+                        data-testid="button-reanalyze"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Re-analyze
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={downloadMetadata}
+                        disabled={!metadata}
+                        data-testid="button-download-json"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download JSON
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled
+                        data-testid="button-share"
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share Results
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled
+                        data-testid="button-add-library"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add to Library
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          if (fileInputRef.current) {
+                            fileInputRef.current.click();
+                          }
+                        }}
+                        data-testid="button-analyze-new"
+                      >
+                        <FileImage className="h-4 w-4 mr-2" />
+                        Analyze New Image
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </>
             )}
+
+            {/* What can this analyzer detect? */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">What can this analyzer detect?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <h4 className="font-semibold mb-2 text-green-600">🤖 AI Generation</h4>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Stable Diffusion parameters</li>
+                      <li>• ComfyUI workflows</li>
+                      <li>• Midjourney settings</li>
+                      <li>• DALL-E metadata</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2 text-blue-600">📋 Technical Details</h4>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Image dimensions & format</li>
+                      <li>• Color space & depth</li>
+                      <li>• Compression settings</li>
+                      <li>• File size analysis</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2 text-purple-600">📷 Camera Data</h4>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• EXIF camera settings</li>
+                      <li>• Shooting parameters</li>
+                      <li>• GPS location data</li>
+                      <li>• Timestamp information</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </CardContent>
         </Card>
       </div>
