@@ -213,6 +213,22 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 Community
               </Link>
               
+              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
+                <Link 
+                  href="/admin" 
+                  className={isActiveRoute("/admin") ? "text-yellow-600 font-medium border-b-2 border-yellow-600 pb-4 -mb-4 flex items-center gap-1" : "text-yellow-600 hover:text-yellow-700 transition-colors flex items-center gap-1"} 
+                  data-testid="nav-admin"
+                >
+                  <Crown className="h-4 w-4" />
+                  Admin
+                </Link>
+              )}
+            </nav>
+          </div>
+          
+          <div className="flex items-center space-x-2 md:space-x-4">
+            {/* Resources and Tools dropdowns - moved to right side */}
+            <div className="hidden md:flex items-center space-x-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -224,7 +240,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48" data-testid="dropdown-resources">
+                <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-resources">
                   <DropdownMenuItem 
                     onClick={() => toast({
                       title: "Coming Soon",
@@ -272,7 +288,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48" data-testid="dropdown-tools">
+                <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-tools">
                   <DropdownMenuItem asChild>
                     <Link href="/tools/aspect-ratio-calculator" className="flex items-center cursor-pointer" data-testid="menu-aspect-ratio-calculator">
                       <Image className="mr-2 h-4 w-4" />
@@ -285,23 +301,20 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                       Metadata Analyzer
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => toast({
+                      title: "Coming Soon",
+                      description: "Prompt Generator will be available soon!",
+                    })}
+                    className="cursor-pointer"
+                    data-testid="menu-prompt-generator"
+                  >
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    Prompt Generator
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
-              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
-                <Link 
-                  href="/admin" 
-                  className={isActiveRoute("/admin") ? "text-yellow-600 font-medium border-b-2 border-yellow-600 pb-4 -mb-4 flex items-center gap-1" : "text-yellow-600 hover:text-yellow-700 transition-colors flex items-center gap-1"} 
-                  data-testid="nav-admin"
-                >
-                  <Crown className="h-4 w-4" />
-                  Admin
-                </Link>
-              )}
-            </nav>
-          </div>
-          
-          <div className="flex items-center space-x-2 md:space-x-4">
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
