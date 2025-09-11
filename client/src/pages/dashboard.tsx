@@ -356,6 +356,22 @@ export default function Dashboard() {
 
         {/* Quick Actions for Mobile - Show at top on mobile */}
         <div className="block md:hidden mb-3">
+          {/* Navigation Buttons */}
+          <div className="flex gap-2 mb-3">
+            <Link href="/library" className="flex-1">
+              <Button variant="outline" className="w-full" data-testid="button-my-prompts">
+                <FileText className="h-4 w-4 mr-2" />
+                My Prompts
+              </Button>
+            </Link>
+            <Link href="/community" className="flex-1">
+              <Button variant="outline" className="w-full" data-testid="button-community-prompts">
+                <Users className="h-4 w-4 mr-2" />
+                Community Prompts
+              </Button>
+            </Link>
+          </div>
+          
           <QuickActions
             onCreatePrompt={handleCreatePrompt}
             onCreateCollection={handleCreateCollection}
@@ -468,6 +484,22 @@ export default function Dashboard() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-4 md:space-y-6">
+            {/* Navigation Buttons - Desktop */}
+            <div className="hidden md:flex gap-2">
+              <Link href="/library" className="flex-1">
+                <Button variant="outline" className="w-full" data-testid="button-my-prompts-desktop">
+                  <FileText className="h-4 w-4 mr-2" />
+                  My Prompts
+                </Button>
+              </Link>
+              <Link href="/community" className="flex-1">
+                <Button variant="outline" className="w-full" data-testid="button-community-prompts-desktop">
+                  <Users className="h-4 w-4 mr-2" />
+                  Community Prompts
+                </Button>
+              </Link>
+            </div>
+            
             {/* Quick Actions - Hidden on mobile (shown at top) */}
             <div className="hidden md:block">
               <QuickActions
