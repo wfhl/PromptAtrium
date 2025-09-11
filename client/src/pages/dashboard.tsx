@@ -141,12 +141,8 @@ export default function Dashboard() {
   };
 
   const handleEditPrompt = (prompt: Prompt) => {
-    // Ensure prompt is set before opening modal
     setEditingPrompt(prompt);
-    // Use setTimeout to ensure state is updated before opening modal
-    setTimeout(() => {
-      setPromptModalOpen(true);
-    }, 0);
+    setPromptModalOpen(true);
   };
 
   // Collection form

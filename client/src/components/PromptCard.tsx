@@ -568,30 +568,68 @@ export function PromptCard({
       return await response.json();
     },
     onMutate: async () => {
-      // Cancel all prompt queries to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
+      // Cancel prompt-specific queries to prevent race conditions
+      await queryClient.cancelQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || 
+                 queryKey?.includes("/prompts");
+        }
+      });
       
-      // Get all existing prompt queries 
-      const previousData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      // Get all existing prompt queries including collection-specific ones
+      const previousData = queryClient.getQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || 
+                 queryKey?.includes("/prompts");
+        }
+      });
       
       // Update all matching prompt queries with optimistic visibility toggle
-      queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
+      queryClient.setQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || 
+                 queryKey?.includes("/prompts");
+        }
+      }, (old: any) => {
         if (!old) return old;
-        return old.map((p: any) => 
-          p.id === prompt.id 
-            ? { ...p, isPublic: !p.isPublic }
-            : p
-        );
+        
+        // Handle array format
+        if (Array.isArray(old)) {
+          return old.map((p: any) => 
+            p.id === prompt.id 
+              ? { ...p, isPublic: !p.isPublic }
+              : p
+          );
+        }
+        
+        // Handle object with items property
+        if (old.items && Array.isArray(old.items)) {
+          return {
+            ...old,
+            items: old.items.map((p: any) => 
+              p.id === prompt.id 
+                ? { ...p, isPublic: !p.isPublic }
+                : p
+            )
+          };
+        }
+        
+        return old;
       });
       
       return { previousData };
     },
     onSuccess: (data) => {
-      // Invalidate ALL prompt queries - Dashboard, Library, any page
+      // Invalidate prompt-specific queries
       queryClient.invalidateQueries({ 
         predicate: (query) => {
           const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/favorites");
+          return queryKey?.includes("/api/prompts") || 
+                 queryKey?.includes("/prompts") ||
+                 queryKey?.includes("/api/user/favorites");
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
