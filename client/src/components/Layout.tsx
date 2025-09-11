@@ -217,7 +217,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-[16px]"
                     data-testid="nav-resources"
                   >
                     Resources
