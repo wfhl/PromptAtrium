@@ -139,6 +139,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Username availability check endpoint
+  app.get('/api/check-username/:username', async (req, res) => {
+    try {
+      const { username } = req.params;
+      const currentUserId = (req.user as any)?.claims?.sub;
+      
+      // Validate username format
+      const usernameRegex = /^[a-zA-Z0-9_-]{3,30}$/;
+      if (!usernameRegex.test(username)) {
+        return res.json({ 
+          available: false, 
+          message: "Username must be 3-30 characters and contain only letters, numbers, hyphens, and underscores" 
+        });
+      }
+      
+      const existingUser = await storage.getUserByUsername(username);
+      
+      // Username is available if no user exists or it's the current user's username
+      const available = !existingUser || (currentUserId && existingUser.id === currentUserId);
+      
+      res.json({ 
+        available,
+        message: available ? "Username is available" : "Username is already taken"
+      });
+    } catch (error) {
+      console.error("Error checking username:", error);
+      res.status(500).json({ message: "Failed to check username availability" });
+    }
+  });
+
   app.get('/api/profile/:username', async (req, res) => {
     try {
       const { username } = req.params;
