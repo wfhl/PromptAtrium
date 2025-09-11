@@ -852,30 +852,39 @@ fantasy concept art --ar 21:9\`;
     }
 
     init() {
-      this.scene = new THREE.Scene();
+      try {
+        if (typeof THREE === 'undefined') {
+          throw new Error('THREE.js is not loaded');
+        }
+        
+        this.scene = new THREE.Scene();
 
-      this.camera = new THREE.OrthographicCamera(
-        -window.innerWidth / 2,
-        window.innerWidth / 2,
-        125,
-        -125,
-        1,
-        1000
-      );
-      this.camera.position.z = 100;
+        this.camera = new THREE.OrthographicCamera(
+          -window.innerWidth / 2,
+          window.innerWidth / 2,
+          125,
+          -125,
+          1,
+          1000
+        );
+        this.camera.position.z = 100;
 
-      this.renderer = new THREE.WebGLRenderer({
-        canvas: this.canvas,
-        alpha: true,
-        antialias: true,
-      });
-      this.renderer.setSize(window.innerWidth, 250);
-      this.renderer.setClearColor(0x000000, 0);
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: this.canvas,
+          alpha: true,
+          antialias: true,
+        });
+        this.renderer.setSize(window.innerWidth, 250);
+        this.renderer.setClearColor(0x000000, 0);
 
-      this.createParticles();
-      this.animate();
+        this.createParticles();
+        this.animate();
 
-      window.addEventListener("resize", () => this.onWindowResize());
+        window.addEventListener("resize", () => this.onWindowResize());
+      } catch (error) {
+        console.warn('Failed to initialize Three.js particle system:', error);
+        throw error; // Re-throw to be caught by the parent
+      }
     }
 
     createParticles() {
@@ -1346,9 +1355,16 @@ fantasy concept art --ar 21:9\`;
   // Initialize everything
   useEffect(() => {
     if (particleCanvasRef.current && scannerCanvasRef.current) {
-      // Initialize particle systems
-      particleSystemRef.current = new ParticleSystem(particleCanvasRef.current);
-      particleScannerRef.current = new ParticleScanner(scannerCanvasRef.current);
+      try {
+        // Initialize particle systems
+        particleSystemRef.current = new ParticleSystem(particleCanvasRef.current);
+        particleScannerRef.current = new ParticleScanner(scannerCanvasRef.current);
+      } catch (error) {
+        console.warn('WebGL not available or Three.js initialization failed:', error);
+        // Continue without particle effects
+        particleSystemRef.current = null;
+        particleScannerRef.current = null;
+      }
 
       // Populate cards
       populateCardLine();
