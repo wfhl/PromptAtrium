@@ -403,23 +403,49 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
             isNsfw: item.isNsfw || item.nsfw || false
           }));
         } catch (standardJsonError) {
-          // If standard JSON parsing fails, try JSONL format (newline-delimited JSON)
-          const lines = content.trim().split('\n');
+          // If standard JSON parsing fails, try to handle various JSONL formats
           const jsonObjects: any[] = [];
           
-          for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine) continue;
+          // First try: Split by }\n{ pattern (JSONL format)
+          const jsonPattern = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g;
+          const matches = content.match(jsonPattern);
+          
+          if (matches && matches.length > 0) {
+            for (const match of matches) {
+              try {
+                // Clean up the match - remove trailing commas and whitespace
+                const cleanedMatch = match.trim().replace(/,\s*$/, '');
+                const obj = JSON.parse(cleanedMatch);
+                jsonObjects.push(obj);
+              } catch (parseError) {
+                console.warn("Failed to parse JSON object:", match.substring(0, 100));
+              }
+            }
+          }
+          
+          // If no objects found with pattern matching, try line-by-line
+          if (jsonObjects.length === 0) {
+            const lines = content.split('\n');
+            let currentObject = '';
             
-            // Try to parse each line as a JSON object
-            try {
-              // Handle lines that might have trailing commas
-              const cleanLine = trimmedLine.replace(/,\s*$/, '');
-              const obj = JSON.parse(cleanLine);
-              jsonObjects.push(obj);
-            } catch (lineError) {
-              // Skip invalid lines
-              console.warn("Skipping invalid JSON line:", trimmedLine);
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (!trimmedLine) continue;
+              
+              currentObject += trimmedLine;
+              
+              // Check if we have a complete object
+              if (trimmedLine.endsWith('}') || trimmedLine.endsWith('},')) {
+                try {
+                  // Remove trailing comma if present
+                  const cleanObject = currentObject.replace(/,\s*$/, '');
+                  const obj = JSON.parse(cleanObject);
+                  jsonObjects.push(obj);
+                  currentObject = '';
+                } catch (parseError) {
+                  // Continue accumulating lines
+                }
+              }
             }
           }
           
@@ -487,7 +513,55 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     let allPrompts: ParsedPrompt[] = [];
     const processedContent = new Set<string>(); // Track processed content to avoid duplicates
     
-    // First, handle special formatted prompts with emoji markers (🧿 format)
+    // First, try to detect if the content contains JSON objects
+    const jsonPattern = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g;
+    const jsonMatches = content.match(jsonPattern);
+    
+    if (jsonMatches && jsonMatches.length > 0) {
+      // This looks like JSON content - try to parse JSON objects
+      let parsedJsonPrompts = false;
+      
+      for (const match of jsonMatches) {
+        try {
+          // Clean up the match - remove trailing commas and whitespace
+          const cleanedMatch = match.trim().replace(/,\s*$/, '');
+          const obj = JSON.parse(cleanedMatch);
+          
+          // Check if this is a prompt object with name and content
+          if (obj.name && (obj.content || obj.prompt)) {
+            const promptContent = obj.content || obj.prompt;
+            const key = `${obj.name}_${promptContent.substring(0, 50)}`;
+            
+            if (!processedContent.has(key)) {
+              processedContent.add(key);
+              allPrompts.push({
+                name: obj.name,
+                promptContent: promptContent,
+                description: obj.description || "",
+                category: obj.category || defaultCategory,
+                tags: Array.isArray(obj.tags) ? obj.tags : (obj.tags ? obj.tags.split(',').map((t: string) => t.trim()) : []),
+                status: (obj.status === "published" ? "published" : "draft") as "draft" | "published",
+                isPublic: obj.isPublic || obj.public || defaultIsPublic,
+                isNsfw: obj.isNsfw || obj.nsfw || false
+              });
+              parsedJsonPrompts = true;
+            }
+          }
+        } catch (parseError) {
+          // Not a valid JSON object, continue
+        }
+      }
+      
+      // If we successfully parsed JSON prompts, return them
+      if (parsedJsonPrompts && allPrompts.length > 0) {
+        console.log("Parsed JSON prompts:", allPrompts.length);
+        return allPrompts;
+      }
+    }
+    
+    // If not JSON or JSON parsing failed, continue with other formats
+    
+    // Handle special formatted prompts with emoji markers (🧿 format)
     const emojiPromptPattern = /🧿\s*Prompt Name:\s*([^\n]+)\s*\nCode:\s*([^\n]+)\s*\n+([\s\S]*?)(?=(?:🧿\s*Prompt Name:|$))/g;
     let match;
     
