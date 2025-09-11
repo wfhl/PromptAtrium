@@ -388,17 +388,56 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           isNsfw: row.isNsfw === "true" || row.nsfw === "true"
         }));
       } else if (extension === 'json') {
-        const jsonData = JSON.parse(content);
-        const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData];
-        parsed = dataArray.map((item: any, index: number) => ({
-          name: item.name || item.title || `Prompt ${index + 1}`,
-          promptContent: item.prompt || item.content || item.promptContent || item.positive_prompt || item.negative_prompt || "",
-          description: item.description || "",
-          category: item.category || "",
-          tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',').map((t: string) => t.trim()) : []),
-          status: (item.status === "published" ? "published" : "draft") as "draft" | "published",
-          isPublic: item.isPublic || item.public || false
-        }));
+        // Try standard JSON parsing first
+        try {
+          const jsonData = JSON.parse(content);
+          const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData];
+          parsed = dataArray.map((item: any, index: number) => ({
+            name: item.name || item.title || `Prompt ${index + 1}`,
+            promptContent: item.prompt || item.content || item.promptContent || item.positive_prompt || item.negative_prompt || "",
+            description: item.description || "",
+            category: item.category || "",
+            tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',').map((t: string) => t.trim()) : []),
+            status: (item.status === "published" ? "published" : "draft") as "draft" | "published",
+            isPublic: item.isPublic || item.public || false,
+            isNsfw: item.isNsfw || item.nsfw || false
+          }));
+        } catch (standardJsonError) {
+          // If standard JSON parsing fails, try JSONL format (newline-delimited JSON)
+          const lines = content.trim().split('\n');
+          const jsonObjects: any[] = [];
+          
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+            
+            // Try to parse each line as a JSON object
+            try {
+              // Handle lines that might have trailing commas
+              const cleanLine = trimmedLine.replace(/,\s*$/, '');
+              const obj = JSON.parse(cleanLine);
+              jsonObjects.push(obj);
+            } catch (lineError) {
+              // Skip invalid lines
+              console.warn("Skipping invalid JSON line:", trimmedLine);
+            }
+          }
+          
+          if (jsonObjects.length === 0) {
+            throw new Error("No valid JSON objects found in file");
+          }
+          
+          parsed = jsonObjects.map((item: any, index: number) => ({
+            name: item.name || item.title || `Prompt ${index + 1}`,
+            promptContent: item.prompt || item.content || item.promptContent || item.positive_prompt || item.negative_prompt || "",
+            description: item.description || "",
+            category: item.category || "",
+            tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',').map((t: string) => t.trim()) : []),
+            status: (item.status === "published" ? "published" : "draft") as "draft" | "published",
+            isPublic: item.isPublic || item.public || false,
+            isNsfw: item.isNsfw || item.nsfw || false
+          }));
+        }
       } else if (extension === 'txt') {
         parsed = parseTxtContent(content);
       }
