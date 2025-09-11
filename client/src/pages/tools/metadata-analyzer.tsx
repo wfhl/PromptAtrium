@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { saveToGoogleDrive, isGoogleDriveConnected } from "@/utils/googleDrive";
 import { 
   FileImage, Upload, Download, Share2, Plus, 
-  Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch, ArrowRight, Share 
+  Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch, ArrowRight 
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -587,7 +587,7 @@ export default function MetadataAnalyzerPage() {
                             disabled={!metadata}
                             data-testid="button-share"
                           >
-                            <Share className="h-4 w-4 mr-2" />
+                            <Share2 className="h-4 w-4 mr-2" />
                             Share Results
                           </Button>
                         </DropdownMenuTrigger>
