@@ -406,48 +406,78 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           // If standard JSON parsing fails, try to handle various JSONL formats
           const jsonObjects: any[] = [];
           
-          // First try: Split by }\n{ pattern (JSONL format)
-          const jsonPattern = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g;
-          const matches = content.match(jsonPattern);
+          // Handle multi-line JSON objects with trailing commas
+          // Split by the pattern where we have a closing brace followed by comma and newline, then opening brace
+          const objectPattern = /\{[^}]*"name"\s*:\s*"[^"]*"[^}]*"content"\s*:\s*"[^"]*"[^}]*\},?/gs;
+          const matches = content.match(objectPattern);
           
           if (matches && matches.length > 0) {
+            console.log(`Found ${matches.length} JSON objects using pattern matching`);
             for (const match of matches) {
               try {
-                // Clean up the match - remove trailing commas and whitespace
+                // Remove trailing comma if present
                 const cleanedMatch = match.trim().replace(/,\s*$/, '');
                 const obj = JSON.parse(cleanedMatch);
-                jsonObjects.push(obj);
+                if (obj.name && obj.content) {
+                  jsonObjects.push(obj);
+                }
               } catch (parseError) {
                 console.warn("Failed to parse JSON object:", match.substring(0, 100));
               }
             }
           }
           
-          // If no objects found with pattern matching, try line-by-line
+          // If pattern matching didn't work, try accumulating lines
           if (jsonObjects.length === 0) {
             const lines = content.split('\n');
             let currentObject = '';
+            let braceCount = 0;
             
             for (const line of lines) {
               const trimmedLine = line.trim();
-              if (!trimmedLine) continue;
               
-              currentObject += trimmedLine;
+              // Count braces to track object boundaries
+              for (const char of trimmedLine) {
+                if (char === '{') braceCount++;
+                if (char === '}') braceCount--;
+              }
               
-              // Check if we have a complete object
-              if (trimmedLine.endsWith('}') || trimmedLine.endsWith('},')) {
+              currentObject += (currentObject ? ' ' : '') + trimmedLine;
+              
+              // When braces are balanced and we have content, try to parse
+              if (braceCount === 0 && currentObject.includes('{')) {
                 try {
                   // Remove trailing comma if present
                   const cleanObject = currentObject.replace(/,\s*$/, '');
                   const obj = JSON.parse(cleanObject);
-                  jsonObjects.push(obj);
+                  if (obj.name && obj.content) {
+                    jsonObjects.push(obj);
+                  }
                   currentObject = '';
                 } catch (parseError) {
-                  // Continue accumulating lines
+                  // If parsing fails but braces are balanced, reset and continue
+                  if (currentObject.includes('}')) {
+                    currentObject = '';
+                  }
                 }
               }
             }
+            
+            // Try to parse any remaining content
+            if (currentObject.trim()) {
+              try {
+                const cleanObject = currentObject.replace(/,\s*$/, '');
+                const obj = JSON.parse(cleanObject);
+                if (obj.name && obj.content) {
+                  jsonObjects.push(obj);
+                }
+              } catch (parseError) {
+                // Ignore final parsing error
+              }
+            }
           }
+          
+          console.log(`Successfully parsed ${jsonObjects.length} prompts from JSON file`);
           
           if (jsonObjects.length === 0) {
             throw new Error("No valid JSON objects found in file");
