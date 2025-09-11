@@ -5,11 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { 
   FileImage, Upload, Download, RotateCcw, Share2, Plus, 
-  Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch 
+  Copy, Check, ChevronUp, ChevronDown, X, Cpu, FileSearch, ArrowRight 
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MetadataExtractor } from "@/utils/metadata-extractor";
 import { Badge } from "@/components/ui/badge";
+import { PromptModal } from "@/components/PromptModal";
+import { useLocation } from "wouter";
+import type { Prompt } from "@shared/schema";
 
 export default function MetadataAnalyzerPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -18,7 +21,10 @@ export default function MetadataAnalyzerPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [prefilledPromptData, setPrefilledPromptData] = useState<Partial<Prompt> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const handleFileSelect = async (file: File) => {
@@ -173,21 +179,75 @@ export default function MetadataAnalyzerPage() {
   };
 
   const addToLibrary = async () => {
-    if (!metadata || !metadata.prompt) {
+    if (!metadata) {
       toast({
         title: "Cannot add to library",
-        description: "No AI prompt found in image metadata",
+        description: "No metadata found in image",
         variant: "destructive"
       });
       return;
     }
     
-    // For now, show a success message
-    // In the future, this would integrate with the prompts library
-    toast({
-      title: "Added to Library",
-      description: `Prompt from ${selectedFile?.name} has been saved to your library`,
-    });
+    // Map AI generator to intended generator
+    let intendedGenerator = '';
+    if (metadata.aiGenerator === 'stable-diffusion') {
+      intendedGenerator = 'Stable Diffusion';
+    } else if (metadata.aiGenerator === 'midjourney') {
+      intendedGenerator = 'Midjourney';
+    } else if (metadata.aiGenerator === 'dall-e') {
+      intendedGenerator = 'DALL-E';
+    } else if (metadata.aiGenerator === 'comfyui') {
+      intendedGenerator = 'ComfyUI';
+    }
+    
+    // Prepare technical parameters object
+    const technicalParams: any = {};
+    if (metadata.steps) technicalParams.steps = metadata.steps;
+    if (metadata.cfgScale) technicalParams.cfgScale = metadata.cfgScale;
+    if (metadata.sampler) technicalParams.sampler = metadata.sampler;
+    if (metadata.scheduler) technicalParams.scheduler = metadata.scheduler;
+    if (metadata.seed) technicalParams.seed = metadata.seed;
+    if (metadata.model) technicalParams.model = metadata.model;
+    
+    // Add Midjourney specific parameters
+    if (metadata.mjVersion) technicalParams.mjVersion = metadata.mjVersion;
+    if (metadata.mjAspectRatio) technicalParams.mjAspectRatio = metadata.mjAspectRatio;
+    if (metadata.mjChaos) technicalParams.mjChaos = metadata.mjChaos;
+    if (metadata.mjQuality) technicalParams.mjQuality = metadata.mjQuality;
+    if (metadata.mjStylize) technicalParams.mjStylize = metadata.mjStylize;
+    if (metadata.mjWeirdness) technicalParams.mjWeirdness = metadata.mjWeirdness;
+    if (metadata.mjJobId) technicalParams.mjJobId = metadata.mjJobId;
+    
+    // Add DALL-E specific parameters
+    if (metadata.dalleVersion) technicalParams.dalleVersion = metadata.dalleVersion;
+    if (metadata.dalleQuality) technicalParams.dalleQuality = metadata.dalleQuality;
+    if (metadata.dalleStyle) technicalParams.dalleStyle = metadata.dalleStyle;
+    
+    // Use the image preview if available
+    let exampleImages: string[] = [];
+    if (imagePreview) {
+      exampleImages = [imagePreview];
+    }
+    
+    // Prepare prefilled data for the modal
+    const prefilled: Partial<Prompt> = {
+      name: selectedFile?.name.replace(/\.[^/.]+$/, '') || 'Imported Prompt',
+      description: `AI-generated image prompt${metadata.aiGenerator ? ` from ${intendedGenerator}` : ''}`,
+      promptContent: metadata.prompt || '',
+      negativePrompt: metadata.negativePrompt || '',
+      intendedGenerator: intendedGenerator,
+      recommendedModels: metadata.model ? [metadata.model] : [],
+      technicalParams: Object.keys(technicalParams).length > 0 ? technicalParams : null,
+      exampleImagesUrl: exampleImages,
+      category: 'AI Art',
+      promptType: 'Image Generation',
+      isPublic: false,
+      status: 'published',
+      tags: metadata.aiGenerator ? [metadata.aiGenerator, 'imported', 'metadata-analyzer'] : ['imported', 'metadata-analyzer'],
+    };
+    
+    setPrefilledPromptData(prefilled);
+    setPromptModalOpen(true);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -639,6 +699,14 @@ export default function MetadataAnalyzerPage() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Prompt Modal for adding to library */}
+      <PromptModal
+        open={promptModalOpen}
+        onOpenChange={setPromptModalOpen}
+        prompt={prefilledPromptData as any}
+        mode="create"
+      />
     </Layout>
   );
 }
