@@ -689,7 +689,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                       {collection.name}
                     </SelectItem>
                   ))}
-                  {collections?.map((collection) => (
+                  {collections?.filter(collection => 
+                    !optimisticCollections.some(opt => opt.id === collection.id)
+                  ).map((collection) => (
                     <SelectItem key={collection.id} value={collection.id}>
                       {collection.name}
                     </SelectItem>
