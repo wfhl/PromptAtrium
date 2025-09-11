@@ -1037,7 +1037,7 @@ export function PromptCard({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                      className="h-8 w-8 p-0 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                       data-testid={`button-share-${prompt.id}`}
                     >
                       <Share2 className="h-4 w-4" />
@@ -1067,7 +1067,7 @@ export function PromptCard({
                   size="sm"
                   variant="ghost"
                   onClick={handleDownload}
-                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-download-${prompt.id}`}
                 >
                   <Download className="h-4 w-4" />
@@ -1103,7 +1103,7 @@ export function PromptCard({
                     variant="ghost"
                     onClick={handleArchiveClick}
                     disabled={archiveMutation.isPending}
-                    className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                    className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid={`button-archive-${prompt.id}`}
                   >
                     <Archive className="h-4 w-4" />
@@ -1156,7 +1156,7 @@ export function PromptCard({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                      className="h-8 w-8 p-0 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                       data-testid={`button-share-${prompt.id}`}
                     >
                       <Share2 className="h-4 w-4" />
@@ -1177,7 +1177,7 @@ export function PromptCard({
                   size="sm"
                   variant="ghost"
                   onClick={handleDownload}
-                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                   data-testid={`button-download-${prompt.id}`}
                 >
                   <Download className="h-4 w-4" />
