@@ -35,7 +35,7 @@ const CardBeamAnimation = () => {
     {
       category: "1 Architecture",
       colors: ["#667eea", "#764ba2"],
-      image: "client/public/PromptCardBeamImages/0_1villa.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1villa.jpg", // YOUR IMAGE HERE
       text: `// AI Architecture Generator
 const generateMansion = async () => {
   const prompt = \`Luxurious mansion in Monaco villa style, 
@@ -58,7 +58,7 @@ photorealistic 8K --ar 4:3 --quality 2 --raw\`;
     {
       category: "2 Fashion",
       colors: ["#ff6b6b", "#ee5a24"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1-2.jpg", // YOUR IMAGE HERE
       text: `// Fashion Photography AI
 const generateRunwayShoot = async () => {
   const prompt = \`realistic photography, glowing neon ink dragons 
@@ -79,7 +79,7 @@ Japanese fashion show runway --chaos 10 --ar 4:3 --exp 30 --raw\`;
     {
       category: "3 Pop-up Book",
       colors: ["#4ecdc4", "#44a08d"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_2papercastle.jpg", // YOUR IMAGE HERE
       text: `// Pop-up Book Art Generator
 const generatePopupBook = async () => {
   const prompt = \`Whimsical pop-up book illustration, fairy tale style, 
@@ -96,11 +96,11 @@ dreamy pastel colors, sparkling stars --ar 4:3 --raw\`;
 };`
     },
     {
-      category: "4 Cyberpunk",
+      category: "4 Bodyart",
       colors: ["#a55eea", "#8854d0"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
-      text: `// Cyberpunk City Generator
-const generateCyberpunkCity = async () => {
+      image: "/PromptCardBeamImages/0_3dragonbodyart.jpg", // YOUR IMAGE HERE
+      text: `// Bodyart City Generator
+const generateBodyart = async () => {
   const prompt = \`Neon-lit cyberpunk cityscape at night, 
 towering skyscrapers with holographic advertisements, 
 flying cars, rain-soaked streets reflecting neon lights, 
@@ -121,7 +121,7 @@ blade runner aesthetic --ar 16:9 --v 6\`;
     {
       category: "5 Portrait",
       colors: ["#26d0ce", "#1a9e9c"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1-3.jpg", // YOUR IMAGE HERE
       text: `// Portrait Art Generator
 const generateArtisticPortrait = async () => {
   const prompt = \`Ethereal portrait of woman with flowing hair, 
@@ -143,7 +143,7 @@ delicate details --ar 3:4 --stylize 1000\`;
     {
       category: "6 Landscape",
       colors: ["#fed330", "#f39c12"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_2-3.jpg", // YOUR IMAGE HERE
       text: `// Landscape Photography AI
 const generateLandscape = async () => {
   const prompt = \`Dramatic mountain landscape at golden hour, 
@@ -165,7 +165,7 @@ ultra-wide angle, sharp details --ar 21:9\`;
     {
       category: "7 Abstract",
       colors: ["#fa8231", "#f0932b"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_3.jpg", // YOUR IMAGE HERE
       text: `// Abstract Art Generator
 const generateAbstract = async () => {
   const prompt = \`Fluid abstract composition with swirling colors, 
@@ -187,7 +187,7 @@ high contrast --ar 1:1 --chaos 20\`;
     {
       category: "8 Character",
       colors: ["#6c5ce7", "#5f3dc4"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1-1.jpg", // YOUR IMAGE HERE
       text: `// Character Design AI
 const generateCharacter = async () => {
   const prompt = \`Fantasy warrior character design, 
@@ -209,7 +209,7 @@ professional game art style --ar 3:4\`;
     {
       category: "9 Product",
       colors: ["#00b894", "#00a085"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1.jpg", // YOUR IMAGE HERE
       text: `// Product Design Generator
 const generateProduct = async () => {
   const prompt = \`Sleek modern smartphone design, 
@@ -231,7 +231,7 @@ studio lighting --ar 3:4\`;
     {
       category: "10 Food",
       colors: ["#fd79a8", "#e84393"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_20gemcake.jpg", // YOUR IMAGE HERE
       text: `// Food Photography AI
 const generateFoodPhoto = async () => {
   const prompt = \`Gourmet dish presentation, 
@@ -253,7 +253,7 @@ appetizing and vibrant --ar 4:5\`;
     {
       category: "11 Space",
       colors: ["#0984e3", "#74b9ff"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1-8.jpg", // YOUR IMAGE HERE
       text: `// Space Art Generator
 const generateSpaceScene = async () => {
   const prompt = \`Vast cosmic nebula with swirling gases, 
@@ -275,7 +275,7 @@ deep space beauty --ar 16:9\`;
     {
       category: "12 Retro",
       colors: ["#e17055", "#d63031"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1-7.jpg", // YOUR IMAGE HERE
       text: `// Retro Art Generator
 const generateRetroArt = async () => {
   const prompt = \`80s retro synthwave aesthetic, 
@@ -296,7 +296,7 @@ outrun style, nostalgic atmosphere --ar 16:9\`;
     {
       category: "13 Wildlife",
       colors: ["#00cec9", "#55a3ff"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_3-2.jpg", // YOUR IMAGE HERE
       text: `// Wildlife Photography AI
 const generateWildlife = async () => {
   const prompt = \`Majestic tiger in natural habitat, 
@@ -316,11 +316,11 @@ National Geographic style --ar 3:2\`;
 };`
     },
     {
-      category: "14 Steampunk",
+      category: "14 Urbanpunk",
       colors: ["#fdcb6e", "#e17055"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
-      text: `// Steampunk Design Generator
-const generateSteampunk = async () => {
+      image: "/PromptCardBeamImages/0_0.jpg", // YOUR IMAGE HERE
+      text: `// Urbanpunk Design Generator
+const generateUrbanpunk = async () => {
   const prompt = \`Intricate steampunk mechanical device, 
 brass gears and copper pipes, 
 Victorian-era industrial design, 
@@ -340,7 +340,7 @@ sepia-toned photography --ar 4:3\`;
     {
       category: "15 Minimalist",
       colors: ["#81ecec", "#00b894"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1-4.jpg", // YOUR IMAGE HERE
       text: `// Minimalist Art Generator
 const generateMinimalist = async () => {
   const prompt = \`Clean minimalist composition, 
@@ -362,7 +362,7 @@ serene and balanced --ar 1:1\`;
     {
       category: "16 Horror",
       colors: ["#2d3436", "#636e72"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_2-4.jpg", // YOUR IMAGE HERE
       text: `// Horror Art Generator
 const generateHorrorArt = async () => {
   const prompt = \`Dark gothic cathedral interior, 
@@ -384,7 +384,7 @@ cinematic lighting --ar 9:16\`;
     {
       category: "17 Underwater",
       colors: ["#00b894", "#55efc4"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_0-3.jpg", // YOUR IMAGE HERE
       text: `// Underwater Scene Generator
 const generateUnderwater = async () => {
   const prompt = \`Vibrant coral reef ecosystem, 
@@ -406,7 +406,7 @@ underwater photography --ar 16:9\`;
     {
       category: "18 Anime",
       colors: ["#ff7675", "#fab1a0"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_2-1.jpg", // YOUR IMAGE HERE
       text: `// Anime Style Generator
 const generateAnimeArt = async () => {
   const prompt = \`Anime character with large expressive eyes, 
@@ -428,7 +428,7 @@ soft cel-shaded animation --ar 3:4\`;
     {
       category: "19 Macro",
       colors: ["#a29bfe", "#6c5ce7"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_1-6.jpg", // YOUR IMAGE HERE
       text: `// Macro Photography AI
 const generateMacro = async () => {
   const prompt = \`Extreme macro photography of dewdrop on flower petal, 
@@ -450,7 +450,7 @@ crystal clear details --ar 1:1\`;
     {
       category: "20 Fantasy",
       colors: ["#00b894", "#55a3ff"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "/PromptCardBeamImages/0_0-2.jpg", // YOUR IMAGE HERE
       text: `// Fantasy Environment Generator
 const generateFantasyWorld = async () => {
   const prompt = \`Magical forest with glowing mushrooms, 
