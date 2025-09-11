@@ -486,11 +486,9 @@ export default function MetadataAnalyzerPage() {
       tags: metadata.aiGenerator ? [metadata.aiGenerator, 'imported', 'metadata-analyzer'] : ['imported', 'metadata-analyzer'],
     };
     
-    // Set the prefilled data first, then open modal after a small delay
+    // Set the prefilled data and open modal synchronously
     setPrefilledPromptData(prefilled);
-    setTimeout(() => {
-      setPromptModalOpen(true);
-    }, 100);
+    setPromptModalOpen(true);
   };
 
   const formatFileSize = (bytes: number): string => {
