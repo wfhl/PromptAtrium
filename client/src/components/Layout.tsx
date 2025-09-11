@@ -230,7 +230,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   size="icon"
-                  className="hidden md:flex h-9 w-9"
+                  className="flex h-9 w-9"
                   data-testid="button-new-menu"
                 >
                   <Plus className="h-5 w-5" />
