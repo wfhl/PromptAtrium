@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import './PromptCardBeam.css';
 
 const CardBeamAnimation = () => {
   const containerRef = useRef(null);
@@ -8,10 +7,10 @@ const CardBeamAnimation = () => {
   const cardLineRef = useRef(null);
   const particleCanvasRef = useRef(null);
   const scannerCanvasRef = useRef(null);
-  
+
   const [speed, setSpeed] = useState(120);
   const [isAnimating, setIsAnimating] = useState(true);
-  
+
   // Animation state refs
   const animationState = useRef({
     position: 0,
@@ -34,9 +33,9 @@ const CardBeamAnimation = () => {
   // Card data with code content only - images generated inline
   const cardData = [
     {
-      category: "Architecture",
+      category: "1 Architecture",
       colors: ["#667eea", "#764ba2"],
-      //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
+      image: "PromptCardBeamImages/0_1villa.jpg", // YOUR IMAGE HERE
       text: `// AI Architecture Generator
 const generateMansion = async () => {
   const prompt = \`Luxurious mansion in Monaco villa style, 
@@ -57,7 +56,7 @@ photorealistic 8K --ar 4:3 --quality 2 --raw\`;
 };`
     },
     {
-      category: "Fashion",
+      category: "2 Fashion",
       colors: ["#ff6b6b", "#ee5a24"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Fashion Photography AI
@@ -78,7 +77,7 @@ Japanese fashion show runway --chaos 10 --ar 4:3 --exp 30 --raw\`;
 };`
     },
     {
-      category: "Pop-up Book",
+      category: "3 Pop-up Book",
       colors: ["#4ecdc4", "#44a08d"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Pop-up Book Art Generator
@@ -97,7 +96,7 @@ dreamy pastel colors, sparkling stars --ar 4:3 --raw\`;
 };`
     },
     {
-      category: "Cyberpunk",
+      category: "4 Cyberpunk",
       colors: ["#a55eea", "#8854d0"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Cyberpunk City Generator
@@ -120,7 +119,7 @@ blade runner aesthetic --ar 16:9 --v 6\`;
 };`
     },
     {
-      category: "Portrait",
+      category: "5 Portrait",
       colors: ["#26d0ce", "#1a9e9c"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Portrait Art Generator
@@ -142,7 +141,7 @@ delicate details --ar 3:4 --stylize 1000\`;
 };`
     },
     {
-      category: "Landscape",
+      category: "6 Landscape",
       colors: ["#fed330", "#f39c12"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Landscape Photography AI
@@ -164,7 +163,7 @@ ultra-wide angle, sharp details --ar 21:9\`;
 };`
     },
     {
-      category: "Abstract",
+      category: "7 Abstract",
       colors: ["#fa8231", "#f0932b"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Abstract Art Generator
@@ -186,7 +185,7 @@ high contrast --ar 1:1 --chaos 20\`;
 };`
     },
     {
-      category: "Character",
+      category: "8 Character",
       colors: ["#6c5ce7", "#5f3dc4"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Character Design AI
@@ -208,7 +207,7 @@ professional game art style --ar 3:4\`;
 };`
     },
     {
-      category: "Product",
+      category: "9 Product",
       colors: ["#00b894", "#00a085"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Product Design Generator
@@ -230,7 +229,7 @@ studio lighting --ar 3:4\`;
 };`
     },
     {
-      category: "Food",
+      category: "10 Food",
       colors: ["#fd79a8", "#e84393"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Food Photography AI
@@ -252,7 +251,7 @@ appetizing and vibrant --ar 4:5\`;
 };`
     },
     {
-      category: "Space",
+      category: "11 Space",
       colors: ["#0984e3", "#74b9ff"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Space Art Generator
@@ -274,7 +273,7 @@ deep space beauty --ar 16:9\`;
 };`
     },
     {
-      category: "Retro",
+      category: "12 Retro",
       colors: ["#e17055", "#d63031"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Retro Art Generator
@@ -295,7 +294,7 @@ outrun style, nostalgic atmosphere --ar 16:9\`;
 };`
     },
     {
-      category: "Wildlife",
+      category: "13 Wildlife",
       colors: ["#00cec9", "#55a3ff"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Wildlife Photography AI
@@ -317,7 +316,7 @@ National Geographic style --ar 3:2\`;
 };`
     },
     {
-      category: "Steampunk",
+      category: "14 Steampunk",
       colors: ["#fdcb6e", "#e17055"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Steampunk Design Generator
@@ -339,7 +338,7 @@ sepia-toned photography --ar 4:3\`;
 };`
     },
     {
-      category: "Minimalist",
+      category: "15 Minimalist",
       colors: ["#81ecec", "#00b894"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Minimalist Art Generator
@@ -361,7 +360,7 @@ serene and balanced --ar 1:1\`;
 };`
     },
     {
-      category: "Horror",
+      category: "16 Horror",
       colors: ["#2d3436", "#636e72"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Horror Art Generator
@@ -383,7 +382,7 @@ cinematic lighting --ar 9:16\`;
 };`
     },
     {
-      category: "Underwater",
+      category: "17 Underwater",
       colors: ["#00b894", "#55efc4"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Underwater Scene Generator
@@ -405,7 +404,7 @@ underwater photography --ar 16:9\`;
 };`
     },
     {
-      category: "Anime",
+      category: "18 Anime",
       colors: ["#ff7675", "#fab1a0"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Anime Style Generator
@@ -427,7 +426,7 @@ soft cel-shaded animation --ar 3:4\`;
 };`
     },
     {
-      category: "Macro",
+      category: "19 Macro",
       colors: ["#a29bfe", "#6c5ce7"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Macro Photography AI
@@ -449,7 +448,7 @@ crystal clear details --ar 1:1\`;
 };`
     },
     {
-      category: "Fantasy",
+      category: "20 Fantasy",
       colors: ["#00b894", "#55a3ff"],
       //image: "https://your-mansion-image.jpg", // YOUR IMAGE HERE
       text: `// Fantasy Environment Generator
@@ -476,7 +475,7 @@ fantasy concept art --ar 21:9\`;
   const formatTextForDisplay = (text, width, height) => {
     const lines = text.split('\n');
     let formattedLines = [];
-    
+
     for (let line of lines) {
       if (line.length <= width) {
         formattedLines.push(line.padEnd(width));
@@ -488,17 +487,17 @@ fantasy concept art --ar 21:9\`;
         }
       }
     }
-    
+
     // Ensure we have enough lines
     while (formattedLines.length < height) {
       formattedLines.push(' '.repeat(width));
     }
-    
+
     // Truncate if too many lines
     if (formattedLines.length > height) {
       formattedLines = formattedLines.slice(0, height);
     }
-    
+
     return formattedLines.join('\n');
   };
 
@@ -555,15 +554,15 @@ fantasy concept art --ar 21:9\`;
 
     const cardImage = document.createElement("img");
     cardImage.className = "card-image";
-    
+
     // Get card data for this index
     const cardInfo = cardData[index % cardData.length];
-    
+
     // Try to load actual image first, fallback to canvas if it fails
     if (cardInfo.image) {
       cardImage.src = cardInfo.image;
       cardImage.alt = cardInfo.category;
-      
+
       // Fallback to canvas placeholder if image fails to load
       cardImage.onerror = () => {
         cardImage.src = createCardImage(cardInfo.category, cardInfo.colors);
@@ -585,7 +584,7 @@ fantasy concept art --ar 21:9\`;
     const { width, height, fontSize, lineHeight } = calculateCodeDimensions(400, 250);
     asciiContent.style.fontSize = fontSize + "px";
     asciiContent.style.lineHeight = lineHeight + "px";
-    
+
     asciiContent.textContent = formatTextForDisplay(cardInfo.text, width, height);
 
     asciiCard.appendChild(asciiContent);
@@ -820,7 +819,7 @@ fantasy concept art --ar 21:9\`;
           const cardIndex = parseInt(wrapper.getAttribute("data-card-index"));
           const cardInfo = cardData[cardIndex % cardData.length];
           const { width, height } = calculateCodeDimensions(400, 250);
-          
+
           // Add some variation to the text display for the glitch effect
           let displayText = cardInfo.text;
           if (Math.random() < 0.3) {
@@ -831,7 +830,7 @@ fantasy concept art --ar 21:9\`;
               return Math.random() < 0.02 ? randomChar : char;
             });
           }
-          
+
           content.textContent = formatTextForDisplay(displayText, width, height);
         }
       });
@@ -848,50 +847,35 @@ fantasy concept art --ar 21:9\`;
       this.particleCount = 400;
       this.canvas = canvas;
       this.animationId = null;
-      this.isWebGLAvailable = false;
 
       this.init();
     }
 
     init() {
-      try {
-        // Check if WebGL is available
-        const testCanvas = document.createElement('canvas');
-        const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
-        if (!gl) {
-          console.warn('WebGL not available, particle system disabled');
-          return;
-        }
-        
-        this.isWebGLAvailable = true;
-        this.scene = new THREE.Scene();
+      this.scene = new THREE.Scene();
 
-        this.camera = new THREE.OrthographicCamera(
-          -window.innerWidth / 2,
-          window.innerWidth / 2,
-          125,
-          -125,
-          1,
-          1000
-        );
-        this.camera.position.z = 100;
+      this.camera = new THREE.OrthographicCamera(
+        -window.innerWidth / 2,
+        window.innerWidth / 2,
+        125,
+        -125,
+        1,
+        1000
+      );
+      this.camera.position.z = 100;
 
-        this.renderer = new THREE.WebGLRenderer({
-          canvas: this.canvas,
-          alpha: true,
-          antialias: true,
-        });
-        this.renderer.setSize(window.innerWidth, 250);
-        this.renderer.setClearColor(0x000000, 0);
+      this.renderer = new THREE.WebGLRenderer({
+        canvas: this.canvas,
+        alpha: true,
+        antialias: true,
+      });
+      this.renderer.setSize(window.innerWidth, 250);
+      this.renderer.setClearColor(0x000000, 0);
 
-        this.createParticles();
-        this.animate();
+      this.createParticles();
+      this.animate();
 
-        window.addEventListener("resize", () => this.onWindowResize());
-      } catch (error) {
-        console.warn('Failed to initialize particle system:', error);
-        this.isWebGLAvailable = false;
-      }
+      window.addEventListener("resize", () => this.onWindowResize());
     }
 
     createParticles() {
@@ -960,7 +944,7 @@ fantasy concept art --ar 21:9\`;
           varying float vAlpha;
           varying vec3 vColor;
           uniform float size;
-          
+
           void main() {
             vAlpha = alpha;
             vColor = color;
@@ -973,7 +957,7 @@ fantasy concept art --ar 21:9\`;
           uniform sampler2D pointTexture;
           varying float vAlpha;
           varying vec3 vColor;
-          
+
           void main() {
             gl_FragColor = vec4(vColor, vAlpha) * texture2D(pointTexture, gl_PointCoord);
           }
@@ -989,8 +973,6 @@ fantasy concept art --ar 21:9\`;
     }
 
     animate() {
-      if (!this.isWebGLAvailable) return;
-      
       this.animationId = requestAnimationFrame(() => this.animate());
 
       if (this.particles) {
@@ -1026,8 +1008,6 @@ fantasy concept art --ar 21:9\`;
     }
 
     onWindowResize() {
-      if (!this.isWebGLAvailable) return;
-      
       this.camera.left = -window.innerWidth / 2;
       this.camera.right = window.innerWidth / 2;
       this.camera.updateProjectionMatrix();
@@ -1042,7 +1022,7 @@ fantasy concept art --ar 21:9\`;
       if (this.renderer) {
         this.renderer.dispose();
       }
-      if (this.particles && this.scene) {
+      if (this.particles) {
         this.scene.remove(this.particles);
         this.particles.geometry.dispose();
         this.particles.material.dispose();
@@ -1407,7 +1387,7 @@ fantasy concept art --ar 21:9\`;
         document.removeEventListener('touchmove', handleTouchMove);
         document.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener('resize', handleResize);
-        
+
         if (particleSystemRef.current) {
           particleSystemRef.current.destroy();
         }
@@ -1430,97 +1410,22 @@ fantasy concept art --ar 21:9\`;
     <div style={{ 
       margin: 0, 
       padding: 0, 
-      background: '#000000', 
-      minHeight: '100vh', 
+      background: 'transparent', 
+      width: '100%',
+      height: '400px', // Set a default height
+      minHeight: '400px',
       overflow: 'hidden', 
       fontFamily: 'Arial, sans-serif',
-      position: 'relative'
+      position: 'relative',
+      borderRadius: '12px' // Add some visual polish
     }}>
-      {/* Controls */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        left: '20px',
-        display: 'flex',
-        gap: '10px',
-        zIndex: 100
-      }}>
-        <button
-          onClick={toggleAnimation}
-          style={{
-            padding: '10px 20px',
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: 'none',
-            borderRadius: '25px',
-            color: 'white',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backdropFilter: 'blur(5px)',
-            transition: 'all 0.3s ease',
-            fontSize: '14px'
-          }}
-        >
-          {isAnimating ? '⏸️ Pause' : '▶️ Play'}
-        </button>
-        <button
-          onClick={resetPosition}
-          style={{
-            padding: '10px 20px',
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: 'none',
-            borderRadius: '25px',
-            color: 'white',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backdropFilter: 'blur(5px)',
-            transition: 'all 0.3s ease',
-            fontSize: '14px'
-          }}
-        >
-          🔄 Reset
-        </button>
-        <button
-          onClick={changeDirection}
-          style={{
-            padding: '10px 20px',
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: 'none',
-            borderRadius: '25px',
-            color: 'white',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backdropFilter: 'blur(5px)',
-            transition: 'all 0.3s ease',
-            fontSize: '14px'
-          }}
-        >
-          ↔️ Direction
-        </button>
-      </div>
-
-      {/* Speed Indicator */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        right: '20px',
-        color: 'white',
-        fontSize: '16px',
-        background: 'rgba(0, 0, 0, 0.3)',
-        padding: '8px 16px',
-        borderRadius: '20px',
-        backdropFilter: 'blur(5px)',
-        zIndex: 100
-      }}>
-        Speed: <span>{speed}</span> px/s
-      </div>
-
       {/* Container */}
       <div
         ref={containerRef}
         style={{
           position: 'relative',
-          width: '100vw',
-          height: '100vh',
+          width: '100%',
+          height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
@@ -1534,7 +1439,7 @@ fantasy concept art --ar 21:9\`;
             top: '50%',
             left: 0,
             transform: 'translateY(-50%)',
-            width: '100vw',
+            width: '100%',
             height: '250px',
             zIndex: 0,
             pointerEvents: 'none'
@@ -1549,7 +1454,7 @@ fantasy concept art --ar 21:9\`;
             top: '50%',
             left: '-3px',
             transform: 'translateY(-50%)',
-            width: '100vw',
+            width: '100%',
             height: '300px',
             zIndex: 15,
             pointerEvents: 'none'
@@ -1561,7 +1466,7 @@ fantasy concept art --ar 21:9\`;
           ref={cardStreamRef}
           style={{
             position: 'absolute',
-            width: '100vw',
+            width: '100%',
             height: '180px',
             display: 'flex',
             alignItems: 'center',
@@ -1586,33 +1491,151 @@ fantasy concept art --ar 21:9\`;
         </div>
       </div>
 
-      {/* Inspiration Credit */}
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        fontFamily: '"Roboto Mono", monospace',
-        fontSize: '12px',
-        fontWeight: 900,
-        color: '#ff9a9c',
-        zIndex: 1000,
-        textAlign: 'center'
-      }}>
-        Inspired by{' '}
-        <a
-          href="https://evervault.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            color: '#ff9a9c',
-            textDecoration: 'none',
-            transition: 'color 0.3s ease'
-          }}
-        >
-          @evervault.com
-        </a>
-      </div>
+      {/* CSS Styles */}
+      <style jsx>{`
+        .card-wrapper {
+          position: relative;
+          width: 400px;
+          height: 250px;
+          flex-shrink: 0;
+        }
+
+        .card {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 400px;
+          height: 250px;
+          border-radius: 15px;
+          overflow: hidden;
+        }
+
+        .card-normal {
+          background: transparent;
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 0;
+          color: white;
+          z-index: 2;
+          position: relative;
+          overflow: hidden;
+          clip-path: inset(0 0 0 var(--clip-right, 0%));
+        }
+
+        .card-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 15px;
+          transition: all 0.3s ease;
+          filter: brightness(1.1) contrast(1.1);
+          box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-image:hover {
+          filter: brightness(1.2) contrast(1.2);
+        }
+
+        .card-ascii {
+          background: transparent;
+          z-index: 1;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 400px;
+          height: 250px;
+          border-radius: 15px;
+          overflow: hidden;
+          clip-path: inset(0 calc(100% - var(--clip-left, 0%)) 0 0);
+        }
+
+        .ascii-content {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          color: rgba(220, 210, 255, 0.6);
+          font-family: "Courier New", monospace;
+          font-size: 11px;
+          line-height: 13px;
+          overflow: hidden;
+          white-space: pre;
+          animation: glitch 0.1s infinite linear alternate-reverse;
+          margin: 0;
+          padding: 0;
+          text-align: left;
+          vertical-align: top;
+          box-sizing: border-box;
+          -webkit-mask-image: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.8) 30%,
+            rgba(0, 0, 0, 0.6) 50%,
+            rgba(0, 0, 0, 0.4) 80%,
+            rgba(0, 0, 0, 0.2) 100%
+          );
+          mask-image: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.8) 30%,
+            rgba(0, 0, 0, 0.6) 50%,
+            rgba(0, 0, 0, 0.4) 80%,
+            rgba(0, 0, 0, 0.2) 100%
+          );
+        }
+
+        @keyframes glitch {
+          0% { opacity: 1; }
+          15% { opacity: 0.9; }
+          16% { opacity: 1; }
+          49% { opacity: 0.8; }
+          50% { opacity: 1; }
+          99% { opacity: 0.9; }
+          100% { opacity: 1; }
+        }
+
+        .scan-effect {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(0, 255, 255, 0.4),
+            transparent
+          );
+          animation: scanEffect 0.6s ease-out;
+          pointer-events: none;
+          z-index: 5;
+        }
+
+        @keyframes scanEffect {
+          0% {
+            transform: translateX(-100%);
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+        }
+
+        .card-line.dragging {
+          cursor: grabbing;
+        }
+
+        .card-line:active {
+          cursor: grabbing;
+        }
+      `}</style>
     </div>
   );
 };
