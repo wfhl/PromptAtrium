@@ -16,6 +16,7 @@ import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkEditToolbar } from "@/components/BulkEditToolbar";
 import { BulkEditModal } from "@/components/BulkEditModal";
+import { BulkImportModal } from "@/components/BulkImportModal";
 import { CollectionItem } from "@/components/CollectionItem";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -49,12 +50,39 @@ export default function Library() {
   const tabFromQuery = queryParams.get('tab');
   const [activeTab, setActiveTab] = useState<string>(tabFromQuery || "prompts");
   
-  // Update tab when query parameter changes
+  // Update tab when query parameter changes and handle action parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
+    const action = params.get('action');
+    
     if (tab && ['prompts', 'bookmarked', 'collections', 'archive'].includes(tab)) {
       setActiveTab(tab);
+    }
+    
+    // Handle action parameters from the header dropdown
+    if (action === 'new-prompt') {
+      setPromptModalOpen(true);
+      // Clear the action param after handling
+      const newParams = new URLSearchParams(window.location.search);
+      newParams.delete('action');
+      const newUrl = window.location.pathname + (newParams.toString() ? '?' + newParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+    } else if (action === 'new-collection') {
+      setActiveTab('collections');
+      setCreateCollectionModalOpen(true);
+      // Clear the action param after handling
+      const newParams = new URLSearchParams(window.location.search);
+      newParams.delete('action');
+      const newUrl = window.location.pathname + (newParams.toString() ? '?' + newParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+    } else if (action === 'import') {
+      setBulkImportModalOpen(true);
+      // Clear the action param after handling
+      const newParams = new URLSearchParams(window.location.search);
+      newParams.delete('action');
+      const newUrl = window.location.pathname + (newParams.toString() ? '?' + newParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
     }
   }, [location]);
   
@@ -62,6 +90,7 @@ export default function Library() {
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [selectedPromptIds, setSelectedPromptIds] = useState<Set<string>>(new Set());
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+  const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
 
   // Collections state
   const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
@@ -1009,6 +1038,13 @@ export default function Library() {
         onSubmit={handleBulkEdit}
         selectedCount={selectedPromptIds.size}
         isLoading={bulkOperationMutation.isPending}
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        open={bulkImportModalOpen}
+        onOpenChange={setBulkImportModalOpen}
+        collections={collections}
       />
 
       {/* Edit Collection Modal */}

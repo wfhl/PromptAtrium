@@ -168,7 +168,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   New Prompt
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => alert('New Collection functionality coming soon!')}
+                  onClick={() => setLocation('/library?action=new-collection')}
                   className="cursor-pointer"
                   data-testid="menu-new-collection"
                 >
@@ -176,7 +176,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   New Collection
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => alert('Import Prompts functionality coming soon!')}
+                  onClick={() => setLocation('/library?action=import')}
                   className="cursor-pointer"
                   data-testid="menu-import-prompts"
                 >
