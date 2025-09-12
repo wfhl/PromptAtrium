@@ -23,6 +23,8 @@ import {
   userCustomSynonyms,
   keywordUsageHistory,
   templateUsageHistory,
+  promptComponents,
+  aesthetics,
   type User,
   type UpsertUser,
   type Prompt,
@@ -71,6 +73,10 @@ import {
   type InsertKeywordUsageHistory,
   type TemplateUsageHistory,
   type InsertTemplateUsageHistory,
+  type PromptComponent,
+  type InsertPromptComponent,
+  type Aesthetic,
+  type InsertAesthetic,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray } from "drizzle-orm";
@@ -341,6 +347,37 @@ export interface IStorage {
     offset?: number;
   }): Promise<TemplateUsageHistory[]>;
   getMostUsedTemplates(userId: string, limit?: number): Promise<PromptTemplate[]>;
+
+  // Prompt component operations
+  getPromptComponents(options?: {
+    category?: string;
+    subcategory?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PromptComponent[]>;
+  getPromptComponent(id: string): Promise<PromptComponent | undefined>;
+  searchPromptComponents(query: string, limit?: number): Promise<PromptComponent[]>;
+  getPromptComponentCategories(): Promise<string[]>;
+  getPromptComponentsByCategory(category: string): Promise<PromptComponent[]>;
+  incrementPromptComponentUsage(id: string): Promise<void>;
+
+  // Aesthetic operations
+  getAesthetics(options?: {
+    era?: string;
+    category?: string;
+    search?: string;
+    tags?: string[];
+    limit?: number;
+    offset?: number;
+  }): Promise<Aesthetic[]>;
+  getAesthetic(id: string): Promise<Aesthetic | undefined>;
+  getAestheticByName(name: string): Promise<Aesthetic | undefined>;
+  searchAesthetics(query: string, limit?: number): Promise<Aesthetic[]>;
+  getAestheticCategories(): Promise<string[]>;
+  getAestheticEras(): Promise<string[]>;
+  incrementAestheticUsage(id: string): Promise<void>;
+  getRelatedAesthetics(aestheticId: string, limit?: number): Promise<Aesthetic[]>;
 }
 
 function generatePromptId(): string {
@@ -2542,6 +2579,220 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(promptTemplates)
       .where(inArray(promptTemplates.id, templateIds));
+  }
+
+  // Prompt component operations
+  async getPromptComponents(options: {
+    category?: string;
+    subcategory?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<PromptComponent[]> {
+    let query = db.select().from(promptComponents).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.category) {
+      conditions.push(eq(promptComponents.category, options.category));
+    }
+    
+    if (options.subcategory) {
+      conditions.push(eq(promptComponents.subcategory, options.subcategory));
+    }
+    
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(promptComponents.value, `%${options.search}%`),
+          ilike(promptComponents.description, `%${options.search}%`)
+        )
+      );
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    query = query.orderBy(desc(promptComponents.usageCount), promptComponents.value);
+    
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+
+  async getPromptComponent(id: string): Promise<PromptComponent | undefined> {
+    const [component] = await db.select().from(promptComponents).where(eq(promptComponents.id, id));
+    return component;
+  }
+
+  async searchPromptComponents(query: string, limit: number = 20): Promise<PromptComponent[]> {
+    return await db
+      .select()
+      .from(promptComponents)
+      .where(
+        or(
+          ilike(promptComponents.value, `%${query}%`),
+          ilike(promptComponents.description, `%${query}%`)
+        )
+      )
+      .orderBy(desc(promptComponents.usageCount))
+      .limit(limit);
+  }
+
+  async getPromptComponentCategories(): Promise<string[]> {
+    const result = await db
+      .selectDistinct({ category: promptComponents.category })
+      .from(promptComponents)
+      .where(sql`${promptComponents.category} IS NOT NULL`)
+      .orderBy(promptComponents.category);
+    
+    return result.map(r => r.category).filter(Boolean) as string[];
+  }
+
+  async getPromptComponentsByCategory(category: string): Promise<PromptComponent[]> {
+    return await db
+      .select()
+      .from(promptComponents)
+      .where(eq(promptComponents.category, category))
+      .orderBy(desc(promptComponents.usageCount), promptComponents.value);
+  }
+
+  async incrementPromptComponentUsage(id: string): Promise<void> {
+    await db
+      .update(promptComponents)
+      .set({ 
+        usageCount: sql`${promptComponents.usageCount} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(promptComponents.id, id));
+  }
+
+  // Aesthetic operations
+  async getAesthetics(options: {
+    era?: string;
+    category?: string;
+    search?: string;
+    tags?: string[];
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<Aesthetic[]> {
+    let query = db.select().from(aesthetics).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.era) {
+      conditions.push(eq(aesthetics.era, options.era));
+    }
+    
+    if (options.category) {
+      conditions.push(eq(aesthetics.category, options.category));
+    }
+    
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(aesthetics.name, `%${options.search}%`),
+          ilike(aesthetics.description, `%${options.search}%`)
+        )
+      );
+    }
+    
+    if (options.tags && options.tags.length > 0) {
+      const tagConditions = options.tags.map(tag => 
+        sql`${aesthetics.tags} @> ARRAY[${tag}]::text[]`
+      );
+      conditions.push(or(...tagConditions));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    query = query.orderBy(desc(aesthetics.usageCount), aesthetics.name);
+    
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+
+  async getAesthetic(id: string): Promise<Aesthetic | undefined> {
+    const [aesthetic] = await db.select().from(aesthetics).where(eq(aesthetics.id, id));
+    return aesthetic;
+  }
+
+  async getAestheticByName(name: string): Promise<Aesthetic | undefined> {
+    const [aesthetic] = await db.select().from(aesthetics).where(eq(aesthetics.name, name));
+    return aesthetic;
+  }
+
+  async searchAesthetics(query: string, limit: number = 20): Promise<Aesthetic[]> {
+    return await db
+      .select()
+      .from(aesthetics)
+      .where(
+        or(
+          ilike(aesthetics.name, `%${query}%`),
+          ilike(aesthetics.description, `%${query}%`)
+        )
+      )
+      .orderBy(desc(aesthetics.usageCount))
+      .limit(limit);
+  }
+
+  async getAestheticCategories(): Promise<string[]> {
+    const result = await db
+      .selectDistinct({ category: aesthetics.category })
+      .from(aesthetics)
+      .where(sql`${aesthetics.category} IS NOT NULL`)
+      .orderBy(aesthetics.category);
+    
+    return result.map(r => r.category).filter(Boolean) as string[];
+  }
+
+  async getAestheticEras(): Promise<string[]> {
+    const result = await db
+      .selectDistinct({ era: aesthetics.era })
+      .from(aesthetics)
+      .where(sql`${aesthetics.era} IS NOT NULL`)
+      .orderBy(aesthetics.era);
+    
+    return result.map(r => r.era).filter(Boolean) as string[];
+  }
+
+  async incrementAestheticUsage(id: string): Promise<void> {
+    await db
+      .update(aesthetics)
+      .set({ 
+        usageCount: sql`${aesthetics.usageCount} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(aesthetics.id, id));
+  }
+
+  async getRelatedAesthetics(aestheticId: string, limit: number = 10): Promise<Aesthetic[]> {
+    const aesthetic = await this.getAesthetic(aestheticId);
+    if (!aesthetic || !aesthetic.relatedAesthetics || aesthetic.relatedAesthetics.length === 0) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(aesthetics)
+      .where(inArray(aesthetics.id, aesthetic.relatedAesthetics))
+      .limit(limit);
   }
 }
 
