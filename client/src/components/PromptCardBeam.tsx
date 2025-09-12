@@ -703,11 +703,13 @@ fantasy concept art --ar 21:9\`;
 
   // Event handlers
   const startDrag = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
 
     animationState.current.isDragging = true;
     setIsAnimating(false);
-    animationState.current.lastMouseX = e.clientX;
+    animationState.current.lastMouseX = e.clientX || e.pageX || 0;
     animationState.current.mouseVelocity = 0;
 
     if (cardLineRef.current) {
@@ -727,12 +729,15 @@ fantasy concept art --ar 21:9\`;
 
   const onDrag = (e) => {
     if (!animationState.current.isDragging) return;
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
 
-    const deltaX = e.clientX - animationState.current.lastMouseX;
+    const clientX = e.clientX || e.pageX || 0;
+    const deltaX = clientX - animationState.current.lastMouseX;
     animationState.current.position += deltaX;
     animationState.current.mouseVelocity = deltaX * 60;
-    animationState.current.lastMouseX = e.clientX;
+    animationState.current.lastMouseX = clientX;
 
     if (cardLineRef.current) {
       cardLineRef.current.style.transform = `translateX(${animationState.current.position}px)`;
@@ -763,7 +768,9 @@ fantasy concept art --ar 21:9\`;
   };
 
   const onWheel = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     const scrollSpeed = 20;
     const delta = e.deltaY > 0 ? scrollSpeed : -scrollSpeed;
     animationState.current.position += delta;
@@ -1417,8 +1424,12 @@ fantasy concept art --ar 21:9\`;
   // Handle card line events
   const handleCardLineMouseDown = (e) => startDrag(e);
   const handleCardLineTouchStart = (e) => {
-    e.preventDefault();
-    startDrag(e.touches[0]);
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+    if (e.touches && e.touches[0]) {
+      startDrag(e.touches[0]);
+    }
   };
   const handleCardLineWheel = (e) => onWheel(e);
 
