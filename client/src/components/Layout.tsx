@@ -301,6 +301,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                       Metadata Analyzer
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/tools/keyword-dictionary" className="flex items-center cursor-pointer" data-testid="menu-keyword-dictionary">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Keyword Dictionary
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => toast({
                       title: "Coming Soon",
