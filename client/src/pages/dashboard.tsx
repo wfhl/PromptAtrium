@@ -202,6 +202,14 @@ export default function Dashboard() {
     setBulkImportModalOpen(true);
   };
 
+  const handleOpenPromptGenerator = () => {
+    setLocation("/tools/prompt-generator");
+  };
+
+  const handleOpenKeywordDictionary = () => {
+    setLocation("/tools/keyword-dictionary");
+  };
+
   // Helper functions for activity display
   const getActivityIcon = (actionType: string) => {
     switch (actionType) {
@@ -377,6 +385,8 @@ export default function Dashboard() {
             onCreateCollection={handleCreateCollection}
             onStartProject={handleStartProject}
             onImportPrompts={handleImportPrompts}
+            onOpenPromptGenerator={handleOpenPromptGenerator}
+            onOpenKeywordDictionary={handleOpenKeywordDictionary}
           />
         </div>
 
@@ -507,6 +517,8 @@ export default function Dashboard() {
                 onCreateCollection={handleCreateCollection}
                 onStartProject={handleStartProject}
                 onImportPrompts={handleImportPrompts}
+                onOpenPromptGenerator={handleOpenPromptGenerator}
+                onOpenKeywordDictionary={handleOpenKeywordDictionary}
               />
             </div>
 

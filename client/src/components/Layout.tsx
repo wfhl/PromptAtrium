@@ -307,16 +307,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                       Keyword Dictionary
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => toast({
-                      title: "Coming Soon",
-                      description: "Prompt Generator will be available soon!",
-                    })}
-                    className="cursor-pointer"
-                    data-testid="menu-prompt-generator"
-                  >
-                    <Lightbulb className="mr-2 h-4 w-4" />
-                    Prompt Generator
+                  <DropdownMenuItem asChild>
+                    <Link href="/tools/prompt-generator" className="flex items-center cursor-pointer" data-testid="menu-prompt-generator">
+                      <Lightbulb className="mr-2 h-4 w-4" />
+                      Prompt Generator
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
