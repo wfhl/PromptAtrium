@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Lightbulb, Plus, Search, Filter, FolderPlus, Folder, Edit, Trash2, Globe, Lock, MoreHorizontal, SortAsc, SortDesc } from "lucide-react";
+import { Lightbulb, Plus, Search, Filter, FolderPlus, Folder, Edit, Trash2, Globe, Lock, MoreHorizontal, SortAsc, SortDesc, Activity, BookOpen, Share2, Heart, Star, UserPlus, Users } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkEditToolbar } from "@/components/BulkEditToolbar";
@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
-import type { Prompt, User, BulkOperationType, BulkEditPrompt, Collection } from "@shared/schema";
+import type { Prompt, User, BulkOperationType, BulkEditPrompt, Collection, Activity as ActivityType } from "@shared/schema";
 
 const collectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -49,6 +49,12 @@ export default function Library() {
   const queryParams = new URLSearchParams(window.location.search);
   const tabFromQuery = queryParams.get('tab');
   const [activeTab, setActiveTab] = useState<string>(tabFromQuery || "prompts");
+  
+  // Fetch user activities  
+  const { data: userActivities = [] } = useQuery<any[]>({
+    queryKey: ["/api/user/activities"],
+    enabled: isAuthenticated && activeTab === "activity",
+  });
   
   // Update tab when query parameter changes and handle action parameters
   useEffect(() => {
@@ -519,6 +525,149 @@ export default function Library() {
     return sorted;
   })();
 
+  // Activity helper functions
+  const getActivityIcon = (actionType: string) => {
+    switch (actionType) {
+      case "created_prompt":
+        return <BookOpen className="h-4 w-4" />;
+      case "shared_prompt":
+        return <Share2 className="h-4 w-4" />;
+      case "liked_prompt":
+        return <Heart className="h-4 w-4" />;
+      case "favorited_prompt":
+        return <Star className="h-4 w-4" />;
+      case "followed_user":
+        return <UserPlus className="h-4 w-4" />;
+      case "joined_community":
+        return <Users className="h-4 w-4" />;
+      case "created_collection":
+        return <Folder className="h-4 w-4" />;
+      default:
+        return <Activity className="h-4 w-4" />;
+    }
+  };
+
+  const getActivityDescription = (activity: any) => {
+    const targetEntity = activity.targetEntity;
+    
+    const getEntityLink = () => {
+      if (!targetEntity) return null;
+      
+      switch (activity.targetType) {
+        case "prompt":
+          return targetEntity.isPublic ? (
+            <span className="font-semibold">{targetEntity.name}</span>
+          ) : (
+            <span className="font-semibold">{targetEntity.name}</span>
+          );
+        case "user":
+          return (
+            <Link href={`/user/${targetEntity.username}`}>
+              <span className="font-semibold hover:underline cursor-pointer">
+                @{targetEntity.username || `${targetEntity.firstName} ${targetEntity.lastName}`.trim()}
+              </span>
+            </Link>
+          );
+        case "collection":
+          return (
+            <Link href={`/collections?view=${targetEntity.id}`}>
+              <span className="font-semibold hover:underline cursor-pointer">{targetEntity.name}</span>
+            </Link>
+          );
+        case "community":
+          return <span className="font-semibold">{targetEntity.name}</span>;
+        default:
+          return null;
+      }
+    };
+    
+    switch (activity.actionType) {
+      case "created_prompt":
+        return (
+          <span>
+            You created a new prompt {targetEntity && (
+              <>"{getEntityLink()}"</>
+            )}
+          </span>
+        );
+      case "shared_prompt":
+        return (
+          <span>
+            You shared {targetEntity ? (
+              <>the prompt "{getEntityLink()}"</>
+            ) : (
+              "a prompt"
+            )}
+          </span>
+        );
+      case "liked_prompt":
+        return (
+          <span>
+            You liked {targetEntity ? (
+              <>the prompt "{getEntityLink()}"</>
+            ) : (
+              "a prompt"
+            )}
+          </span>
+        );
+      case "favorited_prompt":
+        return (
+          <span>
+            You favorited {targetEntity ? (
+              <>the prompt "{getEntityLink()}"</>
+            ) : (
+              "a prompt"
+            )}
+          </span>
+        );
+      case "followed_user":
+        return (
+          <span>
+            You started following {targetEntity ? (
+              getEntityLink()
+            ) : (
+              "someone"
+            )}
+          </span>
+        );
+      case "joined_community":
+        return (
+          <span>
+            You joined {targetEntity ? (
+              <>the community "{getEntityLink()}"</>
+            ) : (
+              "a community"
+            )}
+          </span>
+        );
+      case "created_collection":
+        return (
+          <span>
+            You created a new collection {targetEntity && (
+              <>"{getEntityLink()}"</>
+            )}
+          </span>
+        );
+      default:
+        return <span>You performed an action</span>;
+    }
+  };
+
+  const formatDate = (date: string | Date) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return "just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return d.toLocaleDateString();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -541,7 +690,7 @@ export default function Library() {
       <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-my-prompts">
               My Prompts
             </TabsTrigger>
@@ -553,6 +702,9 @@ export default function Library() {
             </TabsTrigger>
             <TabsTrigger value="archive" className="text-xs md:text-sm" data-testid="tab-archive">
               Archive
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="text-xs md:text-sm" data-testid="tab-my-activity">
+              My Activity
             </TabsTrigger>
           </TabsList>
 
@@ -1065,6 +1217,41 @@ export default function Library() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Activity Tab */}
+          <TabsContent value="activity" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>My Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {userActivities.length > 0 ? (
+                  <div className="space-y-4">
+                    {userActivities.map((activity) => (
+                      <div key={activity.id} className="flex items-start gap-3 pb-4 border-b last:border-0">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {getActivityIcon(activity.actionType)}
+                            <div className="text-sm">
+                              {getActivityDescription(activity)}
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {activity.createdAt ? formatDate(activity.createdAt) : 'recently'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Activity className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500">No activity yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

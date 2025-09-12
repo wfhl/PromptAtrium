@@ -160,7 +160,8 @@ export interface IStorage {
     limit?: number;
     offset?: number;
   }): Promise<Activity[]>;
-  getRecentActivities(limit?: number): Promise<Activity[]>;
+  getRecentActivities(limit?: number): Promise<any[]>;
+  getUserActivities(userId: string, limit?: number, offset?: number): Promise<any[]>;
   getFollowedUsersActivities(userId: string, limit?: number, offset?: number): Promise<Activity[]>;
 
   // User management operations (for Super Admin)
@@ -1126,7 +1127,7 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getRecentActivities(limit: number = 20): Promise<Activity[]> {
+  async getRecentActivities(limit: number = 20): Promise<any[]> {
     const recentActivities = await db
       .select({
         activity: activities,
@@ -1137,10 +1138,151 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(activities.createdAt))
       .limit(limit);
     
-    return recentActivities.map(r => ({
-      ...r.activity,
-      user: r.user
-    } as Activity & { user: User }));
+    // Fetch related entities for each activity
+    const enrichedActivities = await Promise.all(
+      recentActivities.map(async (r) => {
+        const activity = { ...r.activity, user: r.user } as any;
+        
+        // Fetch target entity based on targetType
+        if (activity.targetId && activity.targetType) {
+          try {
+            switch (activity.targetType) {
+              case 'prompt':
+                const prompt = await this.getPrompt(activity.targetId);
+                if (prompt) {
+                  activity.targetEntity = {
+                    id: prompt.id,
+                    name: prompt.title || 'Untitled Prompt',
+                    isPublic: prompt.isPublic
+                  };
+                }
+                break;
+              
+              case 'user':
+                const targetUser = await this.getUser(activity.targetId);
+                if (targetUser) {
+                  activity.targetEntity = {
+                    id: targetUser.id,
+                    username: targetUser.username,
+                    firstName: targetUser.firstName,
+                    lastName: targetUser.lastName
+                  };
+                }
+                break;
+              
+              case 'collection':
+                const collection = await this.getCollection(activity.targetId);
+                if (collection) {
+                  activity.targetEntity = {
+                    id: collection.id,
+                    name: collection.name,
+                    isPublic: collection.isPublic
+                  };
+                }
+                break;
+              
+              case 'community':
+                const community = await this.getCommunity(activity.targetId);
+                if (community) {
+                  activity.targetEntity = {
+                    id: community.id,
+                    name: community.name,
+                    slug: community.slug
+                  };
+                }
+                break;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch ${activity.targetType} ${activity.targetId}:`, error);
+            // Entity might be deleted, continue without it
+          }
+        }
+        
+        return activity;
+      })
+    );
+    
+    return enrichedActivities;
+  }
+
+  async getUserActivities(userId: string, limit: number = 20, offset: number = 0): Promise<any[]> {
+    const userActivities = await db
+      .select({
+        activity: activities,
+        user: users,
+      })
+      .from(activities)
+      .innerJoin(users, eq(activities.userId, users.id))
+      .where(eq(activities.userId, userId))
+      .orderBy(desc(activities.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    // Fetch related entities for each activity
+    const enrichedActivities = await Promise.all(
+      userActivities.map(async (r) => {
+        const activity = { ...r.activity, user: r.user } as any;
+        
+        // Fetch target entity based on targetType
+        if (activity.targetId && activity.targetType) {
+          try {
+            switch (activity.targetType) {
+              case 'prompt':
+                const prompt = await this.getPrompt(activity.targetId);
+                if (prompt) {
+                  activity.targetEntity = {
+                    id: prompt.id,
+                    name: prompt.title || 'Untitled Prompt',
+                    isPublic: prompt.isPublic
+                  };
+                }
+                break;
+              
+              case 'user':
+                const targetUser = await this.getUser(activity.targetId);
+                if (targetUser) {
+                  activity.targetEntity = {
+                    id: targetUser.id,
+                    username: targetUser.username,
+                    firstName: targetUser.firstName,
+                    lastName: targetUser.lastName
+                  };
+                }
+                break;
+              
+              case 'collection':
+                const collection = await this.getCollection(activity.targetId);
+                if (collection) {
+                  activity.targetEntity = {
+                    id: collection.id,
+                    name: collection.name,
+                    isPublic: collection.isPublic
+                  };
+                }
+                break;
+              
+              case 'community':
+                const community = await this.getCommunity(activity.targetId);
+                if (community) {
+                  activity.targetEntity = {
+                    id: community.id,
+                    name: community.name,
+                    slug: community.slug
+                  };
+                }
+                break;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch ${activity.targetType} ${activity.targetId}:`, error);
+            // Entity might be deleted, continue without it
+          }
+        }
+        
+        return activity;
+      })
+    );
+    
+    return enrichedActivities;
   }
 
   async getFollowedUsersActivities(userId: string, limit: number = 50, offset: number = 0): Promise<Activity[]> {

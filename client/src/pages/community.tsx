@@ -251,25 +251,116 @@ export default function Community() {
     }
   };
 
-  const getActivityDescription = (activity: ActivityType & { user: User }) => {
+  const getActivityDescription = (activity: any) => {
     const userName = activity.user?.username || "Someone";
+    const targetEntity = activity.targetEntity;
+    
+    const getUserLink = (username: string) => (
+      <Link href={`/user/${username}`}>
+        <span className="font-semibold hover:underline cursor-pointer">@{username}</span>
+      </Link>
+    );
+    
+    const getEntityLink = () => {
+      if (!targetEntity) return null;
+      
+      switch (activity.targetType) {
+        case "prompt":
+          return targetEntity.isPublic ? (
+            <span className="font-semibold">{targetEntity.name}</span>
+          ) : (
+            <span className="font-semibold">{targetEntity.name}</span>
+          );
+        case "user":
+          return (
+            <Link href={`/user/${targetEntity.username}`}>
+              <span className="font-semibold hover:underline cursor-pointer">
+                @{targetEntity.username || `${targetEntity.firstName} ${targetEntity.lastName}`.trim()}
+              </span>
+            </Link>
+          );
+        case "collection":
+          return (
+            <Link href={`/collections?view=${targetEntity.id}`}>
+              <span className="font-semibold hover:underline cursor-pointer">{targetEntity.name}</span>
+            </Link>
+          );
+        case "community":
+          return <span className="font-semibold">{targetEntity.name}</span>;
+        default:
+          return null;
+      }
+    };
+    
     switch (activity.actionType) {
       case "created_prompt":
-        return `@${userName} created a new prompt`;
+        return (
+          <span>
+            {getUserLink(userName)} created a new prompt {targetEntity && (
+              <>"{getEntityLink()}"</>
+            )}
+          </span>
+        );
       case "shared_prompt":
-        return `@${userName} shared a prompt`;
+        return (
+          <span>
+            {getUserLink(userName)} shared {targetEntity ? (
+              <>the prompt "{getEntityLink()}"</>
+            ) : (
+              "a prompt"
+            )}
+          </span>
+        );
       case "liked_prompt":
-        return `@${userName} liked a prompt`;
+        return (
+          <span>
+            {getUserLink(userName)} liked {targetEntity ? (
+              <>the prompt "{getEntityLink()}"</>
+            ) : (
+              "a prompt"
+            )}
+          </span>
+        );
       case "favorited_prompt":
-        return `@${userName} favorited a prompt`;
+        return (
+          <span>
+            {getUserLink(userName)} favorited {targetEntity ? (
+              <>the prompt "{getEntityLink()}"</>
+            ) : (
+              "a prompt"
+            )}
+          </span>
+        );
       case "followed_user":
-        return `@${userName} started following someone`;
+        return (
+          <span>
+            {getUserLink(userName)} started following {targetEntity ? (
+              getEntityLink()
+            ) : (
+              "someone"
+            )}
+          </span>
+        );
       case "joined_community":
-        return `@${userName} joined the community`;
+        return (
+          <span>
+            {getUserLink(userName)} joined {targetEntity ? (
+              <>the community "{getEntityLink()}"</>
+            ) : (
+              "the community"
+            )}
+          </span>
+        );
       case "created_collection":
-        return `@${userName} created a new collection`;
+        return (
+          <span>
+            {getUserLink(userName)} created a new collection {targetEntity && (
+              <>"{getEntityLink()}"</>
+            )}
+          </span>
+        );
       default:
-        return `@${userName} performed an action`;
+        return <span>{getUserLink(userName)} performed an action</span>;
     }
   };
 
@@ -826,9 +917,9 @@ export default function Community() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           {getActivityIcon(activity.actionType)}
-                          <p className="text-sm">
+                          <div className="text-sm">
                             {getActivityDescription(activity)}
-                          </p>
+                          </div>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           {activity.createdAt ? formatDate(activity.createdAt) : 'recently'}
