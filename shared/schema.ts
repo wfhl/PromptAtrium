@@ -308,6 +308,29 @@ export const activities = pgTable("activities", {
   index("idx_activities_action_type").on(table.actionType),
 ]);
 
+// Keyword categories table - for organizing keywords hierarchically (defined first to avoid forward reference)
+export const keywordCategories = pgTable("keyword_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  parentId: varchar("parent_id"), // Will add reference in a separate step to avoid circular reference
+  icon: varchar("icon"), // Icon identifier for UI
+  color: varchar("color"), // Color hex code for UI
+  order: integer("order").default(0), // Display order
+  level: integer("level").default(0), // Depth in hierarchy
+  path: text("path").array().default([]), // Full path from root
+  type: varchar("type", { enum: ["system", "user", "community"] }).default("system"),
+  userId: varchar("user_id").references(() => users.id),
+  communityId: varchar("community_id").references(() => communities.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_keyword_categories_parent").on(table.parentId),
+  index("idx_keyword_categories_order").on(table.order),
+  index("idx_keyword_categories_type").on(table.type),
+]);
+
 // Keywords table - for storing reusable keywords with metadata
 export const keywords = pgTable("keywords", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -333,29 +356,6 @@ export const keywords = pgTable("keywords", {
   index("idx_keywords_type").on(table.type),
 ]);
 
-// Keyword categories table - for organizing keywords hierarchically
-export const keywordCategories = pgTable("keyword_categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name").notNull().unique(),
-  description: text("description"),
-  parentId: varchar("parent_id").references(() => keywordCategories.id), // Self-referencing for hierarchy
-  icon: varchar("icon"), // Icon identifier for UI
-  color: varchar("color"), // Color hex code for UI
-  order: integer("order").default(0), // Display order
-  level: integer("level").default(0), // Depth in hierarchy
-  path: text("path").array().default([]), // Full path from root
-  type: varchar("type", { enum: ["system", "user", "community"] }).default("system"),
-  userId: varchar("user_id").references(() => users.id),
-  communityId: varchar("community_id").references(() => communities.id),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_keyword_categories_parent").on(table.parentId),
-  index("idx_keyword_categories_order").on(table.order),
-  index("idx_keyword_categories_type").on(table.type),
-]);
-
 // Prompt templates table - for storing reusable templates with placeholders
 export const promptTemplates = pgTable("prompt_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -371,7 +371,7 @@ export const promptTemplates = pgTable("prompt_templates", {
   visibility: varchar("visibility", { enum: ["private", "public", "community"] }).default("private"),
   userId: varchar("user_id").references(() => users.id),
   communityId: varchar("community_id").references(() => communities.id),
-  forkedFrom: varchar("forked_from").references(() => promptTemplates.id),
+  forkedFrom: varchar("forked_from"), // Will add reference in relations to avoid circular reference
   usageCount: integer("usage_count").default(0),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   isActive: boolean("is_active").default(true),
