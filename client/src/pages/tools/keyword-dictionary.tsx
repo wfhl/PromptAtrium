@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -13,13 +14,14 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { 
   Search, Filter, BookOpen, Plus, ChevronDown, ChevronRight, 
   Grid, List, Star, Copy, Edit, Trash2, MoreHorizontal,
   Sparkles, Tag, Hash, TrendingUp, Clock, Users, Shield,
   Palette, MapPin, Camera, Shirt, Globe, Heart, Lock,
   ChevronLeft, ChevronRight as ChevronRightIcon,
-  CheckSquare, XSquare, Send
+  CheckSquare, XSquare, Send, Menu, X, SlidersHorizontal
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -196,6 +198,8 @@ export default function KeywordDictionaryPage() {
   const [customSynonymModalOpen, setCustomSynonymModalOpen] = useState(false);
   const [selectedKeywordForSynonym, setSelectedKeywordForSynonym] = useState<any>(null);
   const [editingKeyword, setEditingKeyword] = useState<any>(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
 
   // Toggle selection mode
   const toggleSelectionMode = () => {
@@ -341,204 +345,254 @@ export default function KeywordDictionaryPage() {
     }
   };
 
-  // Add to generator (placeholder function)
-  const addToGenerator = (keyword: any) => {
-    // This would integrate with the Prompt Generator
-    toast({
-      title: "Added to Generator",
-      description: `"${keyword.term}" has been added to the Prompt Generator`,
-    });
-  };
-
   // Toggle favorite
   const toggleFavorite = (keywordId: string) => {
-    // This would call an API to toggle favorite status
+    // TODO: Implement API call
     toast({
-      title: "Updated",
-      description: "Favorite status updated",
+      title: "Favorite toggled",
+      description: "Keyword favorite status updated",
     });
   };
 
-  // Submit custom keyword
+  // Delete keyword
+  const deleteKeyword = (keywordId: string) => {
+    // TODO: Implement API call
+    toast({
+      title: "Keyword deleted",
+      description: "The keyword has been removed",
+    });
+  };
+
+  // Handle custom keyword submission
   const onSubmitCustomKeyword = async (data: CustomKeywordFormData) => {
     try {
-      // API call to create custom keyword
+      // TODO: Implement API call
+      console.log("Creating custom keyword:", data);
+      
       toast({
-        title: "Success",
-        description: "Custom keyword created successfully",
+        title: "Keyword created",
+        description: "Your custom keyword has been added",
       });
-      customKeywordForm.reset();
+      
       setCustomKeywordModalOpen(false);
+      customKeywordForm.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to create custom keyword",
+        title: "Failed to create keyword",
+        description: "Please try again later",
         variant: "destructive",
       });
     }
   };
 
-  // Submit custom synonym
+  // Handle custom synonym submission
   const onSubmitCustomSynonym = async (data: CustomSynonymFormData) => {
     try {
-      // API call to add custom synonym
+      // TODO: Implement API call
+      console.log("Adding synonym:", data, "to keyword:", selectedKeywordForSynonym);
+      
       toast({
-        title: "Success",
-        description: `Synonym "${data.synonym}" added successfully`,
+        title: "Synonym added",
+        description: "The synonym has been added to the keyword",
       });
-      customSynonymForm.reset();
+      
       setCustomSynonymModalOpen(false);
+      customSynonymForm.reset();
       setSelectedKeywordForSynonym(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to add custom synonym",
+        title: "Failed to add synonym",
+        description: "Please try again later",
         variant: "destructive",
       });
     }
+  };
+
+  // Toggle keyword selection
+  const toggleKeywordSelection = (keyword: typeof mockKeywords[0]) => {
+    const isSelected = selectedKeywords.some(k => k.id === keyword.id);
+    if (isSelected) {
+      removeKeyword(keyword.id);
+    } else {
+      addKeyword({
+        id: keyword.id,
+        term: keyword.term,
+        category: keyword.category,
+        subcategory: keyword.subcategory,
+        description: keyword.description,
+        synonyms: keyword.synonyms,
+        tags: keyword.tags,
+      });
+    }
+  };
+
+  // Check if keyword is selected
+  const isKeywordSelected = (keywordId: string) => {
+    return selectedKeywords.some(k => k.id === keywordId);
   };
 
   // Render keyword card
-  const renderKeywordCard = (keyword: any) => {
+  const renderKeywordCard = (keyword: typeof mockKeywords[0]) => {
     const isExpanded = expandedKeywords.has(keyword.id);
-    
+    const isSelected = isKeywordSelected(keyword.id);
+    const Icon = categoryIcons[keyword.category] || BookOpen;
+
     return (
-      <Card key={keyword.id} className="hover:shadow-md transition-shadow">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-lg flex items-center gap-2">
-                {keyword.term}
+      <Card
+        key={keyword.id}
+        className={`transition-all hover:shadow-md ${
+          isSelected ? 'ring-1 sm:ring-2 ring-primary' : ''
+        } ${isSelectionMode ? 'cursor-pointer' : ''}`}
+        onClick={() => {
+          if (isSelectionMode) {
+            toggleKeywordSelection(keyword);
+          }
+        }}
+        data-testid={`keyword-card-${keyword.id}`}
+      >
+        <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                <CardTitle className="text-sm sm:text-base truncate">{keyword.term}</CardTitle>
                 {keyword.isFavorite && (
-                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                  <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-red-500 text-red-500 flex-shrink-0" />
                 )}
-                {keyword.isSystem && (
-                  <Shield className="h-4 w-4 text-muted-foreground" title="System Keyword" />
-                )}
-              </CardTitle>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="text-xs">
-                  {keyword.category}
+              </div>
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                <Badge variant="secondary" className="text-xs h-4 sm:h-5 px-1 sm:px-1.5">
+                  {keyword.subcategory}
                 </Badge>
-                {keyword.subcategory && (
-                  <Badge variant="outline" className="text-xs">
-                    {keyword.subcategory}
-                  </Badge>
-                )}
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
+                <span className="text-xs text-muted-foreground">
                   {keyword.usageCount.toLocaleString()} uses
                 </span>
               </div>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-menu-${keyword.id}`}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => addToGenerator(keyword)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add to Generator
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => copyToClipboard(keyword.term, "Keyword")}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Keyword
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toggleFavorite(keyword.id)}>
-                  <Star className="h-4 w-4 mr-2" />
-                  {keyword.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => {
-                    setSelectedKeywordForSynonym(keyword);
-                    setCustomSynonymModalOpen(true);
-                  }}
-                >
-                  <Tag className="h-4 w-4 mr-2" />
-                  Add Custom Synonym
-                </DropdownMenuItem>
-                {!keyword.isSystem && (
-                  <>
-                    <DropdownMenuItem onClick={() => {
-                      setEditingKeyword(keyword);
-                      customKeywordForm.reset({
-                        term: keyword.term,
-                        category: keyword.category,
-                        subcategory: keyword.subcategory,
-                        description: keyword.description,
-                        synonyms: keyword.synonyms.join(", "),
-                        examples: keyword.examples.join(", "),
-                        tags: keyword.tags.join(", "),
-                        isPublic: keyword.isPublic || false,
-                      });
-                      setCustomKeywordModalOpen(true);
-                    }}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Keyword
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Keyword
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              {isSelectionMode && (
+                <div className="mr-1 sm:mr-2">
+                  {isSelected ? (
+                    <CheckSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  ) : (
+                    <XSquare className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                  )}
+                </div>
+              )}
+              {!isSelectionMode && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 sm:h-8 sm:w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(keyword.id);
+                    }}
+                    data-testid={`button-favorite-${keyword.id}`}
+                  >
+                    <Star className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${keyword.isFavorite ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-7 w-7 sm:h-8 sm:w-8"
+                        onClick={(e) => e.stopPropagation()}
+                        data-testid={`button-menu-${keyword.id}`}
+                      >
+                        <MoreHorizontal className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => copyToClipboard(keyword.term, "Keyword")}>
+                        <Copy className="h-3 w-3 mr-2" />
+                        Copy Term
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setSelectedKeywordForSynonym(keyword);
+                        setCustomSynonymModalOpen(true);
+                      }}>
+                        <Plus className="h-3 w-3 mr-2" />
+                        Add Synonym
+                      </DropdownMenuItem>
+                      {!keyword.isSystem && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setEditingKeyword(keyword)}>
+                            <Edit className="h-3 w-3 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => deleteKeyword(keyword.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground line-clamp-2">
+        
+        <CardContent className="pt-0 pb-2 px-3 sm:pb-3 sm:px-4">
+          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
             {keyword.description}
           </p>
           
-          <Collapsible open={isExpanded} onOpenChange={() => toggleKeyword(keyword.id)}>
-            <CollapsibleTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-full justify-start p-0 h-auto font-normal"
-                data-testid={`button-expand-${keyword.id}`}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 mr-1" />
-                )}
-                {isExpanded ? "Show less" : "Show more"}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-3 pt-3">
-              {/* Synonyms */}
+          {!isSelectionMode && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1.5 sm:mt-2 h-6 sm:h-7 text-xs px-1 sm:px-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleKeyword(keyword.id);
+              }}
+              data-testid={`button-expand-${keyword.id}`}
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronDown className="h-3 w-3 mr-1" />
+                  Less
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="h-3 w-3 mr-1" />
+                  More
+                </>
+              )}
+            </Button>
+          )}
+          
+          <Collapsible open={isExpanded && !isSelectionMode}>
+            <CollapsibleContent className="mt-2 sm:mt-3 space-y-2 sm:space-y-3">
               {keyword.synonyms.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium mb-1">Synonyms:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {keyword.synonyms.map((synonym: string, idx: number) => (
-                      <Badge 
-                        key={idx} 
-                        variant="secondary" 
-                        className="text-xs cursor-pointer hover:bg-secondary/80"
-                        onClick={() => copyToClipboard(synonym, "Synonym")}
-                      >
-                        {synonym}
+                  <Label className="text-xs font-medium">Synonyms</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {keyword.synonyms.map((syn, index) => (
+                      <Badge key={index} variant="outline" className="text-xs h-5 px-1">
+                        {syn}
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
               
-              {/* Examples */}
               {keyword.examples.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium mb-1">Examples:</p>
-                  <ul className="space-y-1">
-                    {keyword.examples.map((example: string, idx: number) => (
-                      <li key={idx} className="text-xs text-muted-foreground">
+                  <Label className="text-xs font-medium">Examples</Label>
+                  <ul className="mt-1 space-y-0.5">
+                    {keyword.examples.map((example, index) => (
+                      <li key={index} className="text-xs text-muted-foreground">
                         • {example}
                       </li>
                     ))}
@@ -546,41 +600,18 @@ export default function KeywordDictionaryPage() {
                 </div>
               )}
               
-              {/* Tags */}
               {keyword.tags.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium mb-1">Tags:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {keyword.tags.map((tag: string, idx: number) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        <Hash className="h-2 w-2 mr-1" />
-                        {tag}
+                  <Label className="text-xs font-medium">Tags</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {keyword.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs h-4 px-1">
+                        #{tag}
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
-              
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => addToGenerator(keyword)}
-                  data-testid={`button-add-generator-${keyword.id}`}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add to Generator
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => copyToClipboard(keyword.term, "Keyword")}
-                  data-testid={`button-copy-${keyword.id}`}
-                >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
-                </Button>
-              </div>
             </CollapsibleContent>
           </Collapsible>
         </CardContent>
@@ -588,598 +619,541 @@ export default function KeywordDictionaryPage() {
     );
   };
 
-  // Render keyword list item
-  const renderKeywordListItem = (keyword: any) => {
-    const isExpanded = expandedKeywords.has(keyword.id);
-    
-    return (
-      <Card key={keyword.id} className="hover:shadow-md transition-shadow">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-lg">{keyword.term}</h3>
-                {keyword.isFavorite && (
-                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                )}
-                {keyword.isSystem && (
-                  <Shield className="h-4 w-4 text-muted-foreground" title="System Keyword" />
-                )}
-                <Badge variant="secondary" className="text-xs">
-                  {keyword.category}
-                </Badge>
-                {keyword.subcategory && (
-                  <Badge variant="outline" className="text-xs">
-                    {keyword.subcategory}
-                  </Badge>
-                )}
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  {keyword.usageCount.toLocaleString()} uses
-                </span>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Mobile-Optimized Header */}
+      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              
-              <p className="text-sm text-muted-foreground">
-                {keyword.description}
-              </p>
-              
-              {isExpanded && (
-                <div className="space-y-3 pt-2">
-                  {/* Synonyms */}
-                  {keyword.synonyms.length > 0 && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-xs font-medium min-w-[80px]">Synonyms:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {keyword.synonyms.map((synonym: string, idx: number) => (
-                          <Badge 
-                            key={idx} 
-                            variant="secondary" 
-                            className="text-xs cursor-pointer hover:bg-secondary/80"
-                            onClick={() => copyToClipboard(synonym, "Synonym")}
-                          >
-                            {synonym}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Examples */}
-                  {keyword.examples.length > 0 && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-xs font-medium min-w-[80px]">Examples:</span>
-                      <div className="space-y-1">
-                        {keyword.examples.map((example: string, idx: number) => (
-                          <p key={idx} className="text-xs text-muted-foreground">
-                            • {example}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Tags */}
-                  {keyword.tags.length > 0 && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-xs font-medium min-w-[80px]">Tags:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {keyword.tags.map((tag: string, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            <Hash className="h-2 w-2 mr-1" />
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2 pt-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => addToGenerator(keyword)}
-                  data-testid={`button-add-generator-${keyword.id}`}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add to Generator
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => copyToClipboard(keyword.term, "Keyword")}
-                  data-testid={`button-copy-${keyword.id}`}
-                >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => toggleKeyword(keyword.id)}
-                  data-testid={`button-expand-${keyword.id}`}
-                >
-                  {isExpanded ? (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-1" />
-                      Show less
-                    </>
-                  ) : (
-                    <>
-                      <ChevronRight className="h-4 w-4 mr-1" />
-                      Show more
-                    </>
-                  )}
-                </Button>
+              <div>
+                <h1 className="text-base sm:text-2xl font-bold">Keyword Dictionary</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  Browse and manage AI prompt keywords
+                </p>
               </div>
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" data-testid={`button-menu-${keyword.id}`}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => toggleFavorite(keyword.id)}>
-                  <Star className="h-4 w-4 mr-2" />
-                  {keyword.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => {
-                    setSelectedKeywordForSynonym(keyword);
-                    setCustomSynonymModalOpen(true);
-                  }}
-                >
-                  <Tag className="h-4 w-4 mr-2" />
-                  Add Custom Synonym
-                </DropdownMenuItem>
-                {!keyword.isSystem && (
-                  <>
-                    <DropdownMenuItem onClick={() => {
-                      setEditingKeyword(keyword);
-                      customKeywordForm.reset({
-                        term: keyword.term,
-                        category: keyword.category,
-                        subcategory: keyword.subcategory,
-                        description: keyword.description,
-                        synonyms: keyword.synonyms.join(", "),
-                        examples: keyword.examples.join(", "),
-                        tags: keyword.tags.join(", "),
-                        isPublic: keyword.isPublic || false,
-                      });
-                      setCustomKeywordModalOpen(true);
-                    }}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Keyword
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Keyword
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  return (
-    <>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <Card className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <BookOpen className="h-6 w-6" />
-                  Keyword Dictionary
-                </CardTitle>
-                <CardDescription>
-                  Browse and search comprehensive keyword library for prompt generation
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Mobile Menu Buttons */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 sm:hidden"
+                onClick={() => setMobileCategoriesOpen(true)}
+                data-testid="button-mobile-categories"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 sm:hidden"
+                onClick={() => setMobileFiltersOpen(true)}
+                data-testid="button-mobile-filters"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+              
+              {/* Desktop Controls */}
+              <div className="hidden sm:flex items-center gap-2">
                 <Button
-                  variant={isSelectionMode ? "secondary" : "outline"}
+                  variant={isSelectionMode ? "default" : "outline"}
+                  size="sm"
                   onClick={toggleSelectionMode}
+                  className="gap-1.5"
                   data-testid="button-selection-mode"
                 >
-                  {isSelectionMode ? (
-                    <>
-                      <XSquare className="h-4 w-4 mr-2" />
-                      Cancel Selection
-                    </>
-                  ) : (
-                    <>
-                      <CheckSquare className="h-4 w-4 mr-2" />
-                      Select Keywords
-                    </>
-                  )}
+                  <CheckSquare className="h-4 w-4" />
+                  {isSelectionMode ? "Cancel" : "Select"}
                 </Button>
-                <Button 
-                  onClick={() => {
-                    setEditingKeyword(null);
-                    customKeywordForm.reset();
-                    setCustomKeywordModalOpen(true);
-                  }}
-                  data-testid="button-create-keyword"
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCustomKeywordModalOpen(true)}
+                  className="gap-1.5"
+                  disabled={!isAuthenticated}
+                  data-testid="button-add-keyword"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Keyword
+                  <Plus className="h-4 w-4" />
+                  Add Keyword
                 </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <div className="flex items-center justify-between">
-                <TabsList>
-                  <TabsTrigger value="system" data-testid="tab-system">
-                    <Shield className="h-4 w-4 mr-2" />
-                    System Keywords
-                  </TabsTrigger>
-                  <TabsTrigger value="my" data-testid="tab-my">
-                    <Lock className="h-4 w-4 mr-2" />
-                    My Keywords
-                  </TabsTrigger>
-                  <TabsTrigger value="community" data-testid="tab-community">
-                    <Users className="h-4 w-4 mr-2" />
-                    Community Keywords
-                  </TabsTrigger>
-                </TabsList>
-                
-                <div className="flex items-center gap-2">
-                  <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                    <SelectTrigger className="w-[140px]" data-testid="select-sort">
+          </div>
+          
+          {/* Search Bar - Mobile Optimized */}
+          <div className="mt-2 sm:mt-3">
+            <div className="relative">
+              <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search keywords..."
+                className="pl-8 sm:pl-10 h-8 sm:h-10 text-xs sm:text-sm"
+                data-testid="input-search"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-7 sm:w-7"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Mobile Selection Bar */}
+          {isSelectionMode && (
+            <div className="mt-2 sm:hidden flex items-center justify-between p-2 bg-primary/10 rounded-lg">
+              <span className="text-xs font-medium">
+                {selectedKeywords.length} selected
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={clearKeywords}
+                  className="h-7 text-xs"
+                >
+                  Clear
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={sendToGenerator}
+                  disabled={selectedKeywords.length === 0}
+                  className="h-7 text-xs"
+                >
+                  <Send className="h-3 w-3 mr-1" />
+                  Send
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6">
+          {/* Desktop Sidebar */}
+          <div className="hidden lg:block lg:col-span-1 space-y-2 sm:space-y-4">
+            {/* Categories */}
+            <Card>
+              <CardHeader className="py-2 sm:py-3">
+                <CardTitle className="text-sm sm:text-base">Categories</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-3">
+                <div className="space-y-1">
+                  <Button
+                    variant={selectedCategory === null ? "secondary" : "ghost"}
+                    className="w-full justify-start gap-2 h-8 sm:h-9 text-xs sm:text-sm"
+                    onClick={() => {
+                      setSelectedCategory(null);
+                      setSelectedSubcategory(null);
+                    }}
+                    data-testid="button-category-all"
+                  >
+                    <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    All Categories
+                    <Badge variant="outline" className="ml-auto h-4 sm:h-5 px-1 text-xs">
+                      {mockKeywords.length}
+                    </Badge>
+                  </Button>
+                  
+                  {categories.map((category) => {
+                    const Icon = category.icon;
+                    const isExpanded = expandedCategories.has(category.id);
+                    
+                    return (
+                      <div key={category.id}>
+                        <Button
+                          variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                          className="w-full justify-start gap-2 h-8 sm:h-9 text-xs sm:text-sm"
+                          onClick={() => {
+                            setSelectedCategory(category.id);
+                            setSelectedSubcategory(null);
+                            toggleCategory(category.id);
+                          }}
+                          data-testid={`button-category-${category.id}`}
+                        >
+                          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          {category.name}
+                          <Badge variant="outline" className="ml-auto h-4 sm:h-5 px-1 text-xs">
+                            {category.count}
+                          </Badge>
+                          {isExpanded ? (
+                            <ChevronDown className="h-3 w-3" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3" />
+                          )}
+                        </Button>
+                        
+                        <Collapsible open={isExpanded && selectedCategory === category.id}>
+                          <CollapsibleContent>
+                            <div className="ml-4 sm:ml-6 mt-1 space-y-0.5">
+                              {category.subcategories.map((sub) => (
+                                <Button
+                                  key={sub}
+                                  variant={selectedSubcategory === sub ? "secondary" : "ghost"}
+                                  size="sm"
+                                  className="w-full justify-start text-xs h-7"
+                                  onClick={() => setSelectedSubcategory(sub)}
+                                  data-testid={`button-subcategory-${sub.toLowerCase().replace(/\s+/g, '-')}`}
+                                >
+                                  {sub}
+                                </Button>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Filters */}
+            <Card>
+              <CardHeader className="py-2 sm:py-3">
+                <CardTitle className="text-sm sm:text-base">Filters</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-3 space-y-2">
+                <div className="space-y-1">
+                  <Label htmlFor="sort" className="text-xs">Sort By</Label>
+                  <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                    <SelectTrigger id="sort" className="h-7 sm:h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="popular">Most Popular</SelectItem>
                       <SelectItem value="alphabetical">Alphabetical</SelectItem>
-                      <SelectItem value="recent">Most Recent</SelectItem>
+                      <SelectItem value="recent">Recently Added</SelectItem>
                     </SelectContent>
                   </Select>
-                  
-                  <div className="flex items-center border rounded-md">
-                    <Button
-                      variant={viewMode === "grid" ? "default" : "ghost"}
-                      size="icon"
-                      onClick={() => setViewMode("grid")}
-                      className="h-8 w-8 rounded-none rounded-l-md"
-                      data-testid="button-view-grid"
-                    >
-                      <Grid className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === "list" ? "default" : "ghost"}
-                      size="icon"
-                      onClick={() => setViewMode("list")}
-                      className="h-8 w-8 rounded-none rounded-r-md"
-                      data-testid="button-view-list"
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                {/* Sidebar with categories */}
-                <div className="w-64 space-y-4">
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      type="text"
-                      placeholder="Search keywords..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                      data-testid="input-search"
-                    />
-                  </div>
-                  
-                  {/* Categories */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">Categories</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <ScrollArea className="h-[400px]">
-                        <div className="p-4 pt-0 space-y-1">
-                          {/* All Categories */}
-                          <Button
-                            variant={selectedCategory === null ? "secondary" : "ghost"}
-                            className="w-full justify-start"
-                            onClick={() => {
-                              setSelectedCategory(null);
-                              setSelectedSubcategory(null);
-                            }}
-                            data-testid="button-category-all"
-                          >
-                            <BookOpen className="h-4 w-4 mr-2" />
-                            All Categories
-                            <Badge variant="secondary" className="ml-auto">
-                              {categories.reduce((sum, cat) => sum + cat.count, 0)}
-                            </Badge>
-                          </Button>
-                          
-                          <Separator className="my-2" />
-                          
-                          {/* Individual Categories */}
-                          {categories.map((category) => {
-                            const Icon = category.icon;
-                            const isExpanded = expandedCategories.has(category.id);
-                            const isSelected = selectedCategory === category.id;
-                            
-                            return (
-                              <div key={category.id}>
-                                <Button
-                                  variant={isSelected ? "secondary" : "ghost"}
-                                  className="w-full justify-start"
-                                  onClick={() => {
-                                    setSelectedCategory(category.id);
-                                    setSelectedSubcategory(null);
-                                    toggleCategory(category.id);
-                                  }}
-                                  data-testid={`button-category-${category.id}`}
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4 mr-2" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 mr-2" />
-                                  )}
-                                  <Icon className="h-4 w-4 mr-2" />
-                                  {category.name}
-                                  <Badge variant="secondary" className="ml-auto">
-                                    {category.count}
-                                  </Badge>
-                                </Button>
-                                
-                                {isExpanded && (
-                                  <div className="ml-8 mt-1 space-y-1">
-                                    {category.subcategories.map((sub) => (
-                                      <Button
-                                        key={sub}
-                                        variant={selectedSubcategory === sub ? "secondary" : "ghost"}
-                                        size="sm"
-                                        className="w-full justify-start text-xs"
-                                        onClick={() => setSelectedSubcategory(sub)}
-                                        data-testid={`button-subcategory-${sub}`}
-                                      >
-                                        {sub}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Quick Stats */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">Quick Stats</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Total Keywords</span>
-                        <span className="font-medium">1,188</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Your Keywords</span>
-                        <span className="font-medium">24</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Favorites</span>
-                        <span className="font-medium">12</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Recently Added</span>
-                        <span className="font-medium">45</span>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
                 
-                {/* Main content area */}
-                <div className="flex-1">
-                  <TabsContent value="system" className="mt-0">
-                    {keywordsLoading ? (
-                      <div className="flex items-center justify-center h-64">
-                        <div className="text-center">
-                          <Sparkles className="h-8 w-8 text-primary animate-pulse mx-auto mb-2" />
-                          <p className="text-muted-foreground">Loading keywords...</p>
-                        </div>
-                      </div>
-                    ) : keywords.length === 0 ? (
-                      <Card>
-                        <CardContent className="flex flex-col items-center justify-center h-64">
-                          <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-                          <p className="text-lg font-medium mb-2">No keywords found</p>
-                          <p className="text-sm text-muted-foreground text-center">
-                            Try adjusting your search or filters
-                          </p>
+                <div className="space-y-1">
+                  <Label className="text-xs">View Mode</Label>
+                  <div className="flex gap-1">
+                    <Button
+                      variant={viewMode === "grid" ? "secondary" : "outline"}
+                      size="sm"
+                      className="flex-1 h-7 text-xs"
+                      onClick={() => setViewMode("grid")}
+                    >
+                      <Grid className="h-3 w-3 mr-1" />
+                      Grid
+                    </Button>
+                    <Button
+                      variant={viewMode === "list" ? "secondary" : "outline"}
+                      size="sm"
+                      className="flex-1 h-7 text-xs"
+                      onClick={() => setViewMode("list")}
+                    >
+                      <List className="h-3 w-3 mr-1" />
+                      List
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Keywords Grid */}
+          <div className="lg:col-span-3">
+            {/* Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 h-8 sm:h-10">
+                <TabsTrigger value="system" className="text-xs sm:text-sm">
+                  System
+                </TabsTrigger>
+                <TabsTrigger value="custom" className="text-xs sm:text-sm">
+                  Custom
+                </TabsTrigger>
+                <TabsTrigger value="favorites" className="text-xs sm:text-sm">
+                  Favorites
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value={activeTab} className="mt-2 sm:mt-4">
+                {keywordsLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                    {[...Array(6)].map((_, i) => (
+                      <Card key={i} className="h-32 animate-pulse">
+                        <CardContent className="p-4">
+                          <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                          <div className="h-3 bg-muted rounded w-full" />
+                          <div className="h-3 bg-muted rounded w-5/6 mt-1" />
                         </CardContent>
                       </Card>
-                    ) : viewMode === "grid" ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {keywords.map(renderKeywordCard)}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {keywords.map(renderKeywordListItem)}
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="my" className="mt-0">
-                    {!isAuthenticated ? (
-                      <Card>
-                        <CardContent className="flex flex-col items-center justify-center h-64">
-                          <Lock className="h-12 w-12 text-muted-foreground mb-4" />
-                          <p className="text-lg font-medium mb-2">Authentication Required</p>
-                          <p className="text-sm text-muted-foreground text-center mb-4">
-                            Please log in to view and manage your custom keywords
-                          </p>
-                          <Button onClick={() => window.location.href = "/api/login"}>
-                            Log In
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <div className="space-y-4">
-                        <Card>
-                          <CardContent className="flex flex-col items-center justify-center h-64">
-                            <Plus className="h-12 w-12 text-muted-foreground mb-4" />
-                            <p className="text-lg font-medium mb-2">No custom keywords yet</p>
-                            <p className="text-sm text-muted-foreground text-center mb-4">
-                              Create your first custom keyword to get started
-                            </p>
-                            <Button 
+                    ))}
+                  </div>
+                ) : keywords.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 sm:py-12 text-center">
+                      <BookOpen className="h-8 w-8 sm:h-12 sm:w-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+                      <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">No keywords found</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Try adjusting your search or filters
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className={
+                    viewMode === "grid" 
+                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3" 
+                      : "space-y-2 sm:space-y-3"
+                  }>
+                    {keywords.map(renderKeywordCard)}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Categories Sheet */}
+      <Sheet open={mobileCategoriesOpen} onOpenChange={setMobileCategoriesOpen}>
+        <SheetContent side="left" className="w-[280px] p-0">
+          <SheetHeader className="p-4 pb-2">
+            <SheetTitle className="text-base">Categories</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-full pb-20">
+            <div className="p-4 pt-2 space-y-1">
+              <Button
+                variant={selectedCategory === null ? "secondary" : "ghost"}
+                className="w-full justify-start gap-2 h-8 text-xs"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSelectedSubcategory(null);
+                  setMobileCategoriesOpen(false);
+                }}
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                All Categories
+                <Badge variant="outline" className="ml-auto h-4 px-1 text-xs">
+                  {mockKeywords.length}
+                </Badge>
+              </Button>
+              
+              {categories.map((category) => {
+                const Icon = category.icon;
+                const isExpanded = expandedCategories.has(category.id);
+                
+                return (
+                  <div key={category.id}>
+                    <Button
+                      variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                      className="w-full justify-start gap-2 h-8 text-xs"
+                      onClick={() => {
+                        setSelectedCategory(category.id);
+                        setSelectedSubcategory(null);
+                        toggleCategory(category.id);
+                      }}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {category.name}
+                      <Badge variant="outline" className="ml-auto h-4 px-1 text-xs">
+                        {category.count}
+                      </Badge>
+                      {isExpanded ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                    </Button>
+                    
+                    <Collapsible open={isExpanded && selectedCategory === category.id}>
+                      <CollapsibleContent>
+                        <div className="ml-6 mt-1 space-y-0.5">
+                          {category.subcategories.map((sub) => (
+                            <Button
+                              key={sub}
+                              variant={selectedSubcategory === sub ? "secondary" : "ghost"}
+                              size="sm"
+                              className="w-full justify-start text-xs h-6"
                               onClick={() => {
-                                setEditingKeyword(null);
-                                customKeywordForm.reset();
-                                setCustomKeywordModalOpen(true);
+                                setSelectedSubcategory(sub);
+                                setMobileCategoriesOpen(false);
                               }}
                             >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Create Keyword
+                              {sub}
                             </Button>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="community" className="mt-0">
-                    <Card>
-                      <CardContent className="flex flex-col items-center justify-center h-64">
-                        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                        <p className="text-lg font-medium mb-2">Community Keywords</p>
-                        <p className="text-sm text-muted-foreground text-center">
-                          Browse keywords shared by the community
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          (Coming soon)
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </div>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      {/* Mobile Filters Sheet */}
+      <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+        <SheetContent side="right" className="w-[280px]">
+          <SheetHeader>
+            <SheetTitle className="text-base">Filters & Actions</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mobile-sort" className="text-xs">Sort By</Label>
+              <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                <SelectTrigger id="mobile-sort" className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="popular">Most Popular</SelectItem>
+                  <SelectItem value="alphabetical">Alphabetical</SelectItem>
+                  <SelectItem value="recent">Recently Added</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs">View Mode</Label>
+              <div className="flex gap-1">
+                <Button
+                  variant={viewMode === "grid" ? "secondary" : "outline"}
+                  size="sm"
+                  className="flex-1 h-8 text-xs"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <Grid className="h-3 w-3 mr-1" />
+                  Grid
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "secondary" : "outline"}
+                  size="sm"
+                  className="flex-1 h-8 text-xs"
+                  onClick={() => setViewMode("list")}
+                >
+                  <List className="h-3 w-3 mr-1" />
+                  List
+                </Button>
               </div>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Floating Action Bar for Selected Keywords */}
-      {isSelectionMode && selectedKeywords.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-          <Card className="shadow-lg border-primary">
-            <CardContent className="flex items-center gap-4 p-4">
-              <Badge variant="secondary" className="text-lg px-3 py-1">
-                {selectedKeywords.length} selected
-              </Badge>
+            </div>
+            
+            <Separator />
+            
+            <div className="space-y-2">
               <Button
-                onClick={clearKeywords}
+                variant={isSelectionMode ? "default" : "outline"}
+                className="w-full h-8 text-xs"
+                onClick={() => {
+                  toggleSelectionMode();
+                  setMobileFiltersOpen(false);
+                }}
+              >
+                <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
+                {isSelectionMode ? "Cancel Selection" : "Select Keywords"}
+              </Button>
+              
+              <Button
                 variant="outline"
-                size="sm"
-                data-testid="button-clear-selection"
+                className="w-full h-8 text-xs"
+                onClick={() => {
+                  setCustomKeywordModalOpen(true);
+                  setMobileFiltersOpen(false);
+                }}
+                disabled={!isAuthenticated}
               >
-                <XSquare className="h-4 w-4 mr-2" />
-                Clear
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Add Custom Keyword
               </Button>
-              <Button
-                onClick={sendToGenerator}
-                className="bg-primary"
-                size="sm"
-                data-testid="button-send-to-generator"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Send to Generator
-              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Selection Mode Actions - Desktop */}
+      {isSelectionMode && selectedKeywords.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-50 hidden sm:block">
+          <Card className="shadow-lg">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">
+                  {selectedKeywords.length} keyword{selectedKeywords.length > 1 ? 's' : ''} selected
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={clearKeywords}
+                >
+                  Clear All
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={sendToGenerator}
+                  className="gap-1.5"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Send to Generator
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
-      
+
       {/* Custom Keyword Modal */}
       <Dialog open={customKeywordModalOpen} onOpenChange={setCustomKeywordModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[90vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {editingKeyword ? "Edit Keyword" : "Create Custom Keyword"}
-            </DialogTitle>
+            <DialogTitle>Create Custom Keyword</DialogTitle>
             <DialogDescription>
-              {editingKeyword 
-                ? "Update your custom keyword details"
-                : "Add a new custom keyword to your personal dictionary"
-              }
+              Add your own keyword to the dictionary
             </DialogDescription>
           </DialogHeader>
-          
           <Form {...customKeywordForm}>
-            <form onSubmit={customKeywordForm.handleSubmit(onSubmitCustomKeyword)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={customKeywordForm.control}
-                  name="term"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Term</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Cyberpunk" {...field} data-testid="input-keyword-term" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={customKeywordForm.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-keyword-category">
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            <form onSubmit={customKeywordForm.handleSubmit(onSubmitCustomKeyword)} className="space-y-3">
+              <FormField
+                control={customKeywordForm.control}
+                name="term"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs sm:text-sm">Term</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="h-8 sm:h-9 text-xs sm:text-sm" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 control={customKeywordForm.control}
-                name="subcategory"
+                name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Subcategory (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Futuristic" {...field} data-testid="input-keyword-subcategory" />
-                    </FormControl>
+                    <FormLabel className="text-xs sm:text-sm">Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1190,149 +1164,44 @@ export default function KeywordDictionaryPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Describe what this keyword represents..."
-                        className="resize-none"
-                        {...field}
-                        data-testid="textarea-keyword-description"
-                      />
+                      <Textarea {...field} className="min-h-[60px] text-xs sm:text-sm" />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={customKeywordForm.control}
-                name="synonyms"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Synonyms (Optional)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Comma-separated list, e.g., Tech noir, Dystopian future"
-                        {...field}
-                        data-testid="input-keyword-synonyms"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Enter synonyms separated by commas
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={customKeywordForm.control}
-                name="examples"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Examples (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Comma-separated examples of usage..."
-                        className="resize-none"
-                        {...field}
-                        data-testid="textarea-keyword-examples"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide example prompts using this keyword
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={customKeywordForm.control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tags (Optional)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Comma-separated tags, e.g., futuristic, neon, technology"
-                        {...field}
-                        data-testid="input-keyword-tags"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Add tags to help categorize this keyword
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={customKeywordForm.control}
-                name="isPublic"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between">
-                    <div>
-                      <FormLabel>Share with Community</FormLabel>
-                      <FormDescription>
-                        Make this keyword available to other users
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        className="h-4 w-4"
-                        data-testid="checkbox-keyword-public"
-                      />
-                    </FormControl>
                   </FormItem>
                 )}
               />
               
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setCustomKeywordModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" data-testid="button-save-keyword">
-                  {editingKeyword ? "Update Keyword" : "Create Keyword"}
+                <Button type="submit" className="h-8 sm:h-9 text-xs sm:text-sm">
+                  Create Keyword
                 </Button>
               </DialogFooter>
             </form>
           </Form>
         </DialogContent>
       </Dialog>
-      
+
       {/* Custom Synonym Modal */}
       <Dialog open={customSynonymModalOpen} onOpenChange={setCustomSynonymModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[90vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Custom Synonym</DialogTitle>
+            <DialogTitle>Add Synonym</DialogTitle>
             <DialogDescription>
-              Add a custom synonym for "{selectedKeywordForSynonym?.term}"
+              Add a synonym to "{selectedKeywordForSynonym?.term}"
             </DialogDescription>
           </DialogHeader>
-          
           <Form {...customSynonymForm}>
-            <form onSubmit={customSynonymForm.handleSubmit(onSubmitCustomSynonym)} className="space-y-4">
+            <form onSubmit={customSynonymForm.handleSubmit(onSubmitCustomSynonym)} className="space-y-3">
               <FormField
                 control={customSynonymForm.control}
                 name="synonym"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Synonym</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Synonym</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Enter a synonym..."
-                        {...field}
-                        data-testid="input-synonym"
-                      />
+                      <Input {...field} className="h-8 sm:h-9 text-xs sm:text-sm" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1344,14 +1213,9 @@ export default function KeywordDictionaryPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Description (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Add any notes about this synonym..."
-                        className="resize-none"
-                        {...field}
-                        data-testid="textarea-synonym-description"
-                      />
+                      <Textarea {...field} className="min-h-[50px] text-xs sm:text-sm" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1359,17 +1223,7 @@ export default function KeywordDictionaryPage() {
               />
               
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    setCustomSynonymModalOpen(false);
-                    setSelectedKeywordForSynonym(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" data-testid="button-save-synonym">
+                <Button type="submit" className="h-8 sm:h-9 text-xs sm:text-sm">
                   Add Synonym
                 </Button>
               </DialogFooter>
@@ -1377,6 +1231,6 @@ export default function KeywordDictionaryPage() {
           </Form>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }

@@ -21,7 +21,7 @@ import {
   HelpCircle, Wand2, Settings, History, BookOpen, Code, Image,
   Palette, Camera, User, MapPin, Lightbulb, Package, Layers,
   Zap, Download, Upload, Share2, X, Check, AlertCircle, Info,
-  ArrowRight, MoreVertical, Eye, EyeOff, Lock, Unlock, Star, Tag
+  ArrowRight, MoreVertical, Eye, EyeOff, Lock, Unlock, Star, Tag, Menu, Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -184,6 +184,8 @@ export default function PromptGeneratorPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { selectedKeywords, clearKeywords } = useToolsContext();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
 
   // Main state
   const [mode, setMode] = useState<"guided" | "advanced">("guided");
@@ -245,7 +247,7 @@ export default function PromptGeneratorPage() {
   useEffect(() => {
     if (selectedKeywords.length > 0) {
       setReceivedKeywords(selectedKeywords);
-      setExpandedSections(prev => new Set([...prev, "keywords"]));
+      setExpandedSections(prev => new Set(Array.from(prev).concat("keywords")));
       
       // Show notification
       toast({
@@ -477,8 +479,8 @@ export default function PromptGeneratorPage() {
     } else if (selectedModel === "midjourney") {
       technicalParams.quality = parameters.quality;
       technicalParams.stylize = parameters.stylize;
-      if (parameters.chaos > 0) technicalParams.chaos = parameters.chaos;
-      if (parameters.weird > 0) technicalParams.weird = parameters.weird;
+      technicalParams.chaos = parameters.chaos;
+      technicalParams.weird = parameters.weird;
       technicalParams.aspectRatio = parameters.aspectRatio;
     } else if (selectedModel === "dalle") {
       technicalParams.quality = parameters.dalleQuality;
@@ -486,1037 +488,832 @@ export default function PromptGeneratorPage() {
       technicalParams.size = parameters.dalleSize;
     }
 
-    const prefilled: Partial<Prompt> = {
-      name: `Generated Prompt - ${new Date().toLocaleDateString()}`,
-      description: `Prompt generated using the Prompt Generator tool`,
+    setPrefilledPromptData({
+      name: `Generated ${new Date().toLocaleDateString()}`,
       promptContent: mainPrompt,
-      negativePrompt: negativePrompt,
-      intendedGenerator: modelPresets[selectedModel as keyof typeof modelPresets]?.name || "",
-      technicalParams: Object.keys(technicalParams).length > 0 ? technicalParams : null,
-      category: selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1),
-      promptType: "Image Generation",
-      promptStyle: selectedStyle || undefined,
-      isPublic: false,
-      status: "published",
-      tags: ["generated", "prompt-generator", selectedModel, selectedCategory].filter(Boolean),
-    };
-
-    setPrefilledPromptData(prefilled);
+      negative_prompt: negativePrompt || null,
+      model: selectedModel,
+      technical_params: technicalParams,
+      style: selectedStyle || null,
+      tags: [],
+    });
     setPromptModalOpen(true);
   };
 
-  // Add to recent prompts
-  const addToRecentPrompts = (prompt: string) => {
-    setRecentPrompts(prev => {
-      const updated = [prompt, ...prev.filter(p => p !== prompt)].slice(0, 10);
-      // Save to localStorage for persistence
-      localStorage.setItem('recentPrompts', JSON.stringify(updated));
-      return updated;
+  // Export prompt data
+  const exportPromptData = () => {
+    const data = {
+      mainPrompt,
+      negativePrompt,
+      model: selectedModel,
+      parameters,
+      style: selectedStyle,
+      template: selectedTemplate,
+      timestamp: new Date().toISOString(),
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prompt-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Exported!",
+      description: "Prompt data exported successfully",
     });
   };
 
-  // Load recent prompts from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('recentPrompts');
-    if (saved) {
+  // Import prompt data
+  const importPromptData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
       try {
-        setRecentPrompts(JSON.parse(saved));
+        const data = JSON.parse(e.target?.result as string);
+        setMainPrompt(data.mainPrompt || "");
+        setNegativePrompt(data.negativePrompt || "");
+        setSelectedModel(data.model || "stable-diffusion");
+        setParameters(prev => ({ ...prev, ...data.parameters }));
+        setSelectedStyle(data.style || "");
+        if (data.template) {
+          setSelectedTemplate(data.template);
+          setPlaceholderValues(data.template.placeholders);
+        }
+        
+        toast({
+          title: "Imported!",
+          description: "Prompt data imported successfully",
+        });
       } catch (error) {
-        console.error('Failed to load recent prompts:', error);
+        toast({
+          title: "Import failed",
+          description: "Invalid prompt data file",
+          variant: "destructive",
+        });
       }
-    }
-  }, []);
-
-  // Update main prompt when in guided mode
-  useEffect(() => {
-    if (mode === "guided" && promptElements.length > 0) {
-      const builtPrompt = buildPromptFromElements();
-      setMainPrompt(builtPrompt);
-    }
-  }, [promptElements, mode]);
-
-  // Import keywords from dictionary (prepare for cross-tool communication)
-  const importKeywords = (keywords: string[]) => {
-    setImportedKeywords(keywords);
-    // Add keywords to prompt
-    const keywordText = keywords.join(", ");
-    setMainPrompt(prev => prev ? `${prev}, ${keywordText}` : keywordText);
-    toast({
-      title: "Keywords Imported",
-      description: `${keywords.length} keywords added to prompt`,
-    });
-  };
-
-  // Generate final prompt with all settings
-  const generateFinalPrompt = () => {
-    let finalPrompt = mainPrompt;
-    
-    // Add imported keywords if any
-    if (importedKeywords.length > 0) {
-      finalPrompt += `, ${importedKeywords.join(", ")}`;
-    }
-    
-    // Add quality modifiers if enabled
-    if (mode === "advanced") {
-      // Quality modifiers are already in the prompt
-    }
-    
-    return finalPrompt;
-  };
-
-  // Reset all fields
-  const resetAll = () => {
-    setMainPrompt("");
-    setNegativePrompt("");
-    setPromptElements([]);
-    setSelectedTemplate(null);
-    setSelectedStyle("");
-    setPlaceholderValues({});
-    setImportedKeywords([]);
-    toast({
-      title: "Reset Complete",
-      description: "All fields have been cleared",
-    });
+    };
+    reader.readAsText(file);
   };
 
   return (
-    <>
-      <div className="container mx-auto px-4 py-8 max-w-[1600px]">
-        <Card className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <Wand2 className="h-6 w-6" />
-                  Prompt Generator
-                </CardTitle>
-                <CardDescription>
-                  Build powerful prompts with templates, styles, and parameters
-                </CardDescription>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Mobile-Optimized Header Section */}
+      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowHistory(!showHistory)}
-                  data-testid="button-history"
-                >
-                  <History className="h-4 w-4 mr-2" />
-                  History
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetAll}
-                  data-testid="button-reset"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => {}}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Import Template
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {}}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => {}}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Preferences
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <div>
+                <h1 className="text-base sm:text-2xl font-bold">Prompt Generator</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">Create perfect prompts with AI assistance</p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            {/* Mode Selector */}
-            <Tabs value={mode} onValueChange={(v) => setMode(v as "guided" | "advanced")} className="mb-6">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
-                <TabsTrigger value="guided" className="flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4" />
-                  Guided Mode
+            
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 sm:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                data-testid="button-mobile-menu"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+              
+              {/* Mode Toggle */}
+              <Tabs value={mode} onValueChange={(v) => setMode(v as "guided" | "advanced")} className="w-auto hidden sm:block">
+                <TabsList className="h-8 sm:h-10">
+                  <TabsTrigger value="guided" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+                    <Wand2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Guided</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="advanced" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+                    <Code className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Advanced</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="h-8 w-8 sm:h-10 sm:w-10 hidden sm:inline-flex"
+                onClick={() => setShowHistory(!showHistory)}
+                data-testid="button-history"
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Mobile Mode Toggle */}
+          <div className="mt-2 sm:hidden">
+            <Tabs value={mode} onValueChange={(v) => setMode(v as "guided" | "advanced")} className="w-full">
+              <TabsList className="w-full h-8">
+                <TabsTrigger value="guided" className="flex-1 gap-1 text-xs">
+                  <Wand2 className="h-3 w-3" />
+                  <span>Guided</span>
                 </TabsTrigger>
-                <TabsTrigger value="advanced" className="flex items-center gap-2">
-                  <Code className="h-4 w-4" />
-                  Advanced Mode
+                <TabsTrigger value="advanced" className="flex-1 gap-1 text-xs">
+                  <Code className="h-3 w-3" />
+                  <span>Advanced</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
+          </div>
+          
+          {/* Quick Stats - Hidden on mobile */}
+          {isAuthenticated && (
+            <div className="hidden sm:flex items-center gap-4 text-sm mt-2">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">12 prompts generated today</span>
+              </div>
+              <Separator orientation="vertical" className="h-4" />
+              <div className="flex items-center gap-1.5">
+                <Save className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">8 saved to library</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Left Sidebar - Templates & Presets */}
-              <div className="lg:col-span-1 space-y-4">
-                {/* Template Categories */}
-                <Collapsible 
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="sm:hidden border-b bg-background">
+          <div className="p-3 space-y-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                setShowHistory(!showHistory);
+                setMobileMenuOpen(false);
+              }}
+            >
+              <History className="h-4 w-4" />
+              History
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                setMobileSettingsOpen(true);
+                setMobileMenuOpen(false);
+              }}
+            >
+              <Settings className="h-4 w-4" />
+              Model Settings
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                exportPromptData();
+                setMobileMenuOpen(false);
+              }}
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Mobile Optimized */}
+      <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
+          {/* Left Panel - Template & Configuration */}
+          <div className="lg:col-span-2 space-y-2 sm:space-y-4">
+            {mode === "guided" ? (
+              <>
+                {/* Received Keywords Section - Mobile Optimized */}
+                {receivedKeywords.length > 0 && (
+                  <Collapsible
+                    open={expandedSections.has("keywords")}
+                    onOpenChange={() => toggleSection("keywords")}
+                  >
+                    <Card>
+                      <CollapsibleTrigger className="w-full">
+                        <CardHeader className="py-2 sm:py-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                              <CardTitle className="text-sm sm:text-base">Keywords</CardTitle>
+                              <Badge variant="secondary" className="h-4 text-xs px-1">{receivedKeywords.length}</Badge>
+                            </div>
+                            {expandedSections.has("keywords") ? (
+                              <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="pt-0 pb-2 sm:pb-3">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                              {receivedKeywords.map((keyword) => (
+                                <Badge
+                                  key={keyword.id}
+                                  variant="outline"
+                                  className="gap-0.5 pr-0.5 text-xs h-6 sm:h-7"
+                                  data-testid={`keyword-${keyword.id}`}
+                                >
+                                  <span>{keyword.term}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-4 w-4 hover:bg-transparent"
+                                    onClick={() => addKeywordToPrompt(keyword)}
+                                    data-testid={`button-add-keyword-${keyword.id}`}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-1.5 pt-1.5 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={addAllKeywordsToPrompt}
+                                className="h-7 text-xs"
+                                data-testid="button-add-all-keywords"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add All
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearReceivedKeywords}
+                                className="h-7 text-xs"
+                                data-testid="button-clear-keywords"
+                              >
+                                <X className="h-3 w-3 mr-1" />
+                                Clear
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                )}
+
+                {/* Template Selection - Mobile Optimized */}
+                <Collapsible
                   open={expandedSections.has("template")}
                   onOpenChange={() => toggleSection("template")}
                 >
                   <Card>
                     <CollapsibleTrigger className="w-full">
-                      <CardHeader className="pb-3">
+                      <CardHeader className="py-2 sm:py-3">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <BookOpen className="h-4 w-4" />
-                            Templates
-                          </CardTitle>
-                          {expandedSections.has("template") ? 
-                            <ChevronDown className="h-4 w-4" /> : 
-                            <ChevronRight className="h-4 w-4" />
-                          }
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                            <CardTitle className="text-sm sm:text-base">Templates</CardTitle>
+                          </div>
+                          {expandedSections.has("template") ? (
+                            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                          )}
                         </div>
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent className="pt-0">
-                        <ScrollArea className="h-[300px]">
-                          <div className="space-y-2">
-                            {templateCategories.map((cat) => (
-                              <Button
-                                key={cat.id}
-                                variant={selectedCategory === cat.id ? "default" : "outline"}
-                                size="sm"
-                                className="w-full justify-start"
-                                onClick={() => setSelectedCategory(cat.id)}
-                                data-testid={`button-category-${cat.id}`}
-                              >
-                                <cat.icon className="h-4 w-4 mr-2" />
-                                {cat.name}
-                                <Badge variant="secondary" className="ml-auto">
-                                  {cat.count}
-                                </Badge>
-                              </Button>
-                            ))}
+                      <CardContent className="pt-0 pb-2 sm:pb-3">
+                        {/* Category Tabs - Mobile Optimized */}
+                        <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+                          <ScrollArea className="w-full" type="scroll">
+                            <TabsList className="inline-flex w-max h-7 sm:h-9">
+                              {templateCategories.map((cat) => {
+                                const Icon = cat.icon;
+                                return (
+                                  <TabsTrigger 
+                                    key={cat.id} 
+                                    value={cat.id}
+                                    className="gap-0.5 sm:gap-1 text-xs sm:text-sm px-1.5 sm:px-2.5"
+                                    data-testid={`tab-category-${cat.id}`}
+                                  >
+                                    <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    <span className="sm:inline hidden">{cat.name}</span>
+                                    <span className="sm:hidden">{cat.name.slice(0, 3)}</span>
+                                    <Badge variant="secondary" className="ml-0.5 h-3.5 px-0.5 text-xs">
+                                      {cat.count}
+                                    </Badge>
+                                  </TabsTrigger>
+                                );
+                              })}
+                            </TabsList>
+                          </ScrollArea>
+
+                          {/* Template Cards - Mobile Optimized */}
+                          <TabsContent value={selectedCategory} className="mt-2 sm:mt-3">
+                            <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
+                              {templates.map((template) => (
+                                <Card 
+                                  key={template.id}
+                                  className={`cursor-pointer transition-all hover:shadow-md ${
+                                    selectedTemplate?.id === template.id ? 'ring-1 sm:ring-2 ring-primary' : ''
+                                  }`}
+                                  onClick={() => applyTemplate(template)}
+                                  data-testid={`template-card-${template.id}`}
+                                >
+                                  <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
+                                    <CardTitle className="text-xs sm:text-sm">{template.name}</CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="pt-0 pb-2 px-3 sm:pb-3 sm:px-4">
+                                    <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2">
+                                      {template.template.substring(0, 80)}...
+                                    </p>
+                                    <div className="flex flex-wrap gap-0.5">
+                                      {Object.keys(template.placeholders).slice(0, 3).map((key) => (
+                                        <Badge key={key} variant="secondary" className="text-xs h-4 px-1">
+                                          {key}
+                                        </Badge>
+                                      ))}
+                                      {Object.keys(template.placeholders).length > 3 && (
+                                        <Badge variant="secondary" className="text-xs h-4 px-1">
+                                          +{Object.keys(template.placeholders).length - 3}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+
+                        {/* Placeholder Values - Mobile Optimized */}
+                        {selectedTemplate && (
+                          <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-muted/50 rounded-lg space-y-1.5 sm:space-y-2">
+                            <h4 className="text-xs sm:text-sm font-medium">Customize</h4>
+                            <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
+                              {Object.entries(placeholderValues).map(([key, value]) => (
+                                <div key={key} className="space-y-0.5">
+                                  <Label htmlFor={key} className="text-xs capitalize">
+                                    {key.replace(/_/g, ' ')}
+                                  </Label>
+                                  <Input
+                                    id={key}
+                                    value={value}
+                                    onChange={(e) => updatePlaceholder(key, e.target.value)}
+                                    className="h-7 sm:h-8 text-xs sm:text-sm"
+                                    data-testid={`input-placeholder-${key}`}
+                                  />
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </ScrollArea>
+                        )}
                       </CardContent>
                     </CollapsibleContent>
                   </Card>
                 </Collapsible>
 
-                {/* Style Presets */}
-                <Collapsible 
+                {/* Style Selection - Mobile Optimized */}
+                <Collapsible
                   open={expandedSections.has("style")}
                   onOpenChange={() => toggleSection("style")}
                 >
                   <Card>
                     <CollapsibleTrigger className="w-full">
-                      <CardHeader className="pb-3">
+                      <CardHeader className="py-2 sm:py-3">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <Palette className="h-4 w-4" />
-                            Style Presets
-                          </CardTitle>
-                          {expandedSections.has("style") ? 
-                            <ChevronDown className="h-4 w-4" /> : 
-                            <ChevronRight className="h-4 w-4" />
-                          }
-                        </div>
-                      </CardHeader>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <CardContent className="pt-0">
-                        <ScrollArea className="h-[250px]">
-                          <div className="space-y-2">
-                            {stylePresets.map((style) => (
-                              <Tooltip key={style.id}>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant={selectedStyle === style.id ? "default" : "outline"}
-                                    size="sm"
-                                    className="w-full justify-start text-left"
-                                    onClick={() => applyStylePreset(style.id)}
-                                    data-testid={`button-style-${style.id}`}
-                                  >
-                                    {style.name}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{style.description}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            ))}
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <Palette className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                            <CardTitle className="text-sm sm:text-base">Style Presets</CardTitle>
                           </div>
-                        </ScrollArea>
-                      </CardContent>
-                    </CollapsibleContent>
-                  </Card>
-                </Collapsible>
-
-                {/* Model Presets */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      Model Presets
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Select value={selectedModel} onValueChange={applyModelPreset}>
-                      <SelectTrigger data-testid="select-model">
-                        <SelectValue placeholder="Select model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(modelPresets).map(([id, preset]) => (
-                          <SelectItem key={id} value={id}>
-                            {preset.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Center - Main Prompt Builder */}
-              <div className="lg:col-span-2 space-y-4">
-                {/* Template Selection & Application */}
-                {templates.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Available Templates</CardTitle>
-                      <CardDescription>
-                        Select a template to start building your prompt
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {templates.map((template) => (
-                          <div
-                            key={template.id}
-                            className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                              selectedTemplate?.id === template.id 
-                                ? "border-primary bg-primary/5" 
-                                : "border-border hover:border-primary/50"
-                            }`}
-                            onClick={() => applyTemplate(template)}
-                            data-testid={`template-${template.id}`}
-                          >
-                            <div className="font-medium mb-1">{template.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {template.template.substring(0, 100)}...
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Template Placeholders */}
-                {selectedTemplate && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Customize Template</CardTitle>
-                      <CardDescription>
-                        Fill in the placeholders to customize your prompt
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {Object.entries(placeholderValues).map(([key, value]) => (
-                          <div key={key}>
-                            <Label htmlFor={key} className="text-sm capitalize">
-                              {key.replace(/_/g, ' ')}
-                            </Label>
-                            <Input
-                              id={key}
-                              value={value}
-                              onChange={(e) => updatePlaceholder(key, e.target.value)}
-                              placeholder={`Enter ${key}`}
-                              className="mt-1"
-                              data-testid={`input-placeholder-${key}`}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Main Prompt Builder */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      <span>Prompt Builder</span>
-                      {mode === "guided" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addPromptElement("custom")}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Element
-                        </Button>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {mode === "guided" ? (
-                      <div className="space-y-4">
-                        {/* Guided Mode Elements */}
-                        <div className="space-y-2">
-                          <Label>Prompt Elements</Label>
-                          {promptElements.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                              <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p>No elements added yet</p>
-                              <div className="flex flex-wrap gap-2 justify-center mt-4">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => addPromptElement("subject", "")}
-                                >
-                                  Add Subject
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => addPromptElement("style", "")}
-                                >
-                                  Add Style
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => addPromptElement("quality", "")}
-                                >
-                                  Add Quality
-                                </Button>
-                              </div>
-                            </div>
+                          {expandedSections.has("style") ? (
+                            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                           ) : (
-                            promptElements.map((element) => (
-                              <div key={element.id} className="flex gap-2 items-start">
-                                <Select
-                                  value={element.type}
-                                  onValueChange={(value) => 
-                                    updatePromptElement(element.id, { type: value as PromptElement["type"] })
-                                  }
-                                >
-                                  <SelectTrigger className="w-[140px]">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="subject">Subject</SelectItem>
-                                    <SelectItem value="style">Style</SelectItem>
-                                    <SelectItem value="quality">Quality</SelectItem>
-                                    <SelectItem value="lighting">Lighting</SelectItem>
-                                    <SelectItem value="composition">Composition</SelectItem>
-                                    <SelectItem value="custom">Custom</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <Input
-                                  value={element.content}
-                                  onChange={(e) => 
-                                    updatePromptElement(element.id, { content: e.target.value })
-                                  }
-                                  placeholder={`Enter ${element.type}...`}
-                                  className="flex-1"
-                                />
-                                <Input
-                                  type="number"
-                                  value={element.weight}
-                                  onChange={(e) => 
-                                    updatePromptElement(element.id, { weight: parseFloat(e.target.value) })
-                                  }
-                                  min="0.1"
-                                  max="2"
-                                  step="0.1"
-                                  className="w-[80px]"
-                                  placeholder="Weight"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removePromptElement(element.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))
+                            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                           )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {/* Advanced Mode - Direct Editing */}
-                        <div>
-                          <Label htmlFor="main-prompt">Main Prompt</Label>
-                          <Textarea
-                            id="main-prompt"
-                            value={mainPrompt}
-                            onChange={(e) => setMainPrompt(e.target.value)}
-                            placeholder="Enter your prompt here..."
-                            className="mt-1 min-h-[150px] font-mono text-sm"
-                            data-testid="textarea-main-prompt"
-                          />
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {qualityModifiers.slice(0, 5).map((modifier) => (
-                              <Badge
-                                key={modifier}
-                                variant="outline"
-                                className="cursor-pointer hover:bg-primary/10"
-                                onClick={() => setMainPrompt(prev => 
-                                  prev ? `${prev}, ${modifier}` : modifier
-                                )}
-                              >
-                                <Plus className="h-3 w-3 mr-1" />
-                                {modifier}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Negative Prompt */}
-                    <Separator className="my-4" />
-                    <div>
-                      <Label htmlFor="negative-prompt">Negative Prompt</Label>
-                      <Textarea
-                        id="negative-prompt"
-                        value={negativePrompt}
-                        onChange={(e) => setNegativePrompt(e.target.value)}
-                        placeholder="Things to avoid in the image..."
-                        className="mt-1 min-h-[100px] font-mono text-sm"
-                        data-testid="textarea-negative-prompt"
-                      />
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {negativePromptSuggestions.slice(0, 5).map((suggestion) => (
-                          <Badge
-                            key={suggestion}
-                            variant="outline"
-                            className="cursor-pointer hover:bg-destructive/10"
-                            onClick={() => setNegativePrompt(prev => 
-                              prev ? `${prev}, ${suggestion}` : suggestion
-                            )}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            {suggestion}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Imported Keywords */}
-                    {importedKeywords.length > 0 && (
-                      <>
-                        <Separator className="my-4" />
-                        <div>
-                          <Label>Imported Keywords</Label>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {importedKeywords.map((keyword, index) => (
-                              <Badge key={index} variant="secondary">
-                                {keyword}
-                                <X
-                                  className="h-3 w-3 ml-1 cursor-pointer"
-                                  onClick={() => setImportedKeywords(prev => 
-                                    prev.filter((_, i) => i !== index)
-                                  )}
-                                />
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Actions */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex flex-wrap gap-2">
-                      <Button onClick={generateVariations} variant="outline">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Generate Variations
-                      </Button>
-                      <Button 
-                        onClick={() => copyToClipboard(generateFinalPrompt())}
-                        variant="outline"
-                        data-testid="button-copy"
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy Prompt
-                      </Button>
-                      <Button 
-                        onClick={saveToLibrary}
-                        className="ml-auto"
-                        data-testid="button-save"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save to Library
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right Sidebar - Parameters */}
-              <div className="lg:col-span-1 space-y-4">
-                <Collapsible 
-                  open={expandedSections.has("parameters")}
-                  onOpenChange={() => toggleSection("parameters")}
-                >
-                  <Card>
-                    <CollapsibleTrigger className="w-full">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <Settings className="h-4 w-4" />
-                            Parameters
-                          </CardTitle>
-                          {expandedSections.has("parameters") ? 
-                            <ChevronDown className="h-4 w-4" /> : 
-                            <ChevronRight className="h-4 w-4" />
-                          }
-                        </div>
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent className="pt-0">
-                        <ScrollArea className="h-[400px]">
-                          <div className="space-y-4">
-                            {(selectedModel === "stable-diffusion" || selectedModel === "sdxl") && (
-                              <>
-                                {/* Stable Diffusion Parameters */}
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-sm">Steps</Label>
-                                    <span className="text-sm text-muted-foreground">
-                                      {parameters.steps}
-                                    </span>
-                                  </div>
-                                  <Slider
-                                    value={[parameters.steps]}
-                                    onValueChange={([v]) => setParameters(prev => ({ ...prev, steps: v }))}
-                                    min={1}
-                                    max={150}
-                                    step={1}
-                                    className="mb-2"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-sm">CFG Scale</Label>
-                                    <span className="text-sm text-muted-foreground">
-                                      {parameters.cfgScale}
-                                    </span>
-                                  </div>
-                                  <Slider
-                                    value={[parameters.cfgScale]}
-                                    onValueChange={([v]) => setParameters(prev => ({ ...prev, cfgScale: v }))}
-                                    min={1}
-                                    max={20}
-                                    step={0.5}
-                                    className="mb-2"
-                                  />
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm">Sampler</Label>
-                                  <Select
-                                    value={parameters.sampler}
-                                    onValueChange={(v) => setParameters(prev => ({ ...prev, sampler: v }))}
-                                  >
-                                    <SelectTrigger className="mt-1">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="DPM++ 2M Karras">DPM++ 2M Karras</SelectItem>
-                                      <SelectItem value="DPM++ SDE Karras">DPM++ SDE Karras</SelectItem>
-                                      <SelectItem value="Euler a">Euler a</SelectItem>
-                                      <SelectItem value="Euler">Euler</SelectItem>
-                                      <SelectItem value="DDIM">DDIM</SelectItem>
-                                      <SelectItem value="UniPC">UniPC</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <Label className="text-sm">Width</Label>
-                                    <Input
-                                      type="number"
-                                      value={parameters.width}
-                                      onChange={(e) => setParameters(prev => ({ 
-                                        ...prev, 
-                                        width: parseInt(e.target.value) || 512 
-                                      }))}
-                                      min={64}
-                                      max={2048}
-                                      step={64}
-                                      className="mt-1"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm">Height</Label>
-                                    <Input
-                                      type="number"
-                                      value={parameters.height}
-                                      onChange={(e) => setParameters(prev => ({ 
-                                        ...prev, 
-                                        height: parseInt(e.target.value) || 512 
-                                      }))}
-                                      min={64}
-                                      max={2048}
-                                      step={64}
-                                      className="mt-1"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm">Seed</Label>
-                                  <Input
-                                    type="number"
-                                    value={parameters.seed}
-                                    onChange={(e) => setParameters(prev => ({ 
-                                      ...prev, 
-                                      seed: parseInt(e.target.value) || -1 
-                                    }))}
-                                    placeholder="-1 for random"
-                                    className="mt-1"
-                                  />
-                                </div>
-                              </>
-                            )}
-
-                            {selectedModel === "midjourney" && (
-                              <>
-                                {/* Midjourney Parameters */}
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-sm">Quality</Label>
-                                    <span className="text-sm text-muted-foreground">
-                                      {parameters.quality}
-                                    </span>
-                                  </div>
-                                  <Slider
-                                    value={[parameters.quality]}
-                                    onValueChange={([v]) => setParameters(prev => ({ ...prev, quality: v }))}
-                                    min={0.25}
-                                    max={2}
-                                    step={0.25}
-                                    className="mb-2"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-sm">Stylize</Label>
-                                    <span className="text-sm text-muted-foreground">
-                                      {parameters.stylize}
-                                    </span>
-                                  </div>
-                                  <Slider
-                                    value={[parameters.stylize]}
-                                    onValueChange={([v]) => setParameters(prev => ({ ...prev, stylize: v }))}
-                                    min={0}
-                                    max={1000}
-                                    step={10}
-                                    className="mb-2"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-sm">Chaos</Label>
-                                    <span className="text-sm text-muted-foreground">
-                                      {parameters.chaos}
-                                    </span>
-                                  </div>
-                                  <Slider
-                                    value={[parameters.chaos]}
-                                    onValueChange={([v]) => setParameters(prev => ({ ...prev, chaos: v }))}
-                                    min={0}
-                                    max={100}
-                                    step={5}
-                                    className="mb-2"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <Label className="text-sm">Weird</Label>
-                                    <span className="text-sm text-muted-foreground">
-                                      {parameters.weird}
-                                    </span>
-                                  </div>
-                                  <Slider
-                                    value={[parameters.weird]}
-                                    onValueChange={([v]) => setParameters(prev => ({ ...prev, weird: v }))}
-                                    min={0}
-                                    max={3000}
-                                    step={50}
-                                    className="mb-2"
-                                  />
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm">Aspect Ratio</Label>
-                                  <Select
-                                    value={parameters.aspectRatio}
-                                    onValueChange={(v) => setParameters(prev => ({ ...prev, aspectRatio: v }))}
-                                  >
-                                    <SelectTrigger className="mt-1">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="1:1">1:1 (Square)</SelectItem>
-                                      <SelectItem value="16:9">16:9 (Wide)</SelectItem>
-                                      <SelectItem value="9:16">9:16 (Tall)</SelectItem>
-                                      <SelectItem value="4:3">4:3</SelectItem>
-                                      <SelectItem value="3:4">3:4</SelectItem>
-                                      <SelectItem value="21:9">21:9 (Ultrawide)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </>
-                            )}
-
-                            {selectedModel === "dalle" && (
-                              <>
-                                {/* DALL-E Parameters */}
-                                <div>
-                                  <Label className="text-sm">Quality</Label>
-                                  <Select
-                                    value={parameters.dalleQuality}
-                                    onValueChange={(v) => setParameters(prev => ({ ...prev, dalleQuality: v }))}
-                                  >
-                                    <SelectTrigger className="mt-1">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="standard">Standard</SelectItem>
-                                      <SelectItem value="hd">HD</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm">Style</Label>
-                                  <Select
-                                    value={parameters.dalleStyle}
-                                    onValueChange={(v) => setParameters(prev => ({ ...prev, dalleStyle: v }))}
-                                  >
-                                    <SelectTrigger className="mt-1">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="vivid">Vivid</SelectItem>
-                                      <SelectItem value="natural">Natural</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm">Size</Label>
-                                  <Select
-                                    value={parameters.dalleSize}
-                                    onValueChange={(v) => setParameters(prev => ({ ...prev, dalleSize: v }))}
-                                  >
-                                    <SelectTrigger className="mt-1">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="1024x1024">1024x1024</SelectItem>
-                                      <SelectItem value="1792x1024">1792x1024</SelectItem>
-                                      <SelectItem value="1024x1792">1024x1792</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </ScrollArea>
+                      <CardContent className="pt-0 pb-2 sm:pb-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
+                          {stylePresets.map((style) => (
+                            <Card
+                              key={style.id}
+                              className={`cursor-pointer transition-all hover:shadow-md ${
+                                selectedStyle === style.id ? 'ring-1 sm:ring-2 ring-primary' : ''
+                              }`}
+                              onClick={() => applyStylePreset(style.id)}
+                              data-testid={`style-preset-${style.id}`}
+                            >
+                              <CardContent className="p-2 sm:p-3">
+                                <h4 className="text-xs sm:text-sm font-medium">{style.name}</h4>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {style.description}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
                       </CardContent>
                     </CollapsibleContent>
                   </Card>
                 </Collapsible>
+              </>
+            ) : null}
 
-                {/* Keyword Import Area */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      Keyword Import
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-4 text-muted-foreground">
-                      <Tag className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">
-                        Keywords from the Dictionary will appear here
-                      </p>
-                      <Button
+            {/* Main Prompt Input - Mobile Optimized */}
+            <Card>
+              <CardHeader className="py-2 sm:py-3">
+                <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                  Main Prompt
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-0.5">
+                  Your main prompt text
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0 pb-2 sm:pb-3">
+                <Textarea
+                  value={mainPrompt}
+                  onChange={(e) => setMainPrompt(e.target.value)}
+                  placeholder="Describe what you want to generate..."
+                  className="min-h-[60px] sm:min-h-[100px] resize-none text-xs sm:text-sm"
+                  data-testid="textarea-main-prompt"
+                />
+                
+                {/* Quick Quality Modifiers - Mobile Optimized */}
+                <div className="mt-2 sm:mt-3">
+                  <Label className="text-xs sm:text-sm mb-1 block">Quick Add</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {qualityModifiers.slice(0, 5).map((modifier) => (
+                      <Badge
+                        key={modifier}
                         variant="outline"
-                        size="sm"
-                        className="mt-2"
+                        className="cursor-pointer hover:bg-primary/10 transition-colors text-xs h-5 px-1.5"
                         onClick={() => {
-                          // Simulate importing keywords for demo
-                          importKeywords(["cyberpunk", "neon lights", "rain"]);
+                          if (!mainPrompt.includes(modifier)) {
+                            setMainPrompt(prev => prev ? `${prev}, ${modifier}` : modifier);
+                          }
                         }}
+                        data-testid={`modifier-${modifier.replace(/\s+/g, '-')}`}
                       >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Simulate Import
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                        <Plus className="h-2.5 w-2.5 mr-0.5" />
+                        <span>{modifier}</span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Bottom - Prompt Preview */}
-            {showPreview && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Eye className="h-5 w-5" />
-                      Generated Prompt Preview
-                    </span>
+            {/* Negative Prompt - Mobile Optimized */}
+            <Card>
+              <CardHeader className="py-2 sm:py-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+                      <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
+                      Negative Prompt
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm mt-0.5">
+                      What to avoid
+                    </CardDescription>
+                  </div>
+                  <Switch
+                    className="scale-75 sm:scale-100"
+                    checked={negativePrompt.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (!checked) setNegativePrompt("");
+                    }}
+                    data-testid="switch-negative-prompt"
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 pb-2 sm:pb-3">
+                <Textarea
+                  value={negativePrompt}
+                  onChange={(e) => setNegativePrompt(e.target.value)}
+                  placeholder="Things to avoid..."
+                  className="min-h-[50px] sm:min-h-[80px] resize-none text-xs sm:text-sm"
+                  data-testid="textarea-negative-prompt"
+                />
+                
+                {/* Negative Suggestions - Mobile Optimized */}
+                <div className="mt-2 sm:mt-3">
+                  <Label className="text-xs sm:text-sm mb-1 block">Common</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {negativePromptSuggestions.slice(0, 5).map((suggestion) => (
+                      <Badge
+                        key={suggestion}
+                        variant="outline"
+                        className="cursor-pointer hover:bg-destructive/10 transition-colors text-xs h-5 px-1.5"
+                        onClick={() => {
+                          if (!negativePrompt.includes(suggestion)) {
+                            setNegativePrompt(prev => prev ? `${prev}, ${suggestion}` : suggestion);
+                          }
+                        }}
+                        data-testid={`negative-${suggestion.replace(/\s+/g, '-')}`}
+                      >
+                        <Plus className="h-2.5 w-2.5 mr-0.5" />
+                        <span>{suggestion}</span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Panel - Parameters & Actions - Mobile Optimized */}
+          <div className="space-y-2 sm:space-y-4">
+            {/* Model Selection - Desktop Only */}
+            <Card className="hidden lg:block">
+              <CardHeader className="py-2 sm:py-3">
+                <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+                  <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  Model Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 pb-2 sm:pb-3 space-y-2 sm:space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="model" className="text-xs sm:text-sm">AI Model</Label>
+                  <Select value={selectedModel} onValueChange={applyModelPreset}>
+                    <SelectTrigger id="model" className="h-7 sm:h-9 text-xs sm:text-sm" data-testid="select-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(modelPresets).map(([key, preset]) => (
+                        <SelectItem key={key} value={key}>
+                          {preset.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Model-specific parameters - Mobile Optimized */}
+                {(selectedModel === "stable-diffusion" || selectedModel === "sdxl") && (
+                  <>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="steps" className="text-xs sm:text-sm">Steps</Label>
+                        <span className="text-xs sm:text-sm text-muted-foreground">{parameters.steps}</span>
+                      </div>
+                      <Slider
+                        id="steps"
+                        value={[parameters.steps]}
+                        onValueChange={([v]) => setParameters(prev => ({ ...prev, steps: v }))}
+                        min={1}
+                        max={150}
+                        step={1}
+                        className="w-full"
+                        data-testid="slider-steps"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="cfg" className="text-xs sm:text-sm">CFG Scale</Label>
+                        <span className="text-xs sm:text-sm text-muted-foreground">{parameters.cfgScale}</span>
+                      </div>
+                      <Slider
+                        id="cfg"
+                        value={[parameters.cfgScale]}
+                        onValueChange={([v]) => setParameters(prev => ({ ...prev, cfgScale: v }))}
+                        min={1}
+                        max={20}
+                        step={0.5}
+                        className="w-full"
+                        data-testid="slider-cfg-scale"
+                      />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Actions - Mobile Optimized */}
+            <Card>
+              <CardHeader className="py-2 sm:py-3">
+                <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+                  <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 pb-2 sm:pb-3 space-y-1.5 sm:space-y-2">
+                <Button 
+                  className="w-full h-8 sm:h-9 text-xs sm:text-sm" 
+                  onClick={() => copyToClipboard(mainPrompt, "Main prompt")}
+                  variant="outline"
+                  data-testid="button-copy-prompt"
+                >
+                  <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5" />
+                  Copy Prompt
+                </Button>
+                
+                <Button 
+                  className="w-full h-8 sm:h-9 text-xs sm:text-sm" 
+                  onClick={saveToLibrary}
+                  variant="outline"
+                  disabled={!isAuthenticated}
+                  data-testid="button-save-library"
+                >
+                  <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5" />
+                  Save to Library
+                </Button>
+                
+                <Button 
+                  className="w-full h-8 sm:h-9 text-xs sm:text-sm" 
+                  onClick={() => {
+                    const variations = generateVariations();
+                    toast({
+                      title: "Variations Generated",
+                      description: "Check the variations section below",
+                    });
+                  }}
+                  variant="outline"
+                  data-testid="button-generate-variations"
+                >
+                  <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5" />
+                  Variations
+                </Button>
+                
+                <Separator className="my-1 sm:my-1.5" />
+                
+                <Button 
+                  className="w-full h-9 sm:h-10 text-xs sm:text-sm" 
+                  onClick={() => {
+                    toast({
+                      title: "Prompt Generated!",
+                      description: "Your prompt is ready to use",
+                    });
+                  }}
+                  data-testid="button-generate-prompt"
+                >
+                  <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5" />
+                  Generate Prompt
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Preview - Mobile Optimized */}
+            {showPreview && mainPrompt && (
+              <Card className="hidden sm:block">
+                <CardHeader className="py-2 sm:py-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-1.5 text-sm">
+                      <Eye className="h-3.5 w-3.5" />
+                      Preview
+                    </CardTitle>
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-6 w-6"
                       onClick={() => setShowPreview(false)}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3" />
                     </Button>
-                  </CardTitle>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm text-muted-foreground mb-1">Main Prompt</Label>
-                      <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
-                        {generateFinalPrompt() || "Your prompt will appear here..."}
-                      </div>
-                    </div>
+                <CardContent className="pt-0 pb-2">
+                  <div className="p-2 bg-muted rounded-md">
+                    <p className="text-xs font-mono break-all">{mainPrompt}</p>
                     {negativePrompt && (
-                      <div>
-                        <Label className="text-sm text-muted-foreground mb-1">Negative Prompt</Label>
-                        <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
-                          {negativePrompt}
-                        </div>
-                      </div>
+                      <>
+                        <Separator className="my-2" />
+                        <p className="text-xs font-mono break-all text-muted-foreground">
+                          Negative: {negativePrompt}
+                        </p>
+                      </>
                     )}
-                    <div className="flex justify-between items-center pt-2">
-                      <div className="text-sm text-muted-foreground">
-                        {generateFinalPrompt().length} characters • 
-                        {generateFinalPrompt().split(/\s+/).filter(Boolean).length} words
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            copyToClipboard(generateFinalPrompt(), "Main prompt");
-                          }}
-                        >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy Main
-                        </Button>
-                        {negativePrompt && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              copyToClipboard(negativePrompt, "Negative prompt");
-                            }}
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy Negative
-                          </Button>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
             )}
-          </CardContent>
-        </Card>
-
-        {/* History Dialog */}
-        <Dialog open={showHistory} onOpenChange={setShowHistory}>
-          <DialogContent className="max-w-2xl max-h-[80vh]">
-            <DialogHeader>
-              <DialogTitle>Recent Prompts</DialogTitle>
-              <DialogDescription>
-                Your recently generated prompts
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="h-[400px] pr-4">
-              {recentPrompts.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No recent prompts</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {recentPrompts.map((prompt, index) => (
-                    <div key={index} className="p-3 bg-muted/50 rounded-lg">
-                      <div className="font-mono text-sm mb-2">{prompt}</div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setMainPrompt(prompt);
-                            setShowHistory(false);
-                            toast({
-                              title: "Prompt Loaded",
-                              description: "The prompt has been loaded into the builder",
-                            });
-                          }}
-                        >
-                          Use This
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(prompt)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </div>
       </div>
 
-      {/* Prompt Modal for saving */}
-      <PromptModal
-        open={promptModalOpen}
-        onOpenChange={setPromptModalOpen}
-        prompt={prefilledPromptData}
-        mode="create"
-        onSuccess={(prompt) => {
-          // Add to recent prompts
-          addToRecentPrompts(mainPrompt);
-          toast({
-            title: "Success",
-            description: "Prompt saved to library successfully!",
-          });
-        }}
-      />
-    </>
+      {/* Mobile Settings Sheet */}
+      <Dialog open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
+        <DialogContent className="sm:hidden max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Model Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="mobile-model" className="text-xs">AI Model</Label>
+              <Select value={selectedModel} onValueChange={applyModelPreset}>
+                <SelectTrigger id="mobile-model" className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(modelPresets).map(([key, preset]) => (
+                    <SelectItem key={key} value={key}>
+                      {preset.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {(selectedModel === "stable-diffusion" || selectedModel === "sdxl") && (
+              <>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Steps</Label>
+                    <span className="text-xs text-muted-foreground">{parameters.steps}</span>
+                  </div>
+                  <Slider
+                    value={[parameters.steps]}
+                    onValueChange={([v]) => setParameters(prev => ({ ...prev, steps: v }))}
+                    min={1}
+                    max={150}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">CFG Scale</Label>
+                    <span className="text-xs text-muted-foreground">{parameters.cfgScale}</span>
+                  </div>
+                  <Slider
+                    value={[parameters.cfgScale]}
+                    onValueChange={([v]) => setParameters(prev => ({ ...prev, cfgScale: v }))}
+                    min={1}
+                    max={20}
+                    step={0.5}
+                    className="w-full"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Prompt Modal */}
+      {promptModalOpen && (
+        <PromptModal
+          open={promptModalOpen}
+          onClose={() => {
+            setPromptModalOpen(false);
+            setPrefilledPromptData(null);
+          }}
+          initialData={prefilledPromptData || undefined}
+        />
+      )}
+
+      {/* History Dialog */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recent Prompts</DialogTitle>
+            <DialogDescription>
+              Your recently generated prompts
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[300px] w-full">
+            {recentPrompts.length > 0 ? (
+              <div className="space-y-2">
+                {recentPrompts.map((prompt, index) => (
+                  <Card key={index} className="p-3">
+                    <p className="text-sm mb-2 line-clamp-2">{prompt}</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setMainPrompt(prompt);
+                        setShowHistory(false);
+                      }}
+                    >
+                      Use This
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                No recent prompts yet
+              </p>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
