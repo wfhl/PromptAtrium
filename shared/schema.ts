@@ -431,6 +431,56 @@ export const templateUsageHistory = pgTable("template_usage_history", {
   index("idx_template_usage_created").on(table.createdAt),
 ]);
 
+// Prompt components table - imported from Excel with 24k+ entries
+export const promptComponents = pgTable("prompt_components", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  originalId: integer("original_id"), // From the Excel file
+  category: varchar("category").notNull(), // artform, photo_type, etc.
+  value: text("value").notNull(), // The actual component value
+  description: text("description"),
+  subcategory: varchar("subcategory"),
+  usageCount: integer("usage_count").default(0),
+  orderIndex: integer("order_index").default(0),
+  isDefault: boolean("is_default").default(false),
+  importedAt: timestamp("imported_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_prompt_components_category").on(table.category),
+  index("idx_prompt_components_subcategory").on(table.subcategory),
+  index("idx_prompt_components_value").on(table.value),
+  index("idx_prompt_components_usage").on(table.usageCount),
+]);
+
+// Aesthetics database table - imported from Excel with 1.8k+ entries
+export const aesthetics = pgTable("aesthetics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  originalId: integer("original_id"), // From the Excel file
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  era: varchar("era"),
+  categories: text("categories"), // Could be multiple, stored as comma-separated
+  tags: text("tags"), // Comma-separated tags
+  visualElements: text("visual_elements"),
+  colorPalette: text("color_palette"),
+  moodKeywords: text("mood_keywords"),
+  relatedAesthetics: text("related_aesthetics"),
+  mediaExamples: text("media_examples"),
+  referenceImages: text("reference_images"), // Paths to reference images
+  origin: text("origin"),
+  category: varchar("category"),
+  usageCount: integer("usage_count").default(0),
+  popularity: decimal("popularity", { precision: 5, scale: 2 }).default("0.00"),
+  importedAt: timestamp("imported_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_aesthetics_name").on(table.name),
+  index("idx_aesthetics_era").on(table.era),
+  index("idx_aesthetics_category").on(table.category),
+  index("idx_aesthetics_usage").on(table.usageCount),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   prompts: many(prompts),
@@ -707,6 +757,20 @@ export const insertTemplateUsageHistorySchema = createInsertSchema(templateUsage
   createdAt: true,
 });
 
+export const insertPromptComponentSchema = createInsertSchema(promptComponents).omit({
+  id: true,
+  importedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAestheticSchema = createInsertSchema(aesthetics).omit({
+  id: true,
+  importedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -823,3 +887,9 @@ export type InsertTemplateUsageHistory = z.infer<typeof insertTemplateUsageHisto
 export type KeywordType = "system" | "user" | "community";
 export type TemplateType = "system" | "user" | "community" | "shared";
 export type TemplateVisibility = "private" | "public" | "community";
+
+// Prompt component and aesthetic types
+export type PromptComponent = typeof promptComponents.$inferSelect;
+export type InsertPromptComponent = z.infer<typeof insertPromptComponentSchema>;
+export type Aesthetic = typeof aesthetics.$inferSelect;
+export type InsertAesthetic = z.infer<typeof insertAestheticSchema>;
