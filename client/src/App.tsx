@@ -20,6 +20,7 @@ import UserProfile from "@/pages/user-profile";
 import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import KeywordDictionaryPage from "@/pages/tools/keyword-dictionary";
+import PromptGeneratorPage from "@/pages/tools/prompt-generator";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
@@ -93,6 +94,9 @@ function Router() {
             </Route>
             <Route path="/tools/keyword-dictionary">
               {() => <Layout><KeywordDictionaryPage /></Layout>}
+            </Route>
+            <Route path="/tools/prompt-generator">
+              {() => <Layout><PromptGeneratorPage /></Layout>}
             </Route>
           </>
         )}
