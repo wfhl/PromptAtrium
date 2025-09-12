@@ -10,10 +10,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Lightbulb, Search, Filter, Star, TrendingUp, Clock, Eye, 
   Users, UserPlus, UserMinus, Hash, Heart, GitBranch, 
-  Share2, BookOpen, Folder
+  Share2, BookOpen, Folder, ChevronRight
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,6 +56,7 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState("prompts");
   const [promptsSubTab, setPromptsSubTab] = useState("featured");
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
+  const [followingCollapsed, setFollowingCollapsed] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -271,8 +273,7 @@ export default function Community() {
           </TabsTrigger>
           <TabsTrigger value="collections" className="text-xs md:text-sm" data-testid="tab-collections">
             <Folder className="h-4 w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Collections</span>
-            <span className="sm:hidden">Collect</span>
+            <span>Collections</span>
           </TabsTrigger>
           <TabsTrigger value="users" className="text-xs md:text-sm" data-testid="tab-users">
             <Users className="h-4 w-4 mr-1 md:mr-2" />
@@ -617,7 +618,58 @@ export default function Community() {
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">
-          {/* Search Bar for Users */}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {allUsers
+              .filter(u => u.id !== currentUserId)
+              .map((u) => (
+              <Card key={u.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={u.profileImageUrl || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {u.firstName?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <Link href={`/user/${u.username}`}>
+                        <a className="font-medium text-sm hover:underline truncate block" data-testid={`link-user-${u.id}`}>
+                          {u.firstName} {u.lastName}
+                        </a>
+                      </Link>
+                      <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={followingMap[u.id] ? "outline" : "default"}
+                    onClick={() => followMutation.mutate({ userId: u.id, isFollowing: followingMap[u.id] })}
+                    disabled={followMutation.isPending}
+                    className="w-full h-7 text-xs"
+                    data-testid={`button-follow-${u.id}`}
+                  >
+                    {followingMap[u.id] ? (
+                      <>
+                        <UserMinus className="h-3 w-3 mr-1" />
+                        Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-3 w-3 mr-1" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Followed Tab */}
+        <TabsContent value="followed" className="space-y-6">
+          {/* Search Bar for Users - moved from Users tab */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -631,100 +683,49 @@ export default function Community() {
               />
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {allUsers
-              .filter(u => u.id !== currentUserId)
-              .filter(u => {
-                if (!userSearchQuery) return true;
-                const searchLower = userSearchQuery.toLowerCase();
-                return u.username?.toLowerCase().includes(searchLower) ||
-                       u.firstName?.toLowerCase().includes(searchLower) ||
-                       u.lastName?.toLowerCase().includes(searchLower);
-              })
-              .map((u) => (
-              <Card key={u.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={u.profileImageUrl || undefined} />
-                        <AvatarFallback>
-                          {u.firstName?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <Link href={`/user/${u.username}`}>
-                          <a className="font-semibold hover:underline" data-testid={`link-user-${u.id}`}>
-                            {u.firstName} {u.lastName}
-                          </a>
-                        </Link>
-                        <p className="text-sm text-gray-500">@{u.username}</p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant={followingMap[u.id] ? "outline" : "default"}
-                      onClick={() => followMutation.mutate({ userId: u.id, isFollowing: followingMap[u.id] })}
-                      disabled={followMutation.isPending}
-                      data-testid={`button-follow-${u.id}`}
-                    >
-                      {followingMap[u.id] ? (
-                        <>
-                          <UserMinus className="h-3 w-3 mr-1" />
-                          Unfollow
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-3 w-3 mr-1" />
-                          Follow
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  {u.bio && (
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{u.bio}</p>
-                  )}
-                  <div className="flex items-center gap-3 text-sm text-gray-500">
-                    <span>Joined {u.createdAt ? formatDate(u.createdAt) : 'recently'}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Followed Tab */}
-        <TabsContent value="followed" className="space-y-6">
-          {/* Following Users */}
+          
+          {/* Following Users - Collapsible */}
           {followingData && followingData.following.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-4">People You Follow ({followingData.total})</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                {followingData.following.map((u) => (
-                  <Card key={u.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={u.profileImageUrl || undefined} />
-                          <AvatarFallback>
-                            {u.firstName?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
+            <Collapsible open={!followingCollapsed} onOpenChange={(open) => setFollowingCollapsed(!open)}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start p-0 h-auto hover:bg-transparent">
+                  <ChevronRight className={`h-4 w-4 mr-2 transition-transform ${!followingCollapsed ? 'rotate-90' : ''}`} />
+                  <h3 className="text-lg font-semibold">People You Follow ({followingData.total})</h3>
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
+                  {followingData.following
+                    .filter(u => {
+                      if (!userSearchQuery) return true;
+                      const searchLower = userSearchQuery.toLowerCase();
+                      return u.username?.toLowerCase().includes(searchLower) ||
+                             u.firstName?.toLowerCase().includes(searchLower) ||
+                             u.lastName?.toLowerCase().includes(searchLower);
+                    })
+                    .map((u) => (
+                    <Card key={u.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-3">
+                        <div className="flex flex-col items-center text-center">
+                          <Avatar className="h-10 w-10 mb-2">
+                            <AvatarImage src={u.profileImageUrl || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {u.firstName?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
                           <Link href={`/user/${u.username}`}>
-                            <a className="font-semibold hover:underline" data-testid={`link-following-${u.id}`}>
-                              {u.firstName} {u.lastName}
+                            <a className="font-medium text-sm hover:underline truncate w-full" data-testid={`link-following-${u.id}`}>
+                              {u.firstName}
                             </a>
                           </Link>
-                          <p className="text-sm text-gray-500">@{u.username}</p>
+                          <p className="text-xs text-muted-foreground truncate w-full">@{u.username}</p>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
 
           {/* Prompts from Followed Users */}
