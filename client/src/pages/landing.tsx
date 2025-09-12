@@ -39,22 +39,21 @@ export default function Landing() {
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-2" data-testid="text-hero-title">
             AI Prompt Library & Community
           </h1>
-          <p className="text-sm text-muted-foreground mb-0 max-w-xl mx-auto" data-testid="text-hero-description">
-            PromptAtrium is an open, central space for managing, sharing, and refining AI prompts. 
-            Join creators, teams, and communities to cultivate ideas together.
+          <p className="text-sm text-muted-foreground mb-1 max-w-xl mx-auto" data-testid="text-hero-description">
+            PromptAtrium is an open, central space for managing, sharing, and refining AI prompts. Join the community and elevate your AI projects today.
           </p>
         </div>
       </section>
 
       {/* Prompt Card Beam Animation */}
-      <section className="-mt-2">
+      <section className="mt-2 mb-2">
         <PromptCardBeam />
       </section>
 
       {/* Features */}
-      <section className="py-16 px-6 bg-muted/50">
+      <section className="pt-3 pb-8 px-6 bg-muted/50">
         <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center text-foreground mb-12" data-testid="text-features-title">
+          <h2 className="text-3xl -mt-1 font-bold text-center text-foreground mb-8" data-testid="text-features-title">
             Everything you need for AI prompt management
           </h2>
           
@@ -127,7 +126,7 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6">
+      <section className="pt-8 pb-20 px-6">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-bold text-foreground mb-6" data-testid="text-cta-title">
             Ready to get started?
