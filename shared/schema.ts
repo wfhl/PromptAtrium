@@ -308,6 +308,129 @@ export const activities = pgTable("activities", {
   index("idx_activities_action_type").on(table.actionType),
 ]);
 
+// Keywords table - for storing reusable keywords with metadata
+export const keywords = pgTable("keywords", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  keyword: varchar("keyword").notNull(),
+  description: text("description"),
+  categoryId: varchar("category_id").references(() => keywordCategories.id),
+  synonyms: text("synonyms").array().default([]),
+  examples: text("examples").array().default([]),
+  relatedKeywords: text("related_keywords").array().default([]),
+  frequency: integer("frequency").default(0), // Track usage frequency
+  type: varchar("type", { enum: ["system", "user", "community"] }).default("system"),
+  userId: varchar("user_id").references(() => users.id), // For user-created keywords
+  communityId: varchar("community_id").references(() => communities.id), // For community-specific keywords
+  tags: text("tags").array().default([]),
+  metadata: jsonb("metadata"), // Store additional properties
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_keywords_keyword").on(table.keyword),
+  index("idx_keywords_category").on(table.categoryId),
+  index("idx_keywords_user").on(table.userId),
+  index("idx_keywords_type").on(table.type),
+]);
+
+// Keyword categories table - for organizing keywords hierarchically
+export const keywordCategories = pgTable("keyword_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  parentId: varchar("parent_id").references(() => keywordCategories.id), // Self-referencing for hierarchy
+  icon: varchar("icon"), // Icon identifier for UI
+  color: varchar("color"), // Color hex code for UI
+  order: integer("order").default(0), // Display order
+  level: integer("level").default(0), // Depth in hierarchy
+  path: text("path").array().default([]), // Full path from root
+  type: varchar("type", { enum: ["system", "user", "community"] }).default("system"),
+  userId: varchar("user_id").references(() => users.id),
+  communityId: varchar("community_id").references(() => communities.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_keyword_categories_parent").on(table.parentId),
+  index("idx_keyword_categories_order").on(table.order),
+  index("idx_keyword_categories_type").on(table.type),
+]);
+
+// Prompt templates table - for storing reusable templates with placeholders
+export const promptTemplates = pgTable("prompt_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  template: text("template").notNull(), // Template with {{placeholders}}
+  placeholders: jsonb("placeholders").default([]), // Array of {name, description, type, default, options}
+  categoryId: varchar("category_id").references(() => keywordCategories.id),
+  tags: text("tags").array().default([]),
+  examples: jsonb("examples").default([]), // Array of example usage with filled placeholders
+  variables: jsonb("variables").default({}), // Pre-defined variable values
+  type: varchar("type", { enum: ["system", "user", "community", "shared"] }).default("user"),
+  visibility: varchar("visibility", { enum: ["private", "public", "community"] }).default("private"),
+  userId: varchar("user_id").references(() => users.id),
+  communityId: varchar("community_id").references(() => communities.id),
+  forkedFrom: varchar("forked_from").references(() => promptTemplates.id),
+  usageCount: integer("usage_count").default(0),
+  rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_prompt_templates_user").on(table.userId),
+  index("idx_prompt_templates_category").on(table.categoryId),
+  index("idx_prompt_templates_type").on(table.type),
+  index("idx_prompt_templates_visibility").on(table.visibility),
+]);
+
+// User custom synonyms table - for user-specific keyword synonyms
+export const userCustomSynonyms = pgTable("user_custom_synonyms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  keywordId: varchar("keyword_id").notNull().references(() => keywords.id),
+  synonym: varchar("synonym").notNull(),
+  description: text("description"),
+  isPreferred: boolean("is_preferred").default(false), // Mark as preferred over default
+  context: varchar("context"), // Optional context where this synonym applies
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_user_synonyms_user").on(table.userId),
+  index("idx_user_synonyms_keyword").on(table.keywordId),
+  index("idx_user_synonyms_synonym").on(table.synonym),
+]);
+
+// Keyword usage history table - track how keywords are used
+export const keywordUsageHistory = pgTable("keyword_usage_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  keywordId: varchar("keyword_id").notNull().references(() => keywords.id),
+  promptId: char("prompt_id", { length: 10 }).references(() => prompts.id),
+  templateId: varchar("template_id").references(() => promptTemplates.id),
+  context: text("context"), // The prompt or template where it was used
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_keyword_usage_user").on(table.userId),
+  index("idx_keyword_usage_keyword").on(table.keywordId),
+  index("idx_keyword_usage_created").on(table.createdAt),
+]);
+
+// Template usage history table - track template usage
+export const templateUsageHistory = pgTable("template_usage_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  templateId: varchar("template_id").notNull().references(() => promptTemplates.id),
+  promptId: char("prompt_id", { length: 10 }).references(() => prompts.id),
+  filledValues: jsonb("filled_values"), // The values used to fill the template
+  output: text("output"), // The generated prompt
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_template_usage_user").on(table.userId),
+  index("idx_template_usage_template").on(table.templateId),
+  index("idx_template_usage_created").on(table.createdAt),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   prompts: many(prompts),
@@ -321,6 +444,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   followers: many(follows, { relationName: "following" }),
   following: many(follows, { relationName: "follower" }),
   activities: many(activities),
+  keywords: many(keywords),
+  keywordCategories: many(keywordCategories),
+  promptTemplates: many(promptTemplates),
+  customSynonyms: many(userCustomSynonyms),
+  keywordUsageHistory: many(keywordUsageHistory),
+  templateUsageHistory: many(templateUsageHistory),
 }));
 
 export const communitiesRelations = relations(communities, ({ many }) => ({
@@ -385,6 +514,59 @@ export const communityAdminsRelations = relations(communityAdmins, ({ one }) => 
 export const communityInvitesRelations = relations(communityInvites, ({ one }) => ({
   community: one(communities, { fields: [communityInvites.communityId], references: [communities.id] }),
   createdByUser: one(users, { fields: [communityInvites.createdBy], references: [users.id] }),
+}));
+
+// Keyword dictionary relations
+export const keywordsRelations = relations(keywords, ({ one, many }) => ({
+  category: one(keywordCategories, { fields: [keywords.categoryId], references: [keywordCategories.id] }),
+  user: one(users, { fields: [keywords.userId], references: [users.id] }),
+  community: one(communities, { fields: [keywords.communityId], references: [communities.id] }),
+  customSynonyms: many(userCustomSynonyms),
+  usageHistory: many(keywordUsageHistory),
+}));
+
+export const keywordCategoriesRelations = relations(keywordCategories, ({ one, many }) => ({
+  parent: one(keywordCategories, { 
+    fields: [keywordCategories.parentId], 
+    references: [keywordCategories.id],
+    relationName: "categoryHierarchy"
+  }),
+  children: many(keywordCategories, { relationName: "categoryHierarchy" }),
+  keywords: many(keywords),
+  promptTemplates: many(promptTemplates),
+  user: one(users, { fields: [keywordCategories.userId], references: [users.id] }),
+  community: one(communities, { fields: [keywordCategories.communityId], references: [communities.id] }),
+}));
+
+export const promptTemplatesRelations = relations(promptTemplates, ({ one, many }) => ({
+  category: one(keywordCategories, { fields: [promptTemplates.categoryId], references: [keywordCategories.id] }),
+  user: one(users, { fields: [promptTemplates.userId], references: [users.id] }),
+  community: one(communities, { fields: [promptTemplates.communityId], references: [communities.id] }),
+  forkedFromTemplate: one(promptTemplates, { 
+    fields: [promptTemplates.forkedFrom], 
+    references: [promptTemplates.id],
+    relationName: "templateForks"
+  }),
+  forks: many(promptTemplates, { relationName: "templateForks" }),
+  usageHistory: many(templateUsageHistory),
+}));
+
+export const userCustomSynonymsRelations = relations(userCustomSynonyms, ({ one }) => ({
+  user: one(users, { fields: [userCustomSynonyms.userId], references: [users.id] }),
+  keyword: one(keywords, { fields: [userCustomSynonyms.keywordId], references: [keywords.id] }),
+}));
+
+export const keywordUsageHistoryRelations = relations(keywordUsageHistory, ({ one }) => ({
+  user: one(users, { fields: [keywordUsageHistory.userId], references: [users.id] }),
+  keyword: one(keywords, { fields: [keywordUsageHistory.keywordId], references: [keywords.id] }),
+  prompt: one(prompts, { fields: [keywordUsageHistory.promptId], references: [prompts.id] }),
+  template: one(promptTemplates, { fields: [keywordUsageHistory.templateId], references: [promptTemplates.id] }),
+}));
+
+export const templateUsageHistoryRelations = relations(templateUsageHistory, ({ one }) => ({
+  user: one(users, { fields: [templateUsageHistory.userId], references: [users.id] }),
+  template: one(promptTemplates, { fields: [templateUsageHistory.templateId], references: [promptTemplates.id] }),
+  prompt: one(prompts, { fields: [templateUsageHistory.promptId], references: [prompts.id] }),
 }));
 
 // Insert schemas
@@ -481,6 +663,46 @@ export const insertFollowSchema = createInsertSchema(follows).omit({
 });
 
 export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Keyword dictionary insert schemas
+export const insertKeywordSchema = createInsertSchema(keywords).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  frequency: true,
+});
+
+export const insertKeywordCategorySchema = createInsertSchema(keywordCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  level: true,
+  path: true,
+});
+
+export const insertPromptTemplateSchema = createInsertSchema(promptTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  usageCount: true,
+  rating: true,
+});
+
+export const insertUserCustomSynonymSchema = createInsertSchema(userCustomSynonyms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertKeywordUsageHistorySchema = createInsertSchema(keywordUsageHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTemplateUsageHistorySchema = createInsertSchema(templateUsageHistory).omit({
   id: true,
   createdAt: true,
 });
@@ -584,3 +806,20 @@ export type BulkOperationType = BulkOperation["operation"];
 export type UserRole = "user" | "community_admin" | "super_admin";
 export type CommunityRole = "member" | "admin";
 export type CollectionType = "user" | "community" | "global";
+
+// Keyword dictionary types
+export type Keyword = typeof keywords.$inferSelect;
+export type InsertKeyword = z.infer<typeof insertKeywordSchema>;
+export type KeywordCategory = typeof keywordCategories.$inferSelect;
+export type InsertKeywordCategory = z.infer<typeof insertKeywordCategorySchema>;
+export type PromptTemplate = typeof promptTemplates.$inferSelect;
+export type InsertPromptTemplate = z.infer<typeof insertPromptTemplateSchema>;
+export type UserCustomSynonym = typeof userCustomSynonyms.$inferSelect;
+export type InsertUserCustomSynonym = z.infer<typeof insertUserCustomSynonymSchema>;
+export type KeywordUsageHistory = typeof keywordUsageHistory.$inferSelect;
+export type InsertKeywordUsageHistory = z.infer<typeof insertKeywordUsageHistorySchema>;
+export type TemplateUsageHistory = typeof templateUsageHistory.$inferSelect;
+export type InsertTemplateUsageHistory = z.infer<typeof insertTemplateUsageHistorySchema>;
+export type KeywordType = "system" | "user" | "community";
+export type TemplateType = "system" | "user" | "community" | "shared";
+export type TemplateVisibility = "private" | "public" | "community";

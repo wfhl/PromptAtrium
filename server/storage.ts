@@ -17,6 +17,12 @@ import {
   promptRatings,
   follows,
   activities,
+  keywords,
+  keywordCategories,
+  promptTemplates,
+  userCustomSynonyms,
+  keywordUsageHistory,
+  templateUsageHistory,
   type User,
   type UpsertUser,
   type Prompt,
@@ -53,6 +59,18 @@ import {
   type InsertActivity,
   type UserRole,
   type CommunityRole,
+  type Keyword,
+  type InsertKeyword,
+  type KeywordCategory,
+  type InsertKeywordCategory,
+  type PromptTemplate,
+  type InsertPromptTemplate,
+  type UserCustomSynonym,
+  type InsertUserCustomSynonym,
+  type KeywordUsageHistory,
+  type InsertKeywordUsageHistory,
+  type TemplateUsageHistory,
+  type InsertTemplateUsageHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray } from "drizzle-orm";
@@ -233,6 +251,96 @@ export interface IStorage {
   createRecommendedModel(model: InsertRecommendedModel): Promise<RecommendedModel>;
   updateRecommendedModel(id: string, model: Partial<InsertRecommendedModel>): Promise<RecommendedModel>;
   deleteRecommendedModel(id: string): Promise<void>;
+
+  // Keyword operations
+  getKeywords(options?: {
+    categoryId?: string;
+    userId?: string;
+    communityId?: string;
+    type?: string;
+    search?: string;
+    tags?: string[];
+    isActive?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<Keyword[]>;
+  getKeyword(id: string): Promise<Keyword | undefined>;
+  getKeywordByWord(keyword: string): Promise<Keyword | undefined>;
+  searchKeywords(query: string, limit?: number): Promise<Keyword[]>;
+  createKeyword(keyword: InsertKeyword): Promise<Keyword>;
+  updateKeyword(id: string, keyword: Partial<InsertKeyword>): Promise<Keyword>;
+  deleteKeyword(id: string): Promise<void>;
+  incrementKeywordFrequency(id: string): Promise<void>;
+  getRelatedKeywords(keywordId: string, limit?: number): Promise<Keyword[]>;
+
+  // Keyword category operations
+  getKeywordCategories(options?: {
+    parentId?: string | null;
+    userId?: string;
+    communityId?: string;
+    type?: string;
+    isActive?: boolean;
+  }): Promise<KeywordCategory[]>;
+  getKeywordCategory(id: string): Promise<KeywordCategory | undefined>;
+  getKeywordCategoryByName(name: string): Promise<KeywordCategory | undefined>;
+  getCategoryHierarchy(categoryId?: string): Promise<KeywordCategory[]>;
+  createKeywordCategory(category: InsertKeywordCategory): Promise<KeywordCategory>;
+  updateKeywordCategory(id: string, category: Partial<InsertKeywordCategory>): Promise<KeywordCategory>;
+  deleteKeywordCategory(id: string): Promise<void>;
+  moveCategoryToParent(categoryId: string, newParentId: string | null): Promise<KeywordCategory>;
+
+  // Prompt template operations
+  getPromptTemplates(options?: {
+    categoryId?: string;
+    userId?: string;
+    communityId?: string;
+    type?: string;
+    visibility?: string;
+    search?: string;
+    tags?: string[];
+    isActive?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<PromptTemplate[]>;
+  getPromptTemplate(id: string): Promise<PromptTemplate | undefined>;
+  searchPromptTemplates(query: string, limit?: number): Promise<PromptTemplate[]>;
+  createPromptTemplate(template: InsertPromptTemplate): Promise<PromptTemplate>;
+  updatePromptTemplate(id: string, template: Partial<InsertPromptTemplate>): Promise<PromptTemplate>;
+  deletePromptTemplate(id: string): Promise<void>;
+  forkPromptTemplate(templateId: string, userId: string): Promise<PromptTemplate>;
+  incrementTemplateUsage(id: string): Promise<void>;
+  ratePromptTemplate(templateId: string, userId: string, rating: number): Promise<void>;
+
+  // User custom synonym operations
+  getUserCustomSynonyms(userId: string, keywordId?: string): Promise<UserCustomSynonym[]>;
+  getCustomSynonym(id: string): Promise<UserCustomSynonym | undefined>;
+  createCustomSynonym(synonym: InsertUserCustomSynonym): Promise<UserCustomSynonym>;
+  updateCustomSynonym(id: string, synonym: Partial<InsertUserCustomSynonym>): Promise<UserCustomSynonym>;
+  deleteCustomSynonym(id: string): Promise<void>;
+  deleteUserCustomSynonyms(userId: string, keywordId?: string): Promise<void>;
+
+  // Keyword usage history operations
+  trackKeywordUsage(usage: InsertKeywordUsageHistory): Promise<KeywordUsageHistory>;
+  getKeywordUsageHistory(options?: {
+    userId?: string;
+    keywordId?: string;
+    promptId?: string;
+    templateId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<KeywordUsageHistory[]>;
+  getMostUsedKeywords(userId: string, limit?: number): Promise<Keyword[]>;
+
+  // Template usage history operations
+  trackTemplateUsage(usage: InsertTemplateUsageHistory): Promise<TemplateUsageHistory>;
+  getTemplateUsageHistory(options?: {
+    userId?: string;
+    templateId?: string;
+    promptId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<TemplateUsageHistory[]>;
+  getMostUsedTemplates(userId: string, limit?: number): Promise<PromptTemplate[]>;
 }
 
 function generatePromptId(): string {
@@ -1801,6 +1909,639 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecommendedModel(id: string): Promise<void> {
     await db.delete(recommendedModels).where(eq(recommendedModels.id, id));
+  }
+
+  // Keyword operations
+  async getKeywords(options: {
+    categoryId?: string;
+    userId?: string;
+    communityId?: string;
+    type?: string;
+    search?: string;
+    tags?: string[];
+    isActive?: boolean;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<Keyword[]> {
+    let query = db.select().from(keywords).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.categoryId) {
+      conditions.push(eq(keywords.categoryId, options.categoryId));
+    }
+    
+    if (options.userId) {
+      conditions.push(eq(keywords.userId, options.userId));
+    }
+    
+    if (options.communityId) {
+      conditions.push(eq(keywords.communityId, options.communityId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(keywords.type, options.type as any));
+    }
+    
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(keywords.keyword, `%${options.search}%`),
+          ilike(keywords.description, `%${options.search}%`)
+        )
+      );
+    }
+    
+    if (options.tags && options.tags.length > 0) {
+      const tagConditions = options.tags.map(tag => 
+        sql`${keywords.tags} @> ARRAY[${tag}]::text[]`
+      );
+      conditions.push(or(...tagConditions));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(keywords.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    query = query.orderBy(desc(keywords.frequency), keywords.keyword);
+    
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+
+  async getKeyword(id: string): Promise<Keyword | undefined> {
+    const [keyword] = await db.select().from(keywords).where(eq(keywords.id, id));
+    return keyword;
+  }
+
+  async getKeywordByWord(keyword: string): Promise<Keyword | undefined> {
+    const [result] = await db.select().from(keywords).where(eq(keywords.keyword, keyword));
+    return result;
+  }
+
+  async searchKeywords(query: string, limit: number = 20): Promise<Keyword[]> {
+    return await db
+      .select()
+      .from(keywords)
+      .where(
+        or(
+          ilike(keywords.keyword, `%${query}%`),
+          ilike(keywords.description, `%${query}%`),
+          sql`${keywords.synonyms} @> ARRAY[${query}]::text[]`
+        )
+      )
+      .orderBy(desc(keywords.frequency))
+      .limit(limit);
+  }
+
+  async createKeyword(keyword: InsertKeyword): Promise<Keyword> {
+    const [newKeyword] = await db.insert(keywords).values(keyword).returning();
+    return newKeyword;
+  }
+
+  async updateKeyword(id: string, keyword: Partial<InsertKeyword>): Promise<Keyword> {
+    const [updatedKeyword] = await db
+      .update(keywords)
+      .set({ ...keyword, updatedAt: new Date() })
+      .where(eq(keywords.id, id))
+      .returning();
+    return updatedKeyword;
+  }
+
+  async deleteKeyword(id: string): Promise<void> {
+    await db.delete(keywords).where(eq(keywords.id, id));
+  }
+
+  async incrementKeywordFrequency(id: string): Promise<void> {
+    await db
+      .update(keywords)
+      .set({ 
+        frequency: sql`${keywords.frequency} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(keywords.id, id));
+  }
+
+  async getRelatedKeywords(keywordId: string, limit: number = 10): Promise<Keyword[]> {
+    const keyword = await this.getKeyword(keywordId);
+    if (!keyword || !keyword.relatedKeywords || keyword.relatedKeywords.length === 0) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(keywords)
+      .where(inArray(keywords.keyword, keyword.relatedKeywords))
+      .limit(limit);
+  }
+
+  // Keyword category operations
+  async getKeywordCategories(options: {
+    parentId?: string | null;
+    userId?: string;
+    communityId?: string;
+    type?: string;
+    isActive?: boolean;
+  } = {}): Promise<KeywordCategory[]> {
+    let query = db.select().from(keywordCategories).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.parentId !== undefined) {
+      if (options.parentId === null) {
+        conditions.push(sql`${keywordCategories.parentId} IS NULL`);
+      } else {
+        conditions.push(eq(keywordCategories.parentId, options.parentId));
+      }
+    }
+    
+    if (options.userId) {
+      conditions.push(eq(keywordCategories.userId, options.userId));
+    }
+    
+    if (options.communityId) {
+      conditions.push(eq(keywordCategories.communityId, options.communityId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(keywordCategories.type, options.type as any));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(keywordCategories.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(keywordCategories.order, keywordCategories.name);
+  }
+
+  async getKeywordCategory(id: string): Promise<KeywordCategory | undefined> {
+    const [category] = await db.select().from(keywordCategories).where(eq(keywordCategories.id, id));
+    return category;
+  }
+
+  async getKeywordCategoryByName(name: string): Promise<KeywordCategory | undefined> {
+    const [category] = await db.select().from(keywordCategories).where(eq(keywordCategories.name, name));
+    return category;
+  }
+
+  async getCategoryHierarchy(categoryId?: string): Promise<KeywordCategory[]> {
+    if (!categoryId) {
+      // Return top-level categories
+      return await this.getKeywordCategories({ parentId: null, isActive: true });
+    }
+    
+    // Get category and all its ancestors
+    const category = await this.getKeywordCategory(categoryId);
+    if (!category) return [];
+    
+    const hierarchy: KeywordCategory[] = [category];
+    let currentCategory = category;
+    
+    while (currentCategory.parentId) {
+      const parent = await this.getKeywordCategory(currentCategory.parentId);
+      if (!parent) break;
+      hierarchy.unshift(parent);
+      currentCategory = parent;
+    }
+    
+    return hierarchy;
+  }
+
+  async createKeywordCategory(category: InsertKeywordCategory): Promise<KeywordCategory> {
+    // Calculate level and path based on parent
+    let level = 0;
+    let path: string[] = [];
+    
+    if (category.parentId) {
+      const parent = await this.getKeywordCategory(category.parentId);
+      if (parent) {
+        level = parent.level + 1;
+        path = [...parent.path, parent.id];
+      }
+    }
+    
+    const [newCategory] = await db
+      .insert(keywordCategories)
+      .values({ ...category, level, path })
+      .returning();
+    return newCategory;
+  }
+
+  async updateKeywordCategory(id: string, category: Partial<InsertKeywordCategory>): Promise<KeywordCategory> {
+    const [updatedCategory] = await db
+      .update(keywordCategories)
+      .set({ ...category, updatedAt: new Date() })
+      .where(eq(keywordCategories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+
+  async deleteKeywordCategory(id: string): Promise<void> {
+    await db.delete(keywordCategories).where(eq(keywordCategories.id, id));
+  }
+
+  async moveCategoryToParent(categoryId: string, newParentId: string | null): Promise<KeywordCategory> {
+    const category = await this.getKeywordCategory(categoryId);
+    if (!category) throw new Error("Category not found");
+    
+    let level = 0;
+    let path: string[] = [];
+    
+    if (newParentId) {
+      const parent = await this.getKeywordCategory(newParentId);
+      if (!parent) throw new Error("Parent category not found");
+      level = parent.level + 1;
+      path = [...parent.path, parent.id];
+    }
+    
+    const [updatedCategory] = await db
+      .update(keywordCategories)
+      .set({ 
+        parentId: newParentId,
+        level,
+        path,
+        updatedAt: new Date()
+      })
+      .where(eq(keywordCategories.id, categoryId))
+      .returning();
+    
+    return updatedCategory;
+  }
+
+  // Prompt template operations
+  async getPromptTemplates(options: {
+    categoryId?: string;
+    userId?: string;
+    communityId?: string;
+    type?: string;
+    visibility?: string;
+    search?: string;
+    tags?: string[];
+    isActive?: boolean;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<PromptTemplate[]> {
+    let query = db.select().from(promptTemplates).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.categoryId) {
+      conditions.push(eq(promptTemplates.categoryId, options.categoryId));
+    }
+    
+    if (options.userId) {
+      conditions.push(eq(promptTemplates.userId, options.userId));
+    }
+    
+    if (options.communityId) {
+      conditions.push(eq(promptTemplates.communityId, options.communityId));
+    }
+    
+    if (options.type) {
+      conditions.push(eq(promptTemplates.type, options.type as any));
+    }
+    
+    if (options.visibility) {
+      conditions.push(eq(promptTemplates.visibility, options.visibility as any));
+    }
+    
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(promptTemplates.name, `%${options.search}%`),
+          ilike(promptTemplates.description, `%${options.search}%`),
+          ilike(promptTemplates.template, `%${options.search}%`)
+        )
+      );
+    }
+    
+    if (options.tags && options.tags.length > 0) {
+      const tagConditions = options.tags.map(tag => 
+        sql`${promptTemplates.tags} @> ARRAY[${tag}]::text[]`
+      );
+      conditions.push(or(...tagConditions));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(promptTemplates.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    query = query.orderBy(desc(promptTemplates.usageCount), promptTemplates.name);
+    
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+
+  async getPromptTemplate(id: string): Promise<PromptTemplate | undefined> {
+    const [template] = await db.select().from(promptTemplates).where(eq(promptTemplates.id, id));
+    return template;
+  }
+
+  async searchPromptTemplates(query: string, limit: number = 20): Promise<PromptTemplate[]> {
+    return await db
+      .select()
+      .from(promptTemplates)
+      .where(
+        or(
+          ilike(promptTemplates.name, `%${query}%`),
+          ilike(promptTemplates.description, `%${query}%`),
+          ilike(promptTemplates.template, `%${query}%`)
+        )
+      )
+      .orderBy(desc(promptTemplates.usageCount))
+      .limit(limit);
+  }
+
+  async createPromptTemplate(template: InsertPromptTemplate): Promise<PromptTemplate> {
+    const [newTemplate] = await db.insert(promptTemplates).values(template).returning();
+    return newTemplate;
+  }
+
+  async updatePromptTemplate(id: string, template: Partial<InsertPromptTemplate>): Promise<PromptTemplate> {
+    const [updatedTemplate] = await db
+      .update(promptTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(promptTemplates.id, id))
+      .returning();
+    return updatedTemplate;
+  }
+
+  async deletePromptTemplate(id: string): Promise<void> {
+    await db.delete(promptTemplates).where(eq(promptTemplates.id, id));
+  }
+
+  async forkPromptTemplate(templateId: string, userId: string): Promise<PromptTemplate> {
+    const original = await this.getPromptTemplate(templateId);
+    if (!original) throw new Error("Template not found");
+    
+    const [forked] = await db
+      .insert(promptTemplates)
+      .values({
+        name: `${original.name} (Fork)`,
+        description: original.description,
+        template: original.template,
+        placeholders: original.placeholders,
+        categoryId: original.categoryId,
+        tags: original.tags,
+        examples: original.examples,
+        variables: original.variables,
+        type: "user",
+        visibility: "private",
+        userId,
+        forkedFrom: templateId,
+      })
+      .returning();
+    
+    return forked;
+  }
+
+  async incrementTemplateUsage(id: string): Promise<void> {
+    await db
+      .update(promptTemplates)
+      .set({ 
+        usageCount: sql`${promptTemplates.usageCount} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(promptTemplates.id, id));
+  }
+
+  async ratePromptTemplate(templateId: string, userId: string, rating: number): Promise<void> {
+    // This is a simplified implementation - you might want to track individual ratings
+    const template = await this.getPromptTemplate(templateId);
+    if (!template) throw new Error("Template not found");
+    
+    // Simple average calculation (in production, track individual ratings)
+    const currentRating = parseFloat(template.rating || "0");
+    const currentCount = template.usageCount || 0;
+    const newRating = ((currentRating * currentCount) + rating) / (currentCount + 1);
+    
+    await db
+      .update(promptTemplates)
+      .set({ 
+        rating: newRating.toFixed(2),
+        updatedAt: new Date()
+      })
+      .where(eq(promptTemplates.id, templateId));
+  }
+
+  // User custom synonym operations
+  async getUserCustomSynonyms(userId: string, keywordId?: string): Promise<UserCustomSynonym[]> {
+    let query = db.select().from(userCustomSynonyms).where(eq(userCustomSynonyms.userId, userId)).$dynamic();
+    
+    if (keywordId) {
+      query = query.where(and(
+        eq(userCustomSynonyms.userId, userId),
+        eq(userCustomSynonyms.keywordId, keywordId)
+      ));
+    }
+    
+    return await query.orderBy(userCustomSynonyms.synonym);
+  }
+
+  async getCustomSynonym(id: string): Promise<UserCustomSynonym | undefined> {
+    const [synonym] = await db.select().from(userCustomSynonyms).where(eq(userCustomSynonyms.id, id));
+    return synonym;
+  }
+
+  async createCustomSynonym(synonym: InsertUserCustomSynonym): Promise<UserCustomSynonym> {
+    const [newSynonym] = await db.insert(userCustomSynonyms).values(synonym).returning();
+    return newSynonym;
+  }
+
+  async updateCustomSynonym(id: string, synonym: Partial<InsertUserCustomSynonym>): Promise<UserCustomSynonym> {
+    const [updatedSynonym] = await db
+      .update(userCustomSynonyms)
+      .set({ ...synonym, updatedAt: new Date() })
+      .where(eq(userCustomSynonyms.id, id))
+      .returning();
+    return updatedSynonym;
+  }
+
+  async deleteCustomSynonym(id: string): Promise<void> {
+    await db.delete(userCustomSynonyms).where(eq(userCustomSynonyms.id, id));
+  }
+
+  async deleteUserCustomSynonyms(userId: string, keywordId?: string): Promise<void> {
+    let conditions = [eq(userCustomSynonyms.userId, userId)];
+    
+    if (keywordId) {
+      conditions.push(eq(userCustomSynonyms.keywordId, keywordId));
+    }
+    
+    await db.delete(userCustomSynonyms).where(and(...conditions));
+  }
+
+  // Keyword usage history operations
+  async trackKeywordUsage(usage: InsertKeywordUsageHistory): Promise<KeywordUsageHistory> {
+    const [history] = await db.insert(keywordUsageHistory).values(usage).returning();
+    
+    // Increment keyword frequency
+    await this.incrementKeywordFrequency(usage.keywordId);
+    
+    return history;
+  }
+
+  async getKeywordUsageHistory(options: {
+    userId?: string;
+    keywordId?: string;
+    promptId?: string;
+    templateId?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<KeywordUsageHistory[]> {
+    let query = db.select().from(keywordUsageHistory).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(keywordUsageHistory.userId, options.userId));
+    }
+    
+    if (options.keywordId) {
+      conditions.push(eq(keywordUsageHistory.keywordId, options.keywordId));
+    }
+    
+    if (options.promptId) {
+      conditions.push(eq(keywordUsageHistory.promptId, options.promptId));
+    }
+    
+    if (options.templateId) {
+      conditions.push(eq(keywordUsageHistory.templateId, options.templateId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    query = query.orderBy(desc(keywordUsageHistory.createdAt));
+    
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+
+  async getMostUsedKeywords(userId: string, limit: number = 10): Promise<Keyword[]> {
+    const result = await db
+      .select({
+        keywordId: keywordUsageHistory.keywordId,
+        count: sql<number>`count(*)`.as('count')
+      })
+      .from(keywordUsageHistory)
+      .where(eq(keywordUsageHistory.userId, userId))
+      .groupBy(keywordUsageHistory.keywordId)
+      .orderBy(desc(sql`count(*)`))
+      .limit(limit);
+    
+    const keywordIds = result.map(r => r.keywordId);
+    if (keywordIds.length === 0) return [];
+    
+    return await db
+      .select()
+      .from(keywords)
+      .where(inArray(keywords.id, keywordIds));
+  }
+
+  // Template usage history operations
+  async trackTemplateUsage(usage: InsertTemplateUsageHistory): Promise<TemplateUsageHistory> {
+    const [history] = await db.insert(templateUsageHistory).values(usage).returning();
+    
+    // Increment template usage count
+    await this.incrementTemplateUsage(usage.templateId);
+    
+    return history;
+  }
+
+  async getTemplateUsageHistory(options: {
+    userId?: string;
+    templateId?: string;
+    promptId?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<TemplateUsageHistory[]> {
+    let query = db.select().from(templateUsageHistory).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(templateUsageHistory.userId, options.userId));
+    }
+    
+    if (options.templateId) {
+      conditions.push(eq(templateUsageHistory.templateId, options.templateId));
+    }
+    
+    if (options.promptId) {
+      conditions.push(eq(templateUsageHistory.promptId, options.promptId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    query = query.orderBy(desc(templateUsageHistory.createdAt));
+    
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+
+  async getMostUsedTemplates(userId: string, limit: number = 10): Promise<PromptTemplate[]> {
+    const result = await db
+      .select({
+        templateId: templateUsageHistory.templateId,
+        count: sql<number>`count(*)`.as('count')
+      })
+      .from(templateUsageHistory)
+      .where(eq(templateUsageHistory.userId, userId))
+      .groupBy(templateUsageHistory.templateId)
+      .orderBy(desc(sql`count(*)`))
+      .limit(limit);
+    
+    const templateIds = result.map(r => r.templateId);
+    if (templateIds.length === 0) return [];
+    
+    return await db
+      .select()
+      .from(promptTemplates)
+      .where(inArray(promptTemplates.id, templateIds));
   }
 }
 
