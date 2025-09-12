@@ -1498,6 +1498,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prompt component routes
+  app.get('/api/prompt-components', async (req, res) => {
+    try {
+      const { category, subcategory, search, limit, offset } = req.query;
+      const options: any = {};
+      
+      if (category) options.category = category as string;
+      if (subcategory) options.subcategory = subcategory as string;
+      if (search) options.search = search as string;
+      if (limit) options.limit = parseInt(limit as string);
+      if (offset) options.offset = parseInt(offset as string);
+      
+      const components = await storage.getPromptComponents(options);
+      res.json(components);
+    } catch (error) {
+      console.error("Error fetching prompt components:", error);
+      res.status(500).json({ message: "Failed to fetch prompt components" });
+    }
+  });
+
+  app.get('/api/prompt-components/categories', async (req, res) => {
+    try {
+      const categories = await storage.getPromptComponentCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching prompt component categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.get('/api/prompt-components/search', async (req, res) => {
+    try {
+      const { q, limit } = req.query;
+      if (!q) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      
+      const components = await storage.searchPromptComponents(
+        q as string,
+        limit ? parseInt(limit as string) : 20
+      );
+      res.json(components);
+    } catch (error) {
+      console.error("Error searching prompt components:", error);
+      res.status(500).json({ message: "Failed to search prompt components" });
+    }
+  });
+
+  app.get('/api/prompt-components/:id', async (req, res) => {
+    try {
+      const component = await storage.getPromptComponent(req.params.id);
+      if (!component) {
+        return res.status(404).json({ message: "Prompt component not found" });
+      }
+      res.json(component);
+    } catch (error) {
+      console.error("Error fetching prompt component:", error);
+      res.status(500).json({ message: "Failed to fetch prompt component" });
+    }
+  });
+
+  // Aesthetic routes
+  app.get('/api/aesthetics', async (req, res) => {
+    try {
+      const { era, category, search, tags, limit, offset } = req.query;
+      const options: any = {};
+      
+      if (era) options.era = era as string;
+      if (category) options.category = category as string;
+      if (search) options.search = search as string;
+      if (tags) options.tags = (tags as string).split(',');
+      if (limit) options.limit = parseInt(limit as string);
+      if (offset) options.offset = parseInt(offset as string);
+      
+      const aesthetics = await storage.getAesthetics(options);
+      res.json(aesthetics);
+    } catch (error) {
+      console.error("Error fetching aesthetics:", error);
+      res.status(500).json({ message: "Failed to fetch aesthetics" });
+    }
+  });
+
+  app.get('/api/aesthetics/categories', async (req, res) => {
+    try {
+      const categories = await storage.getAestheticCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching aesthetic categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.get('/api/aesthetics/eras', async (req, res) => {
+    try {
+      const eras = await storage.getAestheticEras();
+      res.json(eras);
+    } catch (error) {
+      console.error("Error fetching aesthetic eras:", error);
+      res.status(500).json({ message: "Failed to fetch eras" });
+    }
+  });
+
+  app.get('/api/aesthetics/search', async (req, res) => {
+    try {
+      const { q, limit } = req.query;
+      if (!q) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      
+      const aesthetics = await storage.searchAesthetics(
+        q as string,
+        limit ? parseInt(limit as string) : 20
+      );
+      res.json(aesthetics);
+    } catch (error) {
+      console.error("Error searching aesthetics:", error);
+      res.status(500).json({ message: "Failed to search aesthetics" });
+    }
+  });
+
+  app.get('/api/aesthetics/:id', async (req, res) => {
+    try {
+      const aesthetic = await storage.getAesthetic(req.params.id);
+      if (!aesthetic) {
+        return res.status(404).json({ message: "Aesthetic not found" });
+      }
+      res.json(aesthetic);
+    } catch (error) {
+      console.error("Error fetching aesthetic:", error);
+      res.status(500).json({ message: "Failed to fetch aesthetic" });
+    }
+  });
+
+  app.get('/api/aesthetics/:id/related', async (req, res) => {
+    try {
+      const { limit } = req.query;
+      const related = await storage.getRelatedAesthetics(
+        req.params.id,
+        limit ? parseInt(limit as string) : 10
+      );
+      res.json(related);
+    } catch (error) {
+      console.error("Error fetching related aesthetics:", error);
+      res.status(500).json({ message: "Failed to fetch related aesthetics" });
+    }
+  });
+
   // User stats
   app.get('/api/user/stats', isAuthenticated, async (req: any, res) => {
     try {
