@@ -669,13 +669,13 @@ export default function Community() {
 
         {/* Followed Tab */}
         <TabsContent value="followed" className="space-y-6">
-          {/* Search Bar for Users - moved from Users tab */}
+          {/* Search Bar for Users - searches all users */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 type="text"
-                placeholder="Search users by username..."
+                placeholder="Search all users..."
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
                 className="pl-10 pr-4"
@@ -683,6 +683,45 @@ export default function Community() {
               />
             </div>
           </div>
+          
+          {/* Search Results - Display above People You Follow */}
+          {userSearchQuery && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-4">Search Results</h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
+                {allUsers
+                  .filter(u => u.id !== currentUserId)
+                  .filter(u => {
+                    const searchLower = userSearchQuery.toLowerCase();
+                    return u.username?.toLowerCase().includes(searchLower) ||
+                           u.firstName?.toLowerCase().includes(searchLower) ||
+                           u.lastName?.toLowerCase().includes(searchLower);
+                  })
+                  .map((u) => (
+                  <Link key={u.id} href={`/user/${u.username}`}>
+                    <a className="flex flex-col items-center p-2 rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border/50" data-testid={`link-search-result-${u.id}`}>
+                      <Avatar className="h-8 w-8 mb-1">
+                        <AvatarImage src={u.profileImageUrl || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {u.firstName?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs text-center truncate max-w-full">
+                        @{u.username}
+                      </span>
+                    </a>
+                  </Link>
+                ))}
+              </div>
+              {allUsers.filter(u => u.id !== currentUserId && userSearchQuery && (
+                u.username?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                u.firstName?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                u.lastName?.toLowerCase().includes(userSearchQuery.toLowerCase())
+              )).length === 0 && (
+                <p className="text-center text-muted-foreground py-4">No users found matching "{userSearchQuery}"</p>
+              )}
+            </div>
+          )}
           
           {/* Following Users - Collapsible */}
           {followingData && followingData.following.length > 0 && (
@@ -694,34 +733,21 @@ export default function Community() {
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
-                  {followingData.following
-                    .filter(u => {
-                      if (!userSearchQuery) return true;
-                      const searchLower = userSearchQuery.toLowerCase();
-                      return u.username?.toLowerCase().includes(searchLower) ||
-                             u.firstName?.toLowerCase().includes(searchLower) ||
-                             u.lastName?.toLowerCase().includes(searchLower);
-                    })
-                    .map((u) => (
-                    <Card key={u.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-3">
-                        <div className="flex flex-col items-center text-center">
-                          <Avatar className="h-10 w-10 mb-2">
-                            <AvatarImage src={u.profileImageUrl || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {u.firstName?.[0]?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <Link href={`/user/${u.username}`}>
-                            <a className="font-medium text-sm hover:underline truncate w-full" data-testid={`link-following-${u.id}`}>
-                              {u.firstName}
-                            </a>
-                          </Link>
-                          <p className="text-xs text-muted-foreground truncate w-full">@{u.username}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2 mb-8">
+                  {followingData.following.map((u) => (
+                    <Link key={u.id} href={`/user/${u.username}`}>
+                      <a className="flex flex-col items-center p-2 rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border/50" data-testid={`link-following-${u.id}`}>
+                        <Avatar className="h-8 w-8 mb-1">
+                          <AvatarImage src={u.profileImageUrl || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {u.firstName?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-center truncate max-w-full">
+                          @{u.username}
+                        </span>
+                      </a>
+                    </Link>
                   ))}
                 </div>
               </CollapsibleContent>
