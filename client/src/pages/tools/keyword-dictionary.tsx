@@ -81,7 +81,9 @@ export default function KeywordDictionaryPage() {
   const [activeTab, setActiveTab] = useState("components");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  // Separate category state for each tab
+  const [componentsCategory, setComponentsCategory] = useState<string | null>(null);
+  const [aestheticsCategory, setAestheticsCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -93,18 +95,20 @@ export default function KeywordDictionaryPage() {
   const [editingKeyword, setEditingKeyword] = useState<any>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Separate page state for each tab
+  const [componentsPage, setComponentsPage] = useState(1);
+  const [aestheticsPage, setAestheticsPage] = useState(1);
   const itemsPerPage = 50;
 
   // Fetch prompt components from database
   const { data: components = [], isLoading: componentsLoading } = useQuery({
-    queryKey: ['/api/prompt-components', debouncedSearchQuery, selectedCategory, currentPage],
+    queryKey: ['/api/prompt-components', debouncedSearchQuery, componentsCategory, componentsPage],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
-      if (selectedCategory) params.append('category', selectedCategory);
+      if (componentsCategory) params.append('category', componentsCategory);
       params.append('limit', itemsPerPage.toString());
-      params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
+      params.append('offset', ((componentsPage - 1) * itemsPerPage).toString());
       
       const response = await fetch(`/api/prompt-components?${params}`);
       if (!response.ok) throw new Error('Failed to fetch components');
@@ -125,13 +129,13 @@ export default function KeywordDictionaryPage() {
 
   // Fetch aesthetics from database
   const { data: aesthetics = [], isLoading: aestheticsLoading } = useQuery({
-    queryKey: ['/api/aesthetics', debouncedSearchQuery, selectedCategory, currentPage],
+    queryKey: ['/api/aesthetics', debouncedSearchQuery, aestheticsCategory, aestheticsPage],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
-      if (selectedCategory) params.append('category', selectedCategory);
+      if (aestheticsCategory) params.append('category', aestheticsCategory);
       params.append('limit', itemsPerPage.toString());
-      params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
+      params.append('offset', ((aestheticsPage - 1) * itemsPerPage).toString());
       
       const response = await fetch(`/api/aesthetics?${params}`);
       if (!response.ok) throw new Error('Failed to fetch aesthetics');
@@ -196,7 +200,9 @@ export default function KeywordDictionaryPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-      setCurrentPage(1); // Reset to first page on search
+      // Reset both pages to 1 on search
+      setComponentsPage(1);
+      setAestheticsPage(1);
     }, 300);
 
     return () => clearTimeout(timer);
@@ -206,6 +212,8 @@ export default function KeywordDictionaryPage() {
   const activeData = activeTab === 'components' ? components : aesthetics;
   const isLoading = activeTab === 'components' ? componentsLoading : aestheticsLoading;
   const categoriesData = activeTab === 'components' ? dbCategories : aestheticCategories;
+  const selectedCategory = activeTab === 'components' ? componentsCategory : aestheticsCategory;
+  const currentPage = activeTab === 'components' ? componentsPage : aestheticsPage;
 
   // Transform database data to match the expected format
   const keywords = useMemo(() => {
@@ -714,7 +722,13 @@ export default function KeywordDictionaryPage() {
                     variant={selectedCategory === null ? "secondary" : "ghost"}
                     className="w-full justify-start gap-2 h-8 sm:h-9 text-xs sm:text-sm"
                     onClick={() => {
-                      setSelectedCategory(null);
+                      if (activeTab === 'components') {
+                        setComponentsCategory(null);
+                        setComponentsPage(1);
+                      } else {
+                        setAestheticsCategory(null);
+                        setAestheticsPage(1);
+                      }
                       setSelectedSubcategory(null);
                     }}
                     data-testid="button-category-all"
@@ -736,9 +750,16 @@ export default function KeywordDictionaryPage() {
                           variant={selectedCategory === (category.id || category.name) ? "secondary" : "ghost"}
                           className="w-full justify-start gap-2 h-8 sm:h-9 text-xs sm:text-sm"
                           onClick={() => {
-                            setSelectedCategory(category.id || category.name);
+                            const categoryValue = category.id || category.name;
+                            if (activeTab === 'components') {
+                              setComponentsCategory(categoryValue);
+                              setComponentsPage(1);
+                            } else {
+                              setAestheticsCategory(categoryValue);
+                              setAestheticsPage(1);
+                            }
                             setSelectedSubcategory(null);
-                            toggleCategory(category.id || category.name);
+                            toggleCategory(categoryValue);
                           }}
                           data-testid={`button-category-${category.id || category.name}`}
                         >
@@ -829,7 +850,12 @@ export default function KeywordDictionaryPage() {
           {/* Keywords Grid */}
           <div className="lg:col-span-3">
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={(value) => {
+              setActiveTab(value);
+              // Reset search and subcategory when switching tabs
+              setSearchQuery("");
+              setSelectedSubcategory(null);
+            }} className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-8 sm:h-10">
                 <TabsTrigger value="components" className="text-xs sm:text-sm">
                   Components
@@ -889,7 +915,13 @@ export default function KeywordDictionaryPage() {
                 variant={selectedCategory === null ? "secondary" : "ghost"}
                 className="w-full justify-start gap-2 h-8 text-xs"
                 onClick={() => {
-                  setSelectedCategory(null);
+                  if (activeTab === 'components') {
+                    setComponentsCategory(null);
+                    setComponentsPage(1);
+                  } else {
+                    setAestheticsCategory(null);
+                    setAestheticsPage(1);
+                  }
                   setSelectedSubcategory(null);
                   setMobileCategoriesOpen(false);
                 }}
@@ -911,9 +943,16 @@ export default function KeywordDictionaryPage() {
                       variant={selectedCategory === (category.id || category.name) ? "secondary" : "ghost"}
                       className="w-full justify-start gap-2 h-8 text-xs"
                       onClick={() => {
-                        setSelectedCategory(category.id || category.name);
+                        const categoryValue = category.id || category.name;
+                        if (activeTab === 'components') {
+                          setComponentsCategory(categoryValue);
+                          setComponentsPage(1);
+                        } else {
+                          setAestheticsCategory(categoryValue);
+                          setAestheticsPage(1);
+                        }
                         setSelectedSubcategory(null);
-                        toggleCategory(category.id || category.name);
+                        toggleCategory(categoryValue);
                       }}
                     >
                       <Icon className="h-3.5 w-3.5" />
