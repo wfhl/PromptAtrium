@@ -1434,13 +1434,11 @@ fantasy concept art --ar 21:9\`;
   const handleCardLineWheel = (e) => onWheel(e);
 
   return (
-    <div style={{ 
+    <div className="prompt-beam-container" style={{ 
       margin: 0, 
       padding: 0, 
       background: 'transparent', 
       width: '100%',
-      height: '400px', // Set a default height
-      minHeight: '400px',
       overflow: 'hidden', 
       fontFamily: 'Arial, sans-serif',
       position: 'relative',

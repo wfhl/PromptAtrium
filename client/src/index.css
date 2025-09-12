@@ -108,3 +108,16 @@
     font-family: var(--font-sans);
   }
 }
+
+/* PromptBeam responsive height */
+.prompt-beam-container {
+  height: 400px;
+  min-height: 400px;
+}
+
+@media (max-width: 768px) {
+  .prompt-beam-container {
+    height: 250px;
+    min-height: 250px;
+  }
+}
