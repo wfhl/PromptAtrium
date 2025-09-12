@@ -1188,8 +1188,8 @@ export function PromptCard({
             ) : (
               /* Community page action buttons - Show different actions based on ownership */
               <div className="flex items-center space-x-1" data-testid={`actions-community-${prompt.id}`}>
-                {/* Show Edit and Collections for prompt owners on Community page */}
-                {isCommunityPage && typedUser?.id && String(typedUser.id) === String(prompt.userId) && (
+                {/* Show Edit and Collections for prompt owners and admins on Community page */}
+                {isCommunityPage && typedUser?.id && (String(typedUser.id) === String(prompt.userId) || isSuperAdmin) && (
                   <>
                     {/* Edit Button */}
                     <Button

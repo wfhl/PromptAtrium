@@ -194,11 +194,16 @@ export default function Community() {
         return await apiRequest("POST", `/api/users/${userId}/follow`);
       }
     },
-    onSuccess: (_, { userId, isFollowing }) => {
+    onSuccess: async (_, { userId, isFollowing }) => {
       setFollowingMap(prev => ({ ...prev, [userId]: !isFollowing }));
-      queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/followers`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/users/${currentUserId}/following`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/following/prompts"] });
+      // Refetch all relevant queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/followers`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${currentUserId}/following`] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/user/following/prompts"] })
+      ]);
+      // Force refetch of following data immediately
+      queryClient.refetchQueries({ queryKey: [`/api/users/${currentUserId}/following`] });
       
       toast({
         title: isFollowing ? "Unfollowed" : "Following",
