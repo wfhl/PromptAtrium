@@ -12,13 +12,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { 
   Lightbulb, Search, Filter, Star, TrendingUp, Clock, Eye, 
-  Users, Activity, UserPlus, UserMinus, Hash, Heart, GitBranch, 
+  Users, UserPlus, UserMinus, Hash, Heart, GitBranch, 
   Share2, BookOpen, Folder
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Prompt, User, Activity as ActivityType, Collection } from "@shared/schema";
+import type { Prompt, User, Collection } from "@shared/schema";
 
 export default function Community() {
   const { isLoading, isAuthenticated, user } = useAuth();
@@ -166,11 +166,7 @@ export default function Community() {
     enabled: isAuthenticated && currentUserId && activeTab === "followed",
   });
 
-  // Fetch recent activities
-  const { data: recentActivities = [] } = useQuery<(ActivityType & { user: User })[]>({
-    queryKey: ["/api/activities/recent"],
-    enabled: isAuthenticated && activeTab === "activity",
-  });
+  // Activities query removed - Activity tab no longer exists
 
   // Check follow status for all users
   useEffect(() => {
@@ -201,7 +197,6 @@ export default function Community() {
       queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}/followers`] });
       queryClient.invalidateQueries({ queryKey: [`/api/users/${currentUserId}/following`] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/following/prompts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/activities/recent"] });
       
       toast({
         title: isFollowing ? "Unfollowed" : "Following",
@@ -230,139 +225,7 @@ export default function Community() {
     }
   };
 
-  const getActivityIcon = (actionType: string) => {
-    switch (actionType) {
-      case "created_prompt":
-        return <BookOpen className="h-4 w-4" />;
-      case "shared_prompt":
-        return <Share2 className="h-4 w-4" />;
-      case "liked_prompt":
-        return <Heart className="h-4 w-4" />;
-      case "favorited_prompt":
-        return <Star className="h-4 w-4" />;
-      case "followed_user":
-        return <UserPlus className="h-4 w-4" />;
-      case "joined_community":
-        return <Users className="h-4 w-4" />;
-      case "created_collection":
-        return <Folder className="h-4 w-4" />;
-      default:
-        return <Activity className="h-4 w-4" />;
-    }
-  };
 
-  const getActivityDescription = (activity: any) => {
-    const userName = activity.user?.username || "Someone";
-    const targetEntity = activity.targetEntity;
-    
-    const getUserLink = (username: string) => (
-      <Link href={`/user/${username}`}>
-        <span className="font-semibold hover:underline cursor-pointer">@{username}</span>
-      </Link>
-    );
-    
-    const getEntityLink = () => {
-      if (!targetEntity) return null;
-      
-      switch (activity.targetType) {
-        case "prompt":
-          return targetEntity.isPublic ? (
-            <span className="font-semibold">{targetEntity.name}</span>
-          ) : (
-            <span className="font-semibold">{targetEntity.name}</span>
-          );
-        case "user":
-          return (
-            <Link href={`/user/${targetEntity.username}`}>
-              <span className="font-semibold hover:underline cursor-pointer">
-                @{targetEntity.username || `${targetEntity.firstName} ${targetEntity.lastName}`.trim()}
-              </span>
-            </Link>
-          );
-        case "collection":
-          return (
-            <Link href={`/collections?view=${targetEntity.id}`}>
-              <span className="font-semibold hover:underline cursor-pointer">{targetEntity.name}</span>
-            </Link>
-          );
-        case "community":
-          return <span className="font-semibold">{targetEntity.name}</span>;
-        default:
-          return null;
-      }
-    };
-    
-    switch (activity.actionType) {
-      case "created_prompt":
-        return (
-          <span>
-            {getUserLink(userName)} created a new prompt {targetEntity && (
-              <>"{getEntityLink()}"</>
-            )}
-          </span>
-        );
-      case "shared_prompt":
-        return (
-          <span>
-            {getUserLink(userName)} shared {targetEntity ? (
-              <>the prompt "{getEntityLink()}"</>
-            ) : (
-              "a prompt"
-            )}
-          </span>
-        );
-      case "liked_prompt":
-        return (
-          <span>
-            {getUserLink(userName)} liked {targetEntity ? (
-              <>the prompt "{getEntityLink()}"</>
-            ) : (
-              "a prompt"
-            )}
-          </span>
-        );
-      case "favorited_prompt":
-        return (
-          <span>
-            {getUserLink(userName)} favorited {targetEntity ? (
-              <>the prompt "{getEntityLink()}"</>
-            ) : (
-              "a prompt"
-            )}
-          </span>
-        );
-      case "followed_user":
-        return (
-          <span>
-            {getUserLink(userName)} started following {targetEntity ? (
-              getEntityLink()
-            ) : (
-              "someone"
-            )}
-          </span>
-        );
-      case "joined_community":
-        return (
-          <span>
-            {getUserLink(userName)} joined {targetEntity ? (
-              <>the community "{getEntityLink()}"</>
-            ) : (
-              "the community"
-            )}
-          </span>
-        );
-      case "created_collection":
-        return (
-          <span>
-            {getUserLink(userName)} created a new collection {targetEntity && (
-              <>"{getEntityLink()}"</>
-            )}
-          </span>
-        );
-      default:
-        return <span>{getUserLink(userName)} performed an action</span>;
-    }
-  };
 
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
@@ -400,7 +263,7 @@ export default function Community() {
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
             <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">Prompts</span>
@@ -420,11 +283,6 @@ export default function Community() {
             <UserPlus className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">Followed</span>
             <span className="sm:hidden">Follow</span>
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="text-xs md:text-sm" data-testid="tab-activity">
-            <Activity className="h-4 w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Activity</span>
-            <span className="sm:hidden">Active</span>
           </TabsTrigger>
         </TabsList>
 
@@ -897,46 +755,6 @@ export default function Community() {
           </div>
         </TabsContent>
 
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Community Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentActivities.length > 0 ? (
-                <div className="space-y-4">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start gap-3 pb-4 border-b last:border-0">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={activity.user?.profileImageUrl || undefined} />
-                        <AvatarFallback>
-                          {activity.user?.firstName?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          {getActivityIcon(activity.actionType)}
-                          <div className="text-sm">
-                            {getActivityDescription(activity)}
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {activity.createdAt ? formatDate(activity.createdAt) : 'recently'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-10">
-                  <Activity className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-500">No recent activity yet</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );

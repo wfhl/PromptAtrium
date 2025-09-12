@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus } from "lucide-react";
+import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus, ImagePlus } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -1186,8 +1186,73 @@ export function PromptCard({
                 </Button>
               </div>
             ) : (
-              /* Community page action buttons - enabled for all users */
+              /* Community page action buttons - Show different actions based on ownership */
               <div className="flex items-center space-x-1" data-testid={`actions-community-${prompt.id}`}>
+                {/* Show Edit and Collections for prompt owners on Community page */}
+                {isCommunityPage && typedUser?.id === prompt.userId && (
+                  <>
+                    {/* Edit Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onEdit?.(prompt)}
+                      className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                      data-testid={`button-edit-${prompt.id}`}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+
+                    {/* Collections */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                          data-testid={`button-collections-${prompt.id}`}
+                        >
+                          <Folder className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
+                          Add to Collection
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
+                          Create New Collection
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Archive */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleArchiveClick}
+                      disabled={archiveMutation.isPending}
+                      className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                      data-testid={`button-archive-${prompt.id}`}
+                    >
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+                
+                {/* Show Add Example Images for non-owners on Community page */}
+                {isCommunityPage && typedUser?.id !== prompt.userId && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toast({ title: "Add Example Images", description: "Example image upload coming soon!" })}
+                    className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                    data-testid={`button-add-images-${prompt.id}`}
+                    title="Add example images to this prompt"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
+                )}
+                
+                {/* Common actions for all users */}
                 {/* Share */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
