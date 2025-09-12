@@ -1,27 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lightbulb, Users, Search, Shield, Moon, Sun } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Lightbulb, Users, Search, Shield } from "lucide-react";
+import { useEffect } from "react";
 import PromptCardBeam from "@/components/PromptCardBeam";
 
 export default function Landing() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-
-  // Initialize dark theme on mount
+  // Force dark theme on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'dark';
-    setTheme(savedTheme);
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(savedTheme);
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
   }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,16 +26,8 @@ export default function Landing() {
           </div>
           
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              data-testid="button-theme-toggle"
-            >
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-            </Button>
             <Button asChild data-testid="button-login">
-              <a href="/api/login">Sign In</a>
+              <a href="/api/login">Sign In/Up</a>
             </Button>
           </div>
         </div>
@@ -59,7 +39,7 @@ export default function Landing() {
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4" data-testid="text-hero-title">
             AI Prompt Library & Community
           </h1>
-          <p className="text-sm text-muted-foreground mb-4 max-w-xl mx-auto" data-testid="text-hero-description">
+          <p className="text-sm text-muted-foreground mb-2 max-w-xl mx-auto" data-testid="text-hero-description">
             PromptAtrium is an open, central space for managing, sharing, and refining AI prompts. 
             Join creators, teams, and communities to cultivate ideas together.
           </p>
@@ -67,7 +47,7 @@ export default function Landing() {
       </section>
 
       {/* Prompt Card Beam Animation */}
-      <section className="py-2">
+      <section className="py-0">
         <PromptCardBeam />
       </section>
 
@@ -78,58 +58,58 @@ export default function Landing() {
             Everything you need for AI prompt management
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card data-testid="card-feature-organize">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Lightbulb className="h-6 w-6 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+            <Card className="p-3 md:p-6" data-testid="card-feature-organize">
+              <CardHeader className="p-3 md:p-6">
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-2 md:mb-4">
+                  <Lightbulb className="h-4 w-4 md:h-6 md:w-6 text-primary" />
                 </div>
-                <CardTitle>Organize & Manage</CardTitle>
+                <CardTitle className="text-base md:text-xl">Organize & Manage</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
+              <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                <p className="text-xs md:text-base text-muted-foreground">
                   Store, categorize, and version your prompts with advanced metadata and organization tools.
                 </p>
               </CardContent>
             </Card>
 
-            <Card data-testid="card-feature-community">
-              <CardHeader>
-                <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="h-6 w-6 text-green-500" />
+            <Card className="p-3 md:p-6" data-testid="card-feature-community">
+              <CardHeader className="p-3 md:p-6">
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-2 md:mb-4">
+                  <Users className="h-4 w-4 md:h-6 md:w-6 text-green-500" />
                 </div>
-                <CardTitle>Community Driven</CardTitle>
+                <CardTitle className="text-base md:text-xl">Community Driven</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
+              <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                <p className="text-xs md:text-base text-muted-foreground">
                   Share, discover, and collaborate on prompts with a vibrant community of creators.
                 </p>
               </CardContent>
             </Card>
 
-            <Card data-testid="card-feature-search">
-              <CardHeader>
-                <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mb-4">
-                  <Search className="h-6 w-6 text-blue-500" />
+            <Card className="p-3 md:p-6" data-testid="card-feature-search">
+              <CardHeader className="p-3 md:p-6">
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mb-2 md:mb-4">
+                  <Search className="h-4 w-4 md:h-6 md:w-6 text-blue-500" />
                 </div>
-                <CardTitle>Advanced Search</CardTitle>
+                <CardTitle className="text-base md:text-xl">Advanced Search</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
+              <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                <p className="text-xs md:text-base text-muted-foreground">
                   Find the perfect prompt with full-text search, filtering by tags, categories, and more.
                 </p>
               </CardContent>
             </Card>
 
-            <Card data-testid="card-feature-secure">
-              <CardHeader>
-                <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="h-6 w-6 text-purple-500" />
+            <Card className="p-3 md:p-6" data-testid="card-feature-secure">
+              <CardHeader className="p-3 md:p-6">
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mb-2 md:mb-4">
+                  <Shield className="h-4 w-4 md:h-6 md:w-6 text-purple-500" />
                 </div>
-                <CardTitle>Secure & Private</CardTitle>
+                <CardTitle className="text-base md:text-xl">Secure & Private</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
+              <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                <p className="text-xs md:text-base text-muted-foreground">
                   Keep your prompts private or share them publicly with role-based access control.
                 </p>
               </CardContent>
