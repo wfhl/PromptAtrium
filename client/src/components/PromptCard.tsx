@@ -667,7 +667,7 @@ export function PromptCard({
 
   // Inline editing functions
   const startEdit = (field: 'name' | 'description' | 'notes') => {
-    if (!allowInlineEdit || !typedUser || typedUser.id !== prompt.userId) return;
+    if (!allowInlineEdit || !typedUser || String(typedUser.id) !== String(prompt.userId)) return;
     
     const currentValue = field === 'name' ? prompt.name : 
                         field === 'description' ? prompt.description : 
@@ -711,7 +711,7 @@ export function PromptCard({
     }
   };
 
-  const canEdit = allowInlineEdit && typedUser && typedUser.id === prompt.userId;
+  const canEdit = allowInlineEdit && typedUser && String(typedUser.id) === String(prompt.userId);
 
   const handleCopyPrompt = async () => {
     try {
@@ -1189,7 +1189,7 @@ export function PromptCard({
               /* Community page action buttons - Show different actions based on ownership */
               <div className="flex items-center space-x-1" data-testid={`actions-community-${prompt.id}`}>
                 {/* Show Edit and Collections for prompt owners on Community page */}
-                {isCommunityPage && typedUser?.id === prompt.userId && (
+                {isCommunityPage && typedUser?.id && String(typedUser.id) === String(prompt.userId) && (
                   <>
                     {/* Edit Button */}
                     <Button
@@ -1239,7 +1239,7 @@ export function PromptCard({
                 )}
                 
                 {/* Show Add Example Images for non-owners on Community page */}
-                {isCommunityPage && typedUser?.id !== prompt.userId && (
+                {isCommunityPage && typedUser?.id && String(typedUser.id) !== String(prompt.userId) && (
                   <Button
                     size="sm"
                     variant="ghost"
