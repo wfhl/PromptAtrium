@@ -150,7 +150,7 @@ export default function Community() {
       if (!response.ok) throw new Error("Failed to fetch users");
       return response.json();
     },
-    enabled: isAuthenticated && activeTab === "users",
+    enabled: isAuthenticated && activeTab === "followed",
   });
 
   // Fetch followed users' prompts
@@ -265,7 +265,7 @@ export default function Community() {
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
             <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">Prompts</span>
@@ -275,15 +275,10 @@ export default function Community() {
             <Folder className="h-4 w-4 mr-1 md:mr-2" />
             <span>Collections</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="text-xs md:text-sm" data-testid="tab-users">
-            <Users className="h-4 w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Users</span>
-            <span className="sm:hidden">Users</span>
-          </TabsTrigger>
           <TabsTrigger value="followed" className="text-xs md:text-sm" data-testid="tab-followed">
-            <UserPlus className="h-4 w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Followed</span>
-            <span className="sm:hidden">Follow</span>
+            <Heart className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Following</span>
+            <span className="sm:hidden">Following</span>
           </TabsTrigger>
         </TabsList>
 
@@ -616,57 +611,6 @@ export default function Community() {
           </div>
         </TabsContent>
 
-        {/* Users Tab */}
-        <TabsContent value="users" className="space-y-4">
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {allUsers
-              .filter(u => u.id !== currentUserId)
-              .map((u) => (
-              <Card key={u.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={u.profileImageUrl || undefined} />
-                      <AvatarFallback className="text-xs">
-                        {u.firstName?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <Link href={`/user/${u.username}`}>
-                        <a className="font-medium text-sm hover:underline truncate block" data-testid={`link-user-${u.id}`}>
-                          {u.firstName} {u.lastName}
-                        </a>
-                      </Link>
-                      <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={followingMap[u.id] ? "outline" : "default"}
-                    onClick={() => followMutation.mutate({ userId: u.id, isFollowing: followingMap[u.id] })}
-                    disabled={followMutation.isPending}
-                    className="w-full h-7 text-xs"
-                    data-testid={`button-follow-${u.id}`}
-                  >
-                    {followingMap[u.id] ? (
-                      <>
-                        <UserMinus className="h-3 w-3 mr-1" />
-                        Unfollow
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="h-3 w-3 mr-1" />
-                        Follow
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
         {/* Followed Tab */}
         <TabsContent value="followed" className="space-y-6">
           {/* Search Bar for Users - searches all users */}
@@ -688,7 +632,7 @@ export default function Community() {
           {userSearchQuery && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-4">Search Results</h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {allUsers
                   .filter(u => u.id !== currentUserId)
                   .filter(u => {
@@ -699,14 +643,14 @@ export default function Community() {
                   })
                   .map((u) => (
                   <Link key={u.id} href={`/user/${u.username}`}>
-                    <a className="flex flex-col items-center p-2 rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border/50" data-testid={`link-search-result-${u.id}`}>
-                      <Avatar className="h-8 w-8 mb-1">
+                    <a className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border/50" data-testid={`link-search-result-${u.id}`}>
+                      <Avatar className="h-6 w-6 flex-shrink-0">
                         <AvatarImage src={u.profileImageUrl || undefined} />
                         <AvatarFallback className="text-xs">
                           {u.firstName?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs text-center truncate max-w-full">
+                      <span className="text-xs truncate">
                         @{u.username}
                       </span>
                     </a>
@@ -733,17 +677,17 @@ export default function Community() {
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-4">
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2 mb-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-8">
                   {followingData.following.map((u) => (
                     <Link key={u.id} href={`/user/${u.username}`}>
-                      <a className="flex flex-col items-center p-2 rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border/50" data-testid={`link-following-${u.id}`}>
-                        <Avatar className="h-8 w-8 mb-1">
+                      <a className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors border border-transparent hover:border-border/50" data-testid={`link-following-${u.id}`}>
+                        <Avatar className="h-6 w-6 flex-shrink-0">
                           <AvatarImage src={u.profileImageUrl || undefined} />
                           <AvatarFallback className="text-xs">
                             {u.firstName?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-center truncate max-w-full">
+                        <span className="text-xs truncate">
                           @{u.username}
                         </span>
                       </a>
