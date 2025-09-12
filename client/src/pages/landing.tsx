@@ -54,9 +54,9 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-6">
+      <section className="py-8 px-6">
         <div className="container mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6" data-testid="text-hero-title">
+          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4" data-testid="text-hero-title">
             AI Prompt Library & Community
           </h1>
           <p className="text-sm text-muted-foreground mb-4 max-w-xl mx-auto" data-testid="text-hero-description">
@@ -67,7 +67,7 @@ export default function Landing() {
       </section>
 
       {/* Prompt Card Beam Animation */}
-      <section className="py-8">
+      <section className="py-2">
         <PromptCardBeam />
       </section>
 
