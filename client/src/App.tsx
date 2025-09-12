@@ -23,6 +23,7 @@ import KeywordDictionaryPage from "@/pages/tools/keyword-dictionary";
 import PromptGeneratorPage from "@/pages/tools/prompt-generator";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
+import { ToolsProvider } from "@/contexts/ToolsContext";
 import type { User } from "@shared/schema";
 
 function Router() {
@@ -115,8 +116,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <ToolsProvider>
+          <Toaster />
+          <Router />
+        </ToolsProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

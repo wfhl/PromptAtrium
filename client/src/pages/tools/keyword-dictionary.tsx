@@ -751,17 +751,36 @@ export default function KeywordDictionaryPage() {
                   Browse and search comprehensive keyword library for prompt generation
                 </CardDescription>
               </div>
-              <Button 
-                onClick={() => {
-                  setEditingKeyword(null);
-                  customKeywordForm.reset();
-                  setCustomKeywordModalOpen(true);
-                }}
-                data-testid="button-create-keyword"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Keyword
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={isSelectionMode ? "secondary" : "outline"}
+                  onClick={toggleSelectionMode}
+                  data-testid="button-selection-mode"
+                >
+                  {isSelectionMode ? (
+                    <>
+                      <XSquare className="h-4 w-4 mr-2" />
+                      Cancel Selection
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      Select Keywords
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setEditingKeyword(null);
+                    customKeywordForm.reset();
+                    setCustomKeywordModalOpen(true);
+                  }}
+                  data-testid="button-create-keyword"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Keyword
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -1031,6 +1050,37 @@ export default function KeywordDictionaryPage() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Floating Action Bar for Selected Keywords */}
+      {isSelectionMode && selectedKeywords.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <Card className="shadow-lg border-primary">
+            <CardContent className="flex items-center gap-4 p-4">
+              <Badge variant="secondary" className="text-lg px-3 py-1">
+                {selectedKeywords.length} selected
+              </Badge>
+              <Button
+                onClick={clearKeywords}
+                variant="outline"
+                size="sm"
+                data-testid="button-clear-selection"
+              >
+                <XSquare className="h-4 w-4 mr-2" />
+                Clear
+              </Button>
+              <Button
+                onClick={sendToGenerator}
+                className="bg-primary"
+                size="sm"
+                data-testid="button-send-to-generator"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Send to Generator
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       
       {/* Custom Keyword Modal */}
       <Dialog open={customKeywordModalOpen} onOpenChange={setCustomKeywordModalOpen}>

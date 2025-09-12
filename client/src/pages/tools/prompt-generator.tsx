@@ -21,12 +21,13 @@ import {
   HelpCircle, Wand2, Settings, History, BookOpen, Code, Image,
   Palette, Camera, User, MapPin, Lightbulb, Package, Layers,
   Zap, Download, Upload, Share2, X, Check, AlertCircle, Info,
-  ArrowRight, MoreVertical, Eye, EyeOff, Lock, Unlock, Star
+  ArrowRight, MoreVertical, Eye, EyeOff, Lock, Unlock, Star, Tag
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { PromptModal } from "@/components/PromptModal";
 import { apiRequest } from "@/lib/queryClient";
+import { useToolsContext } from "@/contexts/ToolsContext";
 import type { Prompt } from "@shared/schema";
 
 // Template categories with icons
@@ -182,6 +183,7 @@ export default function PromptGeneratorPage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { selectedKeywords, clearKeywords } = useToolsContext();
 
   // Main state
   const [mode, setMode] = useState<"guided" | "advanced">("guided");
@@ -200,6 +202,7 @@ export default function PromptGeneratorPage() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["template", "style", "parameters"]));
   const [importedKeywords, setImportedKeywords] = useState<string[]>([]);
   const [showPreview, setShowPreview] = useState(true);
+  const [receivedKeywords, setReceivedKeywords] = useState<typeof selectedKeywords>([]);
   
   // Parameters state
   const [parameters, setParameters] = useState({
@@ -237,6 +240,69 @@ export default function PromptGeneratorPage() {
 
   // Load templates for selected category
   const templates = sampleTemplates[selectedCategory as keyof typeof sampleTemplates] || [];
+
+  // Check for incoming keywords on mount
+  useEffect(() => {
+    if (selectedKeywords.length > 0) {
+      setReceivedKeywords(selectedKeywords);
+      setExpandedSections(prev => new Set([...prev, "keywords"]));
+      
+      // Show notification
+      toast({
+        title: "Keywords received",
+        description: `${selectedKeywords.length} keyword${selectedKeywords.length > 1 ? 's' : ''} received from Keyword Dictionary`,
+      });
+      
+      // Clear the context after a small delay to ensure UI updates
+      setTimeout(() => {
+        clearKeywords();
+      }, 100);
+    }
+  }, [selectedKeywords, clearKeywords, toast]);
+
+  // Add keyword to prompt
+  const addKeywordToPrompt = (keyword: typeof selectedKeywords[0]) => {
+    const keywordText = keyword.term;
+    if (mainPrompt) {
+      setMainPrompt(prev => `${prev}, ${keywordText}`);
+    } else {
+      setMainPrompt(keywordText);
+    }
+    
+    // Remove from received keywords
+    setReceivedKeywords(prev => prev.filter(k => k.id !== keyword.id));
+    
+    toast({
+      title: "Keyword added",
+      description: `"${keywordText}" added to prompt`,
+    });
+  };
+
+  // Add all keywords to prompt
+  const addAllKeywordsToPrompt = () => {
+    const keywordTexts = receivedKeywords.map(k => k.term).join(", ");
+    if (mainPrompt) {
+      setMainPrompt(prev => `${prev}, ${keywordTexts}`);
+    } else {
+      setMainPrompt(keywordTexts);
+    }
+    
+    toast({
+      title: "Keywords added",
+      description: `${receivedKeywords.length} keywords added to prompt`,
+    });
+    
+    setReceivedKeywords([]);
+  };
+
+  // Clear received keywords
+  const clearReceivedKeywords = () => {
+    setReceivedKeywords([]);
+    toast({
+      title: "Keywords cleared",
+      description: "Received keywords have been cleared",
+    });
+  };
 
   // Toggle section expansion
   const toggleSection = (sectionId: string) => {
