@@ -18,7 +18,8 @@ import {
   Grid, List, Star, Copy, Edit, Trash2, MoreHorizontal,
   Sparkles, Tag, Hash, TrendingUp, Clock, Users, Shield,
   Palette, MapPin, Camera, Shirt, Globe, Heart, Lock,
-  ChevronLeft, ChevronRight as ChevronRightIcon
+  ChevronLeft, ChevronRight as ChevronRightIcon,
+  CheckSquare, XSquare, Send
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +27,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
+import { useToolsContext } from "@/contexts/ToolsContext";
+import { useLocation } from "wouter";
 
 // Category icons mapping
 const categoryIcons: Record<string, React.ElementType> = {
@@ -169,6 +172,15 @@ export default function KeywordDictionaryPage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+  const { 
+    selectedKeywords, 
+    addKeyword, 
+    removeKeyword, 
+    clearKeywords,
+    isSelectionMode,
+    setSelectionMode 
+  } = useToolsContext();
   
   // State management
   const [activeTab, setActiveTab] = useState("system");
@@ -184,6 +196,25 @@ export default function KeywordDictionaryPage() {
   const [customSynonymModalOpen, setCustomSynonymModalOpen] = useState(false);
   const [selectedKeywordForSynonym, setSelectedKeywordForSynonym] = useState<any>(null);
   const [editingKeyword, setEditingKeyword] = useState<any>(null);
+
+  // Toggle selection mode
+  const toggleSelectionMode = () => {
+    setSelectionMode(!isSelectionMode);
+    if (isSelectionMode) {
+      clearKeywords();
+    }
+  };
+
+  // Send selected keywords to generator
+  const sendToGenerator = () => {
+    if (selectedKeywords.length > 0) {
+      toast({
+        title: "Keywords sent to generator",
+        description: `${selectedKeywords.length} keyword(s) sent to the Prompt Generator`,
+      });
+      setLocation("/tools/prompt-generator");
+    }
+  };
 
   // Forms
   const customKeywordForm = useForm<CustomKeywordFormData>({
