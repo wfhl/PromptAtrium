@@ -59,13 +59,10 @@ export default function Landing() {
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6" data-testid="text-hero-title">
             AI Prompt Library & Community
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto" data-testid="text-hero-description">
+          <p className="text-sm text-muted-foreground mb-4 max-w-xl mx-auto" data-testid="text-hero-description">
             PromptAtrium is an open, central space for managing, sharing, and refining AI prompts. 
             Join creators, teams, and communities to cultivate ideas together.
           </p>
-          <Button size="lg" asChild data-testid="button-get-started">
-            <a href="/api/login">Get Started</a>
-          </Button>
         </div>
       </section>
 
