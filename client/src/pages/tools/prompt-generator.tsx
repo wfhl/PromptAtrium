@@ -28,33 +28,31 @@ import { useAuth } from "@/hooks/useAuth";
 import { PromptModal } from "@/components/PromptModal";
 import { apiRequest } from "@/lib/queryClient";
 import { useToolsContext } from "@/contexts/ToolsContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Prompt } from "@shared/schema";
 
-// Template categories with icons
-const templateCategories = [
-  { id: "portrait", name: "Portrait", icon: User, count: 12 },
-  { id: "landscape", name: "Landscape", icon: MapPin, count: 8 },
-  { id: "abstract", name: "Abstract", icon: Sparkles, count: 15 },
-  { id: "character", name: "Character", icon: User, count: 20 },
-  { id: "scene", name: "Scene", icon: Camera, count: 18 },
-  { id: "product", name: "Product", icon: Package, count: 10 },
-  { id: "concept", name: "Concept Art", icon: Lightbulb, count: 14 },
-  { id: "architecture", name: "Architecture", icon: Layers, count: 9 },
-];
+// Icon mapping for categories
+const categoryIcons: Record<string, any> = {
+  "portrait": User,
+  "landscape": MapPin,
+  "abstract": Sparkles,
+  "character": User,
+  "scene": Camera,
+  "product": Package,
+  "concept": Lightbulb,
+  "architecture": Layers,
+  "artform": Palette,
+  "photo_type": Camera,
+  "body_types": User,
+  "default": Sparkles,
+};
 
-// Style presets
-const stylePresets = [
-  { id: "photorealistic", name: "Photorealistic", description: "Ultra-realistic photography style" },
-  { id: "anime", name: "Anime", description: "Japanese animation style" },
-  { id: "oil-painting", name: "Oil Painting", description: "Traditional oil painting technique" },
-  { id: "digital-art", name: "Digital Art", description: "Modern digital illustration" },
-  { id: "watercolor", name: "Watercolor", description: "Soft watercolor painting style" },
-  { id: "pencil-sketch", name: "Pencil Sketch", description: "Detailed pencil drawing" },
-  { id: "3d-render", name: "3D Render", description: "High-quality 3D rendering" },
-  { id: "pixel-art", name: "Pixel Art", description: "Retro pixel art style" },
-  { id: "comic-book", name: "Comic Book", description: "Bold comic book illustration" },
-  { id: "fantasy", name: "Fantasy Art", description: "Magical fantasy illustration" },
-];
+// Get icon for category
+const getCategoryIcon = (category: string) => {
+  const key = category.toLowerCase().replace(/\s+/g, "_");
+  return categoryIcons[key] || categoryIcons.default;
+};
 
 // Model presets with default parameters
 const modelPresets = {
@@ -100,63 +98,27 @@ const modelPresets = {
   },
 };
 
-// Sample templates with placeholders
-const sampleTemplates = {
-  portrait: [
-    {
-      id: "p1",
-      name: "Professional Portrait",
-      template: "Professional portrait of {{subject}}, {{expression}} expression, {{lighting}} lighting, {{background}} background, {{style}} style, high quality, detailed",
-      placeholders: {
-        subject: "a person",
-        expression: "confident",
-        lighting: "studio",
-        background: "neutral gray",
-        style: "photorealistic"
-      }
-    },
-    {
-      id: "p2",
-      name: "Fantasy Character",
-      template: "{{character_type}} with {{features}}, wearing {{clothing}}, {{pose}}, {{environment}}, fantasy art style, detailed illustration",
-      placeholders: {
-        character_type: "elven warrior",
-        features: "long silver hair and blue eyes",
-        clothing: "ornate armor",
-        pose: "heroic stance",
-        environment: "mystical forest"
-      }
-    },
-  ],
-  landscape: [
-    {
-      id: "l1",
-      name: "Epic Landscape",
-      template: "{{time_of_day}} landscape of {{location}}, {{weather}} weather, {{mood}} atmosphere, {{style}}, cinematic composition",
-      placeholders: {
-        time_of_day: "golden hour",
-        location: "mountain valley",
-        weather: "dramatic cloudy",
-        mood: "serene",
-        style: "photorealistic"
-      }
-    },
-  ],
-  abstract: [
-    {
-      id: "a1",
-      name: "Abstract Composition",
-      template: "Abstract {{concept}} with {{colors}} colors, {{texture}} texture, {{movement}} movement, {{style}} style, high contrast",
-      placeholders: {
-        concept: "energy flow",
-        colors: "vibrant blue and orange",
-        texture: "fluid",
-        movement: "dynamic swirling",
-        style: "modern digital art"
-      }
-    },
-  ],
-};
+// Interface for database types
+interface PromptComponent {
+  id: string;
+  category: string;
+  subcategory?: string;
+  value: string;
+  description?: string;
+  usageCount?: number;
+}
+
+interface Aesthetic {
+  id: string;
+  name: string;
+  description?: string;
+  era?: string;
+  category?: string;
+  tags?: string;
+  visualElements?: string;
+  colorPalette?: string;
+  moodKeywords?: string;
+}
 
 // Quality modifiers
 const qualityModifiers = [
@@ -186,10 +148,14 @@ export default function PromptGeneratorPage() {
   const { selectedKeywords, clearKeywords } = useToolsContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [aestheticSearchOpen, setAestheticSearchOpen] = useState(false);
+  const [aestheticSearchQuery, setAestheticSearchQuery] = useState("");
 
   // Main state
   const [mode, setMode] = useState<"guided" | "advanced">("guided");
-  const [selectedCategory, setSelectedCategory] = useState("portrait");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [selectedStyle, setSelectedStyle] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("stable-diffusion");
@@ -201,10 +167,12 @@ export default function PromptGeneratorPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [prefilledPromptData, setPrefilledPromptData] = useState<Partial<Prompt> | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["template", "style", "parameters"]));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["components", "aesthetics", "parameters"]));
   const [importedKeywords, setImportedKeywords] = useState<string[]>([]);
   const [showPreview, setShowPreview] = useState(true);
   const [receivedKeywords, setReceivedKeywords] = useState<typeof selectedKeywords>([]);
+  const [selectedComponents, setSelectedComponents] = useState<PromptComponent[]>([]);
+  const [selectedAesthetics, setSelectedAesthetics] = useState<Aesthetic[]>([]);
   
   // Parameters state
   const [parameters, setParameters] = useState({
@@ -240,8 +208,45 @@ export default function PromptGeneratorPage() {
     highResSteps: 20,
   });
 
-  // Load templates for selected category
-  const templates = sampleTemplates[selectedCategory as keyof typeof sampleTemplates] || [];
+  // API Queries - Fetch prompt components categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["/api/prompt-components/categories"],
+  });
+
+  // Fetch prompt components for selected category
+  const { data: components = [], isLoading: componentsLoading } = useQuery({
+    queryKey: ["/api/prompt-components", selectedCategory],
+    enabled: !!selectedCategory,
+  });
+
+  // Fetch all aesthetics
+  const { data: aesthetics = [], isLoading: aestheticsLoading } = useQuery({
+    queryKey: ["/api/aesthetics"],
+  });
+
+  // Fetch aesthetic categories
+  const { data: aestheticCategories = [], isLoading: aestheticCategoriesLoading } = useQuery({
+    queryKey: ["/api/aesthetics/categories"],
+  });
+
+  // Search prompt components
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ["/api/prompt-components/search", searchQuery],
+    enabled: searchQuery.length > 0,
+  });
+
+  // Search aesthetics
+  const { data: aestheticSearchResults = [] } = useQuery({
+    queryKey: ["/api/aesthetics/search", aestheticSearchQuery],
+    enabled: aestheticSearchQuery.length > 0,
+  });
+
+  // Set initial category when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(categories[0]);
+    }
+  }, [categories, selectedCategory]);
 
   // Check for incoming keywords on mount
   useEffect(() => {
@@ -319,11 +324,92 @@ export default function PromptGeneratorPage() {
     });
   };
 
-  // Apply template
-  const applyTemplate = (template: any) => {
-    setSelectedTemplate(template);
-    setPlaceholderValues(template.placeholders);
-    updatePromptFromTemplate(template, template.placeholders);
+  // Add component to selection
+  const addComponent = (component: PromptComponent) => {
+    setSelectedComponents(prev => {
+      const exists = prev.find(c => c.id === component.id);
+      if (exists) {
+        toast({
+          title: "Already added",
+          description: `"${component.value}" is already in your selection`,
+        });
+        return prev;
+      }
+      return [...prev, component];
+    });
+    
+    // Add to prompt
+    if (mainPrompt) {
+      setMainPrompt(prev => `${prev}, ${component.value}`);
+    } else {
+      setMainPrompt(component.value);
+    }
+  };
+
+  // Remove component from selection
+  const removeComponent = (componentId: string) => {
+    setSelectedComponents(prev => prev.filter(c => c.id !== componentId));
+    rebuildPromptFromSelections();
+  };
+
+  // Add aesthetic to selection
+  const addAesthetic = (aesthetic: Aesthetic) => {
+    setSelectedAesthetics(prev => {
+      const exists = prev.find(a => a.id === aesthetic.id);
+      if (exists) {
+        toast({
+          title: "Already added",
+          description: `"${aesthetic.name}" aesthetic is already in your selection`,
+        });
+        return prev;
+      }
+      return [...prev, aesthetic];
+    });
+    
+    // Add to prompt
+    const aestheticText = `${aesthetic.name} aesthetic`;
+    if (mainPrompt) {
+      setMainPrompt(prev => `${prev}, ${aestheticText}`);
+    } else {
+      setMainPrompt(aestheticText);
+    }
+    
+    // Add visual elements if available
+    if (aesthetic.visualElements) {
+      setMainPrompt(prev => `${prev}, ${aesthetic.visualElements}`);
+    }
+  };
+
+  // Remove aesthetic from selection
+  const removeAesthetic = (aestheticId: string) => {
+    setSelectedAesthetics(prev => prev.filter(a => a.id !== aestheticId));
+    rebuildPromptFromSelections();
+  };
+
+  // Rebuild prompt from current selections
+  const rebuildPromptFromSelections = () => {
+    const parts = [];
+    
+    // Add selected components
+    if (selectedComponents.length > 0) {
+      parts.push(...selectedComponents.map(c => c.value));
+    }
+    
+    // Add selected aesthetics
+    if (selectedAesthetics.length > 0) {
+      parts.push(...selectedAesthetics.map(a => {
+        let text = `${a.name} aesthetic`;
+        if (a.visualElements) {
+          text += `, ${a.visualElements}`;
+        }
+        return text;
+      }));
+    }
+    
+    // Add quality modifiers
+    parts.push(...qualityModifiers.slice(0, 3));
+    
+    setMainPrompt(parts.join(", "));
   };
 
   // Update prompt from template and placeholders
@@ -344,17 +430,20 @@ export default function PromptGeneratorPage() {
     }
   };
 
-  // Apply style preset
-  const applyStylePreset = (styleId: string) => {
-    setSelectedStyle(styleId);
-    const style = stylePresets.find(s => s.id === styleId);
-    if (style) {
-      // Add style to prompt if not already present
-      const styleText = `, ${style.name.toLowerCase()} style`;
-      if (!mainPrompt.includes(styleText)) {
-        setMainPrompt(prev => prev + styleText);
-      }
+  // Apply style preset (aesthetic)
+  const applyStylePreset = (aestheticId: string) => {
+    const aesthetic = aesthetics.find((a: Aesthetic) => a.id === aestheticId);
+    if (aesthetic) {
+      setSelectedStyle(aestheticId);
+      addAesthetic(aesthetic);
     }
+  };
+
+  // Apply template
+  const applyTemplate = (template: any) => {
+    setSelectedTemplate(template);
+    setPlaceholderValues(template.placeholders);
+    updatePromptFromTemplate(template, template.placeholders);
   };
 
   // Apply model preset
@@ -771,20 +860,20 @@ export default function PromptGeneratorPage() {
                   </Collapsible>
                 )}
 
-                {/* Template Selection - Mobile Optimized */}
+                {/* Prompt Components - Mobile Optimized */}
                 <Collapsible
-                  open={expandedSections.has("template")}
-                  onOpenChange={() => toggleSection("template")}
+                  open={expandedSections.has("components")}
+                  onOpenChange={() => toggleSection("components")}
                 >
                   <Card>
                     <CollapsibleTrigger className="w-full">
                       <CardHeader className="py-2 sm:py-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 sm:gap-2">
-                            <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                            <CardTitle className="text-sm sm:text-base">Templates</CardTitle>
+                            <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                            <CardTitle className="text-sm sm:text-base">Prompt Components</CardTitle>
                           </div>
-                          {expandedSections.has("template") ? (
+                          {expandedSections.has("components") ? (
                             <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                           ) : (
                             <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -794,68 +883,85 @@ export default function PromptGeneratorPage() {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0 pb-2 sm:pb-3">
+                        <div className="mb-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSearchOpen(true)}
+                            className="w-full justify-start gap-2 h-8"
+                            data-testid="button-search-components"
+                          >
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Search Components...
+                          </Button>
+                        </div>
+                        
                         {/* Category Tabs - Mobile Optimized */}
-                        <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-                          <ScrollArea className="w-full" type="scroll">
-                            <TabsList className="inline-flex w-max h-7 sm:h-9">
-                              {templateCategories.map((cat) => {
-                                const Icon = cat.icon;
-                                return (
-                                  <TabsTrigger 
-                                    key={cat.id} 
-                                    value={cat.id}
-                                    className="gap-0.5 sm:gap-1 text-xs sm:text-sm px-1.5 sm:px-2.5"
-                                    data-testid={`tab-category-${cat.id}`}
-                                  >
-                                    <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                    <span className="sm:inline hidden">{cat.name}</span>
-                                    <span className="sm:hidden">{cat.name.slice(0, 3)}</span>
-                                    <Badge variant="secondary" className="ml-0.5 h-3.5 px-0.5 text-xs">
-                                      {cat.count}
-                                    </Badge>
-                                  </TabsTrigger>
-                                );
-                              })}
-                            </TabsList>
-                          </ScrollArea>
+                        {categoriesLoading ? (
+                          <div className="space-y-2">
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-20 w-full" />
+                          </div>
+                        ) : (
+                          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+                            <ScrollArea className="w-full" type="scroll">
+                              <TabsList className="inline-flex w-max h-7 sm:h-9">
+                                {categories.map((category: string) => {
+                                  const Icon = getCategoryIcon(category);
+                                  return (
+                                    <TabsTrigger 
+                                      key={category} 
+                                      value={category}
+                                      className="gap-0.5 sm:gap-1 text-xs sm:text-sm px-1.5 sm:px-2.5"
+                                      data-testid={`tab-category-${category}`}
+                                    >
+                                      <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                      <span className="sm:inline hidden">{category}</span>
+                                      <span className="sm:hidden">{category.slice(0, 5)}</span>
+                                    </TabsTrigger>
+                                  );
+                                })}
+                              </TabsList>
+                            </ScrollArea>
 
-                          {/* Template Cards - Mobile Optimized */}
-                          <TabsContent value={selectedCategory} className="mt-2 sm:mt-3">
-                            <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
-                              {templates.map((template) => (
-                                <Card 
-                                  key={template.id}
-                                  className={`cursor-pointer transition-all hover:shadow-md ${
-                                    selectedTemplate?.id === template.id ? 'ring-1 sm:ring-2 ring-primary' : ''
-                                  }`}
-                                  onClick={() => applyTemplate(template)}
-                                  data-testid={`template-card-${template.id}`}
-                                >
-                                  <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
-                                    <CardTitle className="text-xs sm:text-sm">{template.name}</CardTitle>
-                                  </CardHeader>
-                                  <CardContent className="pt-0 pb-2 px-3 sm:pb-3 sm:px-4">
-                                    <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2">
-                                      {template.template.substring(0, 80)}...
-                                    </p>
-                                    <div className="flex flex-wrap gap-0.5">
-                                      {Object.keys(template.placeholders).slice(0, 3).map((key) => (
-                                        <Badge key={key} variant="secondary" className="text-xs h-4 px-1">
-                                          {key}
-                                        </Badge>
-                                      ))}
-                                      {Object.keys(template.placeholders).length > 3 && (
-                                        <Badge variant="secondary" className="text-xs h-4 px-1">
-                                          +{Object.keys(template.placeholders).length - 3}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              ))}
-                            </div>
-                          </TabsContent>
-                        </Tabs>
+                            {/* Component Cards - Mobile Optimized */}
+                            <TabsContent value={selectedCategory} className="mt-2 sm:mt-3">
+                              {componentsLoading ? (
+                                <div className="space-y-2">
+                                  <Skeleton className="h-16 w-full" />
+                                  <Skeleton className="h-16 w-full" />
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 max-h-60 overflow-y-auto">
+                                  {components.map((component: PromptComponent) => (
+                                    <Card 
+                                      key={component.id}
+                                      className="cursor-pointer transition-all hover:shadow-md"
+                                      onClick={() => addComponent(component)}
+                                      data-testid={`component-card-${component.id}`}
+                                    >
+                                      <CardContent className="p-2 sm:p-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1">
+                                            <p className="text-xs sm:text-sm font-medium line-clamp-2">
+                                              {component.value}
+                                            </p>
+                                            {component.description && (
+                                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                                {component.description}
+                                              </p>
+                                            )}
+                                          </div>
+                                          <Plus className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              )}
+                            </TabsContent>
+                          </Tabs>
+                        )}
 
                         {/* Placeholder Values - Mobile Optimized */}
                         {selectedTemplate && (
@@ -884,10 +990,10 @@ export default function PromptGeneratorPage() {
                   </Card>
                 </Collapsible>
 
-                {/* Style Selection - Mobile Optimized */}
+                {/* Aesthetics Selection - Mobile Optimized */}
                 <Collapsible
-                  open={expandedSections.has("style")}
-                  onOpenChange={() => toggleSection("style")}
+                  open={expandedSections.has("aesthetics")}
+                  onOpenChange={() => toggleSection("aesthetics")}
                 >
                   <Card>
                     <CollapsibleTrigger className="w-full">
@@ -895,9 +1001,9 @@ export default function PromptGeneratorPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 sm:gap-2">
                             <Palette className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                            <CardTitle className="text-sm sm:text-base">Style Presets</CardTitle>
+                            <CardTitle className="text-sm sm:text-base">Aesthetics & Styles</CardTitle>
                           </div>
-                          {expandedSections.has("style") ? (
+                          {expandedSections.has("aesthetics") ? (
                             <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                           ) : (
                             <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
@@ -907,25 +1013,43 @@ export default function PromptGeneratorPage() {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0 pb-2 sm:pb-3">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
-                          {stylePresets.map((style) => (
-                            <Card
-                              key={style.id}
-                              className={`cursor-pointer transition-all hover:shadow-md ${
-                                selectedStyle === style.id ? 'ring-1 sm:ring-2 ring-primary' : ''
-                              }`}
-                              onClick={() => applyStylePreset(style.id)}
-                              data-testid={`style-preset-${style.id}`}
-                            >
-                              <CardContent className="p-2 sm:p-3">
-                                <h4 className="text-xs sm:text-sm font-medium">{style.name}</h4>
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                  {style.description}
-                                </p>
-                              </CardContent>
-                            </Card>
-                          ))}
+                        <div className="mb-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAestheticSearchOpen(true)}
+                            className="w-full justify-start gap-2 h-8"
+                            data-testid="button-search-aesthetics"
+                          >
+                            <Palette className="h-3.5 w-3.5" />
+                            Search Aesthetics...
+                          </Button>
                         </div>
+                        
+                        {aestheticsLoading ? (
+                          <div className="space-y-2">
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 max-h-60 overflow-y-auto">
+                            {aesthetics.slice(0, 12).map((aesthetic: Aesthetic) => (
+                              <Card
+                                key={aesthetic.id}
+                                className="cursor-pointer transition-all hover:shadow-md"
+                                onClick={() => addAesthetic(aesthetic)}
+                                data-testid={`aesthetic-${aesthetic.id}`}
+                              >
+                                <CardContent className="p-2 sm:p-3">
+                                  <h4 className="text-xs sm:text-sm font-medium line-clamp-1">{aesthetic.name}</h4>
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                    {aesthetic.description || aesthetic.era || "Style preset"}
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </CollapsibleContent>
                   </Card>
@@ -1038,6 +1162,72 @@ export default function PromptGeneratorPage() {
 
           {/* Right Panel - Parameters & Actions - Mobile Optimized */}
           <div className="space-y-2 sm:space-y-4">
+            {/* Selected Items Preview */}
+            {(selectedComponents.length > 0 || selectedAesthetics.length > 0) && (
+              <Card>
+                <CardHeader className="py-2 sm:py-3">
+                  <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                    Selected Items
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 pb-2 sm:pb-3">
+                  {selectedComponents.length > 0 && (
+                    <div className="mb-2">
+                      <Label className="text-xs sm:text-sm mb-1 block">Components</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedComponents.map((component) => (
+                          <Badge
+                            key={component.id}
+                            variant="secondary"
+                            className="gap-0.5 pr-0.5 text-xs h-5"
+                            data-testid={`selected-component-${component.id}`}
+                          >
+                            <span className="truncate max-w-[100px]">{component.value}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-3.5 w-3.5 hover:bg-transparent"
+                              onClick={() => removeComponent(component.id)}
+                              data-testid={`button-remove-component-${component.id}`}
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedAesthetics.length > 0 && (
+                    <div>
+                      <Label className="text-xs sm:text-sm mb-1 block">Aesthetics</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedAesthetics.map((aesthetic) => (
+                          <Badge
+                            key={aesthetic.id}
+                            variant="outline"
+                            className="gap-0.5 pr-0.5 text-xs h-5"
+                            data-testid={`selected-aesthetic-${aesthetic.id}`}
+                          >
+                            <span>{aesthetic.name}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-3.5 w-3.5 hover:bg-transparent"
+                              onClick={() => removeAesthetic(aesthetic.id)}
+                              data-testid={`button-remove-aesthetic-${aesthetic.id}`}
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
             {/* Model Selection - Desktop Only */}
             <Card className="hidden lg:block">
               <CardHeader className="py-2 sm:py-3">
@@ -1314,6 +1504,76 @@ export default function PromptGeneratorPage() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      {/* Component Search Dialog */}
+      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <CommandInput 
+          placeholder="Search prompt components..." 
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+        />
+        <CommandList>
+          <CommandEmpty>No components found.</CommandEmpty>
+          <CommandGroup heading="Search Results">
+            {searchResults.map((component: PromptComponent) => (
+              <CommandItem
+                key={component.id}
+                onSelect={() => {
+                  addComponent(component);
+                  setSearchOpen(false);
+                  setSearchQuery("");
+                }}
+                className="cursor-pointer"
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">{component.value}</span>
+                  {component.description && (
+                    <span className="text-xs text-muted-foreground">{component.description}</span>
+                  )}
+                  {component.category && (
+                    <span className="text-xs text-muted-foreground">Category: {component.category}</span>
+                  )}
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+
+      {/* Aesthetic Search Dialog */}
+      <CommandDialog open={aestheticSearchOpen} onOpenChange={setAestheticSearchOpen}>
+        <CommandInput 
+          placeholder="Search aesthetics..." 
+          value={aestheticSearchQuery}
+          onValueChange={setAestheticSearchQuery}
+        />
+        <CommandList>
+          <CommandEmpty>No aesthetics found.</CommandEmpty>
+          <CommandGroup heading="Search Results">
+            {aestheticSearchResults.map((aesthetic: Aesthetic) => (
+              <CommandItem
+                key={aesthetic.id}
+                onSelect={() => {
+                  addAesthetic(aesthetic);
+                  setAestheticSearchOpen(false);
+                  setAestheticSearchQuery("");
+                }}
+                className="cursor-pointer"
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">{aesthetic.name}</span>
+                  {aesthetic.description && (
+                    <span className="text-xs text-muted-foreground">{aesthetic.description}</span>
+                  )}
+                  {aesthetic.era && (
+                    <span className="text-xs text-muted-foreground">Era: {aesthetic.era}</span>
+                  )}
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
     </div>
   );
 }
