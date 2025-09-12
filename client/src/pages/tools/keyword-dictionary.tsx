@@ -30,6 +30,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useToolsContext } from "@/contexts/ToolsContext";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
 
 // Category icons mapping
@@ -41,114 +42,6 @@ const categoryIcons: Record<string, React.ElementType> = {
   "environments": Globe,
   "all": BookOpen,
 };
-
-// Mock data structure for keywords (will be replaced with API data)
-const mockKeywords = [
-  {
-    id: "1",
-    term: "Cyberpunk",
-    category: "aesthetics",
-    subcategory: "Futuristic",
-    description: "A genre of science fiction set in a lawless subculture of an oppressive society dominated by computer technology",
-    synonyms: ["Neon noir", "Tech noir", "Dystopian future", "High tech low life"],
-    examples: ["cyberpunk city street", "neon-lit cyberpunk alley", "cyberpunk character design"],
-    tags: ["futuristic", "neon", "technology", "dystopian"],
-    usageCount: 15432,
-    isSystem: true,
-    isFavorite: false,
-  },
-  {
-    id: "2",
-    term: "Golden Hour",
-    category: "environments",
-    subcategory: "Lighting",
-    description: "The period of daytime shortly after sunrise or before sunset, during which daylight is redder and softer",
-    synonyms: ["Magic hour", "Sunset lighting", "Warm light", "Soft lighting"],
-    examples: ["portrait during golden hour", "landscape at golden hour", "golden hour photography"],
-    tags: ["lighting", "warm", "photography", "natural"],
-    usageCount: 28765,
-    isSystem: true,
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    term: "Victorian Era",
-    category: "outfits",
-    subcategory: "Historical",
-    description: "The period of Queen Victoria's reign from 1837 to 1901, characterized by distinct fashion and architecture",
-    synonyms: ["Victorian period", "19th century British", "Victorian style"],
-    examples: ["Victorian era dress", "Victorian gentleman outfit", "Victorian street scene"],
-    tags: ["historical", "fashion", "architecture", "British"],
-    usageCount: 9823,
-    isSystem: true,
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    term: "Abandoned Building",
-    category: "locations",
-    subcategory: "Urban",
-    description: "Derelict or forsaken structures showing signs of decay and neglect",
-    synonyms: ["Derelict building", "Ruins", "Urban decay", "Abandoned structure"],
-    examples: ["abandoned factory interior", "overgrown abandoned mansion", "post-apocalyptic building"],
-    tags: ["urban", "decay", "atmospheric", "exploration"],
-    usageCount: 12456,
-    isSystem: true,
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    term: "Film Noir",
-    category: "scenarios",
-    subcategory: "Cinematic",
-    description: "A cinematic style characterized by dark, moody visuals and morally ambiguous stories",
-    synonyms: ["Neo-noir", "Dark cinema", "Crime noir"],
-    examples: ["film noir detective scene", "noir style portrait", "rainy noir street"],
-    tags: ["cinematic", "dark", "moody", "crime"],
-    usageCount: 7654,
-    isSystem: true,
-    isFavorite: false,
-  },
-];
-
-// Categories structure
-const categories = [
-  {
-    id: "aesthetics",
-    name: "Aesthetics",
-    icon: Palette,
-    subcategories: ["Futuristic", "Vintage", "Modern", "Fantasy", "Minimalist"],
-    count: 156,
-  },
-  {
-    id: "locations",
-    name: "Locations",
-    icon: MapPin,
-    subcategories: ["Urban", "Natural", "Indoor", "Outdoor", "Fantasy"],
-    count: 243,
-  },
-  {
-    id: "scenarios",
-    name: "Scenarios",
-    icon: Camera,
-    subcategories: ["Cinematic", "Action", "Portrait", "Documentary", "Abstract"],
-    count: 189,
-  },
-  {
-    id: "outfits",
-    name: "Outfits",
-    icon: Shirt,
-    subcategories: ["Historical", "Modern", "Fantasy", "Professional", "Casual"],
-    count: 324,
-  },
-  {
-    id: "environments",
-    name: "Environments",
-    icon: Globe,
-    subcategories: ["Lighting", "Weather", "Time of Day", "Seasons", "Atmosphere"],
-    count: 276,
-  },
-];
 
 // Form schemas
 const customKeywordSchema = z.object({
@@ -185,7 +78,7 @@ export default function KeywordDictionaryPage() {
   } = useToolsContext();
   
   // State management
-  const [activeTab, setActiveTab] = useState("system");
+  const [activeTab, setActiveTab] = useState("components");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -200,6 +93,62 @@ export default function KeywordDictionaryPage() {
   const [editingKeyword, setEditingKeyword] = useState<any>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
+  // Fetch prompt components from database
+  const { data: components = [], isLoading: componentsLoading } = useQuery({
+    queryKey: ['/api/prompt-components', debouncedSearchQuery, selectedCategory, currentPage],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
+      if (selectedCategory) params.append('category', selectedCategory);
+      params.append('limit', itemsPerPage.toString());
+      params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
+      
+      const response = await fetch(`/api/prompt-components?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch components');
+      return response.json();
+    },
+    enabled: activeTab === 'components',
+  });
+
+  // Fetch categories from database
+  const { data: dbCategories = [] } = useQuery({
+    queryKey: ['/api/prompt-components/categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/prompt-components/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      return response.json();
+    },
+  });
+
+  // Fetch aesthetics from database
+  const { data: aesthetics = [], isLoading: aestheticsLoading } = useQuery({
+    queryKey: ['/api/aesthetics', debouncedSearchQuery, selectedCategory, currentPage],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
+      if (selectedCategory) params.append('category', selectedCategory);
+      params.append('limit', itemsPerPage.toString());
+      params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
+      
+      const response = await fetch(`/api/aesthetics?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch aesthetics');
+      return response.json();
+    },
+    enabled: activeTab === 'aesthetics',
+  });
+
+  // Fetch aesthetic categories
+  const { data: aestheticCategories = [] } = useQuery({
+    queryKey: ['/api/aesthetics/categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/aesthetics/categories');
+      if (!response.ok) throw new Error('Failed to fetch aesthetic categories');
+      return response.json();
+    },
+  });
 
   // Toggle selection mode
   const toggleSelectionMode = () => {
@@ -247,60 +196,68 @@ export default function KeywordDictionaryPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1); // Reset to first page on search
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Mock queries (replace with real API calls)
-  const { data: keywords = mockKeywords, isLoading: keywordsLoading } = useQuery({
-    queryKey: ["/api/keywords", { 
-      search: debouncedSearchQuery, 
-      category: selectedCategory,
-      subcategory: selectedSubcategory,
-      tab: activeTab,
-      sortBy 
-    }],
-    queryFn: async () => {
-      // Mock API call - replace with actual API
-      return new Promise<typeof mockKeywords>((resolve) => {
-        setTimeout(() => {
-          let filtered = [...mockKeywords];
-          
-          // Filter by search
-          if (debouncedSearchQuery) {
-            const query = debouncedSearchQuery.toLowerCase();
-            filtered = filtered.filter(k => 
-              k.term.toLowerCase().includes(query) ||
-              k.description.toLowerCase().includes(query) ||
-              k.synonyms.some(s => s.toLowerCase().includes(query)) ||
-              k.tags.some(t => t.toLowerCase().includes(query))
-            );
-          }
-          
-          // Filter by category
-          if (selectedCategory) {
-            filtered = filtered.filter(k => k.category === selectedCategory);
-          }
-          
-          // Filter by subcategory
-          if (selectedSubcategory) {
-            filtered = filtered.filter(k => k.subcategory === selectedSubcategory);
-          }
-          
-          // Sort
-          if (sortBy === "alphabetical") {
-            filtered.sort((a, b) => a.term.localeCompare(b.term));
-          } else if (sortBy === "popular") {
-            filtered.sort((a, b) => b.usageCount - a.usageCount);
-          }
-          
-          resolve(filtered);
-        }, 100);
-      });
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  // Get the active tab data and loading state
+  const activeData = activeTab === 'components' ? components : aesthetics;
+  const isLoading = activeTab === 'components' ? componentsLoading : aestheticsLoading;
+  const categoriesData = activeTab === 'components' ? dbCategories : aestheticCategories;
+
+  // Transform database data to match the expected format
+  const keywords = useMemo(() => {
+    if (!activeData || !Array.isArray(activeData)) return [];
+    
+    return activeData.map((item: any) => {
+      if (activeTab === 'components') {
+        return {
+          id: item.id || Math.random().toString(36).substr(2, 9),
+          term: item.value || item.name || 'Untitled',
+          category: item.category || 'uncategorized',
+          subcategory: item.subcategory || item.type || 'general',
+          description: item.description || 'No description available',
+          synonyms: Array.isArray(item.synonyms) ? item.synonyms : (item.synonyms ? [item.synonyms] : []),
+          examples: Array.isArray(item.examples) ? item.examples : (item.example ? [item.example] : []),
+          tags: Array.isArray(item.tags) ? item.tags : (item.tags ? [item.tags] : []),
+          usageCount: parseInt(item.usageCount) || 0,
+          isFavorite: false,
+          isSystem: true,
+        };
+      } else {
+        // For aesthetics
+        return {
+          id: item.id || Math.random().toString(36).substr(2, 9),
+          term: item.name || 'Untitled',
+          category: item.category || 'aesthetic',
+          subcategory: item.era || item.subcategory || 'general',
+          description: item.description || 'No description available',
+          synonyms: Array.isArray(item.relatedTerms) ? item.relatedTerms : (item.relatedTerms ? [item.relatedTerms] : []),
+          examples: Array.isArray(item.examples) ? item.examples : (item.example ? [item.example] : []),
+          tags: Array.isArray(item.moodKeywords) ? item.moodKeywords : (item.moodKeywords ? [item.moodKeywords] : []),
+          usageCount: parseInt(item.usageCount) || 0,
+          isFavorite: false,
+          isSystem: true,
+        };
+      }
+    });
+  }, [activeData, activeTab]);
+  
+  const keywordsLoading = isLoading;
+  
+  // Process categories for display
+  const categories = useMemo(() => {
+    if (!categoriesData || !Array.isArray(categoriesData)) return [];
+    
+    return categoriesData.map((cat: any) => ({
+      id: cat.id || cat.name,
+      name: cat.name || 'Unknown',
+      count: cat.count || 0,
+      subcategories: Array.isArray(cat.subcategories) ? cat.subcategories : [],
+    }));
+  }, [categoriesData]);
 
   // Toggle category expansion
   const toggleCategory = (categoryId: string) => {
@@ -410,7 +367,7 @@ export default function KeywordDictionaryPage() {
   };
 
   // Toggle keyword selection
-  const toggleKeywordSelection = (keyword: typeof mockKeywords[0]) => {
+  const toggleKeywordSelection = (keyword: any) => {
     const isSelected = selectedKeywords.some(k => k.id === keyword.id);
     if (isSelected) {
       removeKeyword(keyword.id);
@@ -433,7 +390,7 @@ export default function KeywordDictionaryPage() {
   };
 
   // Render keyword card
-  const renderKeywordCard = (keyword: typeof mockKeywords[0]) => {
+  const renderKeywordCard = (keyword: any) => {
     const isExpanded = expandedKeywords.has(keyword.id);
     const isSelected = isKeywordSelected(keyword.id);
     const Icon = categoryIcons[keyword.category] || BookOpen;
@@ -765,30 +722,30 @@ export default function KeywordDictionaryPage() {
                     <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     All Categories
                     <Badge variant="outline" className="ml-auto h-4 sm:h-5 px-1 text-xs">
-                      {mockKeywords.length}
+                      {keywords.length}
                     </Badge>
                   </Button>
                   
-                  {categories.map((category) => {
-                    const Icon = category.icon;
-                    const isExpanded = expandedCategories.has(category.id);
+                  {categories.map((category: any) => {
+                    const Icon = categoryIcons[category.name?.toLowerCase()] || BookOpen;
+                    const isExpanded = expandedCategories.has(category.id || category.name);
                     
                     return (
-                      <div key={category.id}>
+                      <div key={category.id || category.name}>
                         <Button
-                          variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                          variant={selectedCategory === (category.id || category.name) ? "secondary" : "ghost"}
                           className="w-full justify-start gap-2 h-8 sm:h-9 text-xs sm:text-sm"
                           onClick={() => {
-                            setSelectedCategory(category.id);
+                            setSelectedCategory(category.id || category.name);
                             setSelectedSubcategory(null);
-                            toggleCategory(category.id);
+                            toggleCategory(category.id || category.name);
                           }}
-                          data-testid={`button-category-${category.id}`}
+                          data-testid={`button-category-${category.id || category.name}`}
                         >
                           <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           {category.name}
                           <Badge variant="outline" className="ml-auto h-4 sm:h-5 px-1 text-xs">
-                            {category.count}
+                            {category.count || 0}
                           </Badge>
                           {isExpanded ? (
                             <ChevronDown className="h-3 w-3" />
@@ -797,10 +754,10 @@ export default function KeywordDictionaryPage() {
                           )}
                         </Button>
                         
-                        <Collapsible open={isExpanded && selectedCategory === category.id}>
+                        <Collapsible open={isExpanded && selectedCategory === (category.id || category.name)}>
                           <CollapsibleContent>
                             <div className="ml-4 sm:ml-6 mt-1 space-y-0.5">
-                              {category.subcategories.map((sub) => (
+                              {(category.subcategories || []).map((sub: any) => (
                                 <Button
                                   key={sub}
                                   variant={selectedSubcategory === sub ? "secondary" : "ghost"}
@@ -873,15 +830,12 @@ export default function KeywordDictionaryPage() {
           <div className="lg:col-span-3">
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 h-8 sm:h-10">
-                <TabsTrigger value="system" className="text-xs sm:text-sm">
-                  System
+              <TabsList className="grid w-full grid-cols-2 h-8 sm:h-10">
+                <TabsTrigger value="components" className="text-xs sm:text-sm">
+                  Components
                 </TabsTrigger>
-                <TabsTrigger value="custom" className="text-xs sm:text-sm">
-                  Custom
-                </TabsTrigger>
-                <TabsTrigger value="favorites" className="text-xs sm:text-sm">
-                  Favorites
+                <TabsTrigger value="aesthetics" className="text-xs sm:text-sm">
+                  Aesthetics
                 </TabsTrigger>
               </TabsList>
               
@@ -889,11 +843,11 @@ export default function KeywordDictionaryPage() {
                 {keywordsLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                     {[...Array(6)].map((_, i) => (
-                      <Card key={i} className="h-32 animate-pulse">
+                      <Card key={i} className="h-32">
                         <CardContent className="p-4">
-                          <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                          <div className="h-3 bg-muted rounded w-full" />
-                          <div className="h-3 bg-muted rounded w-5/6 mt-1" />
+                          <Skeleton className="h-4 w-3/4 mb-2" />
+                          <Skeleton className="h-3 w-full" />
+                          <Skeleton className="h-3 w-5/6 mt-1" />
                         </CardContent>
                       </Card>
                     ))}
@@ -943,29 +897,29 @@ export default function KeywordDictionaryPage() {
                 <BookOpen className="h-3.5 w-3.5" />
                 All Categories
                 <Badge variant="outline" className="ml-auto h-4 px-1 text-xs">
-                  {mockKeywords.length}
+                  {keywords.length}
                 </Badge>
               </Button>
               
-              {categories.map((category) => {
-                const Icon = category.icon;
-                const isExpanded = expandedCategories.has(category.id);
+              {categories.map((category: any) => {
+                const Icon = categoryIcons[category.name?.toLowerCase()] || BookOpen;
+                const isExpanded = expandedCategories.has(category.id || category.name);
                 
                 return (
-                  <div key={category.id}>
+                  <div key={category.id || category.name}>
                     <Button
-                      variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                      variant={selectedCategory === (category.id || category.name) ? "secondary" : "ghost"}
                       className="w-full justify-start gap-2 h-8 text-xs"
                       onClick={() => {
-                        setSelectedCategory(category.id);
+                        setSelectedCategory(category.id || category.name);
                         setSelectedSubcategory(null);
-                        toggleCategory(category.id);
+                        toggleCategory(category.id || category.name);
                       }}
                     >
                       <Icon className="h-3.5 w-3.5" />
                       {category.name}
                       <Badge variant="outline" className="ml-auto h-4 px-1 text-xs">
-                        {category.count}
+                        {category.count || 0}
                       </Badge>
                       {isExpanded ? (
                         <ChevronDown className="h-3 w-3" />
@@ -974,10 +928,10 @@ export default function KeywordDictionaryPage() {
                       )}
                     </Button>
                     
-                    <Collapsible open={isExpanded && selectedCategory === category.id}>
+                    <Collapsible open={isExpanded && selectedCategory === (category.id || category.name)}>
                       <CollapsibleContent>
                         <div className="ml-6 mt-1 space-y-0.5">
-                          {category.subcategories.map((sub) => (
+                          {(category.subcategories || []).map((sub: any) => (
                             <Button
                               key={sub}
                               variant={selectedSubcategory === sub ? "secondary" : "ghost"}
@@ -1147,8 +1101,8 @@ export default function KeywordDictionaryPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
+                        {categories.map((cat: any) => (
+                          <SelectItem key={cat.id || cat.name} value={cat.id || cat.name}>
                             {cat.name}
                           </SelectItem>
                         ))}
