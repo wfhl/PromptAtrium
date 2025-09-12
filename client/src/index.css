@@ -117,7 +117,7 @@
 
 @media (max-width: 768px) {
   .prompt-beam-container {
-    height: 250px;
-    min-height: 250px;
+    height: 180px;
+    min-height: 180px;
   }
 }

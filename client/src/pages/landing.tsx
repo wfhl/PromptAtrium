@@ -61,7 +61,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
             <Card className="p-2 md:p-6" data-testid="card-feature-organize">
               <CardHeader className="p-2 md:p-6">
-                <div className="flex items-center gap-2 mb-1 md:block md:mb-0">
+                <div className="flex items-center gap-2 mb-1 justify-center md:block md:mb-0 md:justify-start">
                   <div className="w-6 h-6 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 md:mb-4">
                     <Lightbulb className="h-3 w-3 md:h-6 md:w-6 text-primary" />
                   </div>
@@ -69,7 +69,7 @@ export default function Landing() {
                 </div>
               </CardHeader>
               <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
-                <p className="text-[10px] leading-tight md:text-base text-muted-foreground">
+                <p className="text-[10px] leading-tight text-center md:text-base md:text-left text-muted-foreground">
                   Store, categorize, and version your prompts with advanced metadata and organization tools.
                 </p>
               </CardContent>
@@ -77,7 +77,7 @@ export default function Landing() {
 
             <Card className="p-2 md:p-6" data-testid="card-feature-community">
               <CardHeader className="p-2 md:p-6">
-                <div className="flex items-center gap-2 mb-1 md:block md:mb-0">
+                <div className="flex items-center gap-2 mb-1 justify-center md:block md:mb-0 md:justify-start">
                   <div className="w-6 h-6 md:w-12 md:h-12 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0 md:mb-4">
                     <Users className="h-3 w-3 md:h-6 md:w-6 text-green-500" />
                   </div>
@@ -85,7 +85,7 @@ export default function Landing() {
                 </div>
               </CardHeader>
               <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
-                <p className="text-[10px] leading-tight md:text-base text-muted-foreground">
+                <p className="text-[10px] leading-tight text-center md:text-base md:text-left text-muted-foreground">
                   Share, discover, and collaborate on prompts with a vibrant community of creators.
                 </p>
               </CardContent>
@@ -93,7 +93,7 @@ export default function Landing() {
 
             <Card className="p-2 md:p-6" data-testid="card-feature-search">
               <CardHeader className="p-2 md:p-6">
-                <div className="flex items-center gap-2 mb-1 md:block md:mb-0">
+                <div className="flex items-center gap-2 mb-1 justify-center md:block md:mb-0 md:justify-start">
                   <div className="w-6 h-6 md:w-12 md:h-12 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0 md:mb-4">
                     <Search className="h-3 w-3 md:h-6 md:w-6 text-blue-500" />
                   </div>
@@ -101,7 +101,7 @@ export default function Landing() {
                 </div>
               </CardHeader>
               <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
-                <p className="text-[10px] leading-tight md:text-base text-muted-foreground">
+                <p className="text-[10px] leading-tight text-center md:text-base md:text-left text-muted-foreground">
                   Find the perfect prompt with full-text search, filtering by tags, categories, and more.
                 </p>
               </CardContent>
@@ -109,7 +109,7 @@ export default function Landing() {
 
             <Card className="p-2 md:p-6" data-testid="card-feature-secure">
               <CardHeader className="p-2 md:p-6">
-                <div className="flex items-center gap-2 mb-1 md:block md:mb-0">
+                <div className="flex items-center gap-2 mb-1 justify-center md:block md:mb-0 md:justify-start">
                   <div className="w-6 h-6 md:w-12 md:h-12 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0 md:mb-4">
                     <Shield className="h-3 w-3 md:h-6 md:w-6 text-purple-500" />
                   </div>
@@ -117,7 +117,7 @@ export default function Landing() {
                 </div>
               </CardHeader>
               <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
-                <p className="text-[10px] leading-tight md:text-base text-muted-foreground">
+                <p className="text-[10px] leading-tight text-center md:text-base md:text-left text-muted-foreground">
                   Keep your prompts private or share them publicly with role-based access control.
                 </p>
               </CardContent>
