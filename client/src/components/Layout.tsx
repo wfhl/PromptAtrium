@@ -301,17 +301,16 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                       Metadata Analyzer
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/tools/keyword-dictionary" className="flex items-center cursor-pointer" data-testid="menu-keyword-dictionary">
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      Keyword Dictionary
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/tools/prompt-generator" className="flex items-center cursor-pointer" data-testid="menu-prompt-generator">
-                      <Lightbulb className="mr-2 h-4 w-4" />
-                      Prompt Generator
-                    </Link>
+                  <DropdownMenuItem 
+                    onClick={() => toast({
+                      title: "Coming Soon",
+                      description: "Prompt Generator will be available soon!",
+                    })}
+                    className="cursor-pointer"
+                    data-testid="menu-prompt-generator"
+                  >
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    Prompt Generator
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
