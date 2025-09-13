@@ -50,6 +50,7 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   --background-layer: #ffffff;
+  --foreground: hsl(222.2, 84%, 4.9%);
 }
 
 .dark {
