@@ -699,13 +699,13 @@ export default function Library() {
               My Prompts
             </TabsTrigger>
             <TabsTrigger value="bookmarked" className="text-xs md:text-sm" data-testid="tab-bookmarked">
-              Bookmarked
+              Bookmarks
             </TabsTrigger>
             <TabsTrigger value="collections" className="text-xs md:text-sm" data-testid="tab-collections">
               Collections
             </TabsTrigger>
             <TabsTrigger value="archive" className="text-xs md:text-sm" data-testid="tab-archive">
-              Archive
+              Archived
             </TabsTrigger>
             <TabsTrigger value="activity" className="text-xs md:text-sm" data-testid="tab-my-activity">
               My Activity
