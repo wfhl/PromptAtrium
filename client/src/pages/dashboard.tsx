@@ -46,6 +46,7 @@ export default function Dashboard() {
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Prompt[]>([]);
   const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
   const [communityTab, setCommunityTab] = useState("featured");
 
@@ -283,6 +284,7 @@ export default function Dashboard() {
               <SearchWithFilters
                 placeholder="Search prompts..."
                 onSearchChange={(query) => setSearchQuery(query)}
+                onResultsChange={(results) => setSearchResults(results)}
                 onResultClick={(prompt) => {
                   // Navigate to prompt detail page or handle selection
                   setLocation(`/prompt/${prompt.id}`);
@@ -383,6 +385,43 @@ export default function Dashboard() {
             onImportPrompts={handleImportPrompts}
           />
         </div>
+
+        {/* Search Results Section */}
+        {(searchQuery || searchResults.length > 0) && (
+          <div className="mb-6 md:mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Search Results</span>
+                  {searchResults.length > 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {searchResults.length} result{searchResults.length === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {searchResults.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {searchResults.map((prompt) => (
+                      <div
+                        key={prompt.id}
+                        className="cursor-pointer hover:shadow-lg transition-shadow"
+                        onClick={() => setLocation(`/prompt/${prompt.id}`)}
+                      >
+                        <PromptCard prompt={prompt} />
+                      </div>
+                    ))}
+                  </div>
+                ) : searchQuery ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No results found for "{searchQuery}"
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4 lg:gap-8">
           <div className="lg:col-span-2">

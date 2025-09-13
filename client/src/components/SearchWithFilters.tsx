@@ -133,6 +133,13 @@ export function SearchWithFilters({
     onFiltersChange?.(newFilters);
   };
 
+  // Pass search results to parent component
+  useEffect(() => {
+    if (onResultsChange) {
+      onResultsChange(searchResults);
+    }
+  }, [searchResults]); // Don't include onResultsChange in deps to avoid infinite loop
+
   // Count active filters
   const activeFilterCount = Object.entries(filters).filter(([key, value]) => {
     if (key === "source") return false;
@@ -168,7 +175,6 @@ export function SearchWithFilters({
               placeholder={placeholder}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              onFocus={() => searchQuery.length > 0 && setShowResults(true)}
               className="pl-10 pr-4"
               data-testid="input-search-with-filters"
             />
@@ -176,7 +182,6 @@ export function SearchWithFilters({
               <button
                 onClick={() => {
                   setSearchQuery("");
-                  setShowResults(false);
                   onSearchChange?.("");
                 }}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -186,64 +191,7 @@ export function SearchWithFilters({
             )}
           </div>
 
-          {/* Search Results Dropdown */}
-          {showResults && searchQuery && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-lg z-50 max-h-[500px] overflow-hidden">
-              {/* Source Toggle */}
-              <div className="p-3 border-b bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant={filters.source === "my" ? "default" : "outline"}
-                    onClick={() => handleFilterChange("source", "my")}
-                    className="flex-1"
-                    data-testid="button-source-my"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    My Prompts
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={filters.source === "community" ? "default" : "outline"}
-                    onClick={() => handleFilterChange("source", "community")}
-                    className="flex-1"
-                    data-testid="button-source-community"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Community
-                  </Button>
-                </div>
-              </div>
-
-              {/* Results List */}
-              <ScrollArea className="max-h-[400px]">
-                {isLoading ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    Searching...
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div className="p-2">
-                    {searchResults.map((prompt) => (
-                      <div
-                        key={prompt.id}
-                        className="mb-2 cursor-pointer hover:bg-muted/50 rounded-lg transition-colors"
-                        onClick={() => {
-                          onResultClick?.(prompt);
-                          setShowResults(false);
-                        }}
-                      >
-                        <PromptCard prompt={prompt} compact={true} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-muted-foreground">
-                    No prompts found matching "{searchQuery}"
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-          )}
+          {/* Results will be displayed on the page, not in a dropdown */}
         </div>
 
         {/* Filter Button */}
@@ -251,15 +199,15 @@ export function SearchWithFilters({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
+              size="icon"
               className="relative"
               data-testid="button-filters"
             >
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
+              <Filter className="h-4 w-4" />
               {activeFilterCount > 0 && (
                 <Badge
                   variant="secondary"
-                  className="ml-2 px-1.5 py-0 h-5 min-w-[20px] text-xs"
+                  className="absolute -top-2 -right-2 px-1.5 py-0 h-5 min-w-[20px] text-xs"
                 >
                   {activeFilterCount}
                 </Badge>
