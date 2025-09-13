@@ -913,8 +913,8 @@ export function PromptCard({
   };
 
   return (
-    <Card className={`relative hover:shadow-md transition-all duration-200 ${
-      isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
+    <Card className={`border-gray-800 bg-gray-900/30 hover:bg-gray-900/50 transition-colors cursor-pointer break-inside-avoid w-full max-w-full ${
+      isSelected ? "border-primary bg-muted/30" : ""
     } ${isSelectable ? 'cursor-pointer' : ''}`} 
     data-testid={`card-prompt-${prompt.id}`}
     onClick={isSelectable ? (e) => {
