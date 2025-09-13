@@ -199,8 +199,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               {/* Futuristic Logo */}
               <div className="relative mr-2">
                 <div className="absolute inset-0 bg-cyan-400/30 rounded-md blur-sm"></div>
-                <div className="w-10 h-10 rounded-md bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-400/30 flex items-center justify-center relative shadow-lg shadow-indigo-800/20">
-                  <div className="absolute inset-[3px] bg-gray-900 rounded-[4px] flex items-center justify-center overflow-hidden">
+                <div className="w-10 h-10">
+                  <div className="absolute inset-[3px] bg-transparent rounded-[4px] flex items-center justify-center overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-purple-900/20"></div>
                     <img 
                       src="/ATRIUM2 090725.png" 
