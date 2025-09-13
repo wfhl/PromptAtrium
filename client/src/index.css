@@ -132,6 +132,14 @@
   font-weight: 600;
 }
 
+.nav-gradient-library:hover {
+  background: linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent !important;
+}
+
 .nav-gradient-community {
   background: linear-gradient(135deg, #ffc800 0%, #ff7300 50%, #ffc802 100%);
   -webkit-background-clip: text;
@@ -139,6 +147,14 @@
   background-clip: text;
   color: transparent;
   font-weight: 600;
+}
+
+.nav-gradient-community:hover {
+  background: linear-gradient(135deg, #ffc800 0%, #ff7300 50%, #ffc802 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent !important;
 }
 
 .button-gradient-library {
