@@ -359,7 +359,7 @@ export default function Dashboard() {
           {/* Navigation Buttons */}
           <div className="flex gap-2 mb-3">
             <Link href="/library" className="flex-1">
-              <Button variant="outline" className="w-full " data-testid="button-my-prompts">
+              <Button variant="outline" className="w-full" data-testid="button-my-prompts">
                 <FileText className="h-4 w-4 mr-2" />
                 My Prompts
               </Button>
