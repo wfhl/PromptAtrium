@@ -159,22 +159,46 @@ export function ProfilePictureUpload({
       const uploadResponse = await apiRequest("POST", "/api/objects/upload");
       const { uploadURL } = await uploadResponse.json();
 
-      // Upload cropped image to object storage
-      const uploadResult = await fetch(uploadURL, {
-        method: 'PUT',
-        body: croppedBlob,
-        headers: {
-          'Content-Type': 'image/jpeg',
-        },
-      });
+      let uploadedPath: string;
 
-      if (!uploadResult.ok) {
-        throw new Error('Failed to upload image');
+      // Check if this is a development fallback URL or a signed URL
+      if (uploadURL.startsWith('/api/objects/upload-direct/')) {
+        // Development fallback: upload directly to the endpoint
+        const uploadResult = await fetch(uploadURL, {
+          method: 'PUT',
+          body: croppedBlob,
+          headers: {
+            'Content-Type': 'image/jpeg',
+          },
+          credentials: 'include', // Include cookies for authentication
+        });
+
+        if (!uploadResult.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        const uploadData = await uploadResult.json();
+        uploadedPath = uploadData.objectPath;
+      } else {
+        // Production: use signed URL
+        const uploadResult = await fetch(uploadURL, {
+          method: 'PUT',
+          body: croppedBlob,
+          headers: {
+            'Content-Type': 'image/jpeg',
+          },
+        });
+
+        if (!uploadResult.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        uploadedPath = uploadURL;
       }
 
       // Update profile with new image URL
       const updateResponse = await apiRequest("PUT", "/api/profile-picture", {
-        profileImageUrl: uploadURL,
+        profileImageUrl: uploadedPath,
       });
 
       if (!updateResponse.ok) {

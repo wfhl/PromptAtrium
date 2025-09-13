@@ -153,22 +153,37 @@ export class ObjectStorageService {
         method: "PUT",
         ttlSec: 900,
       });
-    } catch (error) {
+    } catch (sidecarError) {
       // If signing fails, try alternative approach
-      console.error("Failed to sign URL via sidecar, trying direct approach:", error);
+      console.error("Failed to sign URL via sidecar, trying direct approach:", sidecarError);
       
-      // Generate a signed URL directly using the storage client
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const [url] = await file.getSignedUrl({
-        version: 'v4',
-        action: 'write',
-        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-        contentType: 'application/octet-stream',
-      });
-      
-      return url;
+      try {
+        // Generate a signed URL directly using the storage client
+        const bucket = objectStorageClient.bucket(bucketName);
+        const file = bucket.file(objectName);
+        
+        const [url] = await file.getSignedUrl({
+          version: 'v4',
+          action: 'write',
+          expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+          contentType: 'application/octet-stream',
+        });
+        
+        return url;
+      } catch (directError) {
+        console.error("Failed to sign URL directly:", directError);
+        
+        // As a last resort in development, return a direct upload endpoint
+        // This will only work in development environment
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("Using development fallback for upload URL");
+          // Return a development-only endpoint that will handle the upload
+          return `/api/objects/upload-direct/${objectId}`;
+        }
+        
+        // In production, throw the original error
+        throw sidecarError;
+      }
     }
   }
 
@@ -257,7 +272,7 @@ export class ObjectStorageService {
   }
 }
 
-function parseObjectPath(path: string): {
+export function parseObjectPath(path: string): {
   bucketName: string;
   objectName: string;
 } {

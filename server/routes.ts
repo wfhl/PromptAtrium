@@ -4,8 +4,9 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema } from "@shared/schema";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient, parseObjectPath } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import express from "express";
 import { z } from "zod";
 import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
 
@@ -274,6 +275,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to get upload URL" });
     }
   });
+
+  // Development-only direct upload endpoint (fallback when signed URLs fail)
+  if (process.env.NODE_ENV === 'development') {
+    app.put("/api/objects/upload-direct/:objectId", isAuthenticated, express.raw({ type: '*/*', limit: '50mb' }), async (req, res) => {
+      const { objectId } = req.params;
+      const userId = (req.user as any)?.claims?.sub;
+      
+      try {
+        const objectStorageService = new ObjectStorageService();
+        const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+        
+        if (!privateObjectDir) {
+          return res.status(500).json({ error: "Object storage not configured" });
+        }
+        
+        const fullPath = `${privateObjectDir}/uploads/${objectId}`;
+        const { bucketName, objectName } = parseObjectPath(fullPath);
+        
+        // Upload the file directly to the bucket
+        const bucket = objectStorageClient.bucket(bucketName);
+        const file = bucket.file(objectName);
+        
+        await file.save(req.body, {
+          metadata: {
+            contentType: req.headers['content-type'] || 'application/octet-stream',
+            metadata: {
+              uploadedBy: userId,
+              uploadedAt: new Date().toISOString()
+            }
+          }
+        });
+        
+        // Return the object path
+        res.json({ 
+          success: true,
+          objectPath: `/objects/uploads/${objectId}`
+        });
+      } catch (error) {
+        console.error("Error in direct upload:", error);
+        res.status(500).json({ error: "Failed to upload file directly" });
+      }
+    });
+  }
 
   app.put("/api/profile-picture", isAuthenticated, async (req, res) => {
     if (!req.body.profileImageUrl) {
