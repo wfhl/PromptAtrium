@@ -231,9 +231,9 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     <div className="min-h-screen bg-black relative">
       {/* Background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-indigo-900/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-900/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-40 right-20 w-64 h-64 bg-cyan-900/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-indigo-900/10 rounded-full blur-xl"></div>
+        <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-900/10 rounded-full blur-xl"></div>
+        <div className="absolute top-40 right-20 w-64 h-64 bg-cyan-900/10 rounded-full blur-xl"></div>
 
         {/* Decorative grid lines */}
         <div className="absolute inset-0 grid grid-cols-12 opacity-5 pointer-events-none">
@@ -293,7 +293,6 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/library')}
               >
                 <Link 
-                  href="/library"
                   className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block whitespace-nowrap" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10 whitespace-nowrap"} 
                   data-testid="nav-library"
                 >
