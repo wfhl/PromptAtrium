@@ -2263,6 +2263,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public object serving endpoint for images
+  app.get('/api/objects/serve/:path(*)', async (req, res) => {
+    try {
+      const { path } = req.params;
+      
+      // If path is a full URL, redirect to it
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return res.redirect(path);
+      }
+      
+      // If it's an object storage path, try to serve it
+      if (path.includes('replit-objstore') || path.includes('storage.googleapis.com')) {
+        // For Google Cloud Storage URLs, redirect directly
+        const fullUrl = path.startsWith('http') ? path : `https://storage.googleapis.com/${path}`;
+        return res.redirect(fullUrl);
+      }
+      
+      // For internal storage paths, try to parse and redirect
+      try {
+        const objectService = new ObjectStorageService();
+        const { bucketName, objectName } = parseObjectPath(path);
+        
+        // Try to get a public URL for the object
+        const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+        return res.redirect(publicUrl);
+      } catch (error) {
+        console.error('Error parsing object path:', error);
+        // If we can't parse it, try as-is
+        return res.redirect(path);
+      }
+    } catch (error) {
+      console.error('Error serving object:', error);
+      res.status(404).json({ message: 'Object not found' });
+    }
+  });
+
   // Community member management routes
   app.get('/api/communities/:id/members', requireCommunityAdminRole(), async (req: any, res) => {
     try {

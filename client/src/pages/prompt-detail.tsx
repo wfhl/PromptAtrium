@@ -6,7 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Heart, Share2, Edit, GitFork, ChevronLeft, LogIn, UserPlus, Download, Link2, Bookmark, Check, ZoomIn, ImageIcon } from "lucide-react";
+import { Copy, Heart, Share2, Edit, GitFork, ChevronLeft, LogIn, UserPlus, Download, Link2, Bookmark, Check, ZoomIn, ImageIcon, Link as LinkIcon } from "lucide-react";
+import { Link } from "wouter";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -256,16 +258,18 @@ export default function PromptDetail() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          onClick={() => setLocation("/")}
-          className="mb-6"
-          data-testid="button-back"
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
+        {/* Back button - only show for authenticated users */}
+        {user && (
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/")}
+            className="mb-6"
+            data-testid="button-back"
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        )}
 
         {/* Main content card with matching PromptCard styling */}
         <Card className="border-gray-800 bg-gray-900/30">
@@ -281,10 +285,10 @@ export default function PromptDetail() {
                 )}
               </div>
               
-              {/* Action buttons */}
+              {/* Action buttons - only show certain ones for authenticated users */}
               <div className="flex items-center space-x-1">
                 {/* Edit - only for owner */}
-                {user?.id === prompt.userId && (
+                {user && user.id === prompt.userId && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -296,7 +300,7 @@ export default function PromptDetail() {
                   </Button>
                 )}
                 
-                {/* Share */}
+                {/* Share - always visible */}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -307,7 +311,7 @@ export default function PromptDetail() {
                   <Share2 className="h-4 w-4" />
                 </Button>
                 
-                {/* Download */}
+                {/* Download - always visible */}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -318,7 +322,7 @@ export default function PromptDetail() {
                   <Download className="h-4 w-4" />
                 </Button>
                 
-                {/* Copy Link */}
+                {/* Copy Link - always visible */}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -329,17 +333,19 @@ export default function PromptDetail() {
                   <Link2 className="h-4 w-4" />
                 </Button>
                 
-                {/* Bookmark */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => favoriteMutation.mutate()}
-                  disabled={!user || favoriteMutation.isPending}
-                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                  data-testid="button-bookmark"
-                >
-                  <Bookmark className={`h-4 w-4 transition-all duration-200 ${isFavorited ? 'fill-blue-600' : ''}`} />
-                </Button>
+                {/* Bookmark - only for authenticated users */}
+                {user && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => favoriteMutation.mutate()}
+                    disabled={favoriteMutation.isPending}
+                    className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                    data-testid="button-bookmark"
+                  >
+                    <Bookmark className={`h-4 w-4 transition-all duration-200 ${isFavorited ? 'fill-blue-600' : ''}`} />
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -351,7 +357,7 @@ export default function PromptDetail() {
                   <span className="text-sm text-muted-foreground">Example Images ({prompt.exampleImagesUrl.length})</span>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-1 md:gap-2">
-                  {prompt.exampleImagesUrl.slice(0, 4).map((imageUrl, index) => (
+                  {prompt.exampleImagesUrl?.slice(0, 4).map((imageUrl, index) => (
                     <div 
                       key={index} 
                       className="relative aspect-square overflow-hidden rounded-md md:rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
@@ -359,20 +365,26 @@ export default function PromptDetail() {
                       data-testid={`image-thumbnail-${index}`}
                     >
                       <img
-                        src={imageUrl}
+                        src={imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${encodeURIComponent(imageUrl)}`}
                         alt={`Example ${index + 1} for ${prompt.name}`}
                         className="w-full h-full object-cover"
                         loading="lazy"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          // Add fallback or placeholder
-                          const parent = target.parentElement;
-                          if (parent && !parent.querySelector('.fallback')) {
-                            const fallback = document.createElement('div');
-                            fallback.className = 'fallback absolute inset-0 flex items-center justify-center bg-muted';
-                            fallback.innerHTML = '<span class="text-muted-foreground text-xs">Image unavailable</span>';
-                            parent.appendChild(fallback);
+                          // Try fallback URL if not already tried
+                          if (!target.dataset.fallbackTried && !imageUrl.startsWith('http')) {
+                            target.dataset.fallbackTried = 'true';
+                            target.src = imageUrl;
+                          } else {
+                            target.style.display = 'none';
+                            // Add fallback or placeholder
+                            const parent = target.parentElement;
+                            if (parent && !parent.querySelector('.fallback')) {
+                              const fallback = document.createElement('div');
+                              fallback.className = 'fallback absolute inset-0 flex items-center justify-center bg-muted';
+                              fallback.innerHTML = '<span class="text-muted-foreground text-xs">Image unavailable</span>';
+                              parent.appendChild(fallback);
+                            }
                           }
                         }}
                       />
@@ -380,7 +392,7 @@ export default function PromptDetail() {
                         <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       {/* Show count badge for additional images */}
-                      {index === 3 && prompt.exampleImagesUrl.length > 4 && (
+                      {index === 3 && prompt.exampleImagesUrl && prompt.exampleImagesUrl.length > 4 && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                           <span className="text-white font-medium text-sm">
                             +{prompt.exampleImagesUrl.length - 4}
@@ -425,50 +437,232 @@ export default function PromptDetail() {
               </div>
             )}
 
-            {/* Tags and metadata */}
+            {/* Additional Prompt Information - Fully Expanded View */}
             <div className="mt-4 space-y-3">
-              {/* Metadata badges */}
-              <div className="flex flex-wrap gap-2">
-                {prompt.category && (
-                  <Badge variant="secondary" data-testid="badge-category">
-                    {prompt.category}
-                  </Badge>
-                )}
-                {prompt.promptType && (
-                  <Badge variant="secondary" data-testid="badge-type">
-                    {prompt.promptType}
-                  </Badge>
-                )}
-                {prompt.promptStyle && (
-                  <Badge variant="secondary" data-testid="badge-style">
-                    {prompt.promptStyle}
-                  </Badge>
-                )}
-                {prompt.intendedGenerator && (
-                  <Badge variant="outline" data-testid="badge-generator">
-                    {prompt.intendedGenerator}
-                  </Badge>
-                )}
-                {prompt.recommendedModels && prompt.recommendedModels.length > 0 && (
-                  <Badge variant="outline" data-testid="badge-model">
-                    {prompt.recommendedModels[0]}
-                  </Badge>
-                )}
-                {prompt.isNsfw && (
+              {/* Row 1: User, Types, Styles, Categories, Tags */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 text-xs">
+                {/* Creator */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Creator:</span>
+                  <div className="mt-1 flex items-center gap-2">
+                    {prompt.user?.username ? (
+                      <Link href={`/user/${prompt.user.username}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage 
+                            src={prompt.user?.profileImageUrl || undefined} 
+                            alt={`@${prompt.user?.username || 'User'}`}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {prompt.user?.username 
+                              ? prompt.user.username.charAt(0).toUpperCase()
+                              : 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-muted-foreground hover:text-foreground">
+                          @{prompt.user?.username || 'User'}
+                        </span>
+                      </Link>
+                    ) : (
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage 
+                          src={prompt.user?.profileImageUrl || undefined} 
+                          alt="User"
+                        />
+                        <AvatarFallback className="text-xs">
+                          {prompt.user?.username 
+                            ? prompt.user.username.charAt(0).toUpperCase()
+                            : 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                </div>
+
+                {/* Prompt Types */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Types:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {prompt.promptType ? (
+                      <Badge variant="secondary" className="text-xs">
+                        {prompt.promptType}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">None</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Prompt Styles */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Styles:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {prompt.promptStyle ? (
+                      <Badge variant="secondary" className="text-xs">
+                        {prompt.promptStyle}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">None</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Categories */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Categories:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {prompt.category ? (
+                      <Badge variant="outline" className="text-xs">
+                        {prompt.category}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">None</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Tags:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {prompt.tags && prompt.tags.length > 0 ? (
+                      prompt.tags.slice(0, 3).map((tag, index) => (
+                        <Badge key={index} variant="default" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-xs">None</span>
+                    )}
+                    {prompt.tags && prompt.tags.length > 3 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{prompt.tags.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: Intended Generator, Recommended Models, Technical Parameters, Variables */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 text-xs">
+                {/* Intended Generator */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Intended Generator:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {prompt.intendedGenerator ? (
+                      <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                        {prompt.intendedGenerator}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">Any</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recommended Models */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Recommended Models:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {prompt.recommendedModels && prompt.recommendedModels.length > 0 ? (
+                      prompt.recommendedModels.slice(0, 2).map((model, index) => (
+                        <Badge key={index} variant="outline" className="text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                          {model}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-xs">Any</span>
+                    )}
+                    {prompt.recommendedModels && prompt.recommendedModels.length > 2 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{prompt.recommendedModels.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Technical Parameters */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Technical Parameters:</span>
+                  <div className="mt-1">
+                    {(prompt as any).technicalParams && Object.keys((prompt as any).technicalParams).length > 0 ? (
+                      <div className="text-xs bg-gray-50 dark:bg-gray-900/30 p-2 rounded border dark:border-gray-800 font-mono max-h-16 overflow-y-auto">
+                        {Object.entries((prompt as any).technicalParams).map(([key, value]) => (
+                          <div key={key} className="truncate">
+                            <span className="text-gray-600 dark:text-gray-400">{key}:</span> {String(value)}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">None specified</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Variables */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Variables:</span>
+                  <div className="mt-1">
+                    {(prompt as any).variables && Object.keys((prompt as any).variables).length > 0 ? (
+                      <div className="text-xs bg-purple-50 dark:bg-purple-900/30 p-2 rounded border dark:border-purple-800 font-mono max-h-16 overflow-y-auto">
+                        {Object.entries((prompt as any).variables).map(([key, value]) => (
+                          <div key={key} className="truncate">
+                            <span className="text-purple-600 dark:text-purple-400">{key}:</span> {String(value)}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">None specified</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 3: Notes, Author, and License */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3 text-xs">
+                {/* Notes */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Notes:</span>
+                  <div className="mt-1">
+                    {(prompt as any).notes ? (
+                      <div className="text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-100 p-3 rounded-md border border-yellow-200 dark:border-yellow-800 max-h-20 overflow-y-auto leading-relaxed">
+                        {(prompt as any).notes}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">No notes</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Author */}
+                <div>
+                  <span className="font-medium text-muted-foreground">Author:</span>
+                  <div className="mt-1">
+                    <Badge variant="outline" className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+                      {(prompt as any).author || 'Not specified'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* License */}
+                <div>
+                  <span className="font-medium text-muted-foreground">License:</span>
+                  <div className="mt-1">
+                    {(prompt as any).license ? (
+                      <Badge variant="outline" className="text-xs bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800">
+                        {(prompt as any).license}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">Not specified</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* NSFW Badge if applicable */}
+              {prompt.isNsfw && (
+                <div>
                   <Badge variant="destructive" data-testid="badge-nsfw">
                     NSFW
                   </Badge>
-                )}
-              </div>
-
-              {/* Tags */}
-              {prompt.tags && prompt.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {prompt.tags.map((tag, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      #{tag}
-                    </Badge>
-                  ))}
                 </div>
               )}
             </div>
@@ -492,15 +686,16 @@ export default function PromptDetail() {
                   </p>
                 </div>
               </div>
-              <Button 
-                onClick={handleFork} 
-                variant="outline" 
-                data-testid="button-fork"
-                disabled={!user}
-              >
-                <GitFork className="h-4 w-4 mr-2" />
-                Fork Prompt
-              </Button>
+              {user && (
+                <Button 
+                  onClick={handleFork} 
+                  variant="outline" 
+                  data-testid="button-fork"
+                >
+                  <GitFork className="h-4 w-4 mr-2" />
+                  Fork Prompt
+                </Button>
+              )}
             </div>
 
             {/* Sign up/Sign in call-to-action for unauthenticated users */}
