@@ -280,13 +280,17 @@
 
 /* Mobile navigation links styling */
 .mobile-nav-dropdown nav a,
-.md\:hidden.bg-gray-900\/70 nav a {
+.md\:hidden.bg-gray-900\/70 nav a,
+.mobile-nav-dropdown nav button,
+.md\:hidden.bg-gray-900\/70 nav button {
   color: white !important;
   transition: all 0.2s ease;
 }
 
 .mobile-nav-dropdown nav a:hover,
-.md\:hidden.bg-gray-900\/70 nav a:hover {
+.md\:hidden.bg-gray-900\/70 nav a:hover,
+.mobile-nav-dropdown nav button:hover,
+.md\:hidden.bg-gray-900\/70 nav button:hover {
   background: rgba(255, 255, 255, 0.1) !important;
   border-radius: 4px;
   padding-left: 12px !important;
