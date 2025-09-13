@@ -13,7 +13,7 @@ export function MobilePageNav() {
         <Link href="/library" className="flex-1">
           <Button 
             variant="outline"
-            className={`w-full relative ${isLibraryPage ? 'button-gradient-library' : ''}`}
+            className={`w-full relative ${isLibraryPage ? 'button-gradient-library' : 'nav-gradient-library'}`}
             data-testid="button-my-prompts"
           >
             <FileText className="h-4 w-4 mr-2" />
@@ -26,7 +26,7 @@ export function MobilePageNav() {
         <Link href="/community" className="flex-1">
           <Button 
             variant="outline"
-            className={`w-full relative ${isCommunityPage ? 'button-gradient-community' : ''}`}
+            className={`w-full relative ${isCommunityPage ? 'button-gradient-community' : 'nav-gradient-community'}`}
             data-testid="button-community-prompts"
           >
             <Users className="h-4 w-4 mr-2" />
