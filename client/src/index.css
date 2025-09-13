@@ -157,7 +157,7 @@
   -webkit-backdrop-filter: blur(15px);
   color: white;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 0px rgba(102, 126, 234, 0.3);
 }
 
 .button-gradient-community {
@@ -176,5 +176,5 @@
   -webkit-backdrop-filter: blur(15px);
   color: white;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 154, 158, 0.3);
+  box-shadow: 0 4px 0px rgba(255, 154, 158, 0.3);
 }
