@@ -927,7 +927,7 @@ export function PromptCard({
       <Button
         size="sm"
         variant="ghost"
-        className="absolute bottom-2 right-2 h-6 w-6 p-0 z-10 opacity-60 hover:opacity-100 transition-opacity"
+        className="absolute bottom-4 right-2 h-6 w-6 p-0 z-10 opacity-60 hover:opacity-100 transition-opacity"
         onClick={(e) => {
           e.stopPropagation(); // Prevent card selection when clicking toggle
           toggleCollapsed();
@@ -941,7 +941,7 @@ export function PromptCard({
         )}
       </Button>
       
-      <CardContent className="p-2 sm:p-3 md:p-6">
+      <CardContent className="p-2 sm:p-3 md:p-3">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">

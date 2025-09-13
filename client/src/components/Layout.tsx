@@ -262,7 +262,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </div>
                 </div>
               </div>
-              <h1 className="text-xl font-medium bg-gradient-to-r from-indigo-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">PromptAtrium</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-b from-orange-400 to-purple-200 to-orange-400 bg-clip-text text-transparent">PromptAtrium</h1>
             </Link>
             
             <nav 
@@ -282,7 +282,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 <Link 
                   href="/" 
-                  className={isActiveRoute("/") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30 inline-block" : "text-gray-300 hover:text-cyan-400 px-4 py-2 rounded-md transition-colors duration-200 inline-block"} 
+                  className={isActiveRoute("/") ? "text-bold px-4 py-2 rounded-md bg-transparent border border-transparent inline-block" : "text-gray-300 px-4 py-2 rounded-md transition-colors duration-200 inline-block"} 
                   data-testid="nav-dashboard"
                 >
                   Dashboard
@@ -294,7 +294,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 <Link 
                   href="/library" 
-                  className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30 inline-block" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
+                  className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
                   data-testid="nav-library"
                 >
                   My Library
@@ -306,7 +306,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 <Link 
                   href="/community" 
-                  className={isActiveRoute("/community") ? "nav-gradient-community px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30 inline-block" : "nav-gradient-community px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
+                  className={isActiveRoute("/community") ? "nav-gradient-community px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block" : "nav-gradient-community px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
                   data-testid="nav-community"
                 >
                   Community
@@ -337,12 +337,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   width: `${underline.width}px`, 
                   opacity: underline.opacity,
                   background: underline.gradient === 'library' 
-                    ? 'linear-gradient(135deg, #0288c1 0%, #37286e 100%)'
+                    ? 'linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%)'
                     : underline.gradient === 'community'
                     ? 'linear-gradient(135deg, #ffc800 0%, #ff7300 50%, #ffc802 100%)'
                     : underline.gradient === 'admin'
                     ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
-                    : 'linear-gradient(to right, rgb(103 232 249), rgb(99 102 241), rgb(168 85 247))'
+                    : 'linear-gradient(to right, rgb(103 232 249), rgb(103 232 249), rgb(103 232 249))'
                 }}
                 className="absolute bottom-0 h-0.5 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.6)] transition-[left,width,opacity,background] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
               />
@@ -442,7 +442,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   size="icon"
-                  className="items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground hover:bg-primary/90 flex h-9 w-9 bg-[#850099]"
+                  className="items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground hover:bg-primary/90 flex h-8 w-8 bg-indigo-400"
                   data-testid="button-new-menu"
                 >
                   <Plus className="h-5 w-5" />
@@ -576,7 +576,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             <nav className="container mx-auto px-2 sm:px-4 py-2 flex flex-col space-y-1">
               <Link 
                 href="/" 
-                className={isActiveRoute("/") ? "text-cyan-400 font-medium py-2" : "text-gray-300 hover:text-cyan-400 transition-colors py-2"} 
+                className={isActiveRoute("/") ? "text-gray-400 font-medium py-2" : "text-gray-300 hover:text-cyan-400 transition-colors py-2"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-dashboard"
               >
