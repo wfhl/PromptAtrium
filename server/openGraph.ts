@@ -35,23 +35,31 @@ function generateOpenGraphHTML(prompt: any): string {
     : 'https://promptatrium.com';
   
   // Handle image URL - ensure it's absolute
-  let imageUrl = '/ATRIUM SQUARE 090725.png'; // Default app icon
-  if (prompt?.exampleImagesUrl && prompt.exampleImagesUrl.length > 0 && prompt.exampleImagesUrl[0]) {
+  let imageUrl = `${baseUrl}/ATRIUM SQUARE 090725.png`; // Default app icon with full URL
+  
+  // Check if prompt has example images
+  if (prompt?.exampleImagesUrl && Array.isArray(prompt.exampleImagesUrl) && prompt.exampleImagesUrl.length > 0) {
     const firstImage = prompt.exampleImagesUrl[0];
-    // If the image URL is relative, make it absolute
-    if (firstImage.startsWith('/')) {
-      imageUrl = `${baseUrl}${firstImage}`;
-    } else if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
-      // Already absolute
-      imageUrl = firstImage;
-    } else {
-      // Assume it's a relative path without leading slash
-      imageUrl = `${baseUrl}/${firstImage}`;
+    if (firstImage) {
+      // If the image URL is relative, make it absolute
+      if (firstImage.startsWith('/')) {
+        imageUrl = `${baseUrl}${firstImage}`;
+      } else if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
+        // Already absolute (including Google Cloud Storage URLs)
+        imageUrl = firstImage;
+      } else if (firstImage.includes('storage.googleapis.com') || firstImage.includes('googleusercontent.com')) {
+        // Google Cloud Storage URL without protocol
+        imageUrl = `https://${firstImage}`;
+      } else {
+        // Assume it's a relative path without leading slash
+        imageUrl = `${baseUrl}/${firstImage}`;
+      }
     }
-  } else {
-    // Use default app icon with full URL
-    imageUrl = `${baseUrl}/ATRIUM SQUARE 090725.png`;
   }
+  
+  // Log for debugging
+  console.log('Open Graph Image URL:', imageUrl);
+  console.log('Prompt example images:', prompt?.exampleImagesUrl);
   
   const author = prompt?.user?.username || prompt?.user?.firstName || 'Anonymous';
   

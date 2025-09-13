@@ -61,10 +61,10 @@ function Router() {
       <Switch>
         {/* Public routes - always accessible */}
         <Route path="/prompt/:id">
-          {() => <Layout><PromptDetail /></Layout>}
+          {() => isAuthenticated ? <Layout><PromptDetail /></Layout> : <PromptDetail />}
         </Route>
         <Route path="/user/:username">
-          {() => <Layout><UserProfile /></Layout>}
+          {() => isAuthenticated ? <Layout><UserProfile /></Layout> : <UserProfile />}
         </Route>
         <Route path="/invite/:code" component={Invite} />
         <Route path="/invite" component={Invite} />
