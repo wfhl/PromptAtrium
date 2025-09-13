@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { SearchWithFilters } from "@/components/SearchWithFilters";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, FileText, Heart, Folder, GitBranch, Plus, ChevronDown, ChevronUp, BookOpen, Share2, Star, UserPlus, Users, Activity } from "lucide-react";
+import { FileText, Heart, Folder, GitBranch, Plus, ChevronDown, ChevronUp, BookOpen, Share2, Star, UserPlus, Users, Activity } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { QuickActions } from "@/components/QuickActions";
@@ -278,18 +279,15 @@ export default function Dashboard() {
               <p className="text-sm md:text-base text-muted-foreground">Manage your AI prompts and discover community favorites</p>
             </div>
 
-            <div className="mt-2 md:mt-0 flex items-center space-x-2 md:space-x-4">
-              <div className="relative w-full md:w-auto">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  type="text"
-                  placeholder="Search prompts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full md:w-64 pl-10"
-                  data-testid="input-search"
-                />
-              </div>
+            <div className="mt-2 md:mt-0">
+              <SearchWithFilters
+                placeholder="Search prompts..."
+                onSearchChange={(query) => setSearchQuery(query)}
+                onResultClick={(prompt) => {
+                  // Navigate to prompt detail page or handle selection
+                  window.location.href = `/prompt/${prompt.id}`;
+                }}
+              />
             </div>
           </div>
 

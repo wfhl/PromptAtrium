@@ -34,6 +34,8 @@ interface PromptCardProps {
   isCommunityPage?: boolean;
   // Profile page flag
   isProfilePage?: boolean;
+  // Compact mode for search results
+  compact?: boolean;
 }
 
 export function PromptCard({ 
@@ -45,7 +47,8 @@ export function PromptCard({
   onSelectionChange,
   allowInlineEdit = false,
   isCommunityPage = false,
-  isProfilePage = false
+  isProfilePage = false,
+  compact = false
 }: PromptCardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -911,6 +914,40 @@ export function PromptCard({
       description: "Prompt downloaded successfully",
     });
   };
+
+  // Compact mode rendering for search results
+  if (compact) {
+    return (
+      <Card className="border-gray-800 bg-gray-900/30 hover:bg-gray-900/50 transition-colors p-2 sm:p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-sm text-foreground truncate">{prompt.name}</h4>
+            {prompt.description && (
+              <p className="text-xs text-muted-foreground truncate mt-1">{prompt.description}</p>
+            )}
+            <div className="flex items-center gap-2 mt-1">
+              {prompt.category && (
+                <Badge variant="secondary" className="text-xs py-0 px-1">
+                  {prompt.category}
+                </Badge>
+              )}
+              {prompt.promptType && (
+                <Badge variant="outline" className="text-xs py-0 px-1">
+                  {prompt.promptType}
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Heart className="h-3 w-3" />
+              {prompt.likes || 0}
+            </span>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className={`border-gray-800 bg-gray-900/30 hover:bg-gray-900/50 transition-colors cursor-pointer break-inside-avoid w-full max-w-full ${
