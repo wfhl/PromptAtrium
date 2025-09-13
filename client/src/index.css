@@ -173,6 +173,7 @@ button[class*="nav-gradient-library"]:active {
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
   color: transparent !important;
+  border-color: hsl(var(--border)) !important;
 }
 
 .inline-flex.items-center.justify-center.nav-gradient-community:hover,
@@ -186,12 +187,20 @@ button[class*="nav-gradient-community"]:active {
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
   color: transparent !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Specifically target buttons with outline variant and gradient classes */
+.nav-gradient-library.border-input:hover,
+.nav-gradient-community.border-input:hover {
+  background-color: transparent !important;
 }
 
 /* Additional override for Tailwind's text color utilities */
 .nav-gradient-library:hover *,
 .nav-gradient-community:hover * {
   color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
 }
 
 .button-gradient-library {
