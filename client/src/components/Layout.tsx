@@ -354,7 +354,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             <div className="hidden md:flex items-center space-x-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="text-gray-300 hover:text-cyan-400 transition-colors duration-200 px-4 py-2 rounded-md flex items-center gap-1 text-[16px] bg-transparent border-none outline-none focus:outline-none" data-testid="nav-resources">
+                  <button className="text-gray-300 hover:text-cyan-400 transition-colors px-4 py-2 rounded-md flex items-center gap-1 text-[16px] bg-transparent border-none outline-none focus:outline-none" data-testid="nav-resources">
                     Resources
                     <ChevronDown className="h-3 w-3" />
                   </button>
@@ -398,7 +398,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="text-gray-300 hover:text-cyan-400 transition-colors duration-200 px-4 py-2 rounded-md flex items-center gap-1 text-[16px] bg-transparent border-none outline-none focus:outline-none" data-testid="nav-tools">
+                  <button className="text-gray-300 hover:text-cyan-400 transition-colors px-4 py-2 rounded-md flex items-center gap-1 text-[16px] bg-transparent border-none outline-none focus:outline-none" data-testid="nav-tools">
                     Tools
                     <ChevronDown className="h-3 w-3" />
                   </button>
