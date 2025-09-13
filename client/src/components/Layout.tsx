@@ -293,11 +293,10 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/library')}
               >
                 <Link 
-                  className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
+                  className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block whitespace-nowrap" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10 whitespace-nowrap"} 
                   data-testid="nav-library"
                 >
-                  <span className="hidden min-[910px]:inline">My Library</span>
-                  <span className="inline min-[910px]:hidden">Library</span>
+                  My Library
                 </Link>
               </div>
               <div 
@@ -584,7 +583,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </Link>
               <Link 
                 href="/library" 
-                className={isActiveRoute("/library") ? "nav-gradient-library font-medium py-2" : "nav-gradient-library transition-colors py-2"} 
+                className={isActiveRoute("/library") ? "nav-gradient-library font-medium py-2 whitespace-nowrap" : "nav-gradient-library transition-colors py-2 whitespace-nowrap"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-library"
               >
