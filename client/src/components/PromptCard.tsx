@@ -981,8 +981,8 @@ export function PromptCard({
                   size="sm"
                   className={`px-2 py-1 text-xs transition-all ${
                     prompt.isPublic 
-                      ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 shadow-sm' 
-                      : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                      ? 'font-bold bg-gradient-to-br from-yellow-600/60 via-orange-700/60 to-orange-500/60 text-white' 
+                      : 'font-bold bg-gradient-to-br from-indigo-600/60 via-purple-700/60 to-purple-500/60 text-white'
                   }`}
                   onClick={() => visibilityMutation.mutate()}
                   disabled={visibilityMutation.isPending}
@@ -1404,14 +1404,14 @@ export function PromptCard({
           </div>
         )}
 
-        <div className="relative bg-muted rounded-md p-2 md:p-3 text-xs md:text-sm font-mono text-muted-foreground group" data-testid={`text-content-${prompt.id}`}>
+        <div className="relative text-sm text-gray-200/70 bg-green-900/20 p-2 rounded border border-green-700/30 leading-relaxed hover:border-green-600/40 transition-colors rounded-md p-2 md:p-3 text-xs md:text-sm font-mono group" data-testid={`text-content-${prompt.id}`}>
           <div className="pr-8 max-h-[10rem] md:max-h-none overflow-y-auto">
             {prompt.promptContent}
           </div>
           <Button
             size="sm"
             variant="ghost"
-            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-3 right-1 h-6 w-6 p-0 bg-transparent hover:opacity-100 text-green-400 opacity-50 transition-opacity"
             onClick={handleCopyPrompt}
             data-testid={`button-copy-prompt-${prompt.id}`}
           >
