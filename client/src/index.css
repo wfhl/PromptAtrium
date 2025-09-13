@@ -96,6 +96,8 @@
   --shadow-lg: 0px 2px 0px 0px hsl(221, 83%, 53%, 0), 0px 4px 6px -1px hsl(221, 83%, 53%, 0);
   --shadow-xl: 0px 2px 0px 0px hsl(221, 83%, 53%, 0), 0px 8px 10px -1px hsl(221, 83%, 53%, 0);
   --shadow-2xl: 0px 2px 0px 0px hsl(221, 83%, 53%, 0);
+  --spacing: 0.25rem;
+  --tracking-normal: 0em;
 }
 
 @layer base {
