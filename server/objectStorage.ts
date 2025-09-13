@@ -145,13 +145,31 @@ export class ObjectStorageService {
 
     const { bucketName, objectName } = parseObjectPath(fullPath);
 
-    // Sign URL for PUT method with TTL
-    return signObjectURL({
-      bucketName,
-      objectName,
-      method: "PUT",
-      ttlSec: 900,
-    });
+    try {
+      // Try to sign URL for PUT method with TTL
+      return await signObjectURL({
+        bucketName,
+        objectName,
+        method: "PUT",
+        ttlSec: 900,
+      });
+    } catch (error) {
+      // If signing fails, try alternative approach
+      console.error("Failed to sign URL via sidecar, trying direct approach:", error);
+      
+      // Generate a signed URL directly using the storage client
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      const [url] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'write',
+        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+        contentType: 'application/octet-stream',
+      });
+      
+      return url;
+    }
   }
 
   // Gets the object entity file from the object path.
