@@ -51,12 +51,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     }
     return 'dark';
   });
-  
+
   // Animated underline state and refs
   const navRef = useRef<HTMLDivElement>(null);
   const linkRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [underline, setUnderline] = useState({ left: 0, width: 0, opacity: 0, gradient: 'default' });
-  
+
   // Modal states
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
@@ -160,24 +160,24 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     if (path !== "/" && location.startsWith(path)) return true;
     return false;
   };
-  
+
   // Helper to register link refs
   const setLinkRef = (key: string) => (el: HTMLDivElement | null) => {
     linkRefs.current[key] = el;
   };
-  
+
   // Position underline to element
   function positionTo(el?: HTMLElement | null, path?: string) {
     if (!el || !navRef.current) return;
     const navRect = navRef.current.getBoundingClientRect();
     const r = el.getBoundingClientRect();
-    
+
     // Determine gradient based on path
     let gradient = 'default';
     if (path === '/library') gradient = 'library';
     else if (path === '/community') gradient = 'community';
     else if (path === '/admin') gradient = 'admin';
-    
+
     setUnderline({ 
       left: r.left - navRect.left, 
       width: r.width, 
@@ -185,7 +185,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
       gradient
     });
   }
-  
+
   // Update underline position on route change
   useEffect(() => {
     const activeKey = location.startsWith('/community') ? '/community' 
@@ -194,7 +194,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
       : '/';
     positionTo(linkRefs.current[activeKey], activeKey);
   }, [location]);
-  
+
   // Handle window resize
   useEffect(() => {
     const onResize = () => {
@@ -234,7 +234,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         <div className="absolute top-20 left-10 w-96 h-96 bg-indigo-900/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-900/10 rounded-full blur-3xl"></div>
         <div className="absolute top-40 right-20 w-64 h-64 bg-cyan-900/10 rounded-full blur-3xl"></div>
-        
+
         {/* Decorative grid lines */}
         <div className="absolute inset-0 grid grid-cols-12 opacity-5 pointer-events-none">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -242,7 +242,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
           ))}
         </div>
       </div>
-      
+
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-gray-900/70 backdrop-blur-lg border-b border-cyan-500/30 z-50 transition-all duration-300">
         <div className="container mx-auto px-2 sm:px-4 md:px-6 py-3 flex items-center justify-between">
@@ -264,7 +264,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </div>
               <h1 className="text-xl font-bold bg-gradient-to-b from-orange-400 to-purple-200 to-orange-400 bg-clip-text text-transparent">PromptAtrium</h1>
             </Link>
-            
+
             <nav 
               ref={navRef}
               className="hidden md:flex items-center space-x-1 relative"
@@ -293,12 +293,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/library')}
               >
                 <Link 
-                  href="/library" 
                   className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
                   data-testid="nav-library"
                 >
-                  <span className="lg:hidden">Library</span>
-                  <span className="hidden lg:inline">My Library</span>
+                  <span className="hidden min-[900px]:inline">My Library</span>
+                  <span className="inline min-[900px]:hidden">Library</span>
                 </Link>
               </div>
               <div 
@@ -313,7 +312,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   Community
                 </Link>
               </div>
-              
+
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <div 
                   ref={setLinkRef('/admin')}
@@ -329,7 +328,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </Link>
                 </div>
               )}
-              
+
               {/* Animated Underline */}
               <div 
                 data-testid="nav-underline"
@@ -349,7 +348,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               />
             </nav>
           </div>
-          
+
           <div className="flex items-center space-x-2 md:space-x-4">
             {/* Resources and Tools dropdowns - moved to right side */}
             <div className="hidden md:flex items-center space-x-2">
@@ -400,7 +399,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -476,7 +475,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 text-gray-300 hover:text-cyan-400" data-testid="button-user-menu">
@@ -510,27 +509,27 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuItem asChild>
                   <Link href={`/user/${typedUser?.username}`} className="flex items-center cursor-pointer" data-testid="menu-view-profile">
                     <UserIcon className="mr-2 h-4 w-4" />
                     View Profile
                   </Link>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuItem asChild>
                   <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
                     <Settings className="mr-2 h-4 w-4" />
                     Profile Settings
                   </Link>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                   Display Preferences
                 </DropdownMenuLabel>
-                
+
                 <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer" data-testid="menu-theme-toggle">
                   {theme === 'light' ? (
                     <>
@@ -544,21 +543,21 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     </>
                   )}
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuItem className="cursor-pointer" data-testid="menu-status-options">
                   <Eye className="mr-2 h-4 w-4" />
                   Status Display Options
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600" data-testid="menu-logout">
                   <LogOut className="mr-2 h-4 w-4" />
                   Log Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             {/* Mobile Menu Button - Now on the right */}
             <Button
               variant="ghost"
@@ -570,7 +569,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             </Button>
           </div>
         </div>
-        
+
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-gray-900/70 backdrop-blur-lg border-b border-cyan-500/30">
@@ -599,7 +598,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 Community
               </Link>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -656,7 +655,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -693,7 +692,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
+
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
                   href="/admin" 
@@ -725,7 +724,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
       <main className="pt-16 relative z-10">
         {children}
       </main>
-      
+
       {/* Global Modals */}
       <PromptModal
         open={promptModalOpen}
@@ -733,13 +732,13 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         prompt={null}
         mode="create"
       />
-      
+
       <BulkImportModal
         open={bulkImportModalOpen}
         onOpenChange={setBulkImportModalOpen}
         collections={collections}
       />
-      
+
       {/* Create Collection Modal */}
       <Dialog open={createCollectionModalOpen} onOpenChange={setCreateCollectionModalOpen}>
         <DialogContent>
