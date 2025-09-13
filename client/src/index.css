@@ -259,3 +259,49 @@
 [data-radix-popper-content-wrapper] .dropdown-menu-label {
   color: rgba(255, 255, 255, 0.9) !important;
 }
+
+/* Semi-transparent purple mobile navigation menu styles */
+.mobile-nav-dropdown {
+  background: rgba(139, 92, 246, 0.85) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+}
+
+/* Mobile hamburger menu background */
+.md\:hidden.bg-gray-900\/70 {
+  background: rgba(139, 92, 246, 0.85) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+}
+
+/* Mobile navigation links styling */
+.mobile-nav-dropdown nav a,
+.md\:hidden.bg-gray-900\/70 nav a {
+  color: white !important;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-dropdown nav a:hover,
+.md\:hidden.bg-gray-900\/70 nav a:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* Mobile dropdown menu items */
+.mobile-nav-dropdown [data-radix-popper-content-wrapper] [role="menuitem"],
+.mobile-nav-dropdown .dropdown-menu-item {
+  color: white !important;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-dropdown [data-radix-popper-content-wrapper] [role="menuitem"]:hover,
+.mobile-nav-dropdown .dropdown-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}

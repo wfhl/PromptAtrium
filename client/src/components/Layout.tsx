@@ -572,7 +572,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
 
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-gray-900/70 backdrop-blur-lg border-b border-cyan-500/30">
+          <div className="md:hidden bg-gray-900/70 backdrop-blur-lg border-b border-cyan-500/30 mobile-nav-dropdown">
             <nav className="container mx-auto px-2 sm:px-4 py-2 flex flex-col space-y-1">
               <Link 
                 href="/" 
