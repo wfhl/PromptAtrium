@@ -236,7 +236,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         <div className="absolute top-40 right-20 w-64 h-64 bg-cyan-900/10 rounded-full blur-xl"></div>
 
         {/* Decorative grid lines */}
-        <div className="absolute inset-0 grid grid-cols-12 opacity-5 pointer-events-none">
+        <div className="absolute inset-0 grid grid-cols-12 opacity-0 pointer-events-none">
           {Array.from({ length: 12 }).map((_, i) => (
             <div key={`col-${i}`} className="border-r border-cyan-500"></div>
           ))}

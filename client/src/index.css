@@ -149,17 +149,17 @@
 }
 
 .button-gradient-library {
-  background: linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%);
+  background: linear-gradient(135deg, #028ec6 0%, #6851c8 30%, #6851c8 70%, #028ec6 100%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 0px solid rgba(255, 255, 255, 0.2);
   color: white;
   transition: all 0.3s ease;
   font-weight: 700;
 }
 
 .button-gradient-library:hover {
-  background: linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%);
+  background: linear-gradient(135deg, #028ec6 0%, #6851c8 30%, #6851c8 70%, #028ec6 100%);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   color: white !important;
@@ -175,7 +175,7 @@
   background: linear-gradient(135deg, rgba(255, 200, 0, 0.8) 0%, rgba(255, 115, 0, 0.8) 50%, rgba(255, 200, 2, 0.8) 100%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 0px solid rgba(255, 255, 255, 0.2);
   color: white;
   transition: all 0.3s ease;
   font-weight: 700;

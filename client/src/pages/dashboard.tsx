@@ -475,7 +475,7 @@ export default function Dashboard() {
               <div className="space-y-4" data-testid="section-community-highlights">
                 {communityPrompts.length > 0 ? (
                   communityPrompts.map((prompt) => (
-                    <PromptCard key={prompt.id} prompt={prompt} />
+                    <PromptCard key={prompt.id} prompt={prompt} isCommunityPage={true} />
                   ))
                 ) : (
                   <Card>
