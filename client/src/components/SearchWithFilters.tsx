@@ -31,6 +31,7 @@ interface SearchWithFiltersProps {
   onSearchChange?: (query: string) => void;
   onFiltersChange?: (filters: SearchFilters) => void;
   onResultClick?: (prompt: Prompt) => void;
+  onResultsChange?: (results: Prompt[]) => void;
   placeholder?: string;
 }
 
@@ -38,6 +39,7 @@ export function SearchWithFilters({
   onSearchChange,
   onFiltersChange,
   onResultClick,
+  onResultsChange,
   placeholder = "Search prompts..."
 }: SearchWithFiltersProps) {
   const { user } = useAuth();
@@ -46,7 +48,7 @@ export function SearchWithFilters({
   
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [showResults, setShowResults] = useState(false);
+  // Remove showResults state as we'll show results on the page
   const [filterOpen, setFilterOpen] = useState(false);
   
   const [filters, setFilters] = useState<SearchFilters>({
@@ -112,14 +114,15 @@ export function SearchWithFilters({
   // Fetch search results
   const { data: searchResults = [], isLoading } = useQuery<Prompt[]>({
     queryKey: [`/api/prompts?${buildSearchQuery()}`],
-    enabled: debouncedQuery.length > 0 && showResults,
+    enabled: debouncedQuery.length > 0 || Object.entries(filters).some(([key, value]) => 
+      key !== 'showNsfw' && value !== 'all' && value !== 'my'
+    ),
     retry: false,
   });
 
   // Handle search input change
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setShowResults(value.length > 0);
     onSearchChange?.(value);
   };
 
