@@ -176,38 +176,61 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black relative">
+      {/* Background decorative elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-20 left-10 w-96 h-96 bg-indigo-900/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-900/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-40 right-20 w-64 h-64 bg-cyan-900/10 rounded-full blur-3xl"></div>
+        
+        {/* Decorative grid lines */}
+        <div className="absolute inset-0 grid grid-cols-12 opacity-5 pointer-events-none">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`col-${i}`} className="border-r border-cyan-500"></div>
+          ))}
+        </div>
+      </div>
+      
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur">
-        <div className="container mx-auto px-2 sm:px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 bg-gray-900/70 backdrop-blur-lg border-b border-cyan-500/30 z-50 transition-all duration-300">
+        <div className="container mx-auto px-2 sm:px-4 md:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-4 md:space-x-8">
             <Link href="/" className="flex items-center space-x-2 md:space-x-3 hover:opacity-80 transition-opacity">
-              <img 
-                src="/ATRIUM2 090725.png" 
-                alt="PromptAtrium Logo" 
-                className="w-8 h-8 object-contain"
-              />
-              <h1 className="text-xl font-bold text-foreground">PromptAtrium</h1>
+              {/* Futuristic Logo */}
+              <div className="relative mr-2">
+                <div className="absolute inset-0 bg-cyan-400/30 rounded-md blur-sm"></div>
+                <div className="w-10 h-10 rounded-md bg-gradient-to-br from-indigo-600 to-purple-600 border border-indigo-400/30 flex items-center justify-center relative shadow-lg shadow-indigo-800/20">
+                  <div className="absolute inset-[3px] bg-gray-900 rounded-[4px] flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-purple-900/20"></div>
+                    <img 
+                      src="/ATRIUM2 090725.png" 
+                      alt="PromptAtrium Logo" 
+                      className="w-6 h-6 object-contain relative z-10"
+                    />
+                  </div>
+                </div>
+              </div>
+              <h1 className="text-xl font-medium bg-gradient-to-r from-indigo-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">PromptAtrium</h1>
             </Link>
             
-            <nav className="hidden md:flex items-center space-x-6">
+            <nav className="hidden md:flex items-center space-x-1">
               <Link 
                 href="/" 
-                className={isActiveRoute("/") ? "text-primary font-medium border-b-2 border-primary pb-4 -mb-4" : "text-muted-foreground hover:text-foreground transition-colors"} 
+                className={isActiveRoute("/") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30" : "text-gray-300 hover:text-cyan-400 px-4 py-2 rounded-md transition-colors duration-200"} 
                 data-testid="nav-dashboard"
               >
                 Dashboard
               </Link>
               <Link 
                 href="/library" 
-                className={isActiveRoute("/library") ? "nav-gradient-library border-b-2 border-primary pb-4 -mb-4" : "nav-gradient-library hover:opacity-80 transition-opacity"} 
+                className={isActiveRoute("/library") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30" : "text-gray-300 hover:text-cyan-400 px-4 py-2 rounded-md transition-colors duration-200"} 
                 data-testid="nav-library"
               >
                 My Library
               </Link>
               <Link 
                 href="/community" 
-                className={isActiveRoute("/community") ? "nav-gradient-community border-b-2 border-primary pb-4 -mb-4" : "nav-gradient-community hover:opacity-80 transition-opacity"} 
+                className={isActiveRoute("/community") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30" : "text-gray-300 hover:text-cyan-400 px-4 py-2 rounded-md transition-colors duration-200"} 
                 data-testid="nav-community"
               >
                 Community
@@ -216,7 +239,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
                   href="/admin" 
-                  className={isActiveRoute("/admin") ? "text-yellow-600 font-medium border-b-2 border-yellow-600 pb-4 -mb-4 flex items-center gap-1" : "text-yellow-600 hover:text-yellow-700 transition-colors flex items-center gap-1"} 
+                  className={isActiveRoute("/admin") ? "text-yellow-400 px-4 py-2 rounded-md bg-yellow-400/10 border border-yellow-400/30 flex items-center gap-1" : "text-yellow-400 hover:text-yellow-300 px-4 py-2 rounded-md transition-colors flex items-center gap-1"} 
                   data-testid="nav-admin"
                 >
                   <Crown className="h-4 w-4" />
@@ -233,7 +256,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-[16px]"
+                    className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center gap-1 text-[16px]"
                     data-testid="nav-resources"
                   >
                     Resources
@@ -281,7 +304,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-[16px]"
+                    className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center gap-1 text-[16px]"
                     data-testid="nav-tools"
                   >
                     Tools
@@ -319,7 +342,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   size="icon"
-                  className="flex h-9 w-9"
+                  className="items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground hover:bg-primary/90 flex h-9 w-9 bg-[#850099]"
                   data-testid="button-new-menu"
                 >
                   <Plus className="h-5 w-5" />
@@ -355,8 +378,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
-                  <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                <Button variant="ghost" className="flex items-center space-x-2 text-gray-300 hover:text-cyan-400" data-testid="button-user-menu">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center border border-cyan-400/30">
                     {typedUser?.profileImageUrl ? (
                       <img
                         src={typedUser.profileImageUrl}
@@ -364,7 +387,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-white">
                         {typedUser?.firstName?.[0] || typedUser?.email?.[0] || "U"}
                       </span>
                     )}
@@ -438,7 +461,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             {/* Mobile Menu Button - Now on the right */}
             <Button
               variant="ghost"
-              className="md:hidden h-8 w-8 p-0"
+              className="md:hidden h-8 w-8 p-0 text-gray-300 hover:text-cyan-400"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
@@ -449,11 +472,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-card border-b border-border">
+          <div className="md:hidden bg-gray-900/70 backdrop-blur-lg border-b border-cyan-500/30">
             <nav className="container mx-auto px-2 sm:px-4 py-2 flex flex-col space-y-1">
               <Link 
                 href="/" 
-                className={isActiveRoute("/") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 
+                className={isActiveRoute("/") ? "text-cyan-400 font-medium py-2" : "text-gray-300 hover:text-cyan-400 transition-colors py-2"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-dashboard"
               >
@@ -461,7 +484,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </Link>
               <Link 
                 href="/library" 
-                className={isActiveRoute("/library") ? "nav-gradient-library font-medium py-2" : "nav-gradient-library hover:opacity-80 transition-opacity py-2"} 
+                className={isActiveRoute("/library") ? "text-cyan-400 font-medium py-2" : "text-gray-300 hover:text-cyan-400 transition-colors py-2"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-library"
               >
@@ -469,7 +492,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </Link>
               <Link 
                 href="/community" 
-                className={isActiveRoute("/community") ? "nav-gradient-community font-medium py-2" : "nav-gradient-community hover:opacity-80 transition-opacity py-2"} 
+                className={isActiveRoute("/community") ? "text-cyan-400 font-medium py-2" : "text-gray-300 hover:text-cyan-400 transition-colors py-2"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-community"
               >
@@ -480,7 +503,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="text-muted-foreground hover:text-foreground transition-colors py-2 w-full justify-between"
+                    className="text-gray-300 hover:text-cyan-400 transition-colors py-2 w-full justify-between"
                     data-testid="mobile-nav-resources"
                   >
                     <span>Resources</span>
@@ -537,7 +560,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="text-muted-foreground hover:text-foreground transition-colors py-2 w-full justify-between"
+                    className="text-gray-300 hover:text-cyan-400 transition-colors py-2 w-full justify-between"
                     data-testid="mobile-nav-tools"
                   >
                     <span>Tools</span>
@@ -573,7 +596,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <Link 
                   href="/admin" 
-                  className={isActiveRoute("/admin") ? "text-yellow-600 font-medium py-2 flex items-center gap-1" : "text-yellow-600 hover:text-yellow-700 transition-colors py-2 flex items-center gap-1"} 
+                  className={isActiveRoute("/admin") ? "text-yellow-400 font-medium py-2 flex items-center gap-1" : "text-yellow-400 hover:text-yellow-300 transition-colors py-2 flex items-center gap-1"} 
                   onClick={() => setMobileMenuOpen(false)}
                   data-testid="mobile-nav-admin"
                 >
@@ -582,7 +605,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </Link>
               )}
               <Button
-                className="w-full flex items-center justify-center space-x-2 mt-2"
+                className="w-full flex items-center justify-center space-x-2 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border border-cyan-400/30"
                 onClick={() => {
                   handleCreatePrompt();
                   setMobileMenuOpen(false);
@@ -598,7 +621,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main>
+      <main className="pt-16 relative z-10">
         {children}
       </main>
       
