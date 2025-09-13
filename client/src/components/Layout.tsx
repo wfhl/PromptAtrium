@@ -228,7 +228,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
+    <div className="min-h-screen relative">
       {/* Background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-20 left-10 w-96 h-96 bg-indigo-900/10 rounded-full blur-xl"></div>
