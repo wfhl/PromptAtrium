@@ -225,3 +225,37 @@
 .group[data-state="open"] * {
   color: white !important;
 }
+
+/* Semi-transparent purple dropdown menu styles */
+[data-radix-popper-content-wrapper] [role="menu"],
+[data-radix-popper-content-wrapper] .dropdown-menu-content {
+  background: rgba(139, 92, 246, 0.3) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  color: white !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+}
+
+/* Dropdown menu items */
+[data-radix-popper-content-wrapper] [role="menuitem"],
+[data-radix-popper-content-wrapper] .dropdown-menu-item {
+  color: white !important;
+  transition: all 0.2s ease;
+}
+
+[data-radix-popper-content-wrapper] [role="menuitem"]:hover,
+[data-radix-popper-content-wrapper] [role="menuitem"][data-highlighted],
+[data-radix-popper-content-wrapper] .dropdown-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+/* Dropdown menu labels and separators */
+[data-radix-popper-content-wrapper] [role="separator"] {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-radix-popper-content-wrapper] .dropdown-menu-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
