@@ -270,8 +270,16 @@
 }
 
 /* Mobile hamburger menu background */
+.md\:hidden.bg-gray-900\/30 {
+  background: rgba(139, 92, 246, 0.05) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+}
+
 .md\:hidden.bg-gray-900\/70 {
-  background: rgba(139, 92, 246, 0.08) !important;
+  background: rgba(139, 92, 246, 0.05) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(139, 92, 246, 0.2) !important;
@@ -280,16 +288,20 @@
 
 /* Mobile navigation links styling */
 .mobile-nav-dropdown nav a,
+.md\:hidden.bg-gray-900\/30 nav a,
 .md\:hidden.bg-gray-900\/70 nav a,
 .mobile-nav-dropdown nav button,
+.md\:hidden.bg-gray-900\/30 nav button,
 .md\:hidden.bg-gray-900\/70 nav button {
   color: white !important;
   transition: all 0.2s ease;
 }
 
 .mobile-nav-dropdown nav a:hover,
+.md\:hidden.bg-gray-900\/30 nav a:hover,
 .md\:hidden.bg-gray-900\/70 nav a:hover,
 .mobile-nav-dropdown nav button:hover,
+.md\:hidden.bg-gray-900\/30 nav button:hover,
 .md\:hidden.bg-gray-900\/70 nav button:hover {
   background: rgba(255, 255, 255, 0.1) !important;
   border-radius: 4px;
@@ -309,6 +321,7 @@
 }
 
 .mobile-nav-dropdown nav a.nav-gradient-library:hover,
+.md\:hidden.bg-gray-900\/30 nav a.nav-gradient-library:hover,
 .md\:hidden.bg-gray-900\/70 nav a.nav-gradient-library:hover {
   background: rgba(255, 255, 255, 0.1), linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%) !important;
   -webkit-background-clip: text !important;
@@ -318,6 +331,7 @@
 }
 
 .mobile-nav-dropdown nav a.nav-gradient-community,
+.md\:hidden.bg-gray-900\/30 nav a.nav-gradient-community,
 .md\:hidden.bg-gray-900\/70 nav a.nav-gradient-community {
   background: linear-gradient(135deg, #ffc800 0%, #ff7300 30%, #ff7300 70%, #ffc802 100%) !important;
   -webkit-background-clip: text !important;
@@ -328,6 +342,7 @@
 }
 
 .mobile-nav-dropdown nav a.nav-gradient-community:hover,
+.md\:hidden.bg-gray-900\/30 nav a.nav-gradient-community:hover,
 .md\:hidden.bg-gray-900\/70 nav a.nav-gradient-community:hover {
   background: rgba(255, 255, 255, 0.1), linear-gradient(135deg, #ffc800 0%, #ff7300 30%, #ff7300 70%, #ffc802 100%) !important;
   -webkit-background-clip: text !important;
