@@ -28,7 +28,31 @@ function isCrawler(userAgent: string | undefined): boolean {
 function generateOpenGraphHTML(prompt: any): string {
   const title = prompt?.name || 'AI Prompt';
   const description = prompt?.description || 'Discover and share AI prompts';
-  const imageUrl = prompt?.exampleImagesUrl?.[0] || '/ATRIUM SQUARE 090725.png';
+  
+  // Get the base URL for the application
+  const baseUrl = process.env.REPL_SLUG 
+    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` 
+    : 'https://promptatrium.com';
+  
+  // Handle image URL - ensure it's absolute
+  let imageUrl = '/ATRIUM SQUARE 090725.png'; // Default app icon
+  if (prompt?.exampleImagesUrl && prompt.exampleImagesUrl.length > 0 && prompt.exampleImagesUrl[0]) {
+    const firstImage = prompt.exampleImagesUrl[0];
+    // If the image URL is relative, make it absolute
+    if (firstImage.startsWith('/')) {
+      imageUrl = `${baseUrl}${firstImage}`;
+    } else if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
+      // Already absolute
+      imageUrl = firstImage;
+    } else {
+      // Assume it's a relative path without leading slash
+      imageUrl = `${baseUrl}/${firstImage}`;
+    }
+  } else {
+    // Use default app icon with full URL
+    imageUrl = `${baseUrl}/ATRIUM SQUARE 090725.png`;
+  }
+  
   const author = prompt?.user?.username || prompt?.user?.firstName || 'Anonymous';
   
   // Escape HTML entities in text content
@@ -56,7 +80,7 @@ function generateOpenGraphHTML(prompt: any): string {
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="article">
-  <meta property="og:url" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}/prompt/${prompt?.id}">
+  <meta property="og:url" content="${baseUrl}/prompt/${prompt?.id}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image" content="${imageUrl}">
@@ -68,13 +92,13 @@ function generateOpenGraphHTML(prompt: any): string {
   
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}/prompt/${prompt?.id}">
+  <meta property="twitter:url" content="${baseUrl}/prompt/${prompt?.id}">
   <meta property="twitter:title" content="${escapeHtml(title)}">
   <meta property="twitter:description" content="${escapeHtml(description)}">
   <meta property="twitter:image" content="${imageUrl}">
   
   <!-- Additional SEO -->
-  <link rel="canonical" href="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}/prompt/${prompt?.id}">
+  <link rel="canonical" href="${baseUrl}/prompt/${prompt?.id}">
   
   <!-- Redirect for non-crawlers if JavaScript is enabled -->
   <script>

@@ -59,6 +59,17 @@ function Router() {
       )}
       
       <Switch>
+        {/* Public routes - always accessible */}
+        <Route path="/prompt/:id">
+          {() => <Layout><PromptDetail /></Layout>}
+        </Route>
+        <Route path="/user/:username">
+          {() => <Layout><UserProfile /></Layout>}
+        </Route>
+        <Route path="/invite/:code" component={Invite} />
+        <Route path="/invite" component={Invite} />
+        
+        {/* Conditional routes based on authentication */}
         {isLoading || !isAuthenticated ? (
           <Route path="/" component={Landing} />
         ) : (
@@ -101,14 +112,8 @@ function Router() {
             </Route>
           </>
         )}
-        <Route path="/prompt/:id">
-          {() => <Layout><PromptDetail /></Layout>}
-        </Route>
-        <Route path="/user/:username">
-          {() => <Layout><UserProfile /></Layout>}
-        </Route>
-        <Route path="/invite/:code" component={Invite} />
-        <Route path="/invite" component={Invite} />
+        
+        {/* 404 fallback - must be last */}
         <Route component={NotFound} />
       </Switch>
     </>
