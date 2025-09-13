@@ -291,10 +291,10 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   background: rgb(72, 49, 124, 0.1) !important;
 }
 
-/* Mobile navigation links styling */
-.mobile-nav-dropdown nav a,
-.md\:hidden.bg-gray-900\/30 nav a,
-.md\:hidden.bg-gray-900\/70 nav a,
+/* Mobile navigation links styling - Default white text */
+.mobile-nav-dropdown nav a:not(.nav-gradient-library):not(.nav-gradient-community),
+.md\:hidden.bg-gray-900\/30 nav a:not(.nav-gradient-library):not(.nav-gradient-community),
+.md\:hidden.bg-gray-900\/70 nav a:not(.nav-gradient-library):not(.nav-gradient-community),
 .mobile-nav-dropdown nav button,
 .md\:hidden.bg-gray-900\/30 nav button,
 .md\:hidden.bg-gray-900\/70 nav button {
@@ -302,9 +302,9 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   transition: all 0.2s ease;
 }
 
-.mobile-nav-dropdown nav a:hover,
-.md\:hidden.bg-gray-900\/30 nav a:hover,
-.md\:hidden.bg-gray-900\/70 nav a:hover,
+.mobile-nav-dropdown nav a:not(.nav-gradient-library):not(.nav-gradient-community):hover,
+.md\:hidden.bg-gray-900\/30 nav a:not(.nav-gradient-library):not(.nav-gradient-community):hover,
+.md\:hidden.bg-gray-900\/70 nav a:not(.nav-gradient-library):not(.nav-gradient-community):hover,
 .mobile-nav-dropdown nav button:hover,
 .md\:hidden.bg-gray-900\/30 nav button:hover,
 .md\:hidden.bg-gray-900\/70 nav button:hover {
@@ -314,8 +314,9 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   padding-right: 12px !important;
 }
 
-/* Preserve gradient text styling on mobile navigation hover */
+/* Preserve gradient text styling on mobile navigation - Library */
 .mobile-nav-dropdown nav a.nav-gradient-library,
+.md\:hidden.bg-gray-900\/30 nav a.nav-gradient-library,
 .md\:hidden.bg-gray-900\/70 nav a.nav-gradient-library {
   background: linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%) !important;
   -webkit-background-clip: text !important;
@@ -323,18 +324,24 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   background-clip: text !important;
   color: transparent !important;
   font-weight: 600 !important;
+  transition: all 0.2s ease;
 }
 
 .mobile-nav-dropdown nav a.nav-gradient-library:hover,
 .md\:hidden.bg-gray-900\/30 nav a.nav-gradient-library:hover,
 .md\:hidden.bg-gray-900\/70 nav a.nav-gradient-library:hover {
-  background: rgba(255, 255, 255, 0.1), linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%) !important;
+  background: linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
   color: transparent !important;
+  border-radius: 4px;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
+/* Preserve gradient text styling on mobile navigation - Community */
 .mobile-nav-dropdown nav a.nav-gradient-community,
 .md\:hidden.bg-gray-900\/30 nav a.nav-gradient-community,
 .md\:hidden.bg-gray-900\/70 nav a.nav-gradient-community {
@@ -344,16 +351,21 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   background-clip: text !important;
   color: transparent !important;
   font-weight: 600 !important;
+  transition: all 0.2s ease;
 }
 
 .mobile-nav-dropdown nav a.nav-gradient-community:hover,
 .md\:hidden.bg-gray-900\/30 nav a.nav-gradient-community:hover,
 .md\:hidden.bg-gray-900\/70 nav a.nav-gradient-community:hover {
-  background: rgba(255, 255, 255, 0.1), linear-gradient(135deg, #ffc800 0%, #ff7300 30%, #ff7300 70%, #ffc802 100%) !important;
+  background: linear-gradient(135deg, #ffc800 0%, #ff7300 30%, #ff7300 70%, #ffc802 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
   color: transparent !important;
+  border-radius: 4px;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 /* Mobile dropdown menu items */
