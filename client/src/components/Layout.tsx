@@ -55,7 +55,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   // Animated underline state and refs
   const navRef = useRef<HTMLDivElement>(null);
   const linkRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const [underline, setUnderline] = useState({ left: 0, width: 0, opacity: 0 });
+  const [underline, setUnderline] = useState({ left: 0, width: 0, opacity: 0, gradient: 'default' });
   
   // Modal states
   const [promptModalOpen, setPromptModalOpen] = useState(false);
@@ -167,14 +167,22 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   };
   
   // Position underline to element
-  function positionTo(el?: HTMLElement | null) {
+  function positionTo(el?: HTMLElement | null, path?: string) {
     if (!el || !navRef.current) return;
     const navRect = navRef.current.getBoundingClientRect();
     const r = el.getBoundingClientRect();
+    
+    // Determine gradient based on path
+    let gradient = 'default';
+    if (path === '/library') gradient = 'library';
+    else if (path === '/community') gradient = 'community';
+    else if (path === '/admin') gradient = 'admin';
+    
     setUnderline({ 
       left: r.left - navRect.left, 
       width: r.width, 
-      opacity: 1 
+      opacity: 1,
+      gradient
     });
   }
   
@@ -184,7 +192,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
       : location.startsWith('/library') ? '/library' 
       : location.startsWith('/admin') ? '/admin' 
       : '/';
-    positionTo(linkRefs.current[activeKey]);
+    positionTo(linkRefs.current[activeKey], activeKey);
   }, [location]);
   
   // Handle window resize
@@ -194,7 +202,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         : location.startsWith('/library') ? '/library' 
         : location.startsWith('/admin') ? '/admin' 
         : '/';
-      positionTo(linkRefs.current[activeKey]);
+      positionTo(linkRefs.current[activeKey], activeKey);
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -265,12 +273,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   : location.startsWith('/library') ? '/library' 
                   : location.startsWith('/admin') ? '/admin' 
                   : '/';
-                positionTo(linkRefs.current[activeKey]);
+                positionTo(linkRefs.current[activeKey], activeKey);
               }}
             >
               <div 
                 ref={setLinkRef('/')}
-                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement)}
+                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/')}
               >
                 <Link 
                   href="/" 
@@ -282,7 +290,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </div>
               <div 
                 ref={setLinkRef('/library')}
-                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement)}
+                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/library')}
               >
                 <Link 
                   href="/library" 
@@ -294,7 +302,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </div>
               <div 
                 ref={setLinkRef('/community')}
-                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement)}
+                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/community')}
               >
                 <Link 
                   href="/community" 
@@ -308,7 +316,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
                 <div 
                   ref={setLinkRef('/admin')}
-                  onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement)}
+                  onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/admin')}
                 >
                   <Link 
                     href="/admin" 
@@ -327,9 +335,16 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 style={{ 
                   left: `${underline.left}px`, 
                   width: `${underline.width}px`, 
-                  opacity: underline.opacity 
+                  opacity: underline.opacity,
+                  background: underline.gradient === 'library' 
+                    ? 'linear-gradient(135deg, #0288c1 0%, #37286e 100%)'
+                    : underline.gradient === 'community'
+                    ? 'linear-gradient(135deg, #ffc800 0%, #ff7300 50%, #ffc802 100%)'
+                    : underline.gradient === 'admin'
+                    ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                    : 'linear-gradient(to right, rgb(103 232 249), rgb(99 102 241), rgb(168 85 247))'
                 }}
-                className="absolute bottom-0 h-0.5 rounded-full bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 shadow-[0_0_10px_rgba(34,211,238,0.6)] transition-[left,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                className="absolute bottom-0 h-0.5 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.6)] transition-[left,width,opacity,background] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
               />
             </nav>
           </div>
