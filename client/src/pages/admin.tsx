@@ -432,7 +432,7 @@ export default function AdminPage() {
 
   return (
     <>
-      <div className="bg-background p-6">
+      <div className="bg-transparent p-6">
         <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>

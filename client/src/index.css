@@ -49,6 +49,7 @@
   --shadow-2xl: 0px 2px 0px 0px hsl(221, 83%, 53%, 0);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+  --background-layer: #ffffff;
 }
 
 .dark {
@@ -84,6 +85,18 @@
   --sidebar-accent-foreground: hsl(220, 15%, 75%);
   --sidebar-border: hsl(220, 13%, 20%);
   --sidebar-ring: hsl(221, 83%, 53%);
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 0.5rem;
+  --shadow-2xs: 0px 2px 0px 0px hsl(221, 83%, 53%, 0);
+  --shadow-xs: 0px 2px 0px 0px hsl(221, 83%, 53%, 0);
+  --shadow-sm: 0px 2px 0px 0px hsl(221, 83%, 53%, 0), 0px 1px 2px -1px hsl(221, 83%, 53%, 0);
+  --shadow: 0px 2px 0px 0px hsl(221, 83%, 53%, 0), 0px 1px 2px -1px hsl(221, 83%, 53%, 0);
+  --shadow-md: 0px 2px 0px 0px hsl(221, 83%, 53%, 0), 0px 2px 4px -1px hsl(221, 83%, 53%, 0);
+  --shadow-lg: 0px 2px 0px 0px hsl(221, 83%, 53%, 0), 0px 4px 6px -1px hsl(221, 83%, 53%, 0);
+  --shadow-xl: 0px 2px 0px 0px hsl(221, 83%, 53%, 0), 0px 8px 10px -1px hsl(221, 83%, 53%, 0);
+  --shadow-2xl: 0px 2px 0px 0px hsl(221, 83%, 53%, 0);
   --background-layer: #000000;
 }
 
