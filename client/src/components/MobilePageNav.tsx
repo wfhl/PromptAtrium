@@ -12,27 +12,27 @@ export function MobilePageNav() {
       <div className="flex gap-2">
         <Link href="/library" className="flex-1">
           <Button 
-            variant={isLibraryPage ? "default" : "outline"} 
-            className="w-full relative"
+            variant="outline"
+            className={`w-full relative ${isLibraryPage ? 'button-gradient-library' : ''}`}
             data-testid="button-my-prompts"
           >
             <FileText className="h-4 w-4 mr-2" />
             My Prompts
             {isLibraryPage && (
-              <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
+              <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
             )}
           </Button>
         </Link>
         <Link href="/community" className="flex-1">
           <Button 
-            variant={isCommunityPage ? "default" : "outline"} 
-            className="w-full relative"
+            variant="outline"
+            className={`w-full relative ${isCommunityPage ? 'button-gradient-community' : ''}`}
             data-testid="button-community-prompts"
           >
             <Users className="h-4 w-4 mr-2" />
             Community Prompts
             {isCommunityPage && (
-              <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
+              <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
             )}
           </Button>
         </Link>
