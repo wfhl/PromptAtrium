@@ -1,17 +1,23 @@
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Heart, Share2, Edit, GitFork, ChevronLeft, LogIn, UserPlus } from "lucide-react";
+import { Copy, Heart, Share2, Edit, GitFork, ChevronLeft, LogIn, UserPlus, Download, Link2, Bookmark, Check, ZoomIn, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import type { Prompt, User } from "@shared/schema";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface PromptWithUser extends Prompt {
   user?: Partial<User>;
@@ -23,13 +29,48 @@ export default function PromptDetail() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [isLiked, setIsLiked] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Apply dark theme for unauthenticated users
+  useEffect(() => {
+    if (!user) {
+      document.documentElement.classList.add('dark');
+    }
+    // Cleanup function to respect user's actual theme preference when they log in
+    return () => {
+      if (!user) {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme !== 'dark') {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+  }, [user]);
 
   // Fetch prompt details
   const { data: prompt, isLoading, error } = useQuery<PromptWithUser>({
     queryKey: [`/api/prompts/${promptId}`],
     enabled: !!promptId,
   });
+
+  // Check if prompt is favorited
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (user && prompt) {
+        try {
+          const favorites = await queryClient.fetchQuery({
+            queryKey: ["/api/user/favorites"],
+          });
+          setIsFavorited((favorites as any[])?.some(fav => fav.id === prompt.id) || false);
+        } catch (error) {
+          // Silently fail if user doesn't have permission
+        }
+      }
+    };
+    checkFavoriteStatus();
+  }, [user, prompt]);
 
   // Favorite mutation
   const favoriteMutation = useMutation({
@@ -41,7 +82,7 @@ export default function PromptDetail() {
       return await response.json();
     },
     onSuccess: (data) => {
-      setIsLiked(data.favorited);
+      setIsFavorited(data.favorited);
       toast({
         title: data.favorited ? "Added to favorites" : "Removed from favorites",
       });
@@ -65,13 +106,23 @@ export default function PromptDetail() {
   });
 
   // Copy prompt to clipboard
-  const handleCopy = () => {
+  const handleCopyPrompt = async () => {
     if (prompt?.promptContent) {
-      navigator.clipboard.writeText(prompt.promptContent);
-      toast({
-        title: "Copied to clipboard",
-        description: "The prompt has been copied to your clipboard",
-      });
+      try {
+        await navigator.clipboard.writeText(prompt.promptContent);
+        setCopied(true);
+        toast({
+          title: "Copied!",
+          description: "Prompt content copied to clipboard",
+        });
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        toast({
+          title: "Failed to copy",
+          description: "Could not copy prompt to clipboard",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -125,14 +176,60 @@ export default function PromptDetail() {
     });
   };
 
+  // Handle download
+  const handleDownload = () => {
+    if (!prompt) return;
+    
+    const promptData = {
+      name: prompt.name,
+      description: prompt.description,
+      content: prompt.promptContent,
+      category: prompt.category,
+      tags: prompt.tags,
+      created: prompt.createdAt,
+    };
+    const blob = new Blob([JSON.stringify(promptData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${prompt.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Downloaded!",
+      description: "Prompt downloaded successfully",
+    });
+  };
+
+  // Handle copy link
+  const handleCopyLink = async () => {
+    try {
+      const shareableLink = `${window.location.origin}/prompt/${promptId}`;
+      await navigator.clipboard.writeText(shareableLink);
+      toast({
+        title: "Copied!",
+        description: "Shareable link copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy link to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded mb-4"></div>
-            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded mb-4"></div>
+            <div className="h-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
           </div>
         </div>
       </div>
@@ -172,128 +269,212 @@ export default function PromptDetail() {
 
         {/* Main content card with matching PromptCard styling */}
         <Card className="border-gray-800 bg-gray-900/30">
-          <CardHeader>
-            <div className="flex items-start justify-between">
+          <div className="p-6">
+            {/* Header Section */}
+            <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">{prompt.name}</CardTitle>
+                <h1 className="text-2xl font-bold mb-2 text-foreground">{prompt.name}</h1>
                 {prompt.description && (
-                  <CardDescription className="text-base">
+                  <p className="text-muted-foreground mb-4">
                     {prompt.description}
-                  </CardDescription>
+                  </p>
                 )}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => favoriteMutation.mutate()}
-                  disabled={!user}
-                  data-testid="button-favorite"
-                >
-                  <Heart className={`h-4 w-4 ${isLiked ? "fill-current text-red-500" : ""}`} />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleShare}
-                  data-testid="button-share"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
+              
+              {/* Action buttons */}
+              <div className="flex items-center space-x-1">
+                {/* Edit - only for owner */}
                 {user?.id === prompt.userId && (
                   <Button
-                    variant="outline"
-                    size="icon"
+                    size="sm"
+                    variant="ghost"
                     onClick={handleEdit}
+                    className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid="button-edit"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
                 )}
-              </div>
-            </div>
-
-            {/* Tags and metadata */}
-            <div className="flex flex-wrap gap-2 mt-4">
-              {prompt.category && (
-                <Badge variant="secondary" data-testid="badge-category">
-                  {prompt.category}
-                </Badge>
-              )}
-              {prompt.promptType && (
-                <Badge variant="secondary" data-testid="badge-type">
-                  {prompt.promptType}
-                </Badge>
-              )}
-              {prompt.promptStyle && (
-                <Badge variant="secondary" data-testid="badge-style">
-                  {prompt.promptStyle}
-                </Badge>
-              )}
-              {prompt.intendedGenerator && (
-                <Badge variant="outline" data-testid="badge-generator">
-                  {prompt.intendedGenerator}
-                </Badge>
-              )}
-              {prompt.recommendedModels && prompt.recommendedModels.length > 0 && (
-                <Badge variant="outline" data-testid="badge-model">
-                  {prompt.recommendedModels[0]}
-                </Badge>
-              )}
-              {prompt.isNsfw && (
-                <Badge variant="destructive" data-testid="badge-nsfw">
-                  NSFW
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Prompt content with matching PromptCard styling */}
-            <div>
-              <h3 className="font-semibold mb-2 text-foreground">Prompt</h3>
-              <div className="relative">
-                <pre className="bg-gray-800/50 border border-gray-700 p-4 rounded-lg whitespace-pre-wrap font-mono text-sm text-gray-200">
-                  {prompt.promptContent}
-                </pre>
+                
+                {/* Share */}
                 <Button
                   size="sm"
-                  variant="secondary"
-                  className="absolute top-2 right-2"
-                  onClick={handleCopy}
-                  data-testid="button-copy"
+                  variant="ghost"
+                  onClick={handleShare}
+                  className="h-8 w-8 p-0 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                  data-testid="button-share"
                 >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy
+                  <Share2 className="h-4 w-4" />
+                </Button>
+                
+                {/* Download */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleDownload}
+                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                  data-testid="button-download"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+                
+                {/* Copy Link */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCopyLink}
+                  className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                  data-testid="button-link"
+                >
+                  <Link2 className="h-4 w-4" />
+                </Button>
+                
+                {/* Bookmark */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => favoriteMutation.mutate()}
+                  disabled={!user || favoriteMutation.isPending}
+                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                  data-testid="button-bookmark"
+                >
+                  <Bookmark className={`h-4 w-4 transition-all duration-200 ${isFavorited ? 'fill-blue-600' : ''}`} />
                 </Button>
               </div>
             </div>
 
-            {/* Example images if available */}
+            {/* Example Images Gallery - matching PromptCard styling */}
             {prompt.exampleImagesUrl && prompt.exampleImagesUrl.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-semibold mb-4">Example Images</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {prompt.exampleImagesUrl.map((url, index) => (
-                      <div key={index} className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-                        <img
-                          src={url}
-                          alt={`Example ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                          data-testid={`img-example-${index}`}
-                        />
-                      </div>
-                    ))}
-                  </div>
+              <div className="mb-4" data-testid="gallery-images">
+                <div className="flex items-center gap-2 mb-2">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Example Images ({prompt.exampleImagesUrl.length})</span>
                 </div>
-              </>
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-1 md:gap-2">
+                  {prompt.exampleImagesUrl.slice(0, 4).map((imageUrl, index) => (
+                    <div 
+                      key={index} 
+                      className="relative aspect-square overflow-hidden rounded-md md:rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
+                      onClick={() => setSelectedImage(imageUrl)}
+                      data-testid={`image-thumbnail-${index}`}
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`Example ${index + 1} for ${prompt.name}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          // Add fallback or placeholder
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector('.fallback')) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'fallback absolute inset-0 flex items-center justify-center bg-muted';
+                            fallback.innerHTML = '<span class="text-muted-foreground text-xs">Image unavailable</span>';
+                            parent.appendChild(fallback);
+                          }
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      {/* Show count badge for additional images */}
+                      {index === 3 && prompt.exampleImagesUrl.length > 4 && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <span className="text-white font-medium text-sm">
+                            +{prompt.exampleImagesUrl.length - 4}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
+            {/* Prompt content with matching PromptCard styling */}
+            <div className="relative text-sm text-gray-200/70 bg-green-900/20 p-2 rounded border border-green-700/30 leading-relaxed hover:border-green-600/40 transition-colors rounded-md p-2 md:p-3 text-xs md:text-sm font-mono group">
+              <div className="pr-8 max-h-[10rem] md:max-h-none overflow-y-auto">
+                {prompt.promptContent}
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-3 right-1 h-6 w-6 p-0 bg-transparent hover:opacity-100 text-green-400 opacity-50 transition-opacity"
+                onClick={handleCopyPrompt}
+                data-testid="button-copy"
+              >
+                {copied ? (
+                  <Check className="h-3 w-3 text-green-600" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
+
+            {/* Negative prompt if exists */}
+            {prompt.negativePrompt && (
+              <div className="mt-3">
+                <h3 className="font-semibold mb-2 text-foreground text-sm">Negative Prompt</h3>
+                <div className="bg-red-900/20 border border-red-700/30 p-3 rounded-lg">
+                  <pre className="whitespace-pre-wrap font-mono text-xs text-red-200/70">
+                    {prompt.negativePrompt}
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            {/* Tags and metadata */}
+            <div className="mt-4 space-y-3">
+              {/* Metadata badges */}
+              <div className="flex flex-wrap gap-2">
+                {prompt.category && (
+                  <Badge variant="secondary" data-testid="badge-category">
+                    {prompt.category}
+                  </Badge>
+                )}
+                {prompt.promptType && (
+                  <Badge variant="secondary" data-testid="badge-type">
+                    {prompt.promptType}
+                  </Badge>
+                )}
+                {prompt.promptStyle && (
+                  <Badge variant="secondary" data-testid="badge-style">
+                    {prompt.promptStyle}
+                  </Badge>
+                )}
+                {prompt.intendedGenerator && (
+                  <Badge variant="outline" data-testid="badge-generator">
+                    {prompt.intendedGenerator}
+                  </Badge>
+                )}
+                {prompt.recommendedModels && prompt.recommendedModels.length > 0 && (
+                  <Badge variant="outline" data-testid="badge-model">
+                    {prompt.recommendedModels[0]}
+                  </Badge>
+                )}
+                {prompt.isNsfw && (
+                  <Badge variant="destructive" data-testid="badge-nsfw">
+                    NSFW
+                  </Badge>
+                )}
+              </div>
+
+              {/* Tags */}
+              {prompt.tags && prompt.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {prompt.tags.map((tag, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Creator info */}
-            <Separator />
+            <Separator className="my-6" />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar>
@@ -325,7 +506,7 @@ export default function PromptDetail() {
             {/* Sign up/Sign in call-to-action for unauthenticated users */}
             {!user && (
               <>
-                <Separator />
+                <Separator className="my-6" />
                 <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-6 text-center">
                   <h3 className="text-lg font-semibold mb-2">Join PromptAtrium</h3>
                   <p className="text-muted-foreground mb-4">
@@ -344,9 +525,26 @@ export default function PromptDetail() {
                 </div>
               </>
             )}
-          </CardContent>
+          </div>
         </Card>
       </div>
+
+      {/* Image Lightbox Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogTitle className="sr-only">Image Preview</DialogTitle>
+          <DialogDescription className="sr-only">
+            Full size preview of the example image
+          </DialogDescription>
+          {selectedImage && (
+            <img
+              src={selectedImage}
+              alt="Full size preview"
+              className="w-full h-auto rounded-lg"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
