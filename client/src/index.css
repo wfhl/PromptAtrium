@@ -271,19 +271,24 @@
 
 /* Mobile hamburger menu background */
 .md\:hidden.bg-gray-900\/30 {
-  background: rgba(139, 92, 246, 0.05) !important;
+  background: rgba(139, 92, 246, 0.8) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.2) !important;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.4) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
 }
 
 .md\:hidden.bg-gray-900\/70 {
-  background: rgba(139, 92, 246, 0.05) !important;
+  background: rgba(139, 92, 246, 0.8) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.2) !important;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.4) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+}
+
+/* Direct mobile navigation container */
+div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mobile-nav-dropdown {
+  background: rgba(139, 92, 246, 0.9) !important;
 }
 
 /* Mobile navigation links styling */
