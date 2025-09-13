@@ -365,26 +365,21 @@ export default function PromptDetail() {
                       data-testid={`image-thumbnail-${index}`}
                     >
                       <img
-                        src={imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${encodeURIComponent(imageUrl)}`}
+                        src={imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${imageUrl}`}
                         alt={`Example ${index + 1} for ${prompt.name}`}
                         className="w-full h-full object-cover"
                         loading="lazy"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          // Try fallback URL if not already tried
-                          if (!target.dataset.fallbackTried && !imageUrl.startsWith('http')) {
-                            target.dataset.fallbackTried = 'true';
-                            target.src = imageUrl;
-                          } else {
-                            target.style.display = 'none';
-                            // Add fallback or placeholder
-                            const parent = target.parentElement;
-                            if (parent && !parent.querySelector('.fallback')) {
-                              const fallback = document.createElement('div');
-                              fallback.className = 'fallback absolute inset-0 flex items-center justify-center bg-muted';
-                              fallback.innerHTML = '<span class="text-muted-foreground text-xs">Image unavailable</span>';
-                              parent.appendChild(fallback);
-                            }
+                          console.error('Image failed to load:', imageUrl);
+                          target.style.display = 'none';
+                          // Add fallback or placeholder
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector('.fallback')) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'fallback absolute inset-0 flex items-center justify-center bg-muted';
+                            fallback.innerHTML = '<span class="text-muted-foreground text-xs">Image unavailable</span>';
+                            parent.appendChild(fallback);
                           }
                         }}
                       />

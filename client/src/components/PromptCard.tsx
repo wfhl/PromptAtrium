@@ -1415,14 +1415,18 @@ export function PromptCard({
                 <div 
                   key={index} 
                   className="relative aspect-square overflow-hidden rounded-md md:rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
-                  onClick={() => setSelectedImage(imageUrl)}
+                  onClick={() => setSelectedImage(imageUrl?.startsWith('http') ? imageUrl : `/api/objects/serve/${imageUrl}`)}
                   data-testid={`image-thumbnail-${prompt.id}-${index}`}
                 >
                   <img
-                    src={imageUrl}
+                    src={imageUrl?.startsWith('http') ? imageUrl : `/api/objects/serve/${imageUrl}`}
                     alt={`Example ${index + 1} for ${prompt.name}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      console.error('Image failed to load in PromptCard:', imageUrl);
+                    }}
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                     <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />

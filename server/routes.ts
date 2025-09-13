@@ -2263,39 +2263,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public object serving endpoint for images
-  app.get('/api/objects/serve/:path(*)', async (req, res) => {
+  // Public object serving endpoint for images - streams directly from object storage
+  app.get('/api/objects/serve/*', async (req, res) => {
     try {
-      const { path } = req.params;
+      // Get the full path from params (everything after /api/objects/serve/)
+      const path = req.params[0] || req.query.path as string;
       
-      // If path is a full URL, redirect to it
+      if (!path) {
+        return res.status(400).json({ message: 'Path parameter is required' });
+      }
+
+      // Log for debugging
+      console.log('Serving object:', path);
+      
+      // If path is already a full HTTP URL, just redirect to it
       if (path.startsWith('http://') || path.startsWith('https://')) {
+        console.log('Redirecting to external URL:', path);
         return res.redirect(path);
       }
       
-      // If it's an object storage path, try to serve it
-      if (path.includes('replit-objstore') || path.includes('storage.googleapis.com')) {
-        // For Google Cloud Storage URLs, redirect directly
-        const fullUrl = path.startsWith('http') ? path : `https://storage.googleapis.com/${path}`;
-        return res.redirect(fullUrl);
-      }
+      // Handle object storage paths
+      let bucketName: string;
+      let objectName: string;
       
-      // For internal storage paths, try to parse and redirect
       try {
-        const objectService = new ObjectStorageService();
-        const { bucketName, objectName } = parseObjectPath(path);
-        
-        // Try to get a public URL for the object
-        const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
-        return res.redirect(publicUrl);
-      } catch (error) {
-        console.error('Error parsing object path:', error);
-        // If we can't parse it, try as-is
-        return res.redirect(path);
+        // Parse the object storage path
+        const parsed = parseObjectPath(path);
+        bucketName = parsed.bucketName;
+        objectName = parsed.objectName;
+      } catch (parseError) {
+        // If parsing fails, try to extract from common patterns
+        if (path.includes('storage.googleapis.com')) {
+          // Extract from Google Storage URL pattern
+          const match = path.match(/storage\.googleapis\.com\/([^/]+)\/(.+)/);
+          if (match) {
+            bucketName = match[1];
+            objectName = match[2];
+          } else {
+            throw new Error('Invalid storage URL format');
+          }
+        } else if (path.includes('/')) {
+          // Assume format: bucket/object or /bucket/object
+          const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+          const parts = cleanPath.split('/');
+          if (parts.length >= 2) {
+            bucketName = parts[0];
+            objectName = parts.slice(1).join('/');
+          } else {
+            throw new Error('Invalid path format');
+          }
+        } else {
+          throw parseError;
+        }
       }
+      
+      console.log('Fetching from bucket:', bucketName, 'object:', objectName);
+      
+      // In development, handle token exchange errors gracefully
+      try {
+        // Get the file from object storage
+        const bucket = objectStorageClient.bucket(bucketName);
+        const file = bucket.file(objectName);
+        
+        // Try to check if file exists
+        let exists = false;
+        try {
+          [exists] = await file.exists();
+        } catch (existsError: any) {
+          // If token exchange fails in development, try to generate a signed URL as fallback
+          if (existsError.message?.includes('token') || existsError.status === 500) {
+            console.log('Token exchange failed, trying signed URL fallback');
+            try {
+              // Try to generate a signed URL that bypasses authentication
+              const [signedUrl] = await file.getSignedUrl({
+                version: 'v4',
+                action: 'read',
+                expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+              });
+              return res.redirect(signedUrl);
+            } catch (signedUrlError) {
+              console.error('Signed URL generation also failed:', signedUrlError);
+              // As a last resort in development, return a placeholder
+              if (process.env.NODE_ENV === 'development') {
+                return res.status(503).json({ 
+                  message: 'Image service temporarily unavailable in development',
+                  error: 'Object storage authentication failed'
+                });
+              }
+            }
+          }
+          throw existsError;
+        }
+        
+        if (!exists) {
+          console.error('File not found in object storage:', bucketName, objectName);
+          return res.status(404).json({ message: 'Image not found' });
+        }
+        
+        // Get file metadata
+        const [metadata] = await file.getMetadata();
+        
+        // Set appropriate headers for images
+        const contentType = metadata.contentType || 'image/jpeg';
+        res.set({
+          'Content-Type': contentType,
+          'Content-Length': metadata.size?.toString() || '0',
+          'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+          'Access-Control-Allow-Origin': '*', // Allow cross-origin requests
+        });
+        
+        // Stream the file directly to the response
+        const stream = file.createReadStream();
+        
+        stream.on('error', (err) => {
+          console.error('Stream error for file:', bucketName, objectName, err);
+          if (!res.headersSent) {
+            // In development, provide a more helpful error message
+            if (process.env.NODE_ENV === 'development' && (err.message?.includes('token') || err.message?.includes('500'))) {
+              res.status(503).json({ 
+                error: 'Object storage authentication issue in development',
+                message: 'Please ensure images are uploaded through the app'
+              });
+            } else {
+              res.status(500).json({ error: 'Error streaming image' });
+            }
+          }
+        });
+        
+        // Pipe the stream to the response
+        stream.pipe(res);
+      } catch (storageError: any) {
+        console.error('Object storage error:', storageError);
+        
+        // In development, handle token exchange errors specially
+        if (process.env.NODE_ENV === 'development' && 
+            (storageError.message?.includes('token') || storageError.status === 500)) {
+          // Try to construct a direct URL if possible
+          const directUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+          console.log('Attempting direct URL redirect:', directUrl);
+          return res.redirect(directUrl);
+        }
+        
+        throw storageError;
+      }
+      
     } catch (error) {
       console.error('Error serving object:', error);
-      res.status(404).json({ message: 'Object not found' });
+      if (!res.headersSent) {
+        res.status(404).json({ message: 'Failed to load image', error: error instanceof Error ? error.message : 'Unknown error' });
+      }
+    }
+  });
+
+  // Development fallback for direct image uploads
+  app.post('/api/objects/upload-direct/:objectId', async (req: any, res) => {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ message: 'This endpoint is only available in development' });
+    }
+    
+    try {
+      const { objectId } = req.params;
+      const chunks: Buffer[] = [];
+      
+      req.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+      
+      req.on('end', async () => {
+        const buffer = Buffer.concat(chunks);
+        const objectService = new ObjectStorageService();
+        const privateDir = objectService.getPrivateObjectDir();
+        const fullPath = `${privateDir}/uploads/${objectId}`;
+        
+        const { bucketName, objectName } = parseObjectPath(fullPath);
+        const bucket = objectStorageClient.bucket(bucketName);
+        const file = bucket.file(objectName);
+        
+        // Upload the file
+        await file.save(buffer, {
+          metadata: {
+            contentType: req.headers['content-type'] || 'image/jpeg',
+          },
+        });
+        
+        // Return the path that can be used to retrieve the image
+        res.json({ objectPath: fullPath });
+      });
+      
+      req.on('error', (error: Error) => {
+        console.error('Upload error:', error);
+        res.status(500).json({ message: 'Upload failed' });
+      });
+    } catch (error) {
+      console.error('Direct upload error:', error);
+      res.status(500).json({ message: 'Failed to process upload' });
     }
   });
 
