@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Heart, Share2, Edit, GitFork, ChevronLeft } from "lucide-react";
+import { Copy, Heart, Share2, Edit, GitFork, ChevronLeft, LogIn, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -34,6 +34,9 @@ export default function PromptDetail() {
   // Favorite mutation
   const favoriteMutation = useMutation({
     mutationFn: async () => {
+      if (!user) {
+        throw new Error("Must be logged in to favorite");
+      }
       const response = await apiRequest("POST", `/api/prompts/${promptId}/favorite`);
       return await response.json();
     },
@@ -44,12 +47,20 @@ export default function PromptDetail() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/favorites"] });
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update favorite status",
-        variant: "destructive",
-      });
+    onError: (error) => {
+      if (error.message === "Must be logged in to favorite") {
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to favorite prompts",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update favorite status",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -159,8 +170,8 @@ export default function PromptDetail() {
           Back to Dashboard
         </Button>
 
-        {/* Main content card */}
-        <Card>
+        {/* Main content card with matching PromptCard styling */}
+        <Card className="border-gray-800 bg-gray-900/30">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -238,11 +249,11 @@ export default function PromptDetail() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Prompt content */}
+            {/* Prompt content with matching PromptCard styling */}
             <div>
-              <h3 className="font-semibold mb-2">Prompt</h3>
+              <h3 className="font-semibold mb-2 text-foreground">Prompt</h3>
               <div className="relative">
-                <pre className="bg-muted p-4 rounded-lg whitespace-pre-wrap font-mono text-sm">
+                <pre className="bg-gray-800/50 border border-gray-700 p-4 rounded-lg whitespace-pre-wrap font-mono text-sm text-gray-200">
                   {prompt.promptContent}
                 </pre>
                 <Button
@@ -300,11 +311,39 @@ export default function PromptDetail() {
                   </p>
                 </div>
               </div>
-              <Button onClick={handleFork} variant="outline" data-testid="button-fork">
+              <Button 
+                onClick={handleFork} 
+                variant="outline" 
+                data-testid="button-fork"
+                disabled={!user}
+              >
                 <GitFork className="h-4 w-4 mr-2" />
                 Fork Prompt
               </Button>
             </div>
+
+            {/* Sign up/Sign in call-to-action for unauthenticated users */}
+            {!user && (
+              <>
+                <Separator />
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-6 text-center">
+                  <h3 className="text-lg font-semibold mb-2">Join PromptAtrium</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Sign up to save, favorite, and create your own AI prompts
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button 
+                      onClick={() => window.location.href = "/api/login"}
+                      className="button-gradient-primary"
+                      data-testid="button-sign-up"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Sign Up / Sign In
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
