@@ -198,14 +198,14 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             <Link href="/" className="flex items-center space-x-2 md:space-x-3 hover:opacity-80 transition-opacity">
               {/* Futuristic Logo */}
               <div className="relative mr-2">
-                <div className="absolute inset-0 bg-cyan-400/30 rounded-md blur-sm"></div>
+                <div className="absolute inset-0 bg-orange-100/20 rounded-lg blur-lg"></div>
                 <div className="w-10 h-10">
-                  <div className="absolute inset-[3px] bg-transparent rounded-[4px] flex items-center justify-center overflow-hidden">
+                  <div className="absolute inset-[3px] bg-transparent rounded-[16px] flex items-center justify-center overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-purple-900/20"></div>
                     <img 
                       src="/ATRIUM2 090725.png" 
                       alt="PromptAtrium Logo" 
-                      className="w-6 h-6 object-contain relative z-10"
+                      className="w-8 h-8 object-contain relative z-10"
                     />
                   </div>
                 </div>
