@@ -193,3 +193,35 @@
 .button-gradient-community:hover * {
   color: white !important;
 }
+
+/* Semi-transparent purple toast styles */
+[data-sonner-toaster] [data-sonner-toast] {
+  background: rgba(139, 92, 246, 0.85) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  color: white !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-title] {
+  color: white !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-description] {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* For shadcn/ui toast components */
+.group[data-state="open"] {
+  background: rgba(139, 92, 246, 0.85) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  color: white !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+}
+
+.group[data-state="open"] * {
+  color: white !important;
+}
