@@ -13,11 +13,11 @@ export function MobilePageNav() {
         <Link href="/library" className="flex-1">
           <Button 
             variant="outline"
-            className={`w-full relative ${isLibraryPage ? 'button-gradient-library' : 'nav-gradient-library'}`}
+            className={`w-full relative ${isLibraryPage ? 'button-gradient-library hover:color-white' : ''}`}
             data-testid="button-my-prompts"
           >
-            <FileText className="h-4 w-4 mr-2" />
-            My Prompts
+            <FileText className="h-4 w-4 mr-2 text-white" />
+            <span className={!isLibraryPage ? 'nav-gradient-library' : ''}>My Prompts</span>
             {isLibraryPage && (
               <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
             )}
@@ -26,11 +26,11 @@ export function MobilePageNav() {
         <Link href="/community" className="flex-1">
           <Button 
             variant="outline"
-            className={`w-full relative ${isCommunityPage ? 'button-gradient-community' : 'nav-gradient-community'}`}
+            className={`w-full relative ${isCommunityPage ? 'button-gradient-community hover:color-white' : ''}`}
             data-testid="button-community-prompts"
           >
-            <Users className="h-4 w-4 mr-2" />
-            Community Prompts
+            <Users className="h-4 w-4 mr-2 text-white" />
+            <span className={!isCommunityPage ? 'nav-gradient-community' : ''}>Community Prompts</span>
             {isCommunityPage && (
               <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
             )}
