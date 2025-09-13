@@ -285,7 +285,7 @@ export default function Dashboard() {
                 onSearchChange={(query) => setSearchQuery(query)}
                 onResultClick={(prompt) => {
                   // Navigate to prompt detail page or handle selection
-                  window.location.href = `/prompt/${prompt.id}`;
+                  setLocation(`/prompt/${prompt.id}`);
                 }}
               />
             </div>

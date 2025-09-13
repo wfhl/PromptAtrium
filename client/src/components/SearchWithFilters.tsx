@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ export function SearchWithFilters({
   placeholder = "Search prompts..."
 }: SearchWithFiltersProps) {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const showNsfwPref = (user as any)?.showNsfw ?? true;
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,17 +57,19 @@ export function SearchWithFilters({
     style: "all",
     intendedGenerator: "all",
     recommendedModel: "all",
-    showNsfw: false
+    showNsfw: showNsfwPref
   });
 
   // Fetch filter options
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions } = useQuery<{
+    categories: string[];
+    promptTypes: string[];
+    promptStyles: string[];
+    intendedGenerators: string[];
+    models: string[];
+    collections: { id: string; name: string }[];
+  }>({
     queryKey: ["/api/prompts/options"],
-    queryFn: async () => {
-      const response = await fetch("/api/prompts/options");
-      if (!response.ok) throw new Error("Failed to fetch filter options");
-      return response.json();
-    },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
@@ -87,8 +90,8 @@ export function SearchWithFilters({
     }
     
     // Add source filter
-    if (filters.source === "my") {
-      params.append("userId", user?.id || "");
+    if (filters.source === "my" && user?.id) {
+      params.append("userId", user.id);
     } else {
       params.append("isPublic", "true");
     }
@@ -144,7 +147,7 @@ export function SearchWithFilters({
       style: "all",
       intendedGenerator: "all",
       recommendedModel: "all",
-      showNsfw: false
+      showNsfw: showNsfwPref
     };
     setFilters(defaultFilters);
     onFiltersChange?.(defaultFilters);
