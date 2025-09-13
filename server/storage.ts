@@ -79,6 +79,7 @@ export interface IStorage {
     promptIds?: string[];
   }): Promise<Prompt[]>;
   getPrompt(id: string): Promise<Prompt | undefined>;
+  getPromptWithUser(id: string): Promise<any>;
   createPrompt(prompt: InsertPrompt): Promise<Prompt>;
   updatePrompt(id: string, prompt: Partial<InsertPrompt>): Promise<Prompt>;
   deletePrompt(id: string): Promise<void>;
@@ -480,6 +481,65 @@ export class DatabaseStorage implements IStorage {
   async getPrompt(id: string): Promise<Prompt | undefined> {
     const [prompt] = await db.select().from(prompts).where(eq(prompts.id, id));
     return prompt;
+  }
+
+  async getPromptWithUser(id: string): Promise<any> {
+    const [result] = await db
+      .select({
+        id: prompts.id,
+        name: prompts.name,
+        description: prompts.description,
+        category: prompts.category,
+        promptType: prompts.promptType,
+        promptStyle: prompts.promptStyle,
+        categories: prompts.categories,
+        promptTypes: prompts.promptTypes,
+        promptStyles: prompts.promptStyles,
+        tags: prompts.tags,
+        tagsNormalized: prompts.tagsNormalized,
+        isPublic: prompts.isPublic,
+        isFeatured: prompts.isFeatured,
+        isNsfw: prompts.isNsfw,
+        status: prompts.status,
+        exampleImagesUrl: prompts.exampleImagesUrl,
+        notes: prompts.notes,
+        author: prompts.author,
+        sourceUrl: prompts.sourceUrl,
+        version: prompts.version,
+        forkOf: prompts.forkOf,
+        usageCount: prompts.usageCount,
+        likes: prompts.likes,
+        qualityScore: prompts.qualityScore,
+        intendedGenerator: prompts.intendedGenerator,
+        intendedGenerators: prompts.intendedGenerators,
+        recommendedModels: prompts.recommendedModels,
+        technicalParams: prompts.technicalParams,
+        variables: prompts.variables,
+        projectId: prompts.projectId,
+        collectionId: prompts.collectionId,
+        collectionIds: prompts.collectionIds,
+        relatedPrompts: prompts.relatedPrompts,
+        license: prompts.license,
+        lastUsedAt: prompts.lastUsedAt,
+        userId: prompts.userId,
+        createdAt: prompts.createdAt,
+        updatedAt: prompts.updatedAt,
+        promptContent: prompts.promptContent,
+        negativePrompt: prompts.negativePrompt,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          username: users.username,
+          profileImageUrl: users.profileImageUrl,
+        }
+      })
+      .from(prompts)
+      .leftJoin(users, eq(prompts.userId, users.id))
+      .where(eq(prompts.id, id));
+    
+    return result;
   }
 
   async createPrompt(prompt: InsertPrompt): Promise<Prompt> {

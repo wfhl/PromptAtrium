@@ -21,6 +21,7 @@ import LikedPrompts from "@/pages/LikedPrompts";
 import ForkedPrompts from "@/pages/ForkedPrompts";
 import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
+import PromptDetail from "@/pages/prompt-detail";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
@@ -100,6 +101,9 @@ function Router() {
             </Route>
           </>
         )}
+        <Route path="/prompt/:id">
+          {() => <Layout><PromptDetail /></Layout>}
+        </Route>
         <Route path="/user/:username">
           {() => <Layout><UserProfile /></Layout>}
         </Route>
