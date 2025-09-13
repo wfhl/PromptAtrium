@@ -288,7 +288,7 @@
 
 /* Direct mobile navigation container */
 div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mobile-nav-dropdown {
-  background: rgba(139, 92, 246, 0.9) !important;
+  background: rgb(72, 49, 124, 0.1) !important;
 }
 
 /* Mobile navigation links styling */
