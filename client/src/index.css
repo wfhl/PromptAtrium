@@ -161,10 +161,13 @@
   color: transparent !important;
 }
 
-/* Override button component hover states specifically for gradient text */
-button.nav-gradient-library:hover,
-button.nav-gradient-library:focus,
-button.nav-gradient-library:active {
+/* Override button component hover states with maximum specificity */
+.inline-flex.items-center.justify-center.nav-gradient-library:hover,
+.inline-flex.items-center.justify-center.nav-gradient-library:focus,
+.inline-flex.items-center.justify-center.nav-gradient-library:active,
+button[class*="nav-gradient-library"]:hover,
+button[class*="nav-gradient-library"]:focus,
+button[class*="nav-gradient-library"]:active {
   background: linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
@@ -172,14 +175,23 @@ button.nav-gradient-library:active {
   color: transparent !important;
 }
 
-button.nav-gradient-community:hover,
-button.nav-gradient-community:focus,
-button.nav-gradient-community:active {
+.inline-flex.items-center.justify-center.nav-gradient-community:hover,
+.inline-flex.items-center.justify-center.nav-gradient-community:focus,
+.inline-flex.items-center.justify-center.nav-gradient-community:active,
+button[class*="nav-gradient-community"]:hover,
+button[class*="nav-gradient-community"]:focus,
+button[class*="nav-gradient-community"]:active {
   background: linear-gradient(135deg, #ffc800 0%, #ff7300 50%, #ffc802 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
   color: transparent !important;
+}
+
+/* Additional override for Tailwind's text color utilities */
+.nav-gradient-library:hover *,
+.nav-gradient-community:hover * {
+  color: inherit !important;
 }
 
 .button-gradient-library {
