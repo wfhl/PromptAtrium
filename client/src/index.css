@@ -229,7 +229,7 @@
 /* Semi-transparent purple dropdown menu styles */
 [data-radix-popper-content-wrapper] [role="menu"],
 [data-radix-popper-content-wrapper] .dropdown-menu-content {
-  background: rgba(139, 92, 246, 0.3) !important;
+  background: rgba(139, 92, 246, 0.1) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(139, 92, 246, 0.3) !important;
