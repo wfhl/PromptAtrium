@@ -18,6 +18,7 @@ import { BulkEditToolbar } from "@/components/BulkEditToolbar";
 import { BulkEditModal } from "@/components/BulkEditModal";
 import { BulkImportModal } from "@/components/BulkImportModal";
 import { CollectionItem } from "@/components/CollectionItem";
+import { MobilePageNav } from "@/components/MobilePageNav";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -688,6 +689,9 @@ export default function Library() {
   return (
     <>
       <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
+        {/* Mobile Navigation */}
+        <MobilePageNav />
+        
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
           <TabsList className="grid w-full grid-cols-5">

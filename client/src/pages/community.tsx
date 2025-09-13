@@ -17,6 +17,7 @@ import {
   Share2, BookOpen, Folder, ChevronRight
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
+import { MobilePageNav } from "@/components/MobilePageNav";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Prompt, User, Collection } from "@shared/schema";
@@ -268,6 +269,9 @@ export default function Community() {
 
   return (
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
+      {/* Mobile Navigation */}
+      <MobilePageNav />
+      
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
         <TabsList className="grid w-full grid-cols-3">
