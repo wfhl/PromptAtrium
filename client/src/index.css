@@ -178,33 +178,3 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 0px rgba(255, 154, 158, 0.3);
 }
-
-/* Override button hover behavior for gradient text buttons */
-button.nav-gradient-library:hover,
-button.nav-gradient-library:focus {
-  background: linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-  color: transparent !important;
-  background-color: transparent !important;
-  border-color: hsl(var(--border)) !important;
-}
-
-button.nav-gradient-community:hover,
-button.nav-gradient-community:focus {
-  background: linear-gradient(135deg, #ffc800 0%, #ff7300 50%, #ffc802 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-  color: transparent !important;
-  background-color: transparent !important;
-  border-color: hsl(var(--border)) !important;
-}
-
-/* Ensure icons remain visible on hover */
-button.nav-gradient-library:hover svg,
-button.nav-gradient-community:hover svg {
-  color: white !important;
-  -webkit-text-fill-color: white !important;
-}
