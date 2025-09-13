@@ -200,14 +200,14 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </Link>
               <Link 
                 href="/library" 
-                className={isActiveRoute("/library") ? "text-primary font-medium border-b-2 border-primary pb-4 -mb-4" : "text-muted-foreground hover:text-foreground transition-colors"} 
+                className={isActiveRoute("/library") ? "nav-gradient-library border-b-2 border-primary pb-4 -mb-4" : "nav-gradient-library hover:opacity-80 transition-opacity"} 
                 data-testid="nav-library"
               >
                 My Library
               </Link>
               <Link 
                 href="/community" 
-                className={isActiveRoute("/community") ? "text-primary font-medium border-b-2 border-primary pb-4 -mb-4" : "text-muted-foreground hover:text-foreground transition-colors"} 
+                className={isActiveRoute("/community") ? "nav-gradient-community border-b-2 border-primary pb-4 -mb-4" : "nav-gradient-community hover:opacity-80 transition-opacity"} 
                 data-testid="nav-community"
               >
                 Community
@@ -461,7 +461,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </Link>
               <Link 
                 href="/library" 
-                className={isActiveRoute("/library") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 
+                className={isActiveRoute("/library") ? "nav-gradient-library font-medium py-2" : "nav-gradient-library hover:opacity-80 transition-opacity py-2"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-library"
               >
@@ -469,7 +469,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </Link>
               <Link 
                 href="/community" 
-                className={isActiveRoute("/community") ? "text-primary font-medium py-2" : "text-muted-foreground hover:text-foreground transition-colors py-2"} 
+                className={isActiveRoute("/community") ? "nav-gradient-community font-medium py-2" : "nav-gradient-community hover:opacity-80 transition-opacity py-2"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-community"
               >

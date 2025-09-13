@@ -359,13 +359,13 @@ export default function Dashboard() {
           {/* Navigation Buttons */}
           <div className="flex gap-2 mb-3">
             <Link href="/library" className="flex-1">
-              <Button variant="outline" className="w-full" data-testid="button-my-prompts">
+              <Button className="w-full button-gradient-library" data-testid="button-my-prompts">
                 <FileText className="h-4 w-4 mr-2" />
                 My Prompts
               </Button>
             </Link>
             <Link href="/community" className="flex-1">
-              <Button variant="outline" className="w-full" data-testid="button-community-prompts">
+              <Button className="w-full button-gradient-community" data-testid="button-community-prompts">
                 <Users className="h-4 w-4 mr-2" />
                 Community Prompts
               </Button>
@@ -487,13 +487,13 @@ export default function Dashboard() {
             {/* Navigation Buttons - Desktop */}
             <div className="hidden md:flex gap-2">
               <Link href="/library" className="flex-1">
-                <Button variant="outline" className="w-full" data-testid="button-my-prompts-desktop">
+                <Button className="w-full button-gradient-library" data-testid="button-my-prompts-desktop">
                   <FileText className="h-4 w-4 mr-2" />
                   My Prompts
                 </Button>
               </Link>
               <Link href="/community" className="flex-1">
-                <Button variant="outline" className="w-full" data-testid="button-community-prompts-desktop">
+                <Button className="w-full button-gradient-community" data-testid="button-community-prompts-desktop">
                   <Users className="h-4 w-4 mr-2" />
                   Community Prompts
                 </Button>
