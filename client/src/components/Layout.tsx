@@ -354,14 +354,10 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             <div className="hidden md:flex items-center space-x-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center gap-1 text-[16px]"
-                    data-testid="nav-resources"
-                  >
+                  <button className="text-gray-300 hover:text-cyan-400 transition-colors duration-200 px-4 py-2 rounded-md flex items-center gap-1 text-[16px] bg-transparent border-none outline-none focus:outline-none" data-testid="nav-resources">
                     Resources
                     <ChevronDown className="h-3 w-3" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-resources">
                   <DropdownMenuItem 
@@ -402,14 +398,10 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center gap-1 text-[16px]"
-                    data-testid="nav-tools"
-                  >
+                  <button className="text-gray-300 hover:text-cyan-400 transition-colors duration-200 px-4 py-2 rounded-md flex items-center gap-1 text-[16px] bg-transparent border-none outline-none focus:outline-none" data-testid="nav-tools">
                     Tools
                     <ChevronDown className="h-3 w-3" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-tools">
                   <DropdownMenuItem asChild>
@@ -601,14 +593,10 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="text-gray-300 hover:text-cyan-400 transition-colors py-2 w-full justify-between"
-                    data-testid="mobile-nav-resources"
-                  >
+                  <button className="text-gray-300 hover:text-cyan-400 transition-colors py-2 w-full flex justify-between items-center bg-transparent border-none outline-none focus:outline-none" data-testid="mobile-nav-resources">
                     <span>Resources</span>
                     <ChevronDown className="h-3 w-3" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48" data-testid="mobile-dropdown-resources">
                   <DropdownMenuItem 
@@ -658,14 +646,10 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="text-gray-300 hover:text-cyan-400 transition-colors py-2 w-full justify-between"
-                    data-testid="mobile-nav-tools"
-                  >
+                  <button className="text-gray-300 hover:text-cyan-400 transition-colors py-2 w-full flex justify-between items-center bg-transparent border-none outline-none focus:outline-none" data-testid="mobile-nav-tools">
                     <span>Tools</span>
                     <ChevronDown className="h-3 w-3" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48" data-testid="mobile-dropdown-tools">
                   <DropdownMenuItem asChild>
