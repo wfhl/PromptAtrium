@@ -124,7 +124,7 @@
 
 /* Navigation gradient styles */
 .nav-gradient-library {
-  background: linear-gradient(135deg, #0288c1 0%, #37286e 100%);
+  background: linear-gradient(135deg, #028ec6 0%, #372971 50%, #028ec6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
