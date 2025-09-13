@@ -262,20 +262,20 @@
 
 /* Semi-transparent purple mobile navigation menu styles */
 .mobile-nav-dropdown {
-  background: rgba(139, 92, 246, 0.15) !important;
+  background: rgba(139, 92, 246, 0.08) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(139, 92, 246, 0.25) !important;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
 }
 
 /* Mobile hamburger menu background */
 .md\:hidden.bg-gray-900\/70 {
-  background: rgba(139, 92, 246, 0.15) !important;
+  background: rgba(139, 92, 246, 0.08) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.25) !important;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
 }
 
 /* Mobile navigation links styling */
