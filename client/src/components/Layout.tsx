@@ -296,8 +296,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
                   data-testid="nav-library"
                 >
-                  <span className="hidden min-[900px]:inline">My Library</span>
-                  <span className="inline min-[900px]:hidden">Library</span>
+                  <span className="hidden min-[910px]:inline">My Library</span>
+                  <span className="inline min-[910px]:hidden">Library</span>
                 </Link>
               </div>
               <div 
