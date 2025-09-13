@@ -360,33 +360,7 @@ export default function Dashboard() {
           </Collapsible>
         </div>
 
-        {/* Quick Actions for Mobile - Show at top on mobile */}
-        <div className="block md:hidden mb-3">
-          {/* Navigation Buttons */}
-          <div className="flex gap-2 mb-3">
-            <Link href="/library" className="flex-1">
-              <Button className="w-full button-gradient-library" data-testid="button-my-prompts">
-                <FileText className="h-4 w-4 mr-2" />
-                My Prompts
-              </Button>
-            </Link>
-            <Link href="/community" className="flex-1">
-              <Button className="w-full button-gradient-community" data-testid="button-community-prompts">
-                <Users className="h-4 w-4 mr-2" />
-                Community Prompts
-              </Button>
-            </Link>
-          </div>
-          
-          <QuickActions
-            onCreatePrompt={handleCreatePrompt}
-            onCreateCollection={handleCreateCollection}
-            onStartProject={handleStartProject}
-            onImportPrompts={handleImportPrompts}
-          />
-        </div>
-
-        {/* Search Results Section */}
+        {/* Search Results Section - Positioned directly below search field */}
         {(searchQuery || searchResults.length > 0) && (
           <div className="mb-6 md:mb-8">
             <Card>
@@ -422,6 +396,32 @@ export default function Dashboard() {
             </Card>
           </div>
         )}
+
+        {/* Quick Actions for Mobile - Show at top on mobile */}
+        <div className="block md:hidden mb-3">
+          {/* Navigation Buttons */}
+          <div className="flex gap-2 mb-3">
+            <Link href="/library" className="flex-1">
+              <Button className="w-full button-gradient-library" data-testid="button-my-prompts">
+                <FileText className="h-4 w-4 mr-2" />
+                My Prompts
+              </Button>
+            </Link>
+            <Link href="/community" className="flex-1">
+              <Button className="w-full button-gradient-community" data-testid="button-community-prompts">
+                <Users className="h-4 w-4 mr-2" />
+                Community Prompts
+              </Button>
+            </Link>
+          </div>
+          
+          <QuickActions
+            onCreatePrompt={handleCreatePrompt}
+            onCreateCollection={handleCreateCollection}
+            onStartProject={handleStartProject}
+            onImportPrompts={handleImportPrompts}
+          />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4 lg:gap-8">
           <div className="lg:col-span-2">
