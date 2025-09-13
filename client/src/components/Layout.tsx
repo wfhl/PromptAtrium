@@ -610,7 +610,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48" data-testid="mobile-dropdown-resources">
+                <DropdownMenuContent align="end" className="w-48" data-testid="mobile-dropdown-resources">
                   <DropdownMenuItem 
                     onClick={() => {
                       toast({
@@ -667,7 +667,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48" data-testid="mobile-dropdown-tools">
+                <DropdownMenuContent align="end" className="w-48" data-testid="mobile-dropdown-tools">
                   <DropdownMenuItem asChild>
                     <Link 
                       href="/tools/aspect-ratio-calculator" 
