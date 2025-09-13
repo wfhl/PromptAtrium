@@ -293,6 +293,45 @@
   padding-right: 12px !important;
 }
 
+/* Preserve gradient text styling on mobile navigation hover */
+.mobile-nav-dropdown nav a.nav-gradient-library,
+.md\:hidden.bg-gray-900\/70 nav a.nav-gradient-library {
+  background: linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+  font-weight: 600 !important;
+}
+
+.mobile-nav-dropdown nav a.nav-gradient-library:hover,
+.md\:hidden.bg-gray-900\/70 nav a.nav-gradient-library:hover {
+  background: rgba(255, 255, 255, 0.1), linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+}
+
+.mobile-nav-dropdown nav a.nav-gradient-community,
+.md\:hidden.bg-gray-900\/70 nav a.nav-gradient-community {
+  background: linear-gradient(135deg, #ffc800 0%, #ff7300 30%, #ff7300 70%, #ffc802 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+  font-weight: 600 !important;
+}
+
+.mobile-nav-dropdown nav a.nav-gradient-community:hover,
+.md\:hidden.bg-gray-900\/70 nav a.nav-gradient-community:hover {
+  background: rgba(255, 255, 255, 0.1), linear-gradient(135deg, #ffc800 0%, #ff7300 30%, #ff7300 70%, #ffc802 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+}
+
 /* Mobile dropdown menu items */
 .mobile-nav-dropdown [data-radix-popper-content-wrapper] [role="menuitem"],
 .mobile-nav-dropdown .dropdown-menu-item {
