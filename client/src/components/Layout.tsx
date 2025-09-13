@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +51,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     }
     return 'dark';
   });
+  
+  // Animated underline state and refs
+  const navRef = useRef<HTMLDivElement>(null);
+  const linkRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [underline, setUnderline] = useState({ left: 0, width: 0, opacity: 0 });
   
   // Modal states
   const [promptModalOpen, setPromptModalOpen] = useState(false);
@@ -155,6 +160,45 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     if (path !== "/" && location.startsWith(path)) return true;
     return false;
   };
+  
+  // Helper to register link refs
+  const setLinkRef = (key: string) => (el: HTMLDivElement | null) => {
+    linkRefs.current[key] = el;
+  };
+  
+  // Position underline to element
+  function positionTo(el?: HTMLElement | null) {
+    if (!el || !navRef.current) return;
+    const navRect = navRef.current.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    setUnderline({ 
+      left: r.left - navRect.left, 
+      width: r.width, 
+      opacity: 1 
+    });
+  }
+  
+  // Update underline position on route change
+  useEffect(() => {
+    const activeKey = location.startsWith('/community') ? '/community' 
+      : location.startsWith('/library') ? '/library' 
+      : location.startsWith('/admin') ? '/admin' 
+      : '/';
+    positionTo(linkRefs.current[activeKey]);
+  }, [location]);
+  
+  // Handle window resize
+  useEffect(() => {
+    const onResize = () => {
+      const activeKey = location.startsWith('/community') ? '/community' 
+        : location.startsWith('/library') ? '/library' 
+        : location.startsWith('/admin') ? '/admin' 
+        : '/';
+      positionTo(linkRefs.current[activeKey]);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [location]);
 
   if (isLoading) {
     return (
@@ -213,39 +257,80 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               <h1 className="text-xl font-medium bg-gradient-to-r from-indigo-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">PromptAtrium</h1>
             </Link>
             
-            <nav className="hidden md:flex items-center space-x-1">
-              <Link 
-                href="/" 
-                className={isActiveRoute("/") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30" : "text-gray-300 hover:text-cyan-400 px-4 py-2 rounded-md transition-colors duration-200"} 
-                data-testid="nav-dashboard"
+            <nav 
+              ref={navRef}
+              className="hidden md:flex items-center space-x-1 relative"
+              onMouseLeave={() => {
+                const activeKey = location.startsWith('/community') ? '/community' 
+                  : location.startsWith('/library') ? '/library' 
+                  : location.startsWith('/admin') ? '/admin' 
+                  : '/';
+                positionTo(linkRefs.current[activeKey]);
+              }}
+            >
+              <div 
+                ref={setLinkRef('/')}
+                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement)}
               >
-                Dashboard
-              </Link>
-              <Link 
-                href="/library" 
-                className={isActiveRoute("/library") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30" : "text-gray-300 hover:text-cyan-400 px-4 py-2 rounded-md transition-colors duration-200"} 
-                data-testid="nav-library"
+                <Link 
+                  href="/" 
+                  className={isActiveRoute("/") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30 inline-block" : "text-gray-300 hover:text-cyan-400 px-4 py-2 rounded-md transition-colors duration-200 inline-block"} 
+                  data-testid="nav-dashboard"
+                >
+                  Dashboard
+                </Link>
+              </div>
+              <div 
+                ref={setLinkRef('/library')}
+                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement)}
               >
-                My Library
-              </Link>
-              <Link 
-                href="/community" 
-                className={isActiveRoute("/community") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30" : "text-gray-300 hover:text-cyan-400 px-4 py-2 rounded-md transition-colors duration-200"} 
-                data-testid="nav-community"
+                <Link 
+                  href="/library" 
+                  className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30 inline-block" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
+                  data-testid="nav-library"
+                >
+                  My Library
+                </Link>
+              </div>
+              <div 
+                ref={setLinkRef('/community')}
+                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement)}
               >
-                Community
-              </Link>
+                <Link 
+                  href="/community" 
+                  className={isActiveRoute("/community") ? "nav-gradient-community px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30 inline-block" : "nav-gradient-community px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
+                  data-testid="nav-community"
+                >
+                  Community
+                </Link>
+              </div>
               
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
-                <Link 
-                  href="/admin" 
-                  className={isActiveRoute("/admin") ? "text-yellow-400 px-4 py-2 rounded-md bg-yellow-400/10 border border-yellow-400/30 flex items-center gap-1" : "text-yellow-400 hover:text-yellow-300 px-4 py-2 rounded-md transition-colors flex items-center gap-1"} 
-                  data-testid="nav-admin"
+                <div 
+                  ref={setLinkRef('/admin')}
+                  onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement)}
                 >
-                  <Crown className="h-4 w-4" />
-                  Admin
-                </Link>
+                  <Link 
+                    href="/admin" 
+                    className={isActiveRoute("/admin") ? "text-yellow-400 px-4 py-2 rounded-md bg-yellow-400/10 border border-yellow-400/30 flex items-center gap-1" : "text-yellow-400 hover:text-yellow-300 px-4 py-2 rounded-md transition-colors flex items-center gap-1"} 
+                    data-testid="nav-admin"
+                  >
+                    <Crown className="h-4 w-4" />
+                    Admin
+                  </Link>
+                </div>
               )}
+              
+              {/* Animated Underline */}
+              <div 
+                data-testid="nav-underline"
+                style={{ 
+                  left: `${underline.left}px`, 
+                  width: `${underline.width}px`, 
+                  opacity: underline.opacity 
+                }}
+                className="absolute bottom-0 h-0.5 rounded-full bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 shadow-[0_0_10px_rgba(34,211,238,0.6)] transition-[left,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              />
             </nav>
           </div>
           
@@ -484,7 +569,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </Link>
               <Link 
                 href="/library" 
-                className={isActiveRoute("/library") ? "text-cyan-400 font-medium py-2" : "text-gray-300 hover:text-cyan-400 transition-colors py-2"} 
+                className={isActiveRoute("/library") ? "nav-gradient-library font-medium py-2" : "nav-gradient-library transition-colors py-2"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-library"
               >
@@ -492,7 +577,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               </Link>
               <Link 
                 href="/community" 
-                className={isActiveRoute("/community") ? "text-cyan-400 font-medium py-2" : "text-gray-300 hover:text-cyan-400 transition-colors py-2"} 
+                className={isActiveRoute("/community") ? "nav-gradient-community font-medium py-2" : "nav-gradient-community transition-colors py-2"} 
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="mobile-nav-community"
               >
