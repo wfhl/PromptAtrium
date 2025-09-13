@@ -17,6 +17,8 @@ import CollectionView from "@/pages/CollectionView";
 import Invite from "@/pages/invite";
 import ProfileSettings from "@/pages/profile-settings";
 import UserProfile from "@/pages/user-profile";
+import LikedPrompts from "@/pages/LikedPrompts";
+import ForkedPrompts from "@/pages/ForkedPrompts";
 import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import { IntroductionModal } from "@/components/IntroductionModal";
@@ -83,6 +85,12 @@ function Router() {
             </Route>
             <Route path="/profile/settings">
               {() => <Layout><ProfileSettings /></Layout>}
+            </Route>
+            <Route path="/liked-prompts">
+              {() => <Layout><LikedPrompts /></Layout>}
+            </Route>
+            <Route path="/forked-prompts">
+              {() => <Layout><ForkedPrompts /></Layout>}
             </Route>
             <Route path="/tools/aspect-ratio-calculator">
               {() => <Layout><AspectRatioCalculatorPage /></Layout>}

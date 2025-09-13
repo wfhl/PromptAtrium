@@ -328,27 +328,33 @@ export default function Dashboard() {
                     testId="stat-prompts"
                   />
                 </Link>
-                <StatsCard
-                  title="Total Likes"
-                  value={userStats?.totalLikes || 0}
-                  icon={Heart}
-                  iconColor="bg-red-500/10 text-red-500"
-                  testId="stat-likes"
-                />
-                <StatsCard
-                  title="Collections"
-                  value={userStats?.collections || 0}
-                  icon={Folder}
-                  iconColor="bg-green-500/10 text-green-500"
-                  testId="stat-collections"
-                />
-                <StatsCard
-                  title="Forks Created"
-                  value={userStats?.forksCreated || 0}
-                  icon={GitBranch}
-                  iconColor="bg-blue-500/10 text-blue-500"
-                  testId="stat-forks"
-                />
+                <Link href="/liked-prompts" className="hover:scale-105 transition-transform cursor-pointer">
+                  <StatsCard
+                    title="Total Likes"
+                    value={userStats?.totalLikes || 0}
+                    icon={Heart}
+                    iconColor="bg-red-500/10 text-red-500"
+                    testId="stat-likes"
+                  />
+                </Link>
+                <Link href="/library?section=collections" className="hover:scale-105 transition-transform cursor-pointer">
+                  <StatsCard
+                    title="Collections"
+                    value={userStats?.collections || 0}
+                    icon={Folder}
+                    iconColor="bg-green-500/10 text-green-500"
+                    testId="stat-collections"
+                  />
+                </Link>
+                <Link href="/forked-prompts" className="hover:scale-105 transition-transform cursor-pointer">
+                  <StatsCard
+                    title="Forks Created"
+                    value={userStats?.forksCreated || 0}
+                    icon={GitBranch}
+                    iconColor="bg-blue-500/10 text-blue-500"
+                    testId="stat-forks"
+                  />
+                </Link>
               </div>
             </CollapsibleContent>
           </Collapsible>

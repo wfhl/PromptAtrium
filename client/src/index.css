@@ -3,37 +3,37 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(220, 15%, 97%);
-  --foreground: hsl(220, 15%, 5%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(220, 15%, 5%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(220, 15%, 5%);
+  --background: hsl(220, 15%, 8%);
+  --foreground: hsl(220, 15%, 95%);
+  --card: hsl(220, 15%, 12%);
+  --card-foreground: hsl(220, 15%, 95%);
+  --popover: hsl(220, 15%, 12%);
+  --popover-foreground: hsl(220, 15%, 95%);
   --primary: hsl(221, 83%, 53%);
   --primary-foreground: hsl(0, 0%, 98%);
-  --secondary: hsl(220, 14%, 93%);
-  --secondary-foreground: hsl(220, 15%, 25%);
-  --muted: hsl(220, 14%, 95%);
-  --muted-foreground: hsl(220, 14%, 40%);
-  --accent: hsl(220, 14%, 93%);
-  --accent-foreground: hsl(220, 15%, 25%);
+  --secondary: hsl(220, 14%, 16%);
+  --secondary-foreground: hsl(220, 15%, 75%);
+  --muted: hsl(220, 14%, 14%);
+  --muted-foreground: hsl(220, 14%, 60%);
+  --accent: hsl(220, 14%, 16%);
+  --accent-foreground: hsl(220, 15%, 75%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --border: hsl(220, 13%, 91%);
-  --input: hsl(220, 13%, 91%);
+  --border: hsl(220, 13%, 20%);
+  --input: hsl(220, 13%, 20%);
   --ring: hsl(221, 83%, 53%);
   --chart-1: hsl(221, 83%, 53%);
   --chart-2: hsl(159, 100%, 36%);
   --chart-3: hsl(42, 93%, 56%);
   --chart-4: hsl(147, 79%, 42%);
   --chart-5: hsl(341, 75%, 51%);
-  --sidebar: hsl(0, 0%, 100%);
-  --sidebar-foreground: hsl(220, 15%, 5%);
+  --sidebar: hsl(220, 15%, 12%);
+  --sidebar-foreground: hsl(220, 15%, 95%);
   --sidebar-primary: hsl(221, 83%, 53%);
   --sidebar-primary-foreground: hsl(0, 0%, 98%);
-  --sidebar-accent: hsl(220, 14%, 93%);
-  --sidebar-accent-foreground: hsl(220, 15%, 25%);
-  --sidebar-border: hsl(220, 13%, 91%);
+  --sidebar-accent: hsl(220, 14%, 16%);
+  --sidebar-accent-foreground: hsl(220, 15%, 75%);
+  --sidebar-border: hsl(220, 13%, 20%);
   --sidebar-ring: hsl(221, 83%, 53%);
   --font-sans: Inter, system-ui, sans-serif;
   --font-serif: Georgia, serif;
@@ -133,7 +133,7 @@
 }
 
 .nav-gradient-community {
-  background: linear-gradient(135deg, #ffc800 0%, #ff7300 50%, #ffc802 100%);
+  background: linear-gradient(135deg, #ffc800 0%, #ff7300 30%, #ff7300 70%, #ffc802 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

@@ -282,7 +282,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 <Link 
                   href="/" 
-                  className={isActiveRoute("/") ? "text-bold px-4 py-2 rounded-md bg-transparent border border-transparent inline-block" : "text-gray-300 px-4 py-2 rounded-md transition-colors duration-200 inline-block"} 
+                  className={isActiveRoute("/") ? "text-bold text-cyan-200 px-4 py-2 rounded-md bg-transparent border border-transparent inline-block" : "text-gray-300 px-4 py-2 rounded-md transition-colors duration-200 inline-block"} 
                   data-testid="nav-dashboard"
                 >
                   Dashboard
@@ -293,7 +293,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/library')}
               >
                 <Link 
-                  className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block whitespace-nowrap" : "nav-gradient-library px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10 whitespace-nowrap"} 
+                  href="/library" 
+                  className={isActiveRoute("/library") ? "nav-gradient-library px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block whitespace-nowrap" : "text-gray-300 px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/00 whitespace-nowrap"} 
                   data-testid="nav-library"
                 >
                   My Library
@@ -305,7 +306,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 <Link 
                   href="/community" 
-                  className={isActiveRoute("/community") ? "nav-gradient-community px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block" : "nav-gradient-community px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/10"} 
+                  className={isActiveRoute("/community") ? "nav-gradient-community px-4 py-2 rounded-md bg-cyan-400/10 border border-transparent inline-block" : "text-gray-300 px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-cyan-400/00"} 
                   data-testid="nav-community"
                 >
                   Community

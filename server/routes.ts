@@ -998,6 +998,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/prompts/forked', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Get the current user's NSFW preference
+      const currentUser = await storage.getUser(userId);
+      const showNsfw = currentUser?.showNsfw ?? true;
+      
+      // Get all prompts where forkOf is not null and userId matches
+      const forkedPrompts = await storage.getPrompts({
+        userId: userId,
+        showNsfw: showNsfw,
+      });
+      
+      // Filter to only include prompts that have a forkOf value
+      const actualForkedPrompts = forkedPrompts.filter(prompt => prompt.forkOf !== null);
+      
+      res.json(actualForkedPrompts);
+    } catch (error) {
+      console.error("Error fetching forked prompts:", error);
+      res.status(500).json({ message: "Failed to fetch forked prompts" });
+    }
+  });
+
   app.post('/api/prompts/:id/rate', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
