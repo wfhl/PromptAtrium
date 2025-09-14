@@ -71,10 +71,16 @@ function Router() {
         
         {/* Conditional routes based on authentication */}
         {isLoading || !isAuthenticated ? (
-          <Route path="/" component={Landing} />
+          <>
+            <Route path="/" component={Landing} />
+            <Route path="/dashboard" component={Landing} />
+          </>
         ) : (
           <>
             <Route path="/">
+              {() => <Layout><Dashboard /></Layout>}
+            </Route>
+            <Route path="/dashboard">
               {() => <Layout><Dashboard /></Layout>}
             </Route>
             <Route path="/library">

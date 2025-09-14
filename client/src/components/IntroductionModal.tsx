@@ -55,6 +55,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [usernameMessage, setUsernameMessage] = useState("");
   const [currentTab, setCurrentTab] = useState("basic");
+  const [localOpen, setLocalOpen] = useState(open);
 
   const form = useForm<IntroFormData>({
     resolver: zodResolver(introSchema),
@@ -147,24 +148,29 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
 
   const canSubmit = form.formState.isValid && usernameAvailable && !isCheckingUsername;
 
-  // Allow closing the modal if user already has a username
-  const canClose = user?.username ? true : false;
+  // Allow closing the modal if user already has a username or completed intro
+  const canClose = user?.username || user?.hasCompletedIntro || false;
   
   const handleOpenChange = (newOpen: boolean) => {
-    // Allow closing if user already has a username or if they're trying to complete the setup
-    if (!newOpen && canClose) {
-      onComplete();
+    // Always allow closing - just mark intro as skipped
+    if (!newOpen) {
+      // If they have a valid username, save it
+      if (username && usernameAvailable && !updateProfileMutation.isPending) {
+        // Submit minimal profile with just username
+        updateProfileMutation.mutate({
+          ...form.getValues(),
+          hasCompletedIntro: true
+        });
+      } else {
+        // Just close the modal
+        onComplete();
+      }
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => {
-        // Only prevent closing on outside click if user doesn't have a username
-        if (!canClose) {
-          e.preventDefault();
-        }
-      }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Welcome to PromptAtrium!</DialogTitle>
           <DialogDescription>
