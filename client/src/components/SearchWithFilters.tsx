@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
@@ -84,7 +84,7 @@ export function SearchWithFilters({
   }, [searchQuery]);
 
   // Build query string for search
-  const buildSearchQuery = useCallback(() => {
+  const searchQuery = useMemo(() => {
     const params = new URLSearchParams();
     
     if (debouncedQuery) {
@@ -114,7 +114,7 @@ export function SearchWithFilters({
 
   // Fetch search results
   const { data: searchResults = [], isLoading } = useQuery<Prompt[]>({
-    queryKey: [`/api/prompts?${buildSearchQuery()}`],
+    queryKey: [`/api/prompts?${searchQuery}`],
     enabled: debouncedQuery.length > 0 || Object.entries(filters).some(([key, value]) => 
       key !== 'showNsfw' && key !== 'source' && value !== 'all'
     ) || (filters.source !== 'all'),
@@ -140,11 +140,13 @@ export function SearchWithFilters({
   }, [searchResults, onResultsChange]);
 
   // Count active filters
-  const activeFilterCount = Object.entries(filters).filter(([key, value]) => {
-    if (key === "source") return false;
-    if (key === "showNsfw") return value === true;
-    return value !== "all";
-  }).length;
+  const activeFilterCount = useMemo(() => {
+    return Object.entries(filters).filter(([key, value]) => {
+      if (key === "source") return false;
+      if (key === "showNsfw") return value === true;
+      return value !== "all";
+    }).length;
+  }, [filters]);
 
   // Reset all filters
   const resetFilters = () => {
