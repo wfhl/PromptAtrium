@@ -1623,14 +1623,11 @@ export default function NewPromptGeneratorUI() {
   
   // UI rendering
   return (
-    <div className="max-w-none flex flex-col">
-      <div className="flex-1 flex justify-center">
-        <div className="container max-w-none mx-auto px-4 py-4">
-          <div className="w-full space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto space-y-4">
 
       
-      {/* Subject and Additional Details fields at the top (based on mockup) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      {/* Top Section - Subject and Additional Details */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="glass-card">
           <div className="flex items-center gap-2 mb-2">
             <label className="section-label">Subject 🎨</label>
@@ -1698,11 +1695,11 @@ export default function NewPromptGeneratorUI() {
           />
         </div>
       </div>
-      {/* Main Content Layout - Three Columns as per MOCKUP2.png */}
+      {/* Main Content Area */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        {/* Left Column - Presets */}
+        {/* Left Column - Presets (3 columns) */}
         <div className="xl:col-span-3 space-y-4">
-            {/* Global Presets Section */}
+            {/* Global Presets */}
             <div className="glass-card">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -2018,7 +2015,7 @@ export default function NewPromptGeneratorUI() {
               </div>
             </div>
             
-            {/* Character Presets Section */}
+            {/* Character Presets */}
             <div className="glass-card">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -3696,9 +3693,8 @@ setSelectedTemplates(prev => {
           </div>
         </div>
       </div>
-      </div>
-      </div>
-      {/* Custom Confirmation Modal */}
+      
+      {/* Modals */}
       <ConfirmationModal
         isOpen={confirmationModal.isOpen}
         onClose={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}

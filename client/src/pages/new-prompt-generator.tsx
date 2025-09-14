@@ -72,7 +72,7 @@ export default function NewPromptGenerator() {
           </div>
           
           {/* Content */}
-          <div className="max-w-7xl mx-auto space-y-6 p-6">
+          <div className="w-full max-w-[1600px] mx-auto space-y-6 p-6">
             <NewPromptGeneratorUI />
           </div>
         </div>
