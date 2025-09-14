@@ -567,7 +567,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {collections.length > 0 ? (
-                  collections.slice(0, 3).map((collection) => (
+                  collections.slice(0, 10).map((collection) => (
                     <CollectionItem key={collection.id} collection={collection} />
                   ))
                 ) : (
