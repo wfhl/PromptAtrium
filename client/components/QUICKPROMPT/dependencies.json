@@ -1,0 +1,208 @@
+{
+  "core": {
+    "react": {
+      "version": "^18.2.0",
+      "description": "React library for building user interfaces",
+      "required": true
+    },
+    "react-dom": {
+      "version": "^18.2.0",
+      "description": "React DOM rendering library",
+      "required": true
+    },
+    "@tanstack/react-query": {
+      "version": "^5.0.0",
+      "description": "Data fetching and caching library",
+      "required": true,
+      "usage": "API calls, data caching, and state management"
+    },
+    "wouter": {
+      "version": "^3.0.0",
+      "description": "Minimalist routing library",
+      "required": true,
+      "usage": "Client-side routing for pages"
+    }
+  },
+  "ui": {
+    "lucide-react": {
+      "version": "^0.300.0",
+      "description": "Icon library",
+      "required": true,
+      "usage": "UI icons throughout the application"
+    },
+    "react-icons": {
+      "version": "^4.12.0",
+      "description": "Popular icon library collection",
+      "required": false,
+      "usage": "Company logos and additional icons"
+    },
+    "clsx": {
+      "version": "^2.0.0",
+      "description": "Utility for constructing className strings",
+      "required": true
+    },
+    "tailwind-merge": {
+      "version": "^2.2.0",
+      "description": "Merge Tailwind CSS classes without conflicts",
+      "required": true
+    }
+  },
+  "styling": {
+    "tailwindcss": {
+      "version": "^3.3.0",
+      "description": "Utility-first CSS framework",
+      "required": true
+    },
+    "autoprefixer": {
+      "version": "^10.4.16",
+      "description": "PostCSS plugin to parse CSS and add vendor prefixes",
+      "required": true
+    },
+    "postcss": {
+      "version": "^8.4.32",
+      "description": "Tool for transforming CSS with JavaScript",
+      "required": true
+    }
+  },
+  "http": {
+    "axios": {
+      "version": "^1.6.0",
+      "description": "HTTP client for API requests",
+      "required": false,
+      "usage": "Can be replaced with fetch API",
+      "alternatives": ["fetch", "ky", "got"]
+    }
+  },
+  "pwa": {
+    "react-helmet": {
+      "version": "^6.1.0",
+      "description": "Document head management",
+      "required": false,
+      "usage": "PWA meta tags and SEO"
+    }
+  },
+  "ai_providers": {
+    "openai": {
+      "version": "^4.20.0",
+      "description": "OpenAI API client",
+      "required": false,
+      "usage": "GPT-3.5/GPT-4 prompt enhancement and vision"
+    },
+    "@anthropic-ai/sdk": {
+      "version": "^0.9.0",
+      "description": "Anthropic Claude API client",
+      "required": false,
+      "usage": "Claude prompt enhancement and vision"
+    },
+    "@google/generative-ai": {
+      "version": "^0.1.0",
+      "description": "Google Generative AI client",
+      "required": false,
+      "usage": "Gemini prompt enhancement and vision"
+    },
+    "groq-sdk": {
+      "version": "^0.3.0",
+      "description": "Groq API client for fast inference",
+      "required": false,
+      "usage": "Llama and Mixtral models"
+    }
+  },
+  "development": {
+    "typescript": {
+      "version": "^5.2.2",
+      "description": "TypeScript language",
+      "required": true
+    },
+    "@types/react": {
+      "version": "^18.2.43",
+      "description": "TypeScript definitions for React",
+      "required": true
+    },
+    "@types/react-dom": {
+      "version": "^18.2.17",
+      "description": "TypeScript definitions for React DOM",
+      "required": true
+    },
+    "@types/node": {
+      "version": "^20.10.0",
+      "description": "TypeScript definitions for Node.js",
+      "required": false
+    },
+    "vite": {
+      "version": "^5.0.8",
+      "description": "Build tool and dev server",
+      "required": false,
+      "alternatives": ["webpack", "parcel", "rollup"]
+    },
+    "@vitejs/plugin-react": {
+      "version": "^4.2.1",
+      "description": "Vite plugin for React",
+      "required": false
+    },
+    "eslint": {
+      "version": "^8.55.0",
+      "description": "JavaScript linter",
+      "required": false
+    }
+  },
+  "backend": {
+    "express": {
+      "version": "^4.18.0",
+      "description": "Web framework for Node.js",
+      "required": false,
+      "usage": "Backend API server"
+    },
+    "cors": {
+      "version": "^2.8.5",
+      "description": "CORS middleware",
+      "required": false,
+      "usage": "Cross-origin resource sharing"
+    },
+    "multer": {
+      "version": "^1.4.5",
+      "description": "Middleware for handling multipart/form-data",
+      "required": false,
+      "usage": "Image upload handling"
+    },
+    "sharp": {
+      "version": "^0.33.0",
+      "description": "Image processing library",
+      "required": false,
+      "usage": "Image optimization and manipulation"
+    }
+  },
+  "notes": {
+    "minimum_requirements": [
+      "react",
+      "react-dom",
+      "@tanstack/react-query",
+      "wouter",
+      "lucide-react",
+      "tailwindcss",
+      "clsx"
+    ],
+    "optional_features": {
+      "ai_enhancement": ["openai", "@anthropic-ai/sdk", "@google/generative-ai", "groq-sdk"],
+      "image_analysis": ["openai", "@anthropic-ai/sdk", "@google/generative-ai"],
+      "pwa_support": ["react-helmet"],
+      "backend_api": ["express", "cors", "multer", "sharp"]
+    },
+    "browser_requirements": {
+      "minimum": "Chrome 90+, Firefox 88+, Safari 14+, Edge 90+",
+      "features_used": [
+        "ES2020",
+        "async/await",
+        "optional chaining",
+        "nullish coalescing",
+        "FormData API",
+        "FileReader API",
+        "localStorage",
+        "fetch API"
+      ]
+    },
+    "node_requirements": {
+      "minimum": "18.0.0",
+      "recommended": "20.0.0+"
+    }
+  }
+}

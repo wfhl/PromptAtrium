@@ -10,6 +10,7 @@ import { File } from "@google-cloud/storage";
 import express from "express";
 import { z } from "zod";
 import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
+import { devStorage } from "./devStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -267,57 +268,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
-    const objectStorageService = new ObjectStorageService();
     try {
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      // Use development storage in development mode
+      if (process.env.NODE_ENV === 'development') {
+        const { uploadURL, objectId } = await devStorage.getDevUploadURL('generic');
+        res.json({ uploadURL });
+      } else {
+        const objectStorageService = new ObjectStorageService();
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        res.json({ uploadURL });
+      }
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
     }
   });
 
-  // Development-only direct upload endpoint (fallback when signed URLs fail)
+  // Development-only upload endpoints
   if (process.env.NODE_ENV === 'development') {
-    app.put("/api/objects/upload-direct/:objectId", isAuthenticated, express.raw({ type: '*/*', limit: '50mb' }), async (req, res) => {
+    // Generic development upload handler
+    app.put("/api/dev-upload/:type/:objectId", express.raw({ type: '*/*', limit: '50mb' }), async (req, res) => {
+      const { objectId, type } = req.params;
+      const userId = (req.user as any)?.claims?.sub;
+      
+      try {
+        const validTypes = ['profile', 'prompt', 'generic'];
+        if (!validTypes.includes(type)) {
+          return res.status(400).json({ error: "Invalid upload type" });
+        }
+        
+        const publicPath = await devStorage.saveFile(
+          objectId, 
+          req.body as Buffer, 
+          type as 'profile' | 'prompt' | 'generic',
+          {
+            contentType: req.headers['content-type'] || 'application/octet-stream',
+            userId
+          }
+        );
+        
+        res.json({
+          path: publicPath,
+          message: "Development upload successful"
+        });
+      } catch (error) {
+        console.error("Error in development upload:", error);
+        res.status(500).json({ error: "Failed to upload file" });
+      }
+    });
+    
+    // Development storage serving endpoint
+    app.get("/api/dev-storage/:type/:objectId", async (req, res) => {
+      const { type, objectId } = req.params;
+      
+      try {
+        const { data, metadata } = await devStorage.getFile(type, objectId);
+        
+        res.set({
+          'Content-Type': metadata?.contentType || 'application/octet-stream',
+          'Content-Length': data.length.toString(),
+          'Cache-Control': 'public, max-age=3600'
+        });
+        
+        res.send(data);
+      } catch (error) {
+        console.error("Error serving development file:", error);
+        res.status(404).json({ error: "File not found" });
+      }
+    });
+    
+    // Fallback for old upload-direct endpoint
+    app.put("/api/objects/upload-direct/:objectId", express.raw({ type: '*/*', limit: '50mb' }), async (req, res) => {
       const { objectId } = req.params;
       const userId = (req.user as any)?.claims?.sub;
       
       try {
-        const objectStorageService = new ObjectStorageService();
-        const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
-        
-        if (!privateObjectDir) {
-          return res.status(500).json({ error: "Object storage not configured" });
-        }
-        
-        const fullPath = `${privateObjectDir}/uploads/${objectId}`;
-        const { bucketName, objectName } = parseObjectPath(fullPath);
-        
-        // Upload the file directly to the bucket
-        const bucket = objectStorageClient.bucket(bucketName);
-        const file = bucket.file(objectName);
-        
-        await file.save(req.body, {
-          metadata: {
+        const publicPath = await devStorage.saveFile(
+          objectId, 
+          req.body as Buffer, 
+          'generic',
+          {
             contentType: req.headers['content-type'] || 'application/octet-stream',
-            metadata: {
-              uploadedBy: userId,
-              uploadedAt: new Date().toISOString()
-            }
+            userId
           }
-        });
+        );
         
-        // Return the object path
-        res.json({ 
+        res.json({
+          path: publicPath,
+          message: "Development upload successful",
           success: true,
-          objectPath: `/objects/uploads/${objectId}`
+          objectPath: publicPath
         });
       } catch (error) {
         console.error("Error in direct upload:", error);
-        res.status(500).json({ error: "Failed to upload file directly" });
+        res.status(500).json({ error: "Failed to upload file" });
       }
     });
+    
+    console.log("Development storage endpoints registered");
   }
 
   // Public image serving endpoint with production fallback
@@ -420,15 +468,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userId = (req.user as any)?.claims?.sub;
 
     try {
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        req.body.profileImageUrl,
-        {
-          owner: userId,
-          // Profile images should be public as they can be accessed by other users
-          visibility: "public",
-        },
-      );
+      let objectPath = req.body.profileImageUrl;
+      
+      // In development mode, handle local storage paths
+      if (process.env.NODE_ENV === 'development') {
+        // Convert development storage paths to the expected format
+        if (objectPath.startsWith('/api/dev-storage/')) {
+          // Already a development path, use as-is
+          objectPath = objectPath;
+        } else if (objectPath.startsWith('/api/dev-upload/')) {
+          // Convert dev-upload path to dev-storage path
+          objectPath = objectPath.replace('/api/dev-upload/', '/api/dev-storage/');
+        }
+      } else {
+        const objectStorageService = new ObjectStorageService();
+        objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+          req.body.profileImageUrl,
+          {
+            owner: userId,
+            // Profile images should be public as they can be accessed by other users
+            visibility: "public",
+          },
+        );
+      }
 
       // Update user profile with the new image path
       const updatedUser = await storage.updateUser(userId, {
@@ -454,15 +516,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userId = (req.user as any)?.claims?.sub;
 
     try {
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        req.body.imageUrl,
-        {
-          owner: userId,
-          // Prompt images should be public so they can be viewed by other users
-          visibility: "public",
-        },
-      );
+      let objectPath = req.body.imageUrl;
+      
+      // In development mode, handle local storage paths
+      if (process.env.NODE_ENV === 'development') {
+        // Convert development storage paths to the expected format
+        if (objectPath.startsWith('/api/dev-storage/')) {
+          // Already a development path, use as-is
+          objectPath = objectPath;
+        } else if (objectPath.startsWith('/api/dev-upload/')) {
+          // Convert dev-upload path to dev-storage path
+          objectPath = objectPath.replace('/api/dev-upload/', '/api/dev-storage/');
+        }
+      } else {
+        const objectStorageService = new ObjectStorageService();
+        objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+          req.body.imageUrl,
+          {
+            owner: userId,
+            // Prompt images should be public so they can be viewed by other users
+            visibility: "public",
+          },
+        );
+      }
 
       res.status(200).json({
         objectPath: objectPath,

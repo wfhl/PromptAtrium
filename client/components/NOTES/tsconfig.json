@@ -1,0 +1,51 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["frontend/*"],
+      "@components/*": ["frontend/components/*"],
+      "@ui/*": ["frontend/components/ui/*"],
+      "@utils/*": ["frontend/utils/*"],
+      "@hooks/*": ["frontend/hooks/*"],
+      "@pages/*": ["frontend/pages/*"],
+      "@backend/*": ["backend/*"],
+      "@shared/*": ["shared/*"]
+    },
+    "types": ["node", "jest", "@testing-library/jest-dom"]
+  },
+  "include": [
+    "frontend/**/*",
+    "backend/**/*",
+    "shared/**/*",
+    "examples/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "*.config.js",
+    "*.config.ts"
+  ],
+  "references": [
+    { "path": "./tsconfig.node.json" }
+  ]
+}

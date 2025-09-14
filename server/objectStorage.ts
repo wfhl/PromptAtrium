@@ -178,7 +178,7 @@ export class ObjectStorageService {
         if (process.env.NODE_ENV === 'development') {
           console.warn("Using development fallback for upload URL");
           // Return a development-only endpoint that will handle the upload
-          return `/api/objects/upload-direct/${objectId}`;
+          return `/api/dev-upload/generic/${objectId}`;
         }
         
         // In production, throw the original error
