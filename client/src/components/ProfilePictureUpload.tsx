@@ -162,7 +162,7 @@ export function ProfilePictureUpload({
       let uploadedPath: string;
 
       // Check if this is a development fallback URL or a signed URL
-      if (uploadURL.startsWith('/api/objects/upload-direct/')) {
+      if (uploadURL.startsWith('/api/objects/upload-direct/') || uploadURL.startsWith('/api/dev-upload/')) {
         // Development fallback: upload directly to the endpoint
         const uploadResult = await fetch(uploadURL, {
           method: 'PUT',
@@ -178,7 +178,7 @@ export function ProfilePictureUpload({
         }
 
         const uploadData = await uploadResult.json();
-        uploadedPath = uploadData.objectPath;
+        uploadedPath = uploadData.objectPath || uploadData.path;
       } else {
         // Production: use signed URL
         const uploadResult = await fetch(uploadURL, {

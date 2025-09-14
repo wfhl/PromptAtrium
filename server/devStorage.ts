@@ -101,6 +101,7 @@ export class DevStorageService {
         filePath = path.join(PUBLIC_STORAGE_PATH, "prompt-images", objectId);
         break;
       case 'uploads':
+      case 'generic':  // Handle 'generic' as 'uploads'
         filePath = path.join(PRIVATE_STORAGE_PATH, "uploads", objectId);
         break;
       default:
@@ -136,6 +137,7 @@ export class DevStorageService {
         filePath = path.join(PUBLIC_STORAGE_PATH, "prompt-images", objectId);
         break;
       case 'uploads':
+      case 'generic':  // Handle 'generic' as 'uploads'
         filePath = path.join(PRIVATE_STORAGE_PATH, "uploads", objectId);
         break;
       default:
@@ -179,7 +181,9 @@ export class DevStorageService {
     
     // Handle /objects/ paths
     if (storagePath.startsWith('/objects/')) {
-      const objectId = storagePath.split('/').pop();
+      const parts = storagePath.split('/');
+      const objectId = parts[parts.length - 1];
+      // Use 'uploads' instead of 'generic' for /objects/ paths
       return `/api/dev-storage/uploads/${objectId}`;
     }
     

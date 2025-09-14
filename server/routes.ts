@@ -12,6 +12,20 @@ import { z } from "zod";
 import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
 import { devStorage } from "./devStorage";
 
+// Helper function to resolve public image URLs for development
+// ONLY affects development mode - production URLs pass through unchanged
+function resolvePublicImageUrl(url: string | null | undefined): string | null | undefined {
+  if (!url) return url;
+  
+  // ONLY transform URLs in development mode
+  if (process.env.NODE_ENV === 'development') {
+    return devStorage.getPublicURL(url);
+  }
+  
+  // In production, return URL unchanged
+  return url;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -21,6 +35,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).claims.sub;
       const user = await storage.getUser(userId);
+      
+      // In development only, normalize the profile image URL for display
+      if (process.env.NODE_ENV === 'development' && user) {
+        user.profileImageUrl = resolvePublicImageUrl(user.profileImageUrl);
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -272,7 +292,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use development storage in development mode
       if (process.env.NODE_ENV === 'development') {
         const { uploadURL, objectId } = await devStorage.getDevUploadURL('generic');
-        res.json({ uploadURL });
+        // Also return the canonical path for dev mode
+        res.json({ 
+          uploadURL,
+          objectPath: `/objects/uploads/${objectId}`,
+          publicURL: `/api/dev-storage/uploads/${objectId}`
+        });
       } else {
         const objectStorageService = new ObjectStorageService();
         const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -307,8 +332,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         );
         
+        // Return both the canonical path and public URL
+        const fileId = objectId;
         res.json({
           path: publicPath,
+          objectPath: `/objects/uploads/${fileId}`,
+          publicURL: publicPath,
           message: "Development upload successful"
         });
       } catch (error) {
@@ -324,8 +353,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { data, metadata } = await devStorage.getFile(type, objectId);
         
+        // Determine appropriate content type
+        let contentType = metadata?.contentType || 'application/octet-stream';
+        
+        // If no content type stored, try to determine from file extension
+        if (contentType === 'application/octet-stream') {
+          const ext = objectId.split('.').pop()?.toLowerCase();
+          const mimeTypes: { [key: string]: string } = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+            'svg': 'image/svg+xml'
+          };
+          contentType = mimeTypes[ext || ''] || contentType;
+        }
+        
         res.set({
-          'Content-Type': metadata?.contentType || 'application/octet-stream',
+          'Content-Type': contentType,
           'Content-Length': data.length.toString(),
           'Cache-Control': 'public, max-age=3600'
         });
@@ -353,11 +399,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         );
         
+        // Return both the canonical path and public URL
         res.json({
           path: publicPath,
+          objectPath: `/objects/uploads/${objectId}`,
+          publicURL: publicPath,
           message: "Development upload successful",
-          success: true,
-          objectPath: publicPath
+          success: true
         });
       } catch (error) {
         console.error("Error in direct upload:", error);
@@ -472,14 +520,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // In development mode, handle local storage paths
       if (process.env.NODE_ENV === 'development') {
-        // Convert development storage paths to the expected format
-        if (objectPath.startsWith('/api/dev-storage/')) {
-          // Already a development path, use as-is
-          objectPath = objectPath;
-        } else if (objectPath.startsWith('/api/dev-upload/')) {
-          // Convert dev-upload path to dev-storage path
-          objectPath = objectPath.replace('/api/dev-upload/', '/api/dev-storage/');
-        }
+        // Store the canonical path for persistence
+        const fileId = req.body.profileImageUrl.split('/').pop();
+        objectPath = `/objects/uploads/${fileId}`;
       } else {
         const objectStorageService = new ObjectStorageService();
         objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
@@ -497,10 +540,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profileImageUrl: objectPath,
       });
 
-      res.status(200).json({
+      // In development, also return the public URL for immediate display
+      const response: any = {
         objectPath: objectPath,
         user: updatedUser,
-      });
+      };
+      
+      if (process.env.NODE_ENV === 'development') {
+        response.publicURL = resolvePublicImageUrl(objectPath);
+        // Also update the user object's profileImageUrl for immediate display
+        if (response.user) {
+          response.user.profileImageUrl = response.publicURL;
+        }
+      }
+      
+      res.status(200).json(response);
     } catch (error) {
       console.error("Error setting profile picture:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -520,14 +574,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // In development mode, handle local storage paths
       if (process.env.NODE_ENV === 'development') {
-        // Convert development storage paths to the expected format
-        if (objectPath.startsWith('/api/dev-storage/')) {
-          // Already a development path, use as-is
-          objectPath = objectPath;
-        } else if (objectPath.startsWith('/api/dev-upload/')) {
-          // Convert dev-upload path to dev-storage path
-          objectPath = objectPath.replace('/api/dev-upload/', '/api/dev-storage/');
-        }
+        // Store the canonical path for persistence
+        const fileId = req.body.imageUrl.split('/').pop();
+        objectPath = `/objects/uploads/${fileId}`;
       } else {
         const objectStorageService = new ObjectStorageService();
         objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
@@ -540,9 +589,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      res.status(200).json({
+      // In development, also return the public URL for immediate display
+      const response: any = {
         objectPath: objectPath,
-      });
+      };
+      
+      if (process.env.NODE_ENV === 'development') {
+        response.publicURL = resolvePublicImageUrl(objectPath);
+      }
+      
+      res.status(200).json(response);
     } catch (error) {
       console.error("Error setting prompt image ACL:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -678,7 +734,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const prompts = await storage.getPrompts(options);
-      res.json(prompts);
+      
+      // In development, normalize image URLs for display
+      if (process.env.NODE_ENV === 'development' && prompts) {
+        const normalizedPrompts = prompts.map(prompt => ({
+          ...prompt,
+          imageUrls: prompt.imageUrls?.map(url => resolvePublicImageUrl(url))
+        }));
+        res.json(normalizedPrompts);
+      } else {
+        res.json(prompts);
+      }
     } catch (error) {
       console.error("Error fetching prompts:", error);
       res.status(500).json({ message: "Failed to fetch prompts" });
@@ -691,7 +757,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!prompt) {
         return res.status(404).json({ message: "Prompt not found" });
       }
-      res.json(prompt);
+      
+      // In development, normalize image URLs for display
+      if (process.env.NODE_ENV === 'development' && prompt) {
+        const normalizedPrompt = {
+          ...prompt,
+          imageUrls: prompt.imageUrls?.map(url => resolvePublicImageUrl(url))
+        };
+        res.json(normalizedPrompt);
+      } else {
+        res.json(prompt);
+      }
     } catch (error) {
       console.error("Error fetching prompt:", error);
       res.status(500).json({ message: "Failed to fetch prompt" });

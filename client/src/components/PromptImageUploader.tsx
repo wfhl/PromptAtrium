@@ -126,24 +126,50 @@ export function PromptImageUploader({
           if (!uploadResponse.ok) {
             throw new Error(`Failed to get upload URL: ${uploadResponse.status} ${uploadResponse.statusText}`);
           }
-          const { uploadURL } = await uploadResponse.json();
+          const uploadResponseData = await uploadResponse.json();
+          const uploadURL = uploadResponseData.uploadURL;
 
           // Upload image to object storage
-          const uploadResult = await fetch(uploadURL, {
-            method: 'PUT',
-            body: imageItem.file,
-            headers: {
-              'Content-Type': imageItem.file.type,
-            },
-          });
+          let uploadedImagePath: string;
+          
+          // Check if this is a development URL or production signed URL
+          if (uploadURL.startsWith('/api/dev-upload/') || uploadURL.startsWith('/api/objects/upload-direct/')) {
+            // Development: upload directly to the endpoint and get the path from response
+            const uploadResult = await fetch(uploadURL, {
+              method: 'PUT',
+              body: imageItem.file,
+              headers: {
+                'Content-Type': imageItem.file.type,
+              },
+              credentials: 'include',
+            });
 
-          if (!uploadResult.ok) {
-            throw new Error(`Failed to upload image to storage: ${uploadResult.status} ${uploadResult.statusText}`);
+            if (!uploadResult.ok) {
+              throw new Error(`Failed to upload image to storage: ${uploadResult.status} ${uploadResult.statusText}`);
+            }
+            
+            const uploadData = await uploadResult.json();
+            uploadedImagePath = uploadData.objectPath || uploadData.path;
+          } else {
+            // Production: use signed URL
+            const uploadResult = await fetch(uploadURL, {
+              method: 'PUT',
+              body: imageItem.file,
+              headers: {
+                'Content-Type': imageItem.file.type,
+              },
+            });
+
+            if (!uploadResult.ok) {
+              throw new Error(`Failed to upload image to storage: ${uploadResult.status} ${uploadResult.statusText}`);
+            }
+            
+            uploadedImagePath = uploadURL;
           }
 
           // Set ACL policy for the uploaded image
           const updateResponse = await apiRequest("PUT", "/api/prompt-images", {
-            imageUrl: uploadURL,
+            imageUrl: uploadedImagePath,
           });
 
           if (!updateResponse.ok) {
