@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch, Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -393,6 +393,13 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     <Image className="mr-2 h-4 w-4" />
                     Assets
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/install-guide" className="flex items-center cursor-pointer" data-testid="menu-install-guide">
+                      <Download className="mr-2 h-4 w-4" />
+                      Install Guide
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -651,6 +658,13 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   >
                     <Image className="mr-2 h-4 w-4" />
                     Assets
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/install-guide" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-install-guide">
+                      <Download className="mr-2 h-4 w-4" />
+                      Install Guide
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

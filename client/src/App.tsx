@@ -21,6 +21,7 @@ import LikedPrompts from "@/pages/LikedPrompts";
 import ForkedPrompts from "@/pages/ForkedPrompts";
 import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
+import InstallGuide from "@/pages/install-guide";
 import PromptDetail from "@/pages/prompt-detail";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -111,6 +112,9 @@ function Router() {
             </Route>
             <Route path="/forked-prompts">
               {() => <Layout><ForkedPrompts /></Layout>}
+            </Route>
+            <Route path="/install-guide">
+              {() => <Layout><InstallGuide /></Layout>}
             </Route>
           </>
         )}
