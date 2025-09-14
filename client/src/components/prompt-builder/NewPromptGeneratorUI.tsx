@@ -3300,64 +3300,93 @@ export default function NewPromptGeneratorUI() {
           
           {/* Generate Button and Generated Prompt Section */}
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              {false && <Button
-                className="px-6 py-5 text-base bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex gap-2 items-center"
-                onClick={generatePrompt}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5" />
-                    Generate Prompt
-                  </>
-                )}
-              </Button>}
-              
-              <div className="text-right text-sm text-gray-400">
-                <div className="flex items-center justify-end">
-                  <Info className="h-4 w-4 mr-1" />
-                  <span>Ready</span>
+            {/* Generated Prompt Output Section */}
+            <div className="glass-card p-6 bg-gray-900 bg-gradient-to-br from-purple-900/20 to-blue-900/10 border border-purple-700/40 rounded-lg">
+              <div className="space-y-4">
+                {/* Generated Prompt Display */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-white font-medium block">Generated Prompt</label>
+                    {generatedPrompt && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedPrompt.prompt);
+                          toast({
+                            title: "Copied!",
+                            description: "Prompt copied to clipboard",
+                            duration: 2000,
+                          });
+                        }}
+                        className="text-purple-400 hover:text-white transition-colors"
+                        data-testid="button-copy-prompt"
+                      >
+                        <CopyIcon className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <Textarea
+                    value={generatedPrompt?.prompt || ""}
+                    readOnly
+                    className="w-full glass-input bg-gray-800 bg-gradient-to-br from-purple-900/20 to-gray-800 rounded-lg p-3 min-h-[120px] resize-none border border-purple-800/30 text-purple-300 font-mono"
+                    placeholder="Your generated prompt will appear here..."
+                    data-testid="output-generated-prompt"
+                  />
                 </div>
+
+                {/* Negative Prompt Display */}
+                {generatedPrompt?.negativePrompt && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-purple-400 text-sm font-medium block">Negative Prompt</label>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedPrompt.negativePrompt || "");
+                          toast({
+                            title: "Copied!",
+                            description: "Negative prompt copied to clipboard",
+                            duration: 2000,
+                          });
+                        }}
+                        className="text-purple-400 hover:text-white transition-colors"
+                        data-testid="button-copy-negative"
+                      >
+                        <CopyIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <Textarea
+                      value={generatedPrompt.negativePrompt || ""}
+                      readOnly
+                      className="w-full glass-input bg-gray-800 bg-gradient-to-br from-purple-900/20 to-gray-800 rounded-lg p-3 min-h-[80px] resize-none border border-purple-800/30 text-purple-400 text-sm font-mono"
+                      placeholder="Negative prompt will appear here..."
+                      data-testid="output-negative-prompt"
+                    />
+                  </div>
+                )}
+
+                {/* Generate Button */}
+                <Button
+                  className="w-full btn-purple-grad bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-4 rounded-lg text-lg font-semibold flex items-center justify-center gap-2 transition-all duration-300"
+                  onClick={generatePrompt}
+                  disabled={isGenerating}
+                  data-testid="button-generate-prompt"
+                >
+                  {isGenerating ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5" />
+                      Generate Prompt
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
-            
-            {false && generatedPrompt && (
-              <div className="bg-gray-900 bg-gradient-to-br from-purple-900/30 to-blue-900/10 rounded-lg border border-purple-700/50 p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-semibold text-white">Generated Prompt</h3>
-                  <div className="flex items-center space-x-2">
-                    <button className="text-purple-400 hover:text-white">
-                      <CopyIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-800 bg-gradient-to-br from-purple-900/20 to-gray-800 rounded-md p-3 text-sm text-purple-300 font-mono whitespace-pre-wrap mb-4 border border-purple-800/30">
-                  {generatedPrompt.prompt}
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-purple-400">Negative Prompt:</span>
-                    <button className="text-purple-400 hover:text-white">
-                      <CopyIcon className="h-4 w-4 text-white" />
-                    </button>
-                  </div>
-                  <div className="bg-gray-800 bg-gradient-to-br from-purple-900/20 to-gray-800 rounded-md p-3 text-xs text-purple-400 font-mono whitespace-pre-wrap border border-purple-800/30">
-                    {generatedPrompt.negativePrompt || "No negative prompt generated"}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Enhanced Rule Template Processor */}
             <div className="mt-8 space-y-4">
