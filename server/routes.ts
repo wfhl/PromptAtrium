@@ -5,7 +5,8 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema } from "@shared/schema";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient, parseObjectPath } from "./objectStorage";
-import { ObjectPermission } from "./objectAcl";
+import { ObjectPermission, getObjectAclPolicy } from "./objectAcl";
+import { File } from "@google-cloud/storage";
 import express from "express";
 import { z } from "zod";
 import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
@@ -2263,39 +2264,182 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public object serving endpoint for images
-  app.get('/api/objects/serve/:path(*)', async (req, res) => {
+  // Public object serving endpoint for images - ACL-aware with proper streaming
+  // NOTE: No isAuthenticated middleware - allows public access but still checks ACL
+  app.get('/api/objects/serve/:path(*)', async (req: any, res) => {
     try {
       const { path } = req.params;
+      const objectStorageService = new ObjectStorageService();
       
-      // If path is a full URL, redirect to it
+      // Get user ID if authenticated (setupAuth populates req.user even without isAuthenticated middleware)
+      const userId = req.user?.claims?.sub || null;
+      
+      let objectFile: File | null = null;
+      
+      // Handle different path formats
       if (path.startsWith('http://') || path.startsWith('https://')) {
-        return res.redirect(path);
+        // Parse storage.googleapis.com URLs to internal paths
+        if (path.includes('storage.googleapis.com')) {
+          try {
+            const url = new URL(path);
+            const pathParts = url.pathname.split('/').filter(p => p);
+            if (pathParts.length >= 2) {
+              const bucketName = pathParts[0];
+              const objectName = pathParts.slice(1).join('/');
+              const bucket = objectStorageClient.bucket(bucketName);
+              objectFile = bucket.file(objectName);
+              
+              // Verify file exists
+              const [exists] = await objectFile.exists();
+              if (!exists) {
+                objectFile = null;
+              }
+            }
+          } catch (parseError) {
+            console.error('Error parsing storage URL:', parseError);
+          }
+        } else {
+          // For non-storage URLs, redirect as fallback (but restrict to safe domains)
+          const allowedDomains = ['storage.googleapis.com'];
+          const url = new URL(path);
+          if (allowedDomains.includes(url.hostname)) {
+            return res.redirect(path);
+          } else {
+            return res.status(403).json({ message: 'External URL not allowed' });
+          }
+        }
+      } else if (path.startsWith('/objects/')) {
+        // Handle /objects/ paths using getObjectEntityFile
+        try {
+          objectFile = await objectStorageService.getObjectEntityFile('/' + path);
+        } catch (error) {
+          if (error instanceof ObjectNotFoundError) {
+            objectFile = null;
+          } else if (process.env.NODE_ENV === 'development' && 
+                     (error.message?.includes('127.0.0.1:1106') || 
+                      error.config?.url?.includes('127.0.0.1:1106') ||
+                      error.toString().includes('127.0.0.1:1106'))) {
+            // In development, object storage auth might fail - try direct construction
+            console.log('Development mode: Attempting direct object construction for path:', path);
+            try {
+              const { bucketName, objectName } = parseObjectPath('/' + path);
+              const bucket = objectStorageClient.bucket(bucketName);
+              objectFile = bucket.file(objectName);
+              // In dev, we'll assume it exists and is public for testing
+            } catch (parseError) {
+              console.error('Failed to construct object file in development:', parseError);
+              objectFile = null;
+            }
+          } else {
+            throw error;
+          }
+        }
+      } else if (path.startsWith('objects/')) {
+        // Handle objects/ paths (without leading slash)
+        try {
+          objectFile = await objectStorageService.getObjectEntityFile('/' + path);
+        } catch (error) {
+          if (error instanceof ObjectNotFoundError) {
+            objectFile = null;
+          } else if (process.env.NODE_ENV === 'development' && 
+                     (error.message?.includes('127.0.0.1:1106') || 
+                      error.config?.url?.includes('127.0.0.1:1106') ||
+                      error.toString().includes('127.0.0.1:1106'))) {
+            // In development, object storage auth might fail - try direct construction
+            console.log('Development mode: Attempting direct object construction for path:', path);
+            try {
+              const { bucketName, objectName } = parseObjectPath('/' + path);
+              const bucket = objectStorageClient.bucket(bucketName);
+              objectFile = bucket.file(objectName);
+              // In dev, we'll assume it exists and is public for testing
+            } catch (parseError) {
+              console.error('Failed to construct object file in development:', parseError);
+              objectFile = null;
+            }
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        // Try to find in public search paths
+        try {
+          // Remove leading slash if present for searchPublicObject
+          const searchPath = path.startsWith('/') ? path.slice(1) : path;
+          objectFile = await objectStorageService.searchPublicObject(searchPath);
+        } catch (error) {
+          console.error('Error searching public object:', error);
+          objectFile = null;
+        }
       }
       
-      // If it's an object storage path, try to serve it
-      if (path.includes('replit-objstore') || path.includes('storage.googleapis.com')) {
-        // For Google Cloud Storage URLs, redirect directly
-        const fullUrl = path.startsWith('http') ? path : `https://storage.googleapis.com/${path}`;
-        return res.redirect(fullUrl);
+      // If no file found, return 404
+      if (!objectFile) {
+        return res.status(404).json({ message: 'Object not found' });
       }
       
-      // For internal storage paths, try to parse and redirect
+      // Check access permissions using ACL
+      let canAccess = false;
+      let isPublic = false;
+      
       try {
-        const objectService = new ObjectStorageService();
-        const { bucketName, objectName } = parseObjectPath(path);
+        canAccess = await objectStorageService.canAccessObjectEntity({
+          objectFile,
+          userId: userId,
+          requestedPermission: ObjectPermission.READ,
+        });
         
-        // Try to get a public URL for the object
-        const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
-        return res.redirect(publicUrl);
-      } catch (error) {
-        console.error('Error parsing object path:', error);
-        // If we can't parse it, try as-is
-        return res.redirect(path);
+        // Try to get ACL policy for cache headers
+        const aclPolicy = await getObjectAclPolicy(objectFile);
+        isPublic = aclPolicy?.visibility === "public";
+      } catch (aclError) {
+        // In development, if we can't check ACL due to auth issues, allow access for testing
+        if (process.env.NODE_ENV === 'development' && 
+            (aclError.message?.includes('127.0.0.1:1106') || 
+             aclError.config?.url?.includes('127.0.0.1:1106') ||
+             aclError.toString().includes('127.0.0.1:1106'))) {
+          console.log('Development mode: Assuming public access for testing');
+          canAccess = true;
+          isPublic = true;
+        } else {
+          // Re-throw if it's not a development auth issue
+          throw aclError;
+        }
+      }
+      
+      if (!canAccess) {
+        // Return 403 Forbidden for access denied (not 401 which implies authentication required)
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Stream the file with appropriate cache headers
+      // Public files get long cache time, private files get shorter cache time
+      const cacheTtl = isPublic ? 31536000 : 3600; // 1 year for public, 1 hour for private
+      
+      try {
+        await objectStorageService.downloadObject(objectFile, res, cacheTtl);
+      } catch (downloadError) {
+        // In development, if download fails due to auth, return a placeholder response
+        if (process.env.NODE_ENV === 'development' && 
+            (downloadError.message?.includes('127.0.0.1:1106') || 
+             downloadError.config?.url?.includes('127.0.0.1:1106') ||
+             downloadError.toString().includes('127.0.0.1:1106'))) {
+          console.log('Development mode: Cannot stream file due to auth issues');
+          // Return a simple response indicating the file would be served in production
+          res.status(200).json({ 
+            message: 'Development mode: Object storage not available',
+            path: path,
+            wouldBePublic: isPublic
+          });
+        } else {
+          throw downloadError;
+        }
       }
     } catch (error) {
       console.error('Error serving object:', error);
-      res.status(404).json({ message: 'Object not found' });
+      if (error instanceof ObjectNotFoundError) {
+        return res.status(404).json({ message: 'Object not found' });
+      }
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
