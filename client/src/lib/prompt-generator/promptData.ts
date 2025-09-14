@@ -19,27 +19,116 @@ import type {
  */
 export async function fetchPromptData(): Promise<PromptDataArrays> {
   try {
-    // TODO: Replace with actual API call to fetch from database
     const response = await fetch('/api/prompt-components');
-    if (response.ok) {
-      const data = await response.json();
-      return processComponentData(data);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch prompt components: ${response.status} ${response.statusText}`);
     }
+    
+    const data = await response.json();
+    if (!data || !Array.isArray(data)) {
+      throw new Error('Invalid response format from server');
+    }
+    
+    // Process and return the actual database data
+    return processComponentData(data);
   } catch (error) {
-    console.warn('Failed to fetch prompt data from database, using defaults:', error);
+    console.error('Failed to fetch prompt data from database:', error);
+    // Show error to user instead of silently falling back
+    throw new Error(`Unable to load prompt components: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-  
-  // Return default data if fetch fails
-  return getDefaultPromptData();
 }
 
 /**
  * Process raw component data from database into organized arrays
  */
 function processComponentData(data: any): PromptDataArrays {
-  // TODO: Implement actual data processing based on database structure
-  // For now, return defaults
-  return getDefaultPromptData();
+  // Initialize the arrays structure
+  const arrays = getDefaultPromptData();
+  
+  if (!Array.isArray(data)) {
+    console.error('Invalid component data format:', data);
+    throw new Error('Invalid data format from server');
+  }
+  
+  // Process components from database into category arrays
+  const categoryMap: Record<string, string[]> = {};
+  
+  data.forEach((component: any) => {
+    const category = component.category?.toUpperCase();
+    const value = component.value || component.label;
+    
+    if (category && value) {
+      if (!categoryMap[category]) {
+        categoryMap[category] = [];
+      }
+      categoryMap[category].push(value);
+    }
+  });
+  
+  // Map database categories to array properties
+  const mapping: Record<string, keyof PromptDataArrays> = {
+    'ARTFORM': 'ARTFORM',
+    'PHOTO_TYPE': 'PHOTO_TYPE',
+    'BODY_TYPE': 'FEMALE_BODY_TYPES', // Will need special handling for gender
+    'CHARACTER_TAGS': 'FEMALE_DEFAULT_TAGS', // Will need special handling for gender
+    'ROLES': 'ROLES',
+    'HAIRSTYLES': 'HAIRSTYLES',
+    'HAIR_COLORS': 'HAIR_COLORS',
+    'EYE_COLORS': 'EYE_COLORS',
+    'MAKEUP': 'MAKEUP_OPTIONS',
+    'SKIN_TONES': 'SKIN_TONES',
+    'CLOTHING': 'FEMALE_CLOTHING', // Will need special handling for gender
+    'PLACES': 'PLACE',
+    'LIGHTING': 'LIGHTING',
+    'COMPOSITION': 'COMPOSITION',
+    'POSE': 'POSE',
+    'POSES': 'POSE',
+    'BACKGROUND': 'BACKGROUND',
+    'BACKGROUNDS': 'BACKGROUND',
+    'MOOD': 'MOOD',
+    'ATMOSPHERE': 'ATMOSPHERE',
+    'DEVICE': 'DEVICE',
+    'PHOTOGRAPHER': 'PHOTOGRAPHER',
+    'ARTIST': 'ARTIST',
+    'QUALITY': 'KEYWORDS_OPTIONS'
+  };
+  
+  // Apply mapped categories to arrays
+  Object.entries(categoryMap).forEach(([category, values]) => {
+    const arrayKey = mapping[category];
+    if (arrayKey && arrays[arrayKey]) {
+      // Replace default values with database values
+      (arrays as any)[arrayKey] = values;
+    }
+  });
+  
+  // Handle gender-specific categories
+  data.forEach((component: any) => {
+    const category = component.category;
+    const subcategory = component.subcategory;
+    const value = component.value || component.label;
+    
+    if (category === 'body_type' && subcategory === 'female') {
+      arrays.FEMALE_BODY_TYPES.push(value);
+    } else if (category === 'body_type' && subcategory === 'male') {
+      arrays.MALE_BODY_TYPES.push(value);
+    } else if (category === 'character_tags' && subcategory === 'female') {
+      arrays.FEMALE_DEFAULT_TAGS.push(value);
+    } else if (category === 'character_tags' && subcategory === 'male') {
+      arrays.MALE_DEFAULT_TAGS.push(value);
+    } else if (category === 'clothing' && subcategory === 'female') {
+      arrays.FEMALE_CLOTHING.push(value);
+    } else if (category === 'clothing' && subcategory === 'male') {
+      arrays.MALE_CLOTHING.push(value);
+    }
+  });
+  
+  console.log('Processed component data into arrays:', {
+    totalComponents: data.length,
+    categories: Object.keys(categoryMap).length
+  });
+  
+  return arrays;
 }
 
 /**
@@ -552,7 +641,14 @@ let cachedPromptData: PromptDataArrays | null = null;
  */
 export async function getCachedPromptData(): Promise<PromptDataArrays> {
   if (!cachedPromptData) {
-    cachedPromptData = await fetchPromptData();
+    try {
+      cachedPromptData = await fetchPromptData();
+    } catch (error) {
+      console.error('Failed to load prompt data:', error);
+      // Still return defaults but warn that it's fallback data
+      console.warn('Using fallback prompt data - database components not available');
+      cachedPromptData = getDefaultPromptData();
+    }
   }
   return cachedPromptData;
 }

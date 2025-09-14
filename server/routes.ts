@@ -2765,6 +2765,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register prompt generator routes
   promptGeneratorRoutes(app);
 
+  // Add simplified /api/prompt-components endpoint for backward compatibility
+  app.get('/api/prompt-components', async (req, res) => {
+    try {
+      const components = await storage.getPromptGeneratorComponents({
+        limit: 1000 // Get a reasonable amount of components
+      });
+      res.json(components);
+    } catch (error) {
+      console.error("Error fetching prompt components:", error);
+      res.status(500).json({ error: "Failed to fetch prompt components" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
