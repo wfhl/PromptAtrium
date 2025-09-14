@@ -84,7 +84,7 @@ export function SearchWithFilters({
   }, [searchQuery]);
 
   // Build query string for search
-  const searchQuery = useMemo(() => {
+  const queryString = useMemo(() => {
     const params = new URLSearchParams();
     
     if (debouncedQuery) {
@@ -114,7 +114,7 @@ export function SearchWithFilters({
 
   // Fetch search results
   const { data: searchResults = [], isLoading } = useQuery<Prompt[]>({
-    queryKey: [`/api/prompts?${searchQuery}`],
+    queryKey: [`/api/prompts?${queryString}`],
     enabled: debouncedQuery.length > 0 || Object.entries(filters).some(([key, value]) => 
       key !== 'showNsfw' && key !== 'source' && value !== 'all'
     ) || (filters.source !== 'all'),
