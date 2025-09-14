@@ -11,6 +11,7 @@ import {
   integer,
   decimal,
   char,
+  serial,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -198,6 +199,46 @@ export const recommendedModels = pgTable("recommended_models", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Legacy tables - preserved to prevent data loss during migration
+// These tables exist in the database but are not actively used in the current application
+export const aesthetics = pgTable("aesthetics", {
+  id: varchar("id").primaryKey(),
+  original_id: integer("original_id"),
+  name: varchar("name"), // Keep as is without length restriction
+  description: text("description"),
+  era: varchar("era"), // Keep as is without length restriction
+  categories: text("categories"), // Keep as text, not array
+  tags: text("tags"), // Keep as text, not array
+  visual_elements: text("visual_elements"), // Keep as text, not array
+  color_palette: text("color_palette"), // Keep as text, not array
+  mood_keywords: text("mood_keywords"), // Keep as text, not array
+  related_aesthetics: text("related_aesthetics"), // Keep as text, not array
+  media_examples: text("media_examples"),
+  reference_images: text("reference_images"), // Keep as text, not array
+  origin: text("origin"),
+  category: varchar("category"),
+  usage_count: integer("usage_count"),
+  popularity: decimal("popularity", { precision: 5, scale: 2 }), // Match existing precision
+  imported_at: timestamp("imported_at"),
+  created_at: timestamp("created_at"),
+  updated_at: timestamp("updated_at"),
+});
+
+export const prompt_components = pgTable("prompt_components", {
+  id: varchar("id").primaryKey(),
+  original_id: integer("original_id"),
+  category: varchar("category"), // Keep without length restriction
+  value: text("value"),
+  description: text("description"),
+  subcategory: varchar("subcategory"),
+  usage_count: integer("usage_count"),
+  order_index: integer("order_index"),
+  is_default: boolean("is_default"),
+  imported_at: timestamp("imported_at"),
+  created_at: timestamp("created_at"),
+  updated_at: timestamp("updated_at"),
+});
+
 // Main prompts table
 export const prompts = pgTable("prompts", {
   id: char("id", { length: 10 }).primaryKey(),
@@ -230,6 +271,13 @@ export const prompts = pgTable("prompts", {
   recommendedModels: text("recommended_models").array(),
   technicalParams: jsonb("technical_params"),
   variables: jsonb("variables"),
+  // Extended metadata fields for comprehensive import support
+  intendedRecipient: varchar("intended_recipient"),
+  specificService: varchar("specific_service"),
+  styleKeywords: text("style_keywords"),
+  difficultyLevel: varchar("difficulty_level"),
+  useCase: text("use_case"),
+  additionalMetadata: jsonb("additional_metadata"), // For any unmapped fields
   projectId: varchar("project_id").references(() => projects.id),
   collectionId: varchar("collection_id").references(() => collections.id),
   collectionIds: text("collection_ids").array(),

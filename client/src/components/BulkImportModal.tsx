@@ -44,6 +44,35 @@ interface ParsedPrompt {
   status?: "draft" | "published";
   isPublic?: boolean;
   isNsfw?: boolean;
+  // Extended metadata fields
+  intendedRecipient?: string;
+  specificService?: string;
+  sourceUrl?: string;
+  authorReference?: string;
+  exampleImages?: string;
+  styleKeywords?: string;
+  difficultyLevel?: string;
+  useCase?: string;
+  [key: string]: any; // Allow additional dynamic fields
+}
+
+interface FieldMapping {
+  sourceField: string;
+  targetField: keyof ParsedPrompt;
+  confidence: number;
+  detected: boolean;
+}
+
+interface SmartParseResult {
+  data: ParsedPrompt[];
+  fieldMappings: FieldMapping[];
+  unmappedFields: string[];
+  statistics: {
+    totalRows: number;
+    validRows: number;
+    fieldsDetected: number;
+    confidence: number;
+  };
 }
 
 interface ImportResult {
@@ -62,7 +91,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const [file, setFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState<string>("");
   const [parsedData, setParsedData] = useState<ParsedPrompt[]>([]);
-  const [step, setStep] = useState<"upload" | "preview" | "import" | "results">("upload");
+  const [step, setStep] = useState<"upload" | "preview" | "mapping" | "import" | "results">("upload");
   const [importProgress, setImportProgress] = useState(0);
   const [importResults, setImportResults] = useState<ImportResult | null>(null);
   
@@ -72,6 +101,9 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const [defaultIsPublic, setDefaultIsPublic] = useState(false);
   const [txtParseMode, setTxtParseMode] = useState<"lines" | "paragraphs" | "delimiter">("lines");
   const [customDelimiter, setCustomDelimiter] = useState("---");
+  const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>([]);
+  const [showFieldMapping, setShowFieldMapping] = useState(false);
+  const [smartParseResult, setSmartParseResult] = useState<SmartParseResult | null>(null);
   
   // Additional default fields
   const [defaultPromptType, setDefaultPromptType] = useState<string>("");
@@ -357,6 +389,227 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     setNewRecommendedModelName("");
   };
 
+  // Intelligent field detection functions
+  const normalizeFieldName = (field: string): string => {
+    return field.toLowerCase().replace(/[_\s-]/g, '').trim();
+  };
+
+  const detectPromptField = (fieldName: string, sampleContent: string): { isPrompt: boolean; confidence: number } => {
+    const normalized = normalizeFieldName(fieldName);
+    
+    // High confidence patterns for prompt fields
+    const highConfidencePatterns = [
+      'prompt', 'fullprompt', 'mainprompt', 'promptcontent', 'prompttext',
+      'content', 'text', 'description', 'instruction', 'message'
+    ];
+    
+    // Check field name
+    for (const pattern of highConfidencePatterns) {
+      if (normalized.includes(pattern)) {
+        // Extra confidence if it contains "prompt"
+        const confidence = normalized.includes('prompt') ? 0.95 : 0.8;
+        return { isPrompt: true, confidence };
+      }
+    }
+    
+    // Analyze content length and structure
+    if (sampleContent && sampleContent.length > 100) {
+      // Long content is likely a prompt
+      return { isPrompt: true, confidence: 0.7 };
+    }
+    
+    return { isPrompt: false, confidence: 0 };
+  };
+
+  const detectFieldMapping = (fieldName: string): { targetField: keyof ParsedPrompt | null; confidence: number } => {
+    const normalized = normalizeFieldName(fieldName);
+    
+    // Direct mappings with high confidence
+    const mappings: Record<string, keyof ParsedPrompt> = {
+      'name': 'name',
+      'title': 'name',
+      'promptname': 'name',
+      'heading': 'name',
+      'label': 'name',
+      'category': 'category',
+      'categories': 'category',
+      'type': 'category',
+      'description': 'description',
+      'desc': 'description',
+      'details': 'description',
+      'tags': 'tags',
+      'keywords': 'tags',
+      'stylekeywords': 'styleKeywords',
+      'style': 'styleKeywords',
+      'status': 'status',
+      'state': 'status',
+      'public': 'isPublic',
+      'ispublic': 'isPublic',
+      'visibility': 'isPublic',
+      'nsfw': 'isNsfw',
+      'isnsfw': 'isNsfw',
+      'adult': 'isNsfw',
+      'intendedrecipient': 'intendedRecipient',
+      'recipient': 'intendedRecipient',
+      'target': 'intendedRecipient',
+      'specificservice': 'specificService',
+      'service': 'specificService',
+      'platform': 'specificService',
+      'sourceurl': 'sourceUrl',
+      'source': 'sourceUrl',
+      'url': 'sourceUrl',
+      'link': 'sourceUrl',
+      'authorreference': 'authorReference',
+      'author': 'authorReference',
+      'creator': 'authorReference',
+      'by': 'authorReference',
+      'exampleimages': 'exampleImages',
+      'examples': 'exampleImages',
+      'images': 'exampleImages',
+      'difficultylevel': 'difficultyLevel',
+      'difficulty': 'difficultyLevel',
+      'level': 'difficultyLevel',
+      'usecase': 'useCase',
+      'usage': 'useCase',
+      'purpose': 'useCase'
+    };
+    
+    // Check direct matches
+    for (const [pattern, target] of Object.entries(mappings)) {
+      if (normalized === pattern) {
+        return { targetField: target, confidence: 1.0 };
+      }
+    }
+    
+    // Check partial matches
+    for (const [pattern, target] of Object.entries(mappings)) {
+      if (normalized.includes(pattern) || pattern.includes(normalized)) {
+        return { targetField: target, confidence: 0.8 };
+      }
+    }
+    
+    return { targetField: null, confidence: 0 };
+  };
+
+  const analyzeCSVHeaders = (headers: string[], sampleRow: any): SmartParseResult => {
+    const fieldMappings: FieldMapping[] = [];
+    const unmappedFields: string[] = [];
+    let promptFieldDetected = false;
+    let nameFieldDetected = false;
+    
+    headers.forEach(header => {
+      const sampleContent = sampleRow ? String(sampleRow[header] || '') : '';
+      
+      // First check if this is a prompt field
+      const promptDetection = detectPromptField(header, sampleContent);
+      if (promptDetection.isPrompt && !promptFieldDetected) {
+        fieldMappings.push({
+          sourceField: header,
+          targetField: 'promptContent',
+          confidence: promptDetection.confidence,
+          detected: true
+        });
+        promptFieldDetected = true;
+      } else {
+        // Try to map to other fields
+        const mapping = detectFieldMapping(header);
+        if (mapping.targetField) {
+          // Skip if we already have a name field with higher confidence
+          if (mapping.targetField === 'name' && nameFieldDetected) {
+            const existingNameMapping = fieldMappings.find(m => m.targetField === 'name');
+            if (existingNameMapping && existingNameMapping.confidence >= mapping.confidence) {
+              unmappedFields.push(header);
+              return;
+            }
+          }
+          
+          fieldMappings.push({
+            sourceField: header,
+            targetField: mapping.targetField,
+            confidence: mapping.confidence,
+            detected: true
+          });
+          
+          if (mapping.targetField === 'name') {
+            nameFieldDetected = true;
+          }
+        } else {
+          unmappedFields.push(header);
+        }
+      }
+    });
+    
+    // Calculate overall confidence
+    const avgConfidence = fieldMappings.length > 0 
+      ? fieldMappings.reduce((sum, m) => sum + m.confidence, 0) / fieldMappings.length 
+      : 0;
+    
+    return {
+      data: [],
+      fieldMappings,
+      unmappedFields,
+      statistics: {
+        totalRows: 0,
+        validRows: 0,
+        fieldsDetected: fieldMappings.length,
+        confidence: avgConfidence
+      }
+    };
+  };
+
+  const applyFieldMappings = (rows: any[], mappings: FieldMapping[]): ParsedPrompt[] => {
+    return rows.map((row, index) => {
+      const mapped: ParsedPrompt = {
+        name: `Prompt ${index + 1}`,
+        promptContent: ''
+      };
+      
+      mappings.forEach(mapping => {
+        const sourceValue = row[mapping.sourceField];
+        if (sourceValue !== undefined && sourceValue !== null && sourceValue !== '') {
+          if (mapping.targetField === 'tags') {
+            // Handle tags specially - convert to array
+            mapped.tags = typeof sourceValue === 'string' 
+              ? sourceValue.split(',').map((t: string) => t.trim()).filter(Boolean)
+              : Array.isArray(sourceValue) ? sourceValue : [];
+          } else if (mapping.targetField === 'isPublic' || mapping.targetField === 'isNsfw') {
+            // Handle boolean fields
+            mapped[mapping.targetField] = sourceValue === true || 
+              sourceValue === 'true' || 
+              sourceValue === '1' || 
+              sourceValue === 'yes';
+          } else if (mapping.targetField === 'status') {
+            // Handle status field
+            mapped.status = (sourceValue === 'published' || sourceValue === 'live') ? 'published' : 'draft';
+          } else {
+            // Direct mapping for other fields
+            mapped[mapping.targetField] = String(sourceValue);
+          }
+        }
+      });
+      
+      // Store unmapped fields as additional data
+      Object.keys(row).forEach(key => {
+        if (!mappings.find(m => m.sourceField === key)) {
+          mapped[key] = row[key];
+        }
+      });
+      
+      // Ensure we have a name
+      if (!mapped.name || mapped.name === `Prompt ${index + 1}`) {
+        // Try to generate a better name from content
+        if (mapped.promptContent) {
+          const firstLine = mapped.promptContent.split('\n')[0];
+          mapped.name = firstLine.length > 50 
+            ? `${firstLine.substring(0, 50)}...` 
+            : firstLine || `Prompt ${index + 1}`;
+        }
+      }
+      
+      return mapped;
+    });
+  };
+
   const handleFileUpload = useCallback((uploadedFile: File) => {
     setFile(uploadedFile);
     const reader = new FileReader();
@@ -377,16 +630,44 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
 
       if (extension === 'csv') {
         const result = Papa.parse(content, { header: true });
-        parsed = result.data.map((row: any, index: number) => ({
-          name: row.name || row.title || `Prompt ${index + 1}`,
-          promptContent: row.prompt || row.content || row.description || "",
-          description: row.description || "",
-          category: row.category || "",
-          tags: row.tags ? row.tags.split(',').map((t: string) => t.trim()) : [],
-          status: (row.status === "published" ? "published" : "draft") as "draft" | "published",
-          isPublic: row.isPublic === "true" || row.public === "true",
-          isNsfw: row.isNsfw === "true" || row.nsfw === "true"
-        }));
+        const rows = result.data.filter((row: any) => {
+          // Filter out empty rows
+          return Object.values(row as Record<string, any>).some(val => val !== null && val !== undefined && val !== '');
+        });
+        
+        if (rows.length > 0) {
+          // Analyze headers and get field mappings
+          const headers = Object.keys(rows[0]);
+          const smartResult = analyzeCSVHeaders(headers, rows[0]);
+          
+          // Apply the mappings to parse the data
+          parsed = applyFieldMappings(rows, smartResult.fieldMappings);
+          
+          // Store the smart parse result for UI feedback
+          setSmartParseResult({
+            ...smartResult,
+            data: parsed,
+            statistics: {
+              ...smartResult.statistics,
+              totalRows: rows.length,
+              validRows: parsed.filter(p => p.promptContent && p.name).length
+            }
+          });
+          
+          // Set field mappings
+          setFieldMappings(smartResult.fieldMappings);
+          
+          // Show field mapping step if confidence is low or unmapped fields exist
+          if (smartResult.statistics.confidence < 0.8 || smartResult.unmappedFields.length > 0) {
+            setShowFieldMapping(true);
+          }
+          
+          console.log('Smart CSV parsing:', {
+            fieldsDetected: smartResult.fieldMappings.length,
+            confidence: smartResult.statistics.confidence,
+            unmappedFields: smartResult.unmappedFields
+          });
+        }
       } else if (extension === 'json') {
         // Try standard JSON parsing first
         try {
@@ -408,7 +689,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           
           // Handle multi-line JSON objects with trailing commas
           // Split by the pattern where we have a closing brace followed by comma and newline, then opening brace
-          const objectPattern = /\{[^}]*"name"\s*:\s*"[^"]*"[^}]*"content"\s*:\s*"[^"]*"[^}]*\},?/gs;
+          const objectPattern = /\{[^}]*"name"\s*:\s*"[^"]*"[^}]*"content"\s*:\s*"[^"]*"[^}]*\},?/g;
           const matches = content.match(objectPattern);
           
           if (matches && matches.length > 0) {
@@ -499,7 +780,13 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
       }
 
       setParsedData(parsed.filter(p => p.promptContent.trim() !== ""));
-      setStep("preview");
+      
+      // Go to mapping step if field mapping review is needed
+      if (showFieldMapping && smartParseResult) {
+        setStep("mapping");
+      } else {
+        setStep("preview");
+      }
     } catch (error) {
       toast({
         title: "Parse Error",
@@ -1333,6 +1620,153 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     </div>
   );
 
+  const renderMappingStep = () => {
+    if (!smartParseResult) return null;
+    
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <h3 className="text-lg font-medium">Field Mapping Review</h3>
+          <p className="text-sm text-muted-foreground">
+            We've automatically detected the following field mappings with {Math.round(smartParseResult.statistics.confidence * 100)}% confidence.
+            Review and adjust as needed.
+          </p>
+        </div>
+
+        {/* Mapping Confidence Indicator */}
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Detection Confidence</span>
+              <span className="text-sm text-muted-foreground">
+                {Math.round(smartParseResult.statistics.confidence * 100)}%
+              </span>
+            </div>
+            <Progress value={smartParseResult.statistics.confidence * 100} className="h-2" />
+          </CardContent>
+        </Card>
+
+        {/* Field Mappings Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Detected Field Mappings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {fieldMappings.map((mapping, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-medium">{mapping.sourceField}</div>
+                    <div className="text-muted-foreground">→</div>
+                    <Badge variant={mapping.confidence >= 0.8 ? "default" : "secondary"}>
+                      {mapping.targetField}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {Math.round(mapping.confidence * 100)}% confidence
+                    </span>
+                    {mapping.confidence >= 0.8 ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-yellow-500" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Unmapped Fields */}
+        {smartParseResult.unmappedFields.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Unmapped Fields</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground mb-3">
+                  The following fields weren't automatically mapped. They will be stored as additional metadata.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {smartParseResult.unmappedFields.map((field, index) => (
+                    <Badge key={index} variant="outline">
+                      {field}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Sample Data Preview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Sample Import Preview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {smartParseResult.data.slice(0, 3).map((item, index) => (
+                <div key={index} className="p-3 border rounded-lg space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div className="font-medium text-sm">{item.name}</div>
+                    {item.category && (
+                      <Badge variant="outline" className="text-xs">
+                        {item.category}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground line-clamp-2">
+                    {item.promptContent}
+                  </div>
+                  {item.styleKeywords && (
+                    <div className="flex gap-1 flex-wrap">
+                      {item.styleKeywords.split(',').slice(0, 3).map((keyword, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {keyword.trim()}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={() => {
+            setStep("preview");
+            setShowFieldMapping(false);
+          }}>
+            Back to Preview
+          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                // Accept mappings and proceed
+                setShowFieldMapping(false);
+                setStep("preview");
+              }}
+            >
+              Adjust Manually
+            </Button>
+            <Button onClick={() => {
+              setShowFieldMapping(false);
+              handleImport();
+            }}>
+              Accept & Import
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderImportStep = () => (
     <div className="space-y-4 text-center">
       <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
@@ -1433,6 +1867,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           <div className="space-y-6">
             {step === "upload" && renderUploadStep()}
             {step === "preview" && renderPreviewStep()}
+            {step === "mapping" && renderMappingStep()}
             {step === "import" && renderImportStep()}
             {step === "results" && renderResultsStep()}
           </div>
