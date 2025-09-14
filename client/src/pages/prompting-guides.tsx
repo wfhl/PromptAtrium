@@ -2,36 +2,67 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Search, Hash, Palette, ChevronRight, ExternalLink, Heart, Lightbulb, Wand2, Wrench, Users, MessageCircle, PlayCircle, MessageSquare } from "lucide-react";
+import { BookOpen, Search, Hash, Palette, ChevronRight, ExternalLink, Heart, Lightbulb, Wand2, Wrench, Users, MessageCircle, PlayCircle, MessageSquare, Sparkles, AlertCircle, Book, Zap, Code } from "lucide-react";
 import { MobilePageNav } from "@/components/MobilePageNav";
 import { useLocation } from "wouter";
-import { SYNTAX_GUIDES, ANATOMY_GUIDES, ALL_GUIDES, PROMPT_RESOURCES, LEARNING_RESOURCES, QUICK_TIPS } from "@/data/promptingGuides";
+import { SYNTAX_GUIDES, ANATOMY_GUIDES, PROMPT_RESOURCES, LEARNING_RESOURCES, QUICK_TIPS } from "@/data/promptingGuides";
 import type { Guide, Resource } from "@/data/promptingGuides";
 
 // Markdown support
 const formatContent = (content: string) => {
   // Replace backticks with proper code blocks
   const processedContent = content
-    .replace(/```([\s\S]*?)```/g, '<pre class="bg-muted p-4 rounded-lg overflow-x-auto my-4"><code>$1</code></pre>')
-    .replace(/`([^`]+)`/g, '<code class="bg-muted px-2 py-1 rounded text-sm">$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-800/50 p-4 rounded-lg overflow-x-auto my-4 text-gray-300 text-sm"><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code class="bg-gray-800/50 px-2 py-1 rounded text-sm text-blue-400">$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-gray-100 font-semibold">$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/### (.+)/g, '<h3 class="text-lg font-semibold mt-6 mb-3 text-foreground">$1</h3>')
-    .replace(/## (.+)/g, '<h2 class="text-xl font-bold mt-6 mb-3 text-foreground">$1</h2>')
-    .replace(/^- (.+)/gm, '<li class="ml-4 mb-1">• $1</li>')
-    .replace(/\n\n/g, '</p><p class="mb-4">')
-    .replace(/^([^<].+)$/gm, '<p class="mb-4">$1</p>');
+    .replace(/### (.+)/g, '<h3 class="text-base font-semibold mt-6 mb-3 text-gray-100">$1</h3>')
+    .replace(/## (.+)/g, '<h2 class="text-lg font-bold mt-6 mb-3 text-gray-100">$1</h2>')
+    .replace(/^- (.+)/gm, '<li class="ml-4 mb-1 text-gray-300">• $1</li>')
+    .replace(/\n\n/g, '</p><p class="mb-4 text-gray-300 leading-relaxed">')
+    .replace(/^([^<].+)$/gm, '<p class="mb-4 text-gray-300 leading-relaxed">$1</p>');
 
   return processedContent;
 };
 
+// Get color classes for topics
+const getTopicColor = (title: string, isAnatomy: boolean = false) => {
+  if (isAnatomy) {
+    if (title.includes("Subject")) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    if (title.includes("Scene") || title.includes("Environment")) return "bg-green-500/20 text-green-400 border-green-500/30";
+    if (title.includes("Style") || title.includes("Artistic")) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+    if (title.includes("Details") || title.includes("Quality")) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    if (title.includes("Lighting") || title.includes("Camera")) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
+    if (title.includes("Color") || title.includes("Mood")) return "bg-pink-500/20 text-pink-400 border-pink-500/30";
+    if (title.includes("Composition")) return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+    if (title.includes("Advanced") || title.includes("Modifiers")) return "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
+    return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+  }
+  
+  // Syntax colors
+  if (title.includes("Weight") || title.includes("Emphasis")) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+  if (title.includes("Mixing") || title.includes("Blend")) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+  if (title.includes("Bracket") || title.includes("Attention")) return "bg-green-500/20 text-green-400 border-green-500/30";
+  if (title.includes("Step") || title.includes("Scheduling")) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+  if (title.includes("Quality") || title.includes("Enhancement")) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
+  if (title.includes("Negative")) return "bg-red-500/20 text-red-400 border-red-500/30";
+  if (title.includes("SDXL")) return "bg-pink-500/20 text-pink-400 border-pink-500/30";
+  if (title.includes("Trigger") || title.includes("Model")) return "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
+  return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+};
+
+// Get simplified topic name for pills
+const getTopicPillName = (title: string) => {
+  // Extract the main topic from the title (before the dash)
+  const match = title.match(/^([^-]+)/);
+  return match ? match[1].trim() : title;
+};
+
 export default function PromptingGuides() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
-  const [activeTab, setActiveTab] = useState("syntax");
+  const [activeTab, setActiveTab] = useState("anatomy");
   const [, setLocation] = useLocation();
 
   // Filter guides based on search
@@ -52,17 +83,6 @@ export default function PromptingGuides() {
         guide.content.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [searchQuery]);
-
-  const filteredAllGuides = useMemo(() => {
-    if (!searchQuery) return ALL_GUIDES;
-    return ALL_GUIDES.filter(
-      guide =>
-        guide.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        guide.content.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]);
-
-  const displayedGuides = activeTab === "syntax" ? filteredSyntaxGuides : activeTab === "anatomy" ? filteredAnatomyGuides : [];
 
   // Filter resources based on search
   const filteredPromptResources = useMemo(() => {
@@ -100,6 +120,14 @@ export default function PromptingGuides() {
         return PlayCircle;
       case "message-square":
         return MessageSquare;
+      case "sparkles":
+        return Sparkles;
+      case "alert-circle":
+        return AlertCircle;
+      case "zap":
+        return Zap;
+      case "code":
+        return Code;
       default:
         return ExternalLink;
     }
@@ -116,253 +144,220 @@ export default function PromptingGuides() {
     }
   };
 
+  // Get color for learning resources
+  const getLearningResourceColor = (index: number) => {
+    const colors = [
+      "text-blue-400",
+      "text-green-400",
+      "text-purple-400",
+      "text-amber-400",
+      "text-cyan-400"
+    ];
+    return colors[index % colors.length];
+  };
+
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      {/* Mobile Navigation */}
-      <MobilePageNav />
-      
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20">
-            <BookOpen className="h-6 w-6 text-purple-500" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
-              Prompting Guides
-            </h1>
-            <p className="text-muted-foreground">Master the art of AI image generation</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-950">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Mobile Navigation */}
+        <MobilePageNav />
         
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search guides..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-            data-testid="input-search-guides"
-          />
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20">
+              <BookOpen className="h-6 w-6 text-purple-500" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
+                Prompting Guides
+              </h1>
+              <p className="text-gray-400">Master the art of AI image generation</p>
+            </div>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search guides..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-gray-900/50 border-gray-800 text-gray-200 placeholder:text-gray-500"
+              data-testid="input-search-guides"
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sidebar - Guide List */}
-        <div className="lg:col-span-1">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger 
-                value="syntax" 
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20"
-                data-testid="tab-syntax-guides"
-              >
-                <Hash className="h-4 w-4 mr-2" />
-                Syntax
-              </TabsTrigger>
-              <TabsTrigger 
-                value="anatomy" 
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-teal-500/20"
-                data-testid="tab-anatomy-guides"
-              >
-                <Palette className="h-4 w-4 mr-2" />
-                Anatomy
-              </TabsTrigger>
-              <TabsTrigger 
-                value="resources" 
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-orange-500/20"
-                data-testid="tab-resources"
-              >
-                <Lightbulb className="h-4 w-4 mr-2" />
-                Resources
-              </TabsTrigger>
-            </TabsList>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-900/50">
+            <TabsTrigger 
+              value="anatomy" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-teal-500/20"
+              data-testid="tab-anatomy-guides"
+            >
+              <Palette className="h-4 w-4 mr-2" />
+              Anatomy
+            </TabsTrigger>
+            <TabsTrigger 
+              value="syntax" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20"
+              data-testid="tab-syntax-guides"
+            >
+              <Hash className="h-4 w-4 mr-2" />
+              Syntax
+            </TabsTrigger>
+            <TabsTrigger 
+              value="resources" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-orange-500/20"
+              data-testid="tab-resources"
+            >
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Resources
+            </TabsTrigger>
+          </TabsList>
 
-            <ScrollArea className="h-[calc(100vh-280px)] mt-4">
-              {activeTab === "resources" ? (
-                <div className="space-y-6 pr-4">
-                  {/* Prompt Resources Categories */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tutorials & Guides</h3>
-                    {filteredPromptResources.filter(r => r.category === "tutorials").map(resource => {
-                      const IconComponent = getResourceIcon(resource.icon);
-                      return (
-                        <Card 
-                          key={resource.id} 
-                          className="p-3 cursor-pointer hover:bg-muted/50 transition-all"
-                          onClick={() => handleResourceClick(resource)}
-                          data-testid={`card-resource-${resource.id}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <IconComponent className="h-4 w-4 mt-0.5 text-amber-500" />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-medium leading-tight">{resource.title}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{resource.description}</p>
-                            </div>
-                            {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
+          {/* Anatomy Tab Content */}
+          <TabsContent value="anatomy" className="mt-6">
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-100 mb-2">Anatomy of a Great Prompt</h2>
+                <p className="text-gray-400">Understanding the essential components that make up effective AI image prompts</p>
+              </div>
 
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Community</h3>
-                    {filteredPromptResources.filter(r => r.category === "community").map(resource => {
-                      const IconComponent = getResourceIcon(resource.icon);
-                      return (
-                        <Card 
-                          key={resource.id} 
-                          className="p-3 cursor-pointer hover:bg-muted/50 transition-all"
-                          onClick={() => handleResourceClick(resource)}
-                          data-testid={`card-resource-${resource.id}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <IconComponent className="h-4 w-4 mt-0.5 text-amber-500" />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-medium leading-tight">{resource.title}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{resource.description}</p>
-                            </div>
-                            {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
+              {/* Topic Pills */}
+              <div className="flex flex-wrap gap-2 mb-8">
+                {filteredAnatomyGuides.map((guide) => (
+                  <Badge
+                    key={guide.id}
+                    variant="outline"
+                    className={`${getTopicColor(guide.title, true)} border cursor-pointer hover:opacity-80 transition-opacity`}
+                    data-testid={`pill-anatomy-${guide.id}`}
+                  >
+                    {getTopicPillName(guide.title)}
+                  </Badge>
+                ))}
+              </div>
 
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tools & Applications</h3>
-                    {filteredPromptResources.filter(r => r.category === "tools").map(resource => {
-                      const IconComponent = getResourceIcon(resource.icon);
-                      return (
-                        <Card 
-                          key={resource.id} 
-                          className="p-3 cursor-pointer hover:bg-muted/50 transition-all"
-                          onClick={() => handleResourceClick(resource)}
-                          data-testid={`card-resource-${resource.id}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <IconComponent className="h-4 w-4 mt-0.5 text-amber-500" />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-medium leading-tight">{resource.title}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{resource.description}</p>
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Prompt Builders</h3>
-                    {filteredPromptResources.filter(r => r.category === "builders").map(resource => {
-                      const IconComponent = getResourceIcon(resource.icon);
-                      return (
-                        <Card 
-                          key={resource.id} 
-                          className="p-3 cursor-pointer hover:bg-muted/50 transition-all"
-                          onClick={() => handleResourceClick(resource)}
-                          data-testid={`card-resource-${resource.id}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <IconComponent className="h-4 w-4 mt-0.5 text-amber-500" />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-medium leading-tight">{resource.title}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{resource.description}</p>
-                              {resource.buttonText && (
-                                <Button size="sm" className="mt-2 h-7 text-xs" onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleResourceClick(resource);
-                                }}>
-                                  {resource.buttonText}
-                                </Button>
-                              )}
-                            </div>
-                            {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2 pr-4">
-                  {displayedGuides.length === 0 ? (
-                    <Card className="p-4">
-                      <p className="text-center text-muted-foreground">
+              {/* All Anatomy Guides */}
+              <div className="space-y-4">
+                {filteredAnatomyGuides.length === 0 ? (
+                  <Card className="bg-gray-900/30 border-gray-800">
+                    <CardContent className="p-6">
+                      <p className="text-center text-gray-400">
                         No guides found matching "{searchQuery}"
                       </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filteredAnatomyGuides.map((guide) => (
+                    <Card key={guide.id} className="bg-gray-900/30 border-gray-800" data-testid={`card-anatomy-guide-${guide.id}`}>
+                      <CardHeader className="border-b border-gray-800">
+                        <CardTitle className="text-xl text-gray-100">{guide.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div 
+                          className="prose prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: formatContent(guide.content) }}
+                        />
+                      </CardContent>
                     </Card>
-                  ) : (
-                    displayedGuides.map((guide) => (
-                      <Card
-                        key={guide.id}
-                        className={`cursor-pointer transition-all hover:shadow-lg ${
-                          selectedGuide?.id === guide.id
-                            ? activeTab === "syntax"
-                              ? "ring-2 ring-purple-500/50 bg-purple-500/5"
-                              : "ring-2 ring-green-500/50 bg-green-500/5"
-                            : "hover:bg-muted/50"
-                        }`}
-                        onClick={() => setSelectedGuide(guide)}
-                        data-testid={`card-guide-${guide.id}`}
-                      >
-                        <CardHeader className="p-4">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-medium">
-                              {guide.title}
-                            </CardTitle>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </CardHeader>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              )}
-            </ScrollArea>
-          </Tabs>
-        </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </TabsContent>
 
-        {/* Main Content - Selected Guide or Resources */}
-        <div className="lg:col-span-2">
-          {activeTab === "resources" ? (
+          {/* Syntax Tab Content */}
+          <TabsContent value="syntax" className="mt-6">
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-100 mb-2">Stable Diffusion Syntax Guide</h2>
+                <p className="text-gray-400">Master the special syntax and formatting techniques for better control</p>
+              </div>
+
+              {/* Topic Pills */}
+              <div className="flex flex-wrap gap-2 mb-8">
+                {filteredSyntaxGuides.map((guide) => (
+                  <Badge
+                    key={guide.id}
+                    variant="outline"
+                    className={`${getTopicColor(guide.title, false)} border cursor-pointer hover:opacity-80 transition-opacity`}
+                    data-testid={`pill-syntax-${guide.id}`}
+                  >
+                    {getTopicPillName(guide.title)}
+                  </Badge>
+                ))}
+              </div>
+
+              {/* All Syntax Guides */}
+              <div className="space-y-4">
+                {filteredSyntaxGuides.length === 0 ? (
+                  <Card className="bg-gray-900/30 border-gray-800">
+                    <CardContent className="p-6">
+                      <p className="text-center text-gray-400">
+                        No guides found matching "{searchQuery}"
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filteredSyntaxGuides.map((guide) => (
+                    <Card key={guide.id} className="bg-gray-900/30 border-gray-800" data-testid={`card-syntax-guide-${guide.id}`}>
+                      <CardHeader className="border-b border-gray-800">
+                        <CardTitle className="text-xl text-gray-100">{guide.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div 
+                          className="prose prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: formatContent(guide.content) }}
+                        />
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Resources Tab Content */}
+          <TabsContent value="resources" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - Prompt Resources */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+              {/* Left Column - Prompt Resources (2/3 width) */}
+              <div className="lg:col-span-2">
+                <Card className="bg-gray-900/30 border-gray-800">
+                  <CardHeader className="border-b border-gray-800">
+                    <CardTitle className="flex items-center gap-2 text-gray-100">
                       <Lightbulb className="h-5 w-5 text-amber-500" />
                       Prompt Resources
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="p-6 space-y-8">
                     {/* Tutorials & Guides */}
                     <div>
-                      <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Tutorials & Guides</h3>
+                      <h3 className="text-sm font-semibold mb-4 text-gray-400 uppercase tracking-wider">Tutorials & Guides</h3>
                       <div className="space-y-3">
                         {filteredPromptResources.filter(r => r.category === "tutorials").map(resource => {
                           const IconComponent = getResourceIcon(resource.icon);
                           return (
                             <div 
                               key={resource.id} 
-                              className="group flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-all"
+                              className="group flex items-center justify-between p-4 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 cursor-pointer transition-all"
                               onClick={() => handleResourceClick(resource)}
-                              data-testid={`main-resource-${resource.id}`}
+                              data-testid={`resource-${resource.id}`}
                             >
                               <div className="flex items-center gap-3">
-                                <IconComponent className="h-4 w-4 text-amber-500" />
+                                <IconComponent className="h-5 w-5 text-amber-500" />
                                 <div>
-                                  <h4 className="text-sm font-medium group-hover:text-amber-500 transition-colors">{resource.title}</h4>
-                                  <p className="text-xs text-muted-foreground">{resource.description}</p>
+                                  <h4 className="text-sm font-medium text-gray-200 group-hover:text-amber-400 transition-colors">{resource.title}</h4>
+                                  <p className="text-xs text-gray-500 mt-1">{resource.description}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
-                                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-amber-500" />
+                                <span className="text-xs text-amber-500 group-hover:text-amber-400">View Resource →</span>
                               </div>
                             </div>
                           );
@@ -372,27 +367,27 @@ export default function PromptingGuides() {
 
                     {/* Community Resources */}
                     <div>
-                      <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Community Resources</h3>
+                      <h3 className="text-sm font-semibold mb-4 text-gray-400 uppercase tracking-wider">Community Resources</h3>
                       <div className="space-y-3">
                         {filteredPromptResources.filter(r => r.category === "community").map(resource => {
                           const IconComponent = getResourceIcon(resource.icon);
                           return (
                             <div 
                               key={resource.id} 
-                              className="group flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-all"
+                              className="group flex items-center justify-between p-4 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 cursor-pointer transition-all"
                               onClick={() => handleResourceClick(resource)}
-                              data-testid={`main-resource-${resource.id}`}
+                              data-testid={`resource-${resource.id}`}
                             >
                               <div className="flex items-center gap-3">
-                                <IconComponent className="h-4 w-4 text-amber-500" />
+                                <IconComponent className="h-5 w-5 text-amber-500" />
                                 <div>
-                                  <h4 className="text-sm font-medium group-hover:text-amber-500 transition-colors">{resource.title}</h4>
-                                  <p className="text-xs text-muted-foreground">{resource.description}</p>
+                                  <h4 className="text-sm font-medium text-gray-200 group-hover:text-amber-400 transition-colors">{resource.title}</h4>
+                                  <p className="text-xs text-gray-500 mt-1">{resource.description}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
-                                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-amber-500" />
+                                <span className="text-xs text-amber-500 group-hover:text-amber-400">View Resource →</span>
                               </div>
                             </div>
                           );
@@ -402,63 +397,67 @@ export default function PromptingGuides() {
 
                     {/* Tools & Applications */}
                     <div>
-                      <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Tools & Applications</h3>
-                      <div className="space-y-3">
-                        {filteredPromptResources.filter(r => r.category === "tools").map(resource => {
-                          const IconComponent = getResourceIcon(resource.icon);
-                          return (
-                            <div 
-                              key={resource.id} 
-                              className="group flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-all"
-                              onClick={() => handleResourceClick(resource)}
-                              data-testid={`main-resource-${resource.id}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <IconComponent className="h-4 w-4 text-amber-500" />
-                                <div>
-                                  <h4 className="text-sm font-medium group-hover:text-amber-500 transition-colors">{resource.title}</h4>
-                                  <p className="text-xs text-muted-foreground">{resource.description}</p>
+                      <h3 className="text-sm font-semibold mb-4 text-gray-400 uppercase tracking-wider">Tools & Applications</h3>
+                      {filteredPromptResources.filter(r => r.category === "tools").length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <Wrench className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                          <p className="text-sm">No additional prompt tools found</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {filteredPromptResources.filter(r => r.category === "tools").map(resource => {
+                            const IconComponent = getResourceIcon(resource.icon);
+                            return (
+                              <div 
+                                key={resource.id} 
+                                className="group flex items-center justify-between p-4 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 cursor-pointer transition-all"
+                                onClick={() => handleResourceClick(resource)}
+                                data-testid={`resource-${resource.id}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <IconComponent className="h-5 w-5 text-amber-500" />
+                                  <div>
+                                    <h4 className="text-sm font-medium text-gray-200 group-hover:text-amber-400 transition-colors">{resource.title}</h4>
+                                    <p className="text-xs text-gray-500 mt-1">{resource.description}</p>
+                                  </div>
                                 </div>
+                                <span className="text-xs text-amber-500 group-hover:text-amber-400">View Resource →</span>
                               </div>
-                              <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-amber-500" />
-                            </div>
-                          );
-                        })}
-                      </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {/* Prompt Building Tools */}
                     <div>
-                      <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Prompt Building Tools</h3>
+                      <h3 className="text-sm font-semibold mb-4 text-gray-400 uppercase tracking-wider">Prompt Building Tools</h3>
                       <div className="space-y-3">
                         {filteredPromptResources.filter(r => r.category === "builders").map(resource => {
                           const IconComponent = getResourceIcon(resource.icon);
                           return (
                             <div 
                               key={resource.id} 
-                              className="group flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-all"
-                              onClick={() => handleResourceClick(resource)}
-                              data-testid={`main-resource-${resource.id}`}
+                              className="group flex items-center justify-between p-4 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 transition-all"
+                              data-testid={`resource-${resource.id}`}
                             >
                               <div className="flex items-center gap-3">
-                                <IconComponent className="h-4 w-4 text-amber-500" />
+                                <IconComponent className="h-5 w-5 text-amber-500" />
                                 <div>
-                                  <h4 className="text-sm font-medium group-hover:text-amber-500 transition-colors">{resource.title}</h4>
-                                  <p className="text-xs text-muted-foreground">{resource.description}</p>
+                                  <h4 className="text-sm font-medium text-gray-200">{resource.title}</h4>
+                                  <p className="text-xs text-gray-500 mt-1">{resource.description}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
-                                {resource.buttonText ? (
-                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleResourceClick(resource);
-                                  }}>
-                                    {resource.buttonText}
-                                  </Button>
-                                ) : (
-                                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-amber-500" />
-                                )}
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-7 text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400"
+                                  onClick={() => handleResourceClick(resource)}
+                                >
+                                  Open Generator
+                                </Button>
                               </div>
                             </div>
                           );
@@ -469,27 +468,32 @@ export default function PromptingGuides() {
                 </Card>
               </div>
 
-              {/* Right Column - Learning Resources & Quick Tips */}
+              {/* Right Column - Learning Resources & Quick Tips (1/3 width) */}
               <div className="space-y-6">
                 {/* Learning Resources */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Learning Resources</CardTitle>
+                <Card className="bg-gray-900/30 border-gray-800">
+                  <CardHeader className="border-b border-gray-800">
+                    <CardTitle className="flex items-center gap-2 text-gray-100 text-lg">
+                      <Book className="h-5 w-5 text-blue-500" />
+                      Learning Resources
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {filteredLearningResources.map(resource => {
+                  <CardContent className="p-4 space-y-3">
+                    {filteredLearningResources.map((resource, index) => {
                       const IconComponent = getResourceIcon(resource.icon);
                       return (
                         <div 
                           key={resource.id} 
-                          className="group flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-all"
+                          className="group flex items-start gap-3 p-3 rounded-lg hover:bg-gray-800/30 cursor-pointer transition-all"
                           onClick={() => handleResourceClick(resource)}
                           data-testid={`learning-resource-${resource.id}`}
                         >
-                          <IconComponent className="h-4 w-4 text-muted-foreground group-hover:text-amber-500" />
+                          <IconComponent className={`h-4 w-4 mt-0.5 ${getLearningResourceColor(index)}`} />
                           <div className="flex-1">
-                            <h4 className="text-sm font-medium group-hover:text-amber-500 transition-colors">{resource.title}</h4>
-                            <p className="text-xs text-muted-foreground">{resource.description}</p>
+                            <h4 className="text-sm font-medium text-gray-200 group-hover:text-blue-400 transition-colors leading-tight">
+                              {resource.title}
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1">{resource.description}</p>
                           </div>
                         </div>
                       );
@@ -498,16 +502,19 @@ export default function PromptingGuides() {
                 </Card>
 
                 {/* Quick Tips */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Quick Tips</CardTitle>
+                <Card className="bg-gray-900/30 border-gray-800">
+                  <CardHeader className="border-b border-gray-800">
+                    <CardTitle className="flex items-center gap-2 text-gray-100 text-lg">
+                      <Zap className="h-5 w-5 text-yellow-500" />
+                      Quick Tips
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
+                  <CardContent className="p-4">
+                    <ul className="space-y-3">
                       {QUICK_TIPS.map((tip, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <span className="text-amber-500 mt-0.5">•</span>
-                          <span className="text-muted-foreground">{tip}</span>
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="text-yellow-500 mt-1">•</span>
+                          <span className="text-sm text-gray-300">{tip}</span>
                         </li>
                       ))}
                     </ul>
@@ -515,58 +522,8 @@ export default function PromptingGuides() {
                 </Card>
               </div>
             </div>
-          ) : selectedGuide ? (
-            <Card className="h-[calc(100vh-200px)]">
-              <CardHeader className="border-b">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-2xl">
-                    {selectedGuide.title}
-                  </CardTitle>
-                  <Badge 
-                    variant="outline" 
-                    className={
-                      selectedGuide.category === "syntax"
-                        ? "bg-purple-500/10 text-purple-500 border-purple-500/30"
-                        : "bg-green-500/10 text-green-500 border-green-500/30"
-                    }
-                  >
-                    {selectedGuide.category === "syntax" ? "Syntax Guide" : "Anatomy Guide"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <ScrollArea className="h-[calc(100%-80px)]">
-                <CardContent className="p-6">
-                  <div 
-                    className="prose prose-sm dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: formatContent(selectedGuide.content) }}
-                  />
-                </CardContent>
-              </ScrollArea>
-            </Card>
-          ) : (
-            <Card className="h-[calc(100vh-200px)] flex items-center justify-center">
-              <div className="text-center p-8">
-                <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-xl font-semibold mb-2">Select a Guide</h3>
-                <p className="text-muted-foreground max-w-sm mx-auto">
-                  Choose a guide from the list to start learning about AI prompting techniques
-                </p>
-                
-                {/* Quick Stats */}
-                <div className="mt-8 grid grid-cols-2 gap-4 max-w-xs mx-auto">
-                  <div className="p-4 rounded-lg bg-purple-500/10">
-                    <div className="text-2xl font-bold text-purple-500">{SYNTAX_GUIDES.length}</div>
-                    <div className="text-sm text-muted-foreground">Syntax Guides</div>
-                  </div>
-                  <div className="p-4 rounded-lg bg-green-500/10">
-                    <div className="text-2xl font-bold text-green-500">{ANATOMY_GUIDES.length}</div>
-                    <div className="text-sm text-muted-foreground">Anatomy Guides</div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
