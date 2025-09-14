@@ -143,7 +143,7 @@ export function SearchWithFilters({
   const activeFilterCount = useMemo(() => {
     return Object.entries(filters).filter(([key, value]) => {
       if (key === "source") return false;
-      if (key === "showNsfw") return value === true;
+      if (key === "showNsfw") return value === false;
       return value !== "all";
     }).length;
   }, [filters]);
