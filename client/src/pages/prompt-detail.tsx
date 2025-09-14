@@ -733,7 +733,7 @@ export default function PromptDetail() {
           </DialogDescription>
           {selectedImage && (
             <img
-              src={selectedImage}
+              src={selectedImage.startsWith('http') ? selectedImage : `/api/objects/serve/${encodeURIComponent(selectedImage)}`}
               alt="Full size preview"
               className="w-full h-auto rounded-lg"
             />

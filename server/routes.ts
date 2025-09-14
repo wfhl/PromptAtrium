@@ -320,6 +320,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // Public image serving endpoint with production fallback
+  app.get("/api/objects/serve/:path(*)", async (req, res) => {
+    try {
+      const objectPath = decodeURIComponent(req.params.path);
+      
+      // Handle different path formats
+      let normalizedPath = objectPath;
+      
+      // If it's already a full URL or /objects/ path, extract the relevant part
+      if (objectPath.startsWith('/objects/')) {
+        normalizedPath = objectPath;
+      } else if (!objectPath.startsWith('/')) {
+        normalizedPath = `/objects/${objectPath}`;
+      }
+      
+      const objectStorageService = new ObjectStorageService();
+      
+      try {
+        // Try to get the file using the object entity file method
+        const objectFile = await objectStorageService.getObjectEntityFile(normalizedPath);
+        
+        // Check if the file is public (no auth required for public files)
+        const aclPolicy = await getObjectAclPolicy(objectFile);
+        const isPublic = aclPolicy?.visibility === "public";
+        
+        if (!isPublic) {
+          // For private files, check authentication
+          const userId = (req.user as any)?.claims?.sub;
+          const canAccess = await objectStorageService.canAccessObjectEntity({
+            objectFile,
+            userId: userId,
+            requestedPermission: ObjectPermission.READ,
+          });
+          
+          if (!canAccess) {
+            return res.sendStatus(401);
+          }
+        }
+        
+        // Stream the file to the response
+        await objectStorageService.downloadObject(objectFile, res);
+      } catch (error) {
+        // Fallback for production environment when sidecar isn't available
+        if (process.env.NODE_ENV === 'production' || error instanceof ObjectNotFoundError) {
+          console.log("Falling back to direct bucket access for:", normalizedPath);
+          
+          // Try direct bucket access for public images
+          const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+          if (!privateObjectDir) {
+            console.error("Object storage not configured");
+            return res.sendStatus(404);
+          }
+          
+          let fullPath = normalizedPath;
+          if (normalizedPath.startsWith('/objects/')) {
+            const entityId = normalizedPath.slice('/objects/'.length);
+            fullPath = `${privateObjectDir}/${entityId}`;
+          }
+          
+          const { bucketName, objectName } = parseObjectPath(fullPath);
+          const bucket = objectStorageClient.bucket(bucketName);
+          const file = bucket.file(objectName);
+          
+          const [exists] = await file.exists();
+          if (!exists) {
+            return res.sendStatus(404);
+          }
+          
+          // For production fallback, only serve public files without auth
+          const aclPolicy = await getObjectAclPolicy(file);
+          if (aclPolicy?.visibility !== "public") {
+            // Private file, requires authentication which we can't verify without sidecar
+            console.error("Cannot verify access for private file without sidecar:", normalizedPath);
+            return res.sendStatus(401);
+          }
+          
+          // Stream the public file
+          await objectStorageService.downloadObject(file, res);
+        } else {
+          throw error;
+        }
+      }
+    } catch (error) {
+      console.error("Error serving object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
   app.put("/api/profile-picture", isAuthenticated, async (req, res) => {
     if (!req.body.profileImageUrl) {
       return res.status(400).json({ error: "profileImageUrl is required" });
