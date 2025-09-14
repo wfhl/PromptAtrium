@@ -1623,6 +1623,7 @@ export default function NewPromptGeneratorUI() {
   
   // UI rendering
   return (
+    <>
     <div className="w-full max-w-[1600px] mx-auto space-y-4">
 
       
@@ -3755,6 +3756,6 @@ setSelectedTemplates(prev => {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
