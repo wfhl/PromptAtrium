@@ -2269,6 +2269,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/objects/serve/:path(*)', async (req: any, res) => {
     try {
       const { path } = req.params;
+      
+      // Development mode early check - if sidecar is not available, return a dev placeholder
+      if (process.env.NODE_ENV === 'development') {
+        // Quick check if sidecar is available with a very short timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 100)
+        );
+        
+        try {
+          await Promise.race([
+            objectStorageClient.getBuckets({ maxResults: 1 }),
+            timeoutPromise
+          ]);
+        } catch (sidecarError) {
+          // If we get a timeout or connection error, assume sidecar is not available
+          console.log('Development mode: Object storage sidecar not available, returning placeholder for path:', path);
+          // Return a placeholder that indicates images would work in production
+          return res.status(200).json({ 
+            message: 'Development mode: Object storage not available',
+            path: path,
+            note: 'Images will display when object storage sidecar is running or in production'
+          });
+        }
+      }
+      
       const objectStorageService = new ObjectStorageService();
       
       // Get user ID if authenticated (setupAuth populates req.user even without isAuthenticated middleware)
