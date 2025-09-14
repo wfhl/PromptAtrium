@@ -262,12 +262,12 @@ export function promptGeneratorRoutes(app: Express) {
         return res.status(400).json({ error: "IDs array required" });
       }
       
-      // Fetch all components and filter by IDs
-      const allComponents = await storage.getPromptGeneratorComponents({}).catch(() => {
-        return Object.values(DEFAULT_COMPONENTS).flat();
+      // Use the specific method for fetching by IDs
+      const components = await storage.getPromptGeneratorComponentsByIds(ids).catch(() => {
+        // Fallback to default components if database fails
+        const allComponents = Object.values(DEFAULT_COMPONENTS).flat();
+        return allComponents.filter((c: any) => ids.includes(c.id));
       });
-      
-      const components = allComponents.filter((c: any) => ids.includes(c.id));
       
       res.json(components);
     } catch (error) {

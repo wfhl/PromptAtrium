@@ -258,9 +258,10 @@ export interface IStorage {
   setDefaultPromptTemplate(templateId: string, templateType?: string): Promise<void>;
 
   // Prompt Generator Components operations
-  getPromptGeneratorComponents(options?: { category?: string; subcategory?: string; isActive?: boolean }): Promise<PromptGeneratorComponent[]>;
+  getPromptGeneratorComponents(options?: { category?: string; subcategory?: string; isActive?: boolean; search?: string; limit?: number; offset?: number }): Promise<PromptGeneratorComponent[]>;
   getPromptGeneratorComponent(id: string): Promise<PromptGeneratorComponent | undefined>;
   getPromptGeneratorComponentsByCategory(category: string): Promise<PromptGeneratorComponent[]>;
+  getPromptGeneratorComponentsByIds(ids: string[]): Promise<PromptGeneratorComponent[]>;
   createPromptGeneratorComponent(component: InsertPromptGeneratorComponent): Promise<PromptGeneratorComponent>;
   updatePromptGeneratorComponent(id: string, component: Partial<InsertPromptGeneratorComponent>): Promise<PromptGeneratorComponent>;
   deletePromptGeneratorComponent(id: string): Promise<void>;
@@ -268,19 +269,20 @@ export interface IStorage {
   incrementComponentUsageCount(id: string): Promise<void>;
 
   // Prompt Generation History operations
-  getPromptGenerationHistory(userId: string, limit?: number, offset?: number): Promise<PromptGenerationHistory[]>;
+  getPromptGenerationHistory(options: { userId: string; limit?: number; offset?: number }): Promise<PromptGenerationHistory[]>;
   getPromptGenerationHistoryItem(id: string): Promise<PromptGenerationHistory | undefined>;
   createPromptGenerationHistory(history: InsertPromptGenerationHistory): Promise<PromptGenerationHistory>;
   deletePromptGenerationHistory(id: string): Promise<void>;
   deleteOldPromptGenerationHistory(userId: string, daysToKeep?: number): Promise<void>;
+  clearPromptGenerationHistory(userId: string): Promise<void>;
 
   // User Prompt Presets operations
-  getUserPromptPresets(userId: string): Promise<UserPromptPreset[]>;
+  getUserPromptPresets(options: { userId: string; limit?: number; offset?: number }): Promise<UserPromptPreset[]>;
   getUserPromptPreset(id: string): Promise<UserPromptPreset | undefined>;
   createUserPromptPreset(preset: InsertUserPromptPreset): Promise<UserPromptPreset>;
   updateUserPromptPreset(id: string, preset: Partial<InsertUserPromptPreset>): Promise<UserPromptPreset>;
   deleteUserPromptPreset(id: string): Promise<void>;
-  toggleUserPromptPresetFavorite(id: string): Promise<UserPromptPreset>;
+  toggleUserPromptPresetFavorite(id: string): Promise<boolean>;
 }
 
 function generatePromptId(): string {
@@ -1995,7 +1997,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Prompt Generator Components operations
-  async getPromptGeneratorComponents(options: { category?: string; subcategory?: string; isActive?: boolean } = {}): Promise<PromptGeneratorComponent[]> {
+  async getPromptGeneratorComponents(options: { category?: string; subcategory?: string; isActive?: boolean; search?: string; limit?: number; offset?: number } = {}): Promise<PromptGeneratorComponent[]> {
     let query = db.select().from(promptGeneratorComponents).$dynamic();
     
     const conditions = [];
@@ -2012,11 +2014,30 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(promptGeneratorComponents.isActive, options.isActive));
     }
     
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(promptGeneratorComponents.value, `%${options.search}%`),
+          ilike(promptGeneratorComponents.description, `%${options.search}%`)
+        )
+      );
+    }
+    
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
     
-    return await query.orderBy(promptGeneratorComponents.orderIndex, promptGeneratorComponents.value);
+    query = query.orderBy(promptGeneratorComponents.orderIndex, promptGeneratorComponents.value);
+    
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
   }
 
   async getPromptGeneratorComponent(id: string): Promise<PromptGeneratorComponent | undefined> {
@@ -2033,6 +2054,16 @@ export class DatabaseStorage implements IStorage {
         eq(promptGeneratorComponents.isActive, true)
       ))
       .orderBy(promptGeneratorComponents.orderIndex, promptGeneratorComponents.value);
+  }
+
+  async getPromptGeneratorComponentsByIds(ids: string[]): Promise<PromptGeneratorComponent[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    return await db
+      .select()
+      .from(promptGeneratorComponents)
+      .where(inArray(promptGeneratorComponents.id, ids));
   }
 
   async createPromptGeneratorComponent(component: InsertPromptGeneratorComponent): Promise<PromptGeneratorComponent> {
@@ -2071,7 +2102,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Prompt Generation History operations
-  async getPromptGenerationHistory(userId: string, limit: number = 50, offset: number = 0): Promise<PromptGenerationHistory[]> {
+  async getPromptGenerationHistory(options: { userId: string; limit?: number; offset?: number }): Promise<PromptGenerationHistory[]> {
+    const { userId, limit = 50, offset = 0 } = options;
     return await db
       .select()
       .from(promptGenerationHistory)
@@ -2107,13 +2139,31 @@ export class DatabaseStorage implements IStorage {
       ));
   }
 
+  async clearPromptGenerationHistory(userId: string): Promise<void> {
+    await db
+      .delete(promptGenerationHistory)
+      .where(eq(promptGenerationHistory.userId, userId));
+  }
+
   // User Prompt Presets operations
-  async getUserPromptPresets(userId: string): Promise<UserPromptPreset[]> {
-    return await db
+  async getUserPromptPresets(options: { userId: string; limit?: number; offset?: number }): Promise<UserPromptPreset[]> {
+    const { userId, limit, offset } = options;
+    let query = db
       .select()
       .from(userPromptPresets)
       .where(eq(userPromptPresets.userId, userId))
-      .orderBy(desc(userPromptPresets.isFavorite), desc(userPromptPresets.createdAt));
+      .orderBy(desc(userPromptPresets.isFavorite), desc(userPromptPresets.createdAt))
+      .$dynamic();
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    if (offset) {
+      query = query.offset(offset);
+    }
+    
+    return await query;
   }
 
   async getUserPromptPreset(id: string): Promise<UserPromptPreset | undefined> {
@@ -2139,7 +2189,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(userPromptPresets).where(eq(userPromptPresets.id, id));
   }
 
-  async toggleUserPromptPresetFavorite(id: string): Promise<UserPromptPreset> {
+  async toggleUserPromptPresetFavorite(id: string): Promise<boolean> {
     const preset = await this.getUserPromptPreset(id);
     if (!preset) {
       throw new Error("Preset not found");
@@ -2154,7 +2204,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userPromptPresets.id, id))
       .returning();
     
-    return updatedPreset;
+    return updatedPreset.isFavorite;
   }
 }
 
