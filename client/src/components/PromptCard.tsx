@@ -1784,24 +1784,13 @@ export function PromptCard({
 
         {/* Image Viewer Modal */}
         <Dialog open={selectedImage !== null} onOpenChange={() => setSelectedImage(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0" data-testid={`modal-image-viewer-${prompt.id}`}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-4" data-testid={`modal-image-viewer-${prompt.id}`}>
             {selectedImage && (
-              <div className="relative">
-                <img
-                  src={selectedImage.startsWith('http') ? selectedImage : `/api/objects/serve/${encodeURIComponent(selectedImage)}`}
-                  alt="Full size example"
-                  className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-                />
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="absolute top-2 right-2"
-                  onClick={() => setSelectedImage(null)}
-                  data-testid={`button-close-image-${prompt.id}`}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              <img
+                src={selectedImage.startsWith('http') ? selectedImage : `/api/objects/serve/${encodeURIComponent(selectedImage)}`}
+                alt="Full size example"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+              />
             )}
           </DialogContent>
         </Dialog>
