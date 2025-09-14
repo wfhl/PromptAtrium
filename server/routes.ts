@@ -2267,7 +2267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/objects/serve/*', async (req, res) => {
     try {
       // Get the full path from params (everything after /api/objects/serve/)
-      const path = req.params[0] || req.query.path as string;
+      let path = req.params[0] || req.query.path as string;
       
       if (!path) {
         return res.status(400).json({ message: 'Path parameter is required' });
@@ -2280,6 +2280,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (path.startsWith('http://') || path.startsWith('https://')) {
         console.log('Redirecting to external URL:', path);
         return res.redirect(path);
+      }
+      
+      // Handle legacy /objects/uploads/ paths
+      if (path.startsWith('/objects/uploads/') || path.startsWith('objects/uploads/')) {
+        // This is a legacy upload path - redirect to the actual storage path
+        const uploadId = path.replace(/^\/?objects\/uploads\//, '');
+        // Use the default bucket from environment
+        const defaultBucket = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split('/')[1] || 'replit-objstore-0787b323-84b9-43bc-9908-9e19c8088441';
+        path = `${defaultBucket}/public/uploads/${uploadId}`;
+        console.log('Converted legacy path to:', path);
       }
       
       // Handle object storage paths
@@ -2319,42 +2329,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Fetching from bucket:', bucketName, 'object:', objectName);
       
-      // In development, handle token exchange errors gracefully
+      // Try to serve the file from object storage
       try {
         // Get the file from object storage
         const bucket = objectStorageClient.bucket(bucketName);
         const file = bucket.file(objectName);
         
-        // Try to check if file exists
-        let exists = false;
-        try {
-          [exists] = await file.exists();
-        } catch (existsError: any) {
-          // If token exchange fails in development, try to generate a signed URL as fallback
-          if (existsError.message?.includes('token') || existsError.status === 500) {
-            console.log('Token exchange failed, trying signed URL fallback');
-            try {
-              // Try to generate a signed URL that bypasses authentication
-              const [signedUrl] = await file.getSignedUrl({
-                version: 'v4',
-                action: 'read',
-                expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-              });
-              return res.redirect(signedUrl);
-            } catch (signedUrlError) {
-              console.error('Signed URL generation also failed:', signedUrlError);
-              // As a last resort in development, return a placeholder
-              if (process.env.NODE_ENV === 'development') {
-                return res.status(503).json({ 
-                  message: 'Image service temporarily unavailable in development',
-                  error: 'Object storage authentication failed'
-                });
-              }
-            }
-          }
-          throw existsError;
-        }
-        
+        // Check if file exists
+        const [exists] = await file.exists();
         if (!exists) {
           console.error('File not found in object storage:', bucketName, objectName);
           return res.status(404).json({ message: 'Image not found' });
@@ -2378,33 +2360,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stream.on('error', (err) => {
           console.error('Stream error for file:', bucketName, objectName, err);
           if (!res.headersSent) {
-            // In development, provide a more helpful error message
-            if (process.env.NODE_ENV === 'development' && (err.message?.includes('token') || err.message?.includes('500'))) {
-              res.status(503).json({ 
-                error: 'Object storage authentication issue in development',
-                message: 'Please ensure images are uploaded through the app'
-              });
-            } else {
-              res.status(500).json({ error: 'Error streaming image' });
-            }
+            res.status(500).json({ error: 'Error streaming image' });
           }
         });
         
         // Pipe the stream to the response
         stream.pipe(res);
-      } catch (storageError: any) {
-        console.error('Object storage error:', storageError);
+      } catch (error: any) {
+        console.error('Object storage error:', error);
         
-        // In development, handle token exchange errors specially
+        // In development, if authentication fails, redirect to the public Google Storage URL
         if (process.env.NODE_ENV === 'development' && 
-            (storageError.message?.includes('token') || storageError.status === 500)) {
-          // Try to construct a direct URL if possible
-          const directUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
-          console.log('Attempting direct URL redirect:', directUrl);
-          return res.redirect(directUrl);
+            (error.message?.includes('token') || 
+             error.message?.includes('Cannot sign data') ||
+             error.status === 500 ||
+             error.config?.url?.includes('127.0.0.1:1106'))) {
+          // Construct public URL - this assumes the bucket/objects are publicly accessible
+          const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+          console.log('Redirecting to public URL:', publicUrl);
+          return res.redirect(publicUrl);
         }
         
-        throw storageError;
+        return res.status(500).json({ 
+          error: 'Failed to serve image',
+          message: error.message 
+        });
       }
       
     } catch (error) {
