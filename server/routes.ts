@@ -13,6 +13,7 @@ import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./
 import { devStorage } from "./devStorage";
 import aiAnalyzerRouter from "./routes/aiAnalyzer";
 import { promptTemplateRoutes } from "./routes/prompt-templates";
+import { promptGeneratorRoutes } from "./routes/prompt-generator";
 
 // Helper function to resolve public image URLs for development
 // ONLY affects development mode - production URLs pass through unchanged
@@ -2760,6 +2761,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register prompt template routes
   promptTemplateRoutes(app, storage);
+  
+  // Register prompt generator routes
+  promptGeneratorRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
