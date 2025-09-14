@@ -286,14 +286,9 @@ export function ProfilePictureUpload({
         >
           {currentImageUrl ? (
             <img
-              src={currentImageUrl?.startsWith('http') ? currentImageUrl : `/api/objects/serve/${currentImageUrl}`}
+              src={currentImageUrl}
               alt="Profile"
               className="w-full h-full rounded-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                console.error('Profile image failed to load:', currentImageUrl);
-                target.style.display = 'none';
-              }}
             />
           ) : (
             <div className="text-center">

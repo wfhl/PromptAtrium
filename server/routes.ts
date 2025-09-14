@@ -276,25 +276,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Direct upload endpoint (fallback when signed URLs fail)
-  // Now works in all environments to handle authentication failures
-  app.put("/api/objects/upload-direct/:objectId", isAuthenticated, express.raw({ type: '*/*', limit: '50mb' }), async (req, res) => {
-    const { objectId } = req.params;
-    const userId = (req.user as any)?.claims?.sub;
-    
-    try {
-      const objectStorageService = new ObjectStorageService();
-      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+  // Development-only direct upload endpoint (fallback when signed URLs fail)
+  if (process.env.NODE_ENV === 'development') {
+    app.put("/api/objects/upload-direct/:objectId", isAuthenticated, express.raw({ type: '*/*', limit: '50mb' }), async (req, res) => {
+      const { objectId } = req.params;
+      const userId = (req.user as any)?.claims?.sub;
       
-      if (!privateObjectDir) {
-        return res.status(500).json({ error: "Object storage not configured" });
-      }
-      
-      const fullPath = `${privateObjectDir}/uploads/${objectId}`;
-      const { bucketName, objectName } = parseObjectPath(fullPath);
-      
-      // Try to upload the file to the bucket
       try {
+        const objectStorageService = new ObjectStorageService();
+        const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+        
+        if (!privateObjectDir) {
+          return res.status(500).json({ error: "Object storage not configured" });
+        }
+        
+        const fullPath = `${privateObjectDir}/uploads/${objectId}`;
+        const { bucketName, objectName } = parseObjectPath(fullPath);
+        
+        // Upload the file directly to the bucket
         const bucket = objectStorageClient.bucket(bucketName);
         const file = bucket.file(objectName);
         
@@ -308,29 +307,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
         
-        console.log('Successfully uploaded via PUT endpoint');
-        
         // Return the object path
         res.json({ 
           success: true,
           objectPath: `/objects/uploads/${objectId}`
         });
-      } catch (uploadError: any) {
-        console.error("GCS upload failed in PUT endpoint, returning path anyway:", uploadError.message);
-        
-        // Even if upload fails due to authentication, return success
-        // The serving endpoint will redirect to the public URL
-        res.json({ 
-          success: true,
-          objectPath: `/objects/uploads/${objectId}`,
-          warning: 'Upload may have failed due to authentication, but URL should work'
-        });
+      } catch (error) {
+        console.error("Error in direct upload:", error);
+        res.status(500).json({ error: "Failed to upload file directly" });
       }
-    } catch (error) {
-      console.error("Error in direct upload:", error);
-      res.status(500).json({ error: "Failed to process upload" });
-    }
-  });
+    });
+  }
 
   app.put("/api/profile-picture", isAuthenticated, async (req, res) => {
     if (!req.body.profileImageUrl) {
@@ -2276,115 +2263,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public object serving endpoint for images - ALWAYS redirects to public URLs
-  app.get('/api/objects/serve/*', async (req, res) => {
+  // Public object serving endpoint for images
+  app.get('/api/objects/serve/:path(*)', async (req, res) => {
     try {
-      // Get the full path from params (everything after /api/objects/serve/)
-      let path = req.params[0] || req.query.path as string;
+      const { path } = req.params;
       
-      if (!path) {
-        return res.status(400).json({ message: 'Path parameter is required' });
-      }
-
-      // Log for debugging
-      console.log('Serving object:', path);
-      
-      // If path is already a full HTTP URL, just redirect to it
+      // If path is a full URL, redirect to it
       if (path.startsWith('http://') || path.startsWith('https://')) {
-        console.log('Redirecting to external URL:', path);
         return res.redirect(path);
       }
       
-      // Default bucket name
-      const defaultBucket = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split('/')[1] || 'replit-objstore-0787b323-84b9-43bc-9908-9e19c8088441';
-      
-      // Handle legacy /objects/uploads/ paths
-      if (path.startsWith('/objects/uploads/') || path.startsWith('objects/uploads/')) {
-        // This is a legacy upload path - redirect directly to public URL
-        const uploadId = path.replace(/^\/?objects\/uploads\//, '');
-        const publicUrl = `https://storage.googleapis.com/${defaultBucket}/public/uploads/${uploadId}`;
-        console.log('Redirecting legacy path to public URL:', publicUrl);
-        return res.redirect(publicUrl);
+      // If it's an object storage path, try to serve it
+      if (path.includes('replit-objstore') || path.includes('storage.googleapis.com')) {
+        // For Google Cloud Storage URLs, redirect directly
+        const fullUrl = path.startsWith('http') ? path : `https://storage.googleapis.com/${path}`;
+        return res.redirect(fullUrl);
       }
       
-      // For any other path, try to parse it and redirect to public URL
-      let bucketName: string = defaultBucket;
-      let objectName: string = '';
-      
+      // For internal storage paths, try to parse and redirect
       try {
-        // Try to parse the object storage path
-        const parsed = parseObjectPath(path);
-        bucketName = parsed.bucketName;
-        objectName = parsed.objectName;
-      } catch (parseError) {
-        // If parsing fails, try to extract from common patterns
-        if (path.includes('storage.googleapis.com')) {
-          // Extract from Google Storage URL pattern
-          const match = path.match(/storage\.googleapis\.com\/([^/]+)\/(.+)/);
-          if (match) {
-            bucketName = match[1];
-            objectName = match[2];
-          } else {
-            // Default fallback
-            objectName = path;
-          }
-        } else if (path.includes('/')) {
-          // Assume format: bucket/object or /bucket/object
-          const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-          const parts = cleanPath.split('/');
-          if (parts.length >= 2) {
-            bucketName = parts[0];
-            objectName = parts.slice(1).join('/');
-          } else {
-            // Assume it's just the object name
-            objectName = cleanPath;
-          }
-        } else {
-          // Assume it's just the object name
-          objectName = path;
-        }
+        const objectService = new ObjectStorageService();
+        const { bucketName, objectName } = parseObjectPath(path);
+        
+        // Try to get a public URL for the object
+        const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+        return res.redirect(publicUrl);
+      } catch (error) {
+        console.error('Error parsing object path:', error);
+        // If we can't parse it, try as-is
+        return res.redirect(path);
       }
-      
-      // Always redirect to public URL - skip authentication entirely
-      const publicUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
-      console.log('Redirecting to public URL:', publicUrl);
-      return res.redirect(publicUrl);
-      
     } catch (error) {
       console.error('Error serving object:', error);
-      if (!res.headersSent) {
-        // As a last resort, try to construct a URL from the path
-        const defaultBucket = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split('/')[1] || 'replit-objstore-0787b323-84b9-43bc-9908-9e19c8088441';
-        const fallbackUrl = `https://storage.googleapis.com/${defaultBucket}/public/${req.params[0]}`;
-        console.log('Error occurred, redirecting to fallback URL:', fallbackUrl);
-        return res.redirect(fallbackUrl);
-      }
-    }
-  });
-
-  // Fallback for direct image uploads - simplified to avoid crashes
-  app.post('/api/objects/upload-direct/:objectId', async (req: any, res) => {
-    try {
-      const { objectId } = req.params;
-      
-      // For now, since GCS authentication is broken, just return success
-      // The serving endpoint will redirect to the public URL
-      const defaultBucket = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split('/')[1] || 'replit-objstore-0787b323-84b9-43bc-9908-9e19c8088441';
-      const objectPath = `${defaultBucket}/public/uploads/${objectId}`;
-      const publicUrl = `https://storage.googleapis.com/${defaultBucket}/public/uploads/${objectId}`;
-      
-      console.log('Upload endpoint called for:', objectId);
-      console.log('Will be accessible at:', publicUrl);
-      
-      // Return success immediately - don't try to actually upload since it's failing
-      res.json({ 
-        objectPath: objectPath, 
-        publicUrl: publicUrl,
-        message: 'Upload endpoint processed'
-      });
-    } catch (error) {
-      console.error('Direct upload error:', error);
-      res.status(500).json({ message: 'Failed to process upload', error: error instanceof Error ? error.message : 'Unknown error' });
+      res.status(404).json({ message: 'Object not found' });
     }
   });
 

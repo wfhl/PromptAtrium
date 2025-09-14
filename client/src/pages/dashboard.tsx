@@ -363,33 +363,37 @@ export default function Dashboard() {
         {/* Search Results Section - Positioned directly below search field */}
         {(searchQuery || searchResults.length > 0) && (
           <div className="mb-6 md:mb-8">
-            <div className="mb-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Search Results</h2>
-                {searchResults.length > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    {searchResults.length} result{searchResults.length === 1 ? '' : 's'}
-                  </span>
-                )}
-              </div>
-            </div>
-            {searchResults.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {searchResults.map((prompt) => (
-                  <div
-                    key={prompt.id}
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => setLocation(`/prompt/${prompt.id}`)}
-                  >
-                    <PromptCard prompt={prompt} />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Search Results</span>
+                  {searchResults.length > 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {searchResults.length} result{searchResults.length === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {searchResults.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {searchResults.map((prompt) => (
+                      <div
+                        key={prompt.id}
+                        className="cursor-pointer hover:shadow-lg transition-shadow"
+                        onClick={() => setLocation(`/prompt/${prompt.id}`)}
+                      >
+                        <PromptCard prompt={prompt} />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : searchQuery ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No results found for "{searchQuery}"
-              </div>
-            ) : null}
+                ) : searchQuery ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No results found for "{searchQuery}"
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
           </div>
         )}
 

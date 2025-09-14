@@ -128,57 +128,30 @@ export function PromptImageUploader({
           }
           const { uploadURL } = await uploadResponse.json();
 
-          let uploadedPath: string;
+          // Upload image to object storage
+          const uploadResult = await fetch(uploadURL, {
+            method: 'PUT',
+            body: imageItem.file,
+            headers: {
+              'Content-Type': imageItem.file.type,
+            },
+          });
 
-          // Check if this is a development fallback URL or a signed URL
-          if (uploadURL.startsWith('/api/objects/upload-direct/')) {
-            // Fallback: upload directly to the endpoint
-            const uploadResult = await fetch(uploadURL, {
-              method: 'PUT',
-              body: imageItem.file,
-              headers: {
-                'Content-Type': imageItem.file.type,
-              },
-              credentials: 'include', // Include cookies for authentication
-            });
-
-            if (!uploadResult.ok) {
-              const errorText = await uploadResult.text();
-              console.error('Upload failed:', errorText);
-              throw new Error(`Failed to upload image: ${uploadResult.status}`);
-            }
-
-            const uploadData = await uploadResult.json();
-            uploadedPath = uploadData.objectPath;
-          } else {
-            // Signed URL: upload directly to storage
-            const uploadResult = await fetch(uploadURL, {
-              method: 'PUT',
-              body: imageItem.file,
-              headers: {
-                'Content-Type': imageItem.file.type,
-              },
-            });
-
-            if (!uploadResult.ok) {
-              throw new Error(`Failed to upload image to storage: ${uploadResult.status} ${uploadResult.statusText}`);
-            }
-
-            uploadedPath = uploadURL;
+          if (!uploadResult.ok) {
+            throw new Error(`Failed to upload image to storage: ${uploadResult.status} ${uploadResult.statusText}`);
           }
 
           // Set ACL policy for the uploaded image
           const updateResponse = await apiRequest("PUT", "/api/prompt-images", {
-            imageUrl: uploadedPath,
+            imageUrl: uploadURL,
           });
 
           if (!updateResponse.ok) {
-            console.warn('Failed to set ACL policy, but image may still be accessible');
+            throw new Error(`Failed to set ACL policy: ${updateResponse.status} ${updateResponse.statusText}`);
           }
 
-          const responseData = await updateResponse.json();
-          const finalPath = responseData.objectPath || uploadedPath;
-          uploadedUrls.push(finalPath);
+          const { objectPath } = await updateResponse.json();
+          uploadedUrls.push(objectPath);
 
           // Update the image in state with the final URL
           setImages(prev => prev.map(img => 
