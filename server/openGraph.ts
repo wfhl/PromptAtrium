@@ -35,24 +35,33 @@ function generateOpenGraphHTML(prompt: any): string {
     : 'https://promptatrium.com';
   
   // Handle image URL - ensure it's absolute
-  let imageUrl = `${baseUrl}/ATRIUM SQUARE 090725.png`; // Default app icon with full URL
+  let imageUrl = `${baseUrl}/atrium-square-icon.png`; // Default app icon with full URL
   
   // Check if prompt has example images
   if (prompt?.exampleImagesUrl && Array.isArray(prompt.exampleImagesUrl) && prompt.exampleImagesUrl.length > 0) {
     const firstImage = prompt.exampleImagesUrl[0];
     if (firstImage) {
-      // If the image URL is relative, make it absolute
-      if (firstImage.startsWith('/')) {
-        imageUrl = `${baseUrl}${firstImage}`;
-      } else if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
-        // Already absolute (including Google Cloud Storage URLs)
+      // If the image URL is already an absolute URL (http/https)
+      if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
         imageUrl = firstImage;
-      } else if (firstImage.includes('storage.googleapis.com') || firstImage.includes('googleusercontent.com')) {
-        // Google Cloud Storage URL without protocol
+      } 
+      // If it includes Google Cloud Storage domain without protocol
+      else if (firstImage.includes('storage.googleapis.com') || firstImage.includes('googleusercontent.com')) {
         imageUrl = `https://${firstImage}`;
-      } else {
-        // Assume it's a relative path without leading slash
-        imageUrl = `${baseUrl}/${firstImage}`;
+      }
+      // If it's an /objects/ path (object storage path)
+      else if (firstImage.startsWith('/objects/') || firstImage.includes('/objects/')) {
+        // Use the serve endpoint for object storage
+        imageUrl = `${baseUrl}/api/objects/serve/${encodeURIComponent(firstImage)}`;
+      }
+      // If it starts with / (absolute path on our server)
+      else if (firstImage.startsWith('/')) {
+        imageUrl = `${baseUrl}${firstImage}`;
+      }
+      // Otherwise assume it's a relative path
+      else {
+        // This could be an object storage key
+        imageUrl = `${baseUrl}/api/objects/serve/${encodeURIComponent(firstImage)}`;
       }
     }
   }
@@ -189,7 +198,7 @@ export function setupOpenGraph(app: Express) {
   <meta property="og:url" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}">
   <meta property="og:title" content="PromptAtrium - AI Prompt Discovery & Sharing Platform">
   <meta property="og:description" content="Discover, create, and share AI prompts for various generators. Join our community of AI enthusiasts and unlock the potential of generative AI.">
-  <meta property="og:image" content="/ATRIUM SQUARE 090725.png">
+  <meta property="og:image" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}/atrium-square-icon.png">
   <meta property="og:site_name" content="PromptAtrium">
   
   <!-- Twitter -->
@@ -197,7 +206,7 @@ export function setupOpenGraph(app: Express) {
   <meta property="twitter:url" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}">
   <meta property="twitter:title" content="PromptAtrium - AI Prompt Discovery & Sharing Platform">
   <meta property="twitter:description" content="Discover, create, and share AI prompts for various generators. Join our community of AI enthusiasts and unlock the potential of generative AI.">
-  <meta property="twitter:image" content="/ATRIUM SQUARE 090725.png">
+  <meta property="twitter:image" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}/atrium-square-icon.png">
 </head>
 <body>
   <h1>PromptAtrium</h1>
