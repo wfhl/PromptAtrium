@@ -519,31 +519,28 @@ export default function MetadataAnalyzerPage() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <Card className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <FileSearch className="h-6 w-6" />
-              Image Metadata Analyzer
-            </CardTitle>
-            <CardDescription>
-              Upload images to extract comprehensive metadata and image information
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-7xl">
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 mb-1 md:mb-2">
+            <FileSearch className="h-5 w-5 md:h-6 md:w-6" />
+            Image Metadata Analyzer
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Upload images to extract comprehensive metadata and image information
+          </p>
+        </div>
+        <div className="space-y-4 md:space-y-6">
             {!selectedFile ? (
               // Upload Section
-              <Card className="border-2 border-dashed">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Upload className="h-5 w-5" />
+              <div className="border-2 border-dashed rounded-lg">
+                <div className="p-4 md:p-6">
+                  <h2 className="text-base md:text-lg font-semibold flex items-center gap-2 mb-2">
+                    <Upload className="h-4 w-4 md:h-5 md:w-5" />
                     Select Image
-                  </CardTitle>
-                  <CardDescription>
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-4">
                     Drag and drop an image file or click to browse. Supports all major image formats.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                  </p>
                   <div
                     className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                       isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
@@ -574,17 +571,14 @@ export default function MetadataAnalyzerPage() {
                       </Button>
                     </label>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ) : (
               <>
                 {/* Analysis Actions - moved to top */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Analysis Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
+                <div className="border rounded-lg p-3 md:p-4">
+                  <h3 className="text-base md:text-lg font-semibold mb-3">Analysis Actions</h3>
+                  <div className="flex flex-wrap gap-2">
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -645,100 +639,86 @@ export default function MetadataAnalyzerPage() {
                         )}
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
 
                 {/* Image and Metadata side-by-side */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
                   {/* Left side - Uploaded Image */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <FileImage className="h-5 w-5" />
-                        Image Preview
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {/* Image Preview */}
-                        <div className="relative group">
-                          <img 
-                            src={imagePreview || ''} 
-                            alt="Preview" 
-                            className="w-full h-auto max-h-96 object-contain rounded-lg border bg-muted/20"
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="absolute top-2 right-2 h-8 w-8 p-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={handleReset}
-                            data-testid="button-remove-image"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        
-                        {/* File Info */}
-                        <div className="space-y-2">
+                  <div className="border rounded-lg p-3 md:p-4">
+                    <h3 className="text-base md:text-lg font-semibold flex items-center gap-2 mb-3">
+                      <FileImage className="h-4 w-4 md:h-5 md:w-5" />
+                      Image Preview
+                    </h3>
+                      <div className="space-y-3">
+                      {/* Image Preview */}
+                      <div className="relative group">
+                        <img 
+                          src={imagePreview || ''} 
+                          alt="Preview" 
+                          className="w-full h-auto max-h-64 md:max-h-80 object-contain rounded-lg border bg-muted/20"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="absolute top-1 right-1 h-6 w-6 md:h-8 md:w-8 p-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={handleReset}
+                          data-testid="button-remove-image"
+                        >
+                          <X className="h-3 w-3 md:h-4 md:w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* File Info */}
+                      <div className="space-y-1 md:space-y-2">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-sm truncate flex-1 mr-2">
-                              {selectedFile.name}
-                            </h4>
-                            {metadata?.isAIGenerated && (
-                              <Badge variant="secondary" className="bg-green-500/10 text-green-600">
-                                🤖 AI Generated
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            File Size: <span className="font-medium">{formatFileSize(selectedFile.size)}</span>
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Format: <span className="font-medium">{selectedFile.type}</span>
-                          </p>
+                          <h4 className="font-medium text-xs md:text-sm truncate flex-1 mr-2">
+                            {selectedFile.name}
+                          </h4>
+                          {metadata?.isAIGenerated && (
+                            <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs">
+                              🤖 AI Generated
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 text-xs md:text-sm text-muted-foreground">
+                          <p>Size: <span className="font-medium">{formatFileSize(selectedFile.size)}</span></p>
+                          <p>Format: <span className="font-medium">{selectedFile.type}</span></p>
                           {metadata && (
                             <>
-                              <p className="text-sm text-muted-foreground">
-                                Dimensions: <span className="font-medium">{metadata.dimensionString}</span>
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Aspect Ratio: <span className="font-medium">{metadata.aspectRatio}</span>
-                              </p>
+                              <p>Dimensions: <span className="font-medium">{metadata.dimensionString}</span></p>
+                              <p>Ratio: <span className="font-medium">{metadata.aspectRatio}</span></p>
                             </>
                           )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        </div>
+                    </div>
+                  </div>
 
                   {/* Right side - Metadata Results */}
                   {metadata && (
-                    <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Metadata Results</CardTitle>
+                    <div className="border rounded-lg p-3 md:p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-base md:text-lg font-semibold">Metadata Results</h3>
                         {metadata.isAIGenerated && (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
+                          <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
                             🤖 AI Generated
                           </Badge>
                         )}
                       </div>
-                      <CardDescription>
-                        Comprehensive metadata analysis for {selectedFile.name}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                      <p className="text-xs md:text-sm text-muted-foreground mb-3">
+                        Analysis for {selectedFile.name}
+                      </p>
                       <Accordion type="multiple" defaultValue={["basic", "ai"]} className="w-full">
                         {/* Basic Information */}
                         <AccordionItem value="basic">
-                          <AccordionTrigger className="text-sm font-semibold text-blue-600">
-                            <div className="flex items-center gap-2">
-                              <FileImage className="h-4 w-4" />
+                          <AccordionTrigger className="text-xs md:text-sm font-semibold text-blue-600 py-2">
+                            <div className="flex items-center gap-1 md:gap-2">
+                              <FileImage className="h-3 w-3 md:h-4 md:w-4" />
                               Basic Information
                             </div>
                           </AccordionTrigger>
                           <AccordionContent>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="grid grid-cols-2 gap-1 text-xs md:text-sm">
                               <div className="flex justify-between py-1">
                                 <span className="text-muted-foreground">Filename:</span>
                                 <span className="font-mono text-xs">{metadata.fileName}</span>
@@ -770,9 +750,9 @@ export default function MetadataAnalyzerPage() {
                         {/* AI Generation Information */}
                         {metadata.isAIGenerated && (
                           <AccordionItem value="ai">
-                            <AccordionTrigger className="text-sm font-semibold text-green-600">
-                              <div className="flex items-center gap-2">
-                                <Cpu className="h-4 w-4" />
+                            <AccordionTrigger className="text-xs md:text-sm font-semibold text-green-600 py-2">
+                              <div className="flex items-center gap-1 md:gap-2">
+                                <Cpu className="h-3 w-3 md:h-4 md:w-4" />
                                 🤖 AI Generation ({metadata.aiGenerator === 'stable-diffusion' ? 'Stable Diffusion' : 
                                   metadata.aiGenerator === 'midjourney' ? 'Midjourney' : 
                                   metadata.aiGenerator === 'comfyui' ? 'ComfyUI' : 
@@ -780,15 +760,15 @@ export default function MetadataAnalyzerPage() {
                                   metadata.aiGenerator})
                               </div>
                             </AccordionTrigger>
-                            <AccordionContent className="space-y-3">
+                            <AccordionContent className="space-y-2 md:space-y-3">
                               {metadata.prompt && (
                                 <div>
                                   <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium">Prompt:</span>
+                                    <span className="text-xs md:text-sm font-medium">Prompt:</span>
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      className="h-6 px-2"
+                                      className="h-5 w-5 p-0"
                                       onClick={() => copyToClipboard(metadata.prompt, 'Prompt')}
                                     >
                                       {copiedField === 'Prompt' ? (
@@ -798,8 +778,8 @@ export default function MetadataAnalyzerPage() {
                                       )}
                                     </Button>
                                   </div>
-                                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
-                                    <p className="text-sm whitespace-pre-wrap">{metadata.prompt}</p>
+                                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-2">
+                                    <p className="text-xs md:text-sm whitespace-pre-wrap">{metadata.prompt}</p>
                                   </div>
                                 </div>
                               )}
@@ -807,11 +787,11 @@ export default function MetadataAnalyzerPage() {
                               {metadata.negativePrompt && (
                                 <div>
                                   <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium">Negative:</span>
+                                    <span className="text-xs md:text-sm font-medium">Negative:</span>
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      className="h-6 px-2"
+                                      className="h-5 w-5 p-0"
                                       onClick={() => copyToClipboard(metadata.negativePrompt, 'Negative Prompt')}
                                     >
                                       {copiedField === 'Negative Prompt' ? (
@@ -821,13 +801,13 @@ export default function MetadataAnalyzerPage() {
                                       )}
                                     </Button>
                                   </div>
-                                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-                                    <p className="text-sm whitespace-pre-wrap">{metadata.negativePrompt}</p>
+                                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-2">
+                                    <p className="text-xs md:text-sm whitespace-pre-wrap">{metadata.negativePrompt}</p>
                                   </div>
                                 </div>
                               )}
 
-                              <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div className="grid grid-cols-2 gap-1 text-xs md:text-sm">
                                 {metadata.steps && (
                                   <div className="flex justify-between py-1">
                                     <span className="text-muted-foreground">Steps:</span>
@@ -921,52 +901,46 @@ export default function MetadataAnalyzerPage() {
                           </AccordionContent>
                         </AccordionItem>
                       </Accordion>
-                    </CardContent>
-                    </Card>
+                    </div>
                   )}
                 </div>
               </>
             )}
 
             {/* What can this analyzer detect? */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">What can this analyzer detect?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <h4 className="font-semibold mb-2 text-green-600">🤖 AI Generation</h4>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• Stable Diffusion parameters</li>
-                      <li>• ComfyUI workflows</li>
-                      <li>• Midjourney settings</li>
-                      <li>• DALL-E metadata</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2 text-blue-600">📋 Technical Details</h4>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• Image dimensions & format</li>
-                      <li>• Color space & depth</li>
-                      <li>• Compression settings</li>
-                      <li>• File size analysis</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2 text-purple-600">📷 Camera Data</h4>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• EXIF camera settings</li>
-                      <li>• Shooting parameters</li>
-                      <li>• GPS location data</li>
-                      <li>• Timestamp information</li>
-                    </ul>
-                  </div>
+            <div className="border rounded-lg p-3 md:p-4">
+              <h3 className="text-base md:text-lg font-semibold mb-3">What can this analyzer detect?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 text-xs md:text-sm">
+                <div>
+                  <h4 className="font-medium mb-2 text-green-600">🤖 AI Generation</h4>
+                  <ul className="space-y-0.5 text-muted-foreground">
+                    <li>• Stable Diffusion parameters</li>
+                    <li>• ComfyUI workflows</li>
+                    <li>• Midjourney settings</li>
+                    <li>• DALL-E metadata</li>
+                  </ul>
                 </div>
-              </CardContent>
-            </Card>
-          </CardContent>
-        </Card>
+                <div>
+                  <h4 className="font-medium mb-2 text-blue-600">📋 Technical Details</h4>
+                  <ul className="space-y-0.5 text-muted-foreground">
+                    <li>• Image dimensions & format</li>
+                    <li>• Color space & depth</li>
+                    <li>• Compression settings</li>
+                    <li>• File size analysis</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-purple-600">📷 Camera Data</h4>
+                  <ul className="space-y-0.5 text-muted-foreground">
+                    <li>• EXIF camera settings</li>
+                    <li>• Shooting parameters</li>
+                    <li>• GPS location data</li>
+                    <li>• Timestamp information</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+        </div>
       </div>
       
       {/* Prompt Modal for adding to library */}
