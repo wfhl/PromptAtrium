@@ -91,6 +91,22 @@ export function QuickActions({
           </div>
         </Button>
 
+        <Link href="/new-prompt-generator" className="contents">
+          <Button
+            variant="ghost"
+            className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
+            data-testid="button-new-prompt-generator"
+          >
+            <div className="w-8 h-8 md:w-7 md:h-7 bg-pink-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0">
+              <Sparkles className="h-4 w-4 text-pink-500" />
+            </div>
+            <div className="text-center md:text-left">
+              <p className="text-xs md:text-base font-medium text-foreground">New Generator</p>
+              <p className="text-xs text-muted-foreground hidden md:block">Advanced prompt builder</p>
+            </div>
+          </Button>
+        </Link>
+
         <Link href="/tools/aspect-ratio-calculator" className="contents">
           <Button
             variant="ghost"

@@ -25,6 +25,7 @@ import InstallGuide from "@/pages/install-guide";
 import PromptDetail from "@/pages/prompt-detail";
 import PromptingGuides from "@/pages/prompting-guides";
 import PromptGenerator from "@/pages/prompt-generator";
+import NewPromptGenerator from "@/pages/new-prompt-generator";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -82,6 +83,9 @@ function Router() {
         </Route>
         <Route path="/prompt-generator">
           {() => isAuthenticated ? <Layout><PromptGenerator /></Layout> : <PromptGenerator />}
+        </Route>
+        <Route path="/new-prompt-generator">
+          {() => isAuthenticated ? <Layout><NewPromptGenerator /></Layout> : <NewPromptGenerator />}
         </Route>
         <Route path="/invite/:code" component={Invite} />
         <Route path="/invite" component={Invite} />
