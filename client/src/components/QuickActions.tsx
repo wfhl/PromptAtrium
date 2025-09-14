@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, FolderPlus, ChartScatter, FileUp } from "lucide-react";
 
@@ -16,11 +15,9 @@ export function QuickActions({
   onImportPrompts 
 }: QuickActionsProps) {
   return (
-    <Card data-testid="card-quick-actions">
-      <CardHeader className="pt-2 pb-1 md:pt-3 md:pb-2">
-        <CardTitle className="text-base md:text-xl">Quick Actions</CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-4 gap-1 md:flex md:flex-col md:space-y-1 pt-0 pb-2 md:pb-3">
+    <div data-testid="card-quick-actions">
+      <h3 className="text-base md:text-xl font-semibold mb-2 md:mb-3">Quick Actions</h3>
+      <div className="grid grid-cols-4 gap-1 md:flex md:flex-col md:space-y-1">
         <Button
           variant="ghost"
           className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
@@ -80,7 +77,7 @@ export function QuickActions({
             <p className="text-xs text-muted-foreground hidden md:block">Bulk import from file</p>
           </div>
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
