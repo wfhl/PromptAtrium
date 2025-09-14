@@ -11,6 +11,7 @@ import express from "express";
 import { z } from "zod";
 import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
 import { devStorage } from "./devStorage";
+import aiAnalyzerRouter from "./routes/aiAnalyzer";
 
 // Helper function to resolve public image URLs for development
 // ONLY affects development mode - production URLs pass through unchanged
@@ -2752,6 +2753,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update member role" });
     }
   });
+
+  // Register AI analyzer routes
+  app.use(aiAnalyzerRouter);
 
   const httpServer = createServer(app);
   return httpServer;

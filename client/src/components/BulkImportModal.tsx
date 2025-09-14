@@ -28,6 +28,12 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import Papa from "papaparse";
 import type { Collection } from "@shared/schema";
+import { 
+  detectFileFormat, 
+  parseJsonPrompts, 
+  parseJsonLines, 
+  extractPromptsFromText 
+} from "@/utils/fileFormatDetector";
 
 interface BulkImportModalProps {
   open: boolean;
@@ -141,6 +147,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const [googleUrl, setGoogleUrl] = useState("");
   const [isImportingGoogle, setIsImportingGoogle] = useState(false);
   const [googleType, setGoogleType] = useState<"auto" | "docs" | "sheets">("auto");
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   
   // Fetch existing collections
   const { data: fetchedCollections, refetch: refetchCollections } = useQuery<Collection[]>({
@@ -397,10 +404,15 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   const detectPromptField = (fieldName: string, sampleContent: string): { isPrompt: boolean; confidence: number } => {
     const normalized = normalizeFieldName(fieldName);
     
+    // Check for Full_Prompt explicitly with highest confidence
+    if (normalized.includes('fullprompt') || normalized === 'full_prompt') {
+      return { isPrompt: true, confidence: 1.0 };
+    }
+    
     // High confidence patterns for prompt fields
     const highConfidencePatterns = [
-      'prompt', 'fullprompt', 'mainprompt', 'promptcontent', 'prompttext',
-      'content', 'text', 'description', 'instruction', 'message'
+      'prompt', 'mainprompt', 'promptcontent', 'prompttext',
+      'content', 'text', 'instruction', 'message'
     ];
     
     // Check field name
@@ -423,6 +435,12 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
 
   const detectFieldMapping = (fieldName: string): { targetField: keyof ParsedPrompt | null; confidence: number } => {
     const normalized = normalizeFieldName(fieldName);
+    
+    // Check for Full_Prompt or similar first (highest priority)
+    if (normalized.includes('fullprompt') || normalized === 'full_prompt' || 
+        normalized === 'mainprompt' || normalized === 'promptcontent') {
+      return { targetField: 'promptContent', confidence: 1.0 };
+    }
     
     // Direct mappings with high confidence
     const mappings: Record<string, keyof ParsedPrompt> = {
@@ -491,29 +509,114 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
     return { targetField: null, confidence: 0 };
   };
 
-  const analyzeCSVHeaders = (headers: string[], sampleRow: any): SmartParseResult => {
+  const analyzeCSVHeaders = async (headers: string[], sampleRows: any[]): Promise<SmartParseResult> => {
+    try {
+      // Try AI analysis first
+      const response = await fetch('/api/ai/analyze-fields', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headers,
+          sampleRows: sampleRows.slice(0, 5), // Send first 5 rows for analysis
+          fileType: 'csv'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.analysis) {
+          const aiAnalysis = result.analysis;
+          
+          // Convert AI response to our format
+          const fieldMappings: FieldMapping[] = aiAnalysis.fieldMappings
+            .filter((m: any) => m.targetField)
+            .map((m: any) => ({
+              sourceField: m.sourceField,
+              targetField: m.targetField,
+              confidence: m.confidence,
+              detected: true,
+              reasoning: m.reasoning
+            }));
+          
+          const unmappedFields = headers.filter(h => 
+            !fieldMappings.find(m => m.sourceField === h)
+          );
+          
+          console.log('AI Field Analysis:', {
+            verified: result.verified,
+            confidence: result.verificationConfidence,
+            mappings: fieldMappings,
+            suggestions: aiAnalysis.suggestions
+          });
+          
+          // Store AI suggestions for user feedback
+          setAiSuggestions(aiAnalysis.suggestions || []);
+          
+          return {
+            data: [],
+            fieldMappings,
+            unmappedFields,
+            statistics: {
+              totalRows: sampleRows.length,
+              validRows: 0,
+              fieldsDetected: fieldMappings.length,
+              confidence: aiAnalysis.overallConfidence
+            }
+          };
+        }
+      }
+    } catch (error) {
+      console.error('AI analysis failed, falling back to rule-based:', error);
+    }
+
+    // Fallback to original rule-based analysis
     const fieldMappings: FieldMapping[] = [];
     const unmappedFields: string[] = [];
     let promptFieldDetected = false;
     let nameFieldDetected = false;
     
     headers.forEach(header => {
-      const sampleContent = sampleRow ? String(sampleRow[header] || '') : '';
+      const sampleContent = sampleRows[0] ? String(sampleRows[0][header] || '') : '';
       
-      // First check if this is a prompt field
-      const promptDetection = detectPromptField(header, sampleContent);
-      if (promptDetection.isPrompt && !promptFieldDetected) {
-        fieldMappings.push({
-          sourceField: header,
-          targetField: 'promptContent',
-          confidence: promptDetection.confidence,
-          detected: true
-        });
-        promptFieldDetected = true;
+      // Check if this field maps directly (like Full_Prompt to promptContent)
+      const mapping = detectFieldMapping(header);
+      
+      // If we found a direct mapping with high confidence, use it
+      if (mapping.targetField && mapping.confidence >= 0.9) {
+        // Skip if we already have this target field with higher confidence
+        const existingMapping = fieldMappings.find(m => m.targetField === mapping.targetField);
+        if (!existingMapping || existingMapping.confidence < mapping.confidence) {
+          if (existingMapping) {
+            // Remove the existing lower confidence mapping
+            const index = fieldMappings.indexOf(existingMapping);
+            fieldMappings.splice(index, 1);
+          }
+          fieldMappings.push({
+            sourceField: header,
+            targetField: mapping.targetField,
+            confidence: mapping.confidence,
+            detected: true
+          });
+          if (mapping.targetField === 'promptContent') {
+            promptFieldDetected = true;
+          }
+          if (mapping.targetField === 'name') {
+            nameFieldDetected = true;
+          }
+        }
       } else {
-        // Try to map to other fields
-        const mapping = detectFieldMapping(header);
-        if (mapping.targetField) {
+        // Fall back to prompt detection for fields without direct mapping
+        const promptDetection = detectPromptField(header, sampleContent);
+        if (promptDetection.isPrompt && !promptFieldDetected) {
+          fieldMappings.push({
+            sourceField: header,
+            targetField: 'promptContent',
+            confidence: promptDetection.confidence,
+            detected: true
+          });
+          promptFieldDetected = true;
+        } else if (mapping.targetField) {
+          // Use the lower confidence mapping
           // Skip if we already have a name field with higher confidence
           if (mapping.targetField === 'name' && nameFieldDetected) {
             const existingNameMapping = fieldMappings.find(m => m.targetField === 'name');
