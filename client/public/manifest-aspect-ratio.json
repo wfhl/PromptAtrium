@@ -1,0 +1,31 @@
+{
+  "name": "Aspect Ratio Calculator - PromptAtrium",
+  "short_name": "Aspect Ratio",
+  "description": "Calculate and convert between different aspect ratios for your images and designs",
+  "start_url": "/tools/aspect-ratio-calculator",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait-primary",
+  "scope": "/tools/",
+  "id": "promptatrium-aspect-ratio",
+  "icons": [
+    {
+      "src": "/ATRIUM SQUARE 090725.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/ATRIUM SQUARE 090725.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "utilities",
+    "developer",
+    "productivity"
+  ]
+}
