@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Prompt } from "@shared/schema";
 
 interface SearchFilters {
-  source: "my" | "community";
+  source: "all" | "my" | "community";
   category: string;
   collection: string;
   type: string;
@@ -52,7 +52,7 @@ export function SearchWithFilters({
   const [filterOpen, setFilterOpen] = useState(false);
   
   const [filters, setFilters] = useState<SearchFilters>({
-    source: "my",
+    source: "all",
     category: "all",
     collection: "all",
     type: "all",
@@ -94,9 +94,10 @@ export function SearchWithFilters({
     // Add source filter
     if (filters.source === "my" && user?.id) {
       params.append("userId", user.id);
-    } else {
+    } else if (filters.source === "community") {
       params.append("isPublic", "true");
     }
+    // For "all", we don't add any source restrictions
     
     // Add other filters
     if (filters.category !== "all") params.append("category", filters.category);
@@ -115,8 +116,8 @@ export function SearchWithFilters({
   const { data: searchResults = [], isLoading } = useQuery<Prompt[]>({
     queryKey: [`/api/prompts?${buildSearchQuery()}`],
     enabled: debouncedQuery.length > 0 || Object.entries(filters).some(([key, value]) => 
-      key !== 'showNsfw' && value !== 'all' && value !== 'my'
-    ),
+      key !== 'showNsfw' && key !== 'source' && value !== 'all'
+    ) || (filters.source !== 'all'),
     retry: false,
   });
 
@@ -135,10 +136,8 @@ export function SearchWithFilters({
 
   // Pass search results to parent component
   useEffect(() => {
-    if (onResultsChange) {
-      onResultsChange(searchResults);
-    }
-  }, [searchResults]); // Don't include onResultsChange in deps to avoid infinite loop
+    onResultsChange?.(searchResults);
+  }, [searchResults, onResultsChange]);
 
   // Count active filters
   const activeFilterCount = Object.entries(filters).filter(([key, value]) => {
@@ -150,7 +149,7 @@ export function SearchWithFilters({
   // Reset all filters
   const resetFilters = () => {
     const defaultFilters: SearchFilters = {
-      source: "my",
+      source: "all",
       category: "all",
       collection: "all",
       type: "all",
@@ -236,12 +235,20 @@ export function SearchWithFilters({
               {/* Source Filter */}
               <div className="space-y-2">
                 <Label>Source</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant={filters.source === "all" ? "default" : "outline"}
+                    onClick={() => handleFilterChange("source", "all")}
+                    className="flex-1 text-xs"
+                  >
+                    All
+                  </Button>
                   <Button
                     size="sm"
                     variant={filters.source === "my" ? "default" : "outline"}
                     onClick={() => handleFilterChange("source", "my")}
-                    className="flex-1"
+                    className="flex-1 text-xs"
                   >
                     My Prompts
                   </Button>
@@ -249,7 +256,7 @@ export function SearchWithFilters({
                     size="sm"
                     variant={filters.source === "community" ? "default" : "outline"}
                     onClick={() => handleFilterChange("source", "community")}
-                    className="flex-1"
+                    className="flex-1 text-xs"
                   >
                     Community
                   </Button>
