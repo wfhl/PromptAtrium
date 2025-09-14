@@ -43,7 +43,7 @@ export default function NewPromptGenerator() {
       {isMobile && <MobileHeader pageName="Prompt Generator" />}
       
       {!isMobile && (
-        <div className="min-h-screen bg-transparent">
+        <div className="pg-page min-h-screen">
           {/* Page Header */}
           <div className="flex items-center justify-between p-4 pt-0 border-transparent ml-48">
             <div className="flex items-center gap-3">

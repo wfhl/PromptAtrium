@@ -176,7 +176,7 @@ function Dropdown({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between bg-gray-900 bg-gradient-to-br from-purple-600/10 to-blue-600/10 border border-gray-700 rounded-md px-3 py-2.5 text-sm text-white hover:from-purple-600/20 hover:to-blue-600/20 focus:outline-none focus:ring-1 focus:ring-purple-700"
+          className="w-full flex items-center justify-between glass-input rounded-md px-3 py-2.5 text-sm text-white hover:bg-purple-600/20 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-700"
         >
           <span className="truncate pr-6">{displayText}</span>
           <ChevronDown className="h-4 w-4 opacity-70" />
@@ -1625,20 +1625,15 @@ export default function NewPromptGeneratorUI() {
   return (
     <div className="max-w-none flex flex-col">
       <div className="flex-1 flex justify-center">
-        <div className="container max-w-none mx-auto px-1 py-1">
-          {/* Title section styled to match Elite Prompt Generator */}
-          <div className="flex items-center justify-start mb-6 px-2 ">
-           
-          </div>
-
+        <div className="container max-w-none mx-auto px-4 py-4">
           <div className="w-full space-y-6">
 
       
       {/* Subject and Additional Details fields at the top (based on mockup) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <label className="text-sm text-gray-400">Subject</label>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div className="glass-card">
+          <div className="flex items-center gap-2 mb-2">
+            <label className="section-label">Subject 🎨</label>
             {jsonPromptData && (
               <Popover open={sparklePopoverOpen} onOpenChange={setSparklePopoverOpen}>
                 <PopoverTrigger asChild>
@@ -1683,76 +1678,54 @@ export default function NewPromptGeneratorUI() {
             )}
           </div>
           
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-purple-500/10 to-purple-900/00 z-20 focus:outline-none focus:ring-0" />
           <Textarea
             value={watch('subject') || ""}
             onChange={(e) => setValue('subject', e.target.value)}
             placeholder="Enter subject or main focus"
-            className="bg-black/70 border-black z-20 relative focus:outline-none focus:ring-0 mt-[6px] mb-[6px]"
-            rows={1}
+            className="w-full glass-input rounded-lg p-3 focus:outline-none focus:ring-0"
+            rows={3}
           />
-            <BorderBeam 
-              size={250} 
-              duration={6} 
-              borderWidth={4} 
-              colorFrom="#ffaa40" 
-              colorTo="#9c40ff" 
-            />
         </div>
-           </div>
         
-        <div>
-          <label className="text-sm text-gray-400 block mt-[4px] mb-[4px]">Additional Details</label>
-       
-           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-purple-500/10 to-purple-900/00 z-20" />
-            <Textarea
-              value={watch('additionalDetails') || ""}
-              onChange={(e) => setValue('additionalDetails', e.target.value)}
-              placeholder="Enter additional details for the character or scene"
-              className="bg-black/70 border-black z-20 relative focus:outline-none focus:ring-0"
-              rows={1}
-            />
-            <BorderBeam 
-              size={250} 
-              duration={6} 
-              borderWidth={4} 
-              colorFrom="#ffaa40" 
-              colorTo="#9c40ff" 
-            />
-             </div>
+        <div className="glass-card">
+          <label className="section-label block mb-2">Additional Details</label>
+          <Textarea
+            value={watch('additionalDetails') || ""}
+            onChange={(e) => setValue('additionalDetails', e.target.value)}
+            placeholder="Enter additional details for the character or scene"
+            className="w-full glass-input rounded-lg p-3 focus:outline-none focus:ring-0"
+            rows={3}
+          />
         </div>
-          </div>
+      </div>
       {/* Main Content Layout - Three Columns as per MOCKUP2.png */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Side - Presets columns - Global and Character side by side */}
-        <div className="lg:col-span-5">
-          <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        {/* Left Column - Presets */}
+        <div className="xl:col-span-3 space-y-4">
             {/* Global Presets Section */}
-            <div>
-              <div className="flex items-center justify-between p-2 mb-2 bg-purple-900/50 rounded-lg border border-gray-800">
+            <div className="glass-card">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-base font-semibold">Global Presets</h3>
+                  <h3 className="heading-accent text-white">Global Presets</h3>
                   <p className="text-xs text-gray-400">All Parameter Settings</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsGlobalPresetsOpen(!isGlobalPresetsOpen)}
-                  className="h-6 w-6 p-0 hover:bg-gray-800"
+                  className="h-6 w-6 p-0 hover:bg-purple-600/20 transition-colors"
                 >
                   <ChevronDown className={cn("h-4 w-4 transition-transform", !isGlobalPresetsOpen && "-rotate-90")} />
                 </Button>
               </div>
               
-              <div className={cn("bg-purple-900/10 rounded-lg border border-gray-800 overflow-hidden transition-all", isGlobalPresetsOpen ? "p-4" : "h-0 p-0 border-transparent")}>
+              <div className={cn("transition-all", isGlobalPresetsOpen ? "" : "h-0 overflow-hidden")}>
                 <div className={cn("transition-opacity", isGlobalPresetsOpen ? "opacity-100" : "opacity-0")}>
                   <div className="mb-4">
                   <div className="flex items-center gap-1 w-full">
                     <ShimmerButton 
                       onClick={() => openGlobalPresetModal()}
-                      className="flex-1 h-7 p-0 bg-blue-600 border-purple-500/20 text-white"
+                      className="flex-1 h-7 p-0 btn-purple-grad text-white"
                       shimmerColor="#3b82f6"
                       borderRadius="4px"
                       title="New Global Preset"
@@ -2046,29 +2019,29 @@ export default function NewPromptGeneratorUI() {
             </div>
             
             {/* Character Presets Section */}
-            <div>
-              <div className="flex items-center justify-between p-2 mb-2 bg-purple-900/50 rounded-lg border border-gray-800">
+            <div className="glass-card">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-base font-semibold">Character Presets</h3>
+                  <h3 className="heading-accent text-white">Character Presets</h3>
                   <p className="text-xs text-gray-400">Character Only Settings</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsCharacterPresetsOpen(!isCharacterPresetsOpen)}
-                  className="h-6 w-6 p-0 hover:bg-gray-800"
+                  className="h-6 w-6 p-0 hover:bg-purple-600/20 transition-colors"
                 >
                   <ChevronDown className={cn("h-4 w-4 transition-transform", !isCharacterPresetsOpen && "-rotate-90")} />
                 </Button>
               </div>
               
-              <div className={cn("bg-purple-900/10 rounded-lg border border-gray-800 overflow-hidden transition-all", isCharacterPresetsOpen ? "p-4" : "h-0 p-0 border-transparent")}>
+              <div className={cn("transition-all", isCharacterPresetsOpen ? "" : "h-0 overflow-hidden")}>
                 <div className={cn("transition-opacity", isCharacterPresetsOpen ? "opacity-100" : "opacity-0")}>
                 <div className="mb-4">
                   <div className="flex items-center gap-1 w-full">
                     <ShimmerButton 
                       onClick={() => openCharacterPresetModal()}
-                      className="flex-1 h-7 p-0 bg-blue-600 border-purple-500/20"
+                      className="flex-1 h-7 p-0 btn-purple-grad"
                       shimmerColor="#3b82f6"
                       borderRadius="4px"
                       title="New"
@@ -2429,13 +2402,13 @@ export default function NewPromptGeneratorUI() {
           </div>
           
           {/* Prompt Settings */}
-          <div className="bg-gray-900 bg-gradient-to-br from-purple-900/20 to-blue-900/10 border border-purple-700/40 rounded-lg border border-gray-800 p-4 mb-6">
+          <div className="glass-card mb-6">
             <div 
               className="flex justify-between items-center mb-2"
             >
               <div className="flex items-center gap-3">
                 <h3 
-                  className="text-base font-semibold cursor-pointer"
+                  className="heading-accent text-white cursor-pointer"
                   onClick={() => setIsPromptSettingsOpen(!isPromptSettingsOpen)}
                 >
                   Prompt Settings
@@ -2446,8 +2419,8 @@ export default function NewPromptGeneratorUI() {
                     onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
                     className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
                       isMultiSelectMode 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                        ? 'btn-purple-grad text-white' 
+                        : 'glass-input text-gray-400 hover:bg-purple-600/20 hover:text-white'
                     }`}
                     title={isMultiSelectMode ? 'Switch to single selection mode' : 'Switch to multi-selection mode'}
                   >
@@ -3722,7 +3695,6 @@ setSelectedTemplates(prev => {
             </div>
           </div>
         </div>
-      </div>
       </div>
       </div>
       </div>

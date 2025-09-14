@@ -380,3 +380,88 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   background: rgba(255, 255, 255, 0.1) !important;
   color: white !important;
 }
+
+/* Prompt Generator Purple Theme */
+.pg-page {
+  --primary: hsl(275, 88%, 65%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(275, 88%, 65%);
+  --accent: hsl(280, 85%, 62%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  background: linear-gradient(160deg, hsl(264, 80%, 10%) 0%, hsl(230, 75%, 8%) 100%),
+              radial-gradient(60% 60% at 20% 0%, hsla(280, 80%, 30%, 0.35) 0%, transparent 60%),
+              radial-gradient(50% 50% at 90% 20%, hsla(230, 80%, 30%, 0.35) 0%, transparent 60%);
+  min-height: 100vh;
+}
+
+.glass-card {
+  background: hsla(270, 20%, 10%, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsla(275, 88%, 65%, 0.25);
+  box-shadow: 0 8px 32px hsla(275, 88%, 65%, 0.18);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.glass-input {
+  background: hsla(270, 20%, 10%, 0.35) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: hsla(275, 88%, 65%, 0.25) !important;
+  color: white !important;
+}
+
+.glass-input::placeholder {
+  color: hsla(275, 88%, 65%, 0.5) !important;
+}
+
+.glass-input:focus {
+  border-color: hsla(275, 88%, 65%, 0.5) !important;
+  box-shadow: 0 0 0 3px hsla(275, 88%, 65%, 0.1) !important;
+}
+
+.btn-purple-grad {
+  background: linear-gradient(135deg, hsl(278, 85%, 62%) 0%, hsl(310, 85%, 62%) 100%);
+  color: white;
+  box-shadow: 0 8px 24px hsla(280, 88%, 65%, 0.25);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-purple-grad:hover {
+  box-shadow: 0 12px 32px hsla(280, 88%, 65%, 0.35);
+  transform: translateY(-2px);
+}
+
+.outline-purple {
+  border-color: hsla(275, 88%, 65%, 0.35) !important;
+}
+
+.heading-accent {
+  color: white;
+  border-bottom: 1px solid hsla(275, 88%, 65%, 0.25);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.section-label {
+  color: hsl(275, 88%, 65%);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.ai-badge {
+  background: linear-gradient(135deg, hsl(275, 88%, 65%) 0%, hsl(310, 85%, 62%) 100%);
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
