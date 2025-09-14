@@ -356,6 +356,67 @@ export const activities = pgTable("activities", {
   index("idx_activities_action_type").on(table.actionType),
 ]);
 
+// Prompt Templates table - stores all prompt style templates
+export const promptTemplates = pgTable("prompt_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  templateId: varchar("template_id").notNull().unique(),
+  name: varchar("name").notNull(),
+  template: text("template").notNull(),
+  description: text("description"),
+  category: varchar("category"),
+  isCustom: boolean("is_custom").default(false),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  templateType: varchar("template_type"),
+  isDefault: boolean("is_default").default(false),
+  userId: varchar("user_id").references(() => users.id),
+  masterPrompt: text("master_prompt"),
+  llmProvider: varchar("llm_provider"),
+  llmModel: varchar("llm_model"),
+  useHappyTalk: boolean("use_happy_talk").default(false),
+  compressPrompt: boolean("compress_prompt").default(false),
+  compressionLevel: integer("compression_level").default(1),
+});
+
+// Prompt Generator Components table - stores prompt components for the generator
+export const promptGeneratorComponents = pgTable("prompt_generator_components", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: varchar("category").notNull(),
+  subcategory: varchar("subcategory"),
+  value: text("value").notNull(),
+  description: text("description"),
+  tags: text("tags").array(),
+  usageCount: integer("usage_count").default(0),
+  orderIndex: integer("order_index").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Prompt Generation History table - tracks user's generated prompts
+export const promptGenerationHistory = pgTable("prompt_generation_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  promptContent: text("prompt_content").notNull(),
+  negativePrompt: text("negative_prompt"),
+  templateUsed: varchar("template_used").references(() => promptTemplates.templateId),
+  componentsUsed: jsonb("components_used").default([]),
+  generationOptions: jsonb("generation_options").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User Prompt Presets table - stores user's custom presets
+export const userPromptPresets = pgTable("user_prompt_presets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  presetData: jsonb("preset_data").default({}).notNull(),
+  isFavorite: boolean("is_favorite").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   prompts: many(prompts),
@@ -369,6 +430,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   followers: many(follows, { relationName: "following" }),
   following: many(follows, { relationName: "follower" }),
   activities: many(activities),
+  promptTemplates: many(promptTemplates),
+  promptGenerationHistory: many(promptGenerationHistory),
+  userPromptPresets: many(userPromptPresets),
 }));
 
 export const communitiesRelations = relations(communities, ({ many }) => ({
@@ -433,6 +497,26 @@ export const communityAdminsRelations = relations(communityAdmins, ({ one }) => 
 export const communityInvitesRelations = relations(communityInvites, ({ one }) => ({
   community: one(communities, { fields: [communityInvites.communityId], references: [communities.id] }),
   createdByUser: one(users, { fields: [communityInvites.createdBy], references: [users.id] }),
+}));
+
+// New table relations
+export const promptTemplatesRelations = relations(promptTemplates, ({ one, many }) => ({
+  createdByUser: one(users, { fields: [promptTemplates.createdBy], references: [users.id] }),
+  user: one(users, { fields: [promptTemplates.userId], references: [users.id] }),
+  generationHistory: many(promptGenerationHistory),
+}));
+
+export const promptGeneratorComponentsRelations = relations(promptGeneratorComponents, ({ }) => ({
+  // No direct relations, but components are referenced in generation history via JSONB
+}));
+
+export const promptGenerationHistoryRelations = relations(promptGenerationHistory, ({ one }) => ({
+  user: one(users, { fields: [promptGenerationHistory.userId], references: [users.id] }),
+  template: one(promptTemplates, { fields: [promptGenerationHistory.templateUsed], references: [promptTemplates.templateId] }),
+}));
+
+export const userPromptPresetsRelations = relations(userPromptPresets, ({ one }) => ({
+  user: one(users, { fields: [userPromptPresets.userId], references: [users.id] }),
 }));
 
 // Insert schemas
@@ -533,6 +617,30 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
   createdAt: true,
 });
 
+// Insert schemas for new prompt generator tables
+export const insertPromptTemplateSchema = createInsertSchema(promptTemplates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPromptGeneratorComponentSchema = createInsertSchema(promptGeneratorComponents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  usageCount: true,
+});
+
+export const insertPromptGenerationHistorySchema = createInsertSchema(promptGenerationHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserPromptPresetSchema = createInsertSchema(userPromptPresets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -621,6 +729,16 @@ export type InsertFollow = z.infer<typeof insertFollowSchema>;
 export type Follow = typeof follows.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;
+
+// Prompt generator table types
+export type InsertPromptTemplate = z.infer<typeof insertPromptTemplateSchema>;
+export type PromptTemplate = typeof promptTemplates.$inferSelect;
+export type InsertPromptGeneratorComponent = z.infer<typeof insertPromptGeneratorComponentSchema>;
+export type PromptGeneratorComponent = typeof promptGeneratorComponents.$inferSelect;
+export type InsertPromptGenerationHistory = z.infer<typeof insertPromptGenerationHistorySchema>;
+export type PromptGenerationHistory = typeof promptGenerationHistory.$inferSelect;
+export type InsertUserPromptPreset = z.infer<typeof insertUserPromptPresetSchema>;
+export type UserPromptPreset = typeof userPromptPresets.$inferSelect;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;

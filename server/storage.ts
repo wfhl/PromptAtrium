@@ -17,6 +17,10 @@ import {
   promptRatings,
   follows,
   activities,
+  promptTemplates,
+  promptGeneratorComponents,
+  promptGenerationHistory,
+  userPromptPresets,
   type User,
   type UpsertUser,
   type Prompt,
@@ -53,6 +57,14 @@ import {
   type InsertActivity,
   type UserRole,
   type CommunityRole,
+  type PromptTemplate,
+  type InsertPromptTemplate,
+  type PromptGeneratorComponent,
+  type InsertPromptGeneratorComponent,
+  type PromptGenerationHistory,
+  type InsertPromptGenerationHistory,
+  type UserPromptPreset,
+  type InsertUserPromptPreset,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray } from "drizzle-orm";
@@ -234,6 +246,41 @@ export interface IStorage {
   createRecommendedModel(model: InsertRecommendedModel): Promise<RecommendedModel>;
   updateRecommendedModel(id: string, model: Partial<InsertRecommendedModel>): Promise<RecommendedModel>;
   deleteRecommendedModel(id: string): Promise<void>;
+
+  // Prompt Templates operations
+  getPromptTemplates(options?: { userId?: string; category?: string; isCustom?: boolean; isDefault?: boolean }): Promise<PromptTemplate[]>;
+  getPromptTemplate(id: string): Promise<PromptTemplate | undefined>;
+  getPromptTemplateByTemplateId(templateId: string): Promise<PromptTemplate | undefined>;
+  getPromptTemplatesByType(templateType: string): Promise<PromptTemplate[]>;
+  createPromptTemplate(template: InsertPromptTemplate): Promise<PromptTemplate>;
+  updatePromptTemplate(id: string, template: Partial<InsertPromptTemplate>): Promise<PromptTemplate>;
+  deletePromptTemplate(id: string): Promise<void>;
+  setDefaultPromptTemplate(templateId: string, templateType?: string): Promise<void>;
+
+  // Prompt Generator Components operations
+  getPromptGeneratorComponents(options?: { category?: string; subcategory?: string; isActive?: boolean }): Promise<PromptGeneratorComponent[]>;
+  getPromptGeneratorComponent(id: string): Promise<PromptGeneratorComponent | undefined>;
+  getPromptGeneratorComponentsByCategory(category: string): Promise<PromptGeneratorComponent[]>;
+  createPromptGeneratorComponent(component: InsertPromptGeneratorComponent): Promise<PromptGeneratorComponent>;
+  updatePromptGeneratorComponent(id: string, component: Partial<InsertPromptGeneratorComponent>): Promise<PromptGeneratorComponent>;
+  deletePromptGeneratorComponent(id: string): Promise<void>;
+  bulkInsertPromptGeneratorComponents(components: InsertPromptGeneratorComponent[]): Promise<PromptGeneratorComponent[]>;
+  incrementComponentUsageCount(id: string): Promise<void>;
+
+  // Prompt Generation History operations
+  getPromptGenerationHistory(userId: string, limit?: number, offset?: number): Promise<PromptGenerationHistory[]>;
+  getPromptGenerationHistoryItem(id: string): Promise<PromptGenerationHistory | undefined>;
+  createPromptGenerationHistory(history: InsertPromptGenerationHistory): Promise<PromptGenerationHistory>;
+  deletePromptGenerationHistory(id: string): Promise<void>;
+  deleteOldPromptGenerationHistory(userId: string, daysToKeep?: number): Promise<void>;
+
+  // User Prompt Presets operations
+  getUserPromptPresets(userId: string): Promise<UserPromptPreset[]>;
+  getUserPromptPreset(id: string): Promise<UserPromptPreset | undefined>;
+  createUserPromptPreset(preset: InsertUserPromptPreset): Promise<UserPromptPreset>;
+  updateUserPromptPreset(id: string, preset: Partial<InsertUserPromptPreset>): Promise<UserPromptPreset>;
+  deleteUserPromptPreset(id: string): Promise<void>;
+  toggleUserPromptPresetFavorite(id: string): Promise<UserPromptPreset>;
 }
 
 function generatePromptId(): string {
@@ -1861,6 +1908,253 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecommendedModel(id: string): Promise<void> {
     await db.delete(recommendedModels).where(eq(recommendedModels.id, id));
+  }
+
+  // Prompt Templates operations
+  async getPromptTemplates(options: { userId?: string; category?: string; isCustom?: boolean; isDefault?: boolean } = {}): Promise<PromptTemplate[]> {
+    let query = db.select().from(promptTemplates).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.userId) {
+      conditions.push(eq(promptTemplates.userId, options.userId));
+    }
+    
+    if (options.category) {
+      conditions.push(eq(promptTemplates.category, options.category));
+    }
+    
+    if (options.isCustom !== undefined) {
+      conditions.push(eq(promptTemplates.isCustom, options.isCustom));
+    }
+    
+    if (options.isDefault !== undefined) {
+      conditions.push(eq(promptTemplates.isDefault, options.isDefault));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(promptTemplates.createdAt));
+  }
+
+  async getPromptTemplate(id: string): Promise<PromptTemplate | undefined> {
+    const [template] = await db.select().from(promptTemplates).where(eq(promptTemplates.id, id));
+    return template;
+  }
+
+  async getPromptTemplateByTemplateId(templateId: string): Promise<PromptTemplate | undefined> {
+    const [template] = await db.select().from(promptTemplates).where(eq(promptTemplates.templateId, templateId));
+    return template;
+  }
+
+  async getPromptTemplatesByType(templateType: string): Promise<PromptTemplate[]> {
+    return await db
+      .select()
+      .from(promptTemplates)
+      .where(eq(promptTemplates.templateType, templateType))
+      .orderBy(desc(promptTemplates.isDefault), promptTemplates.name);
+  }
+
+  async createPromptTemplate(template: InsertPromptTemplate): Promise<PromptTemplate> {
+    const [newTemplate] = await db.insert(promptTemplates).values(template).returning();
+    return newTemplate;
+  }
+
+  async updatePromptTemplate(id: string, template: Partial<InsertPromptTemplate>): Promise<PromptTemplate> {
+    const [updatedTemplate] = await db
+      .update(promptTemplates)
+      .set(template)
+      .where(eq(promptTemplates.id, id))
+      .returning();
+    return updatedTemplate;
+  }
+
+  async deletePromptTemplate(id: string): Promise<void> {
+    await db.delete(promptTemplates).where(eq(promptTemplates.id, id));
+  }
+
+  async setDefaultPromptTemplate(templateId: string, templateType?: string): Promise<void> {
+    // First, unset any existing defaults for the same type
+    if (templateType) {
+      await db
+        .update(promptTemplates)
+        .set({ isDefault: false })
+        .where(and(
+          eq(promptTemplates.templateType, templateType),
+          eq(promptTemplates.isDefault, true)
+        ));
+    }
+    
+    // Then set the new default
+    await db
+      .update(promptTemplates)
+      .set({ isDefault: true })
+      .where(eq(promptTemplates.templateId, templateId));
+  }
+
+  // Prompt Generator Components operations
+  async getPromptGeneratorComponents(options: { category?: string; subcategory?: string; isActive?: boolean } = {}): Promise<PromptGeneratorComponent[]> {
+    let query = db.select().from(promptGeneratorComponents).$dynamic();
+    
+    const conditions = [];
+    
+    if (options.category) {
+      conditions.push(eq(promptGeneratorComponents.category, options.category));
+    }
+    
+    if (options.subcategory) {
+      conditions.push(eq(promptGeneratorComponents.subcategory, options.subcategory));
+    }
+    
+    if (options.isActive !== undefined) {
+      conditions.push(eq(promptGeneratorComponents.isActive, options.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(promptGeneratorComponents.orderIndex, promptGeneratorComponents.value);
+  }
+
+  async getPromptGeneratorComponent(id: string): Promise<PromptGeneratorComponent | undefined> {
+    const [component] = await db.select().from(promptGeneratorComponents).where(eq(promptGeneratorComponents.id, id));
+    return component;
+  }
+
+  async getPromptGeneratorComponentsByCategory(category: string): Promise<PromptGeneratorComponent[]> {
+    return await db
+      .select()
+      .from(promptGeneratorComponents)
+      .where(and(
+        eq(promptGeneratorComponents.category, category),
+        eq(promptGeneratorComponents.isActive, true)
+      ))
+      .orderBy(promptGeneratorComponents.orderIndex, promptGeneratorComponents.value);
+  }
+
+  async createPromptGeneratorComponent(component: InsertPromptGeneratorComponent): Promise<PromptGeneratorComponent> {
+    const [newComponent] = await db.insert(promptGeneratorComponents).values(component).returning();
+    return newComponent;
+  }
+
+  async updatePromptGeneratorComponent(id: string, component: Partial<InsertPromptGeneratorComponent>): Promise<PromptGeneratorComponent> {
+    const [updatedComponent] = await db
+      .update(promptGeneratorComponents)
+      .set({ ...component, updatedAt: new Date() })
+      .where(eq(promptGeneratorComponents.id, id))
+      .returning();
+    return updatedComponent;
+  }
+
+  async deletePromptGeneratorComponent(id: string): Promise<void> {
+    await db.delete(promptGeneratorComponents).where(eq(promptGeneratorComponents.id, id));
+  }
+
+  async bulkInsertPromptGeneratorComponents(components: InsertPromptGeneratorComponent[]): Promise<PromptGeneratorComponent[]> {
+    if (components.length === 0) {
+      return [];
+    }
+    return await db.insert(promptGeneratorComponents).values(components).returning();
+  }
+
+  async incrementComponentUsageCount(id: string): Promise<void> {
+    await db
+      .update(promptGeneratorComponents)
+      .set({ 
+        usageCount: sql`${promptGeneratorComponents.usageCount} + 1`,
+        updatedAt: new Date() 
+      })
+      .where(eq(promptGeneratorComponents.id, id));
+  }
+
+  // Prompt Generation History operations
+  async getPromptGenerationHistory(userId: string, limit: number = 50, offset: number = 0): Promise<PromptGenerationHistory[]> {
+    return await db
+      .select()
+      .from(promptGenerationHistory)
+      .where(eq(promptGenerationHistory.userId, userId))
+      .orderBy(desc(promptGenerationHistory.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getPromptGenerationHistoryItem(id: string): Promise<PromptGenerationHistory | undefined> {
+    const [item] = await db.select().from(promptGenerationHistory).where(eq(promptGenerationHistory.id, id));
+    return item;
+  }
+
+  async createPromptGenerationHistory(history: InsertPromptGenerationHistory): Promise<PromptGenerationHistory> {
+    const [newHistory] = await db.insert(promptGenerationHistory).values(history).returning();
+    return newHistory;
+  }
+
+  async deletePromptGenerationHistory(id: string): Promise<void> {
+    await db.delete(promptGenerationHistory).where(eq(promptGenerationHistory.id, id));
+  }
+
+  async deleteOldPromptGenerationHistory(userId: string, daysToKeep: number = 30): Promise<void> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+    
+    await db
+      .delete(promptGenerationHistory)
+      .where(and(
+        eq(promptGenerationHistory.userId, userId),
+        sql`${promptGenerationHistory.createdAt} < ${cutoffDate}`
+      ));
+  }
+
+  // User Prompt Presets operations
+  async getUserPromptPresets(userId: string): Promise<UserPromptPreset[]> {
+    return await db
+      .select()
+      .from(userPromptPresets)
+      .where(eq(userPromptPresets.userId, userId))
+      .orderBy(desc(userPromptPresets.isFavorite), desc(userPromptPresets.createdAt));
+  }
+
+  async getUserPromptPreset(id: string): Promise<UserPromptPreset | undefined> {
+    const [preset] = await db.select().from(userPromptPresets).where(eq(userPromptPresets.id, id));
+    return preset;
+  }
+
+  async createUserPromptPreset(preset: InsertUserPromptPreset): Promise<UserPromptPreset> {
+    const [newPreset] = await db.insert(userPromptPresets).values(preset).returning();
+    return newPreset;
+  }
+
+  async updateUserPromptPreset(id: string, preset: Partial<InsertUserPromptPreset>): Promise<UserPromptPreset> {
+    const [updatedPreset] = await db
+      .update(userPromptPresets)
+      .set({ ...preset, updatedAt: new Date() })
+      .where(eq(userPromptPresets.id, id))
+      .returning();
+    return updatedPreset;
+  }
+
+  async deleteUserPromptPreset(id: string): Promise<void> {
+    await db.delete(userPromptPresets).where(eq(userPromptPresets.id, id));
+  }
+
+  async toggleUserPromptPresetFavorite(id: string): Promise<UserPromptPreset> {
+    const preset = await this.getUserPromptPreset(id);
+    if (!preset) {
+      throw new Error("Preset not found");
+    }
+    
+    const [updatedPreset] = await db
+      .update(userPromptPresets)
+      .set({ 
+        isFavorite: !preset.isFavorite,
+        updatedAt: new Date() 
+      })
+      .where(eq(userPromptPresets.id, id))
+      .returning();
+    
+    return updatedPreset;
   }
 }
 
