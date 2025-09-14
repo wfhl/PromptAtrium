@@ -23,6 +23,7 @@ import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import InstallGuide from "@/pages/install-guide";
 import PromptDetail from "@/pages/prompt-detail";
+import PromptingGuides from "@/pages/prompting-guides";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -74,6 +75,9 @@ function Router() {
         </Route>
         <Route path="/tools/metadata-analyzer">
           {() => isAuthenticated ? <Layout><MetadataAnalyzerPage /></Layout> : <MetadataAnalyzerPage />}
+        </Route>
+        <Route path="/prompting-guides">
+          {() => isAuthenticated ? <Layout><PromptingGuides /></Layout> : <PromptingGuides />}
         </Route>
         <Route path="/invite/:code" component={Invite} />
         <Route path="/invite" component={Invite} />

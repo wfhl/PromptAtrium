@@ -360,6 +360,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-resources">
+                  <DropdownMenuItem asChild>
+                    <Link href="/prompting-guides" className="flex items-center cursor-pointer" data-testid="menu-prompting-guides">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Prompting Guides
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => toast({
                       title: "Coming Soon",
