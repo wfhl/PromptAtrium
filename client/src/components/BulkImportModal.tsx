@@ -628,7 +628,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
       const extension = filename.split('.').pop()?.toLowerCase();
       let parsed: ParsedPrompt[] = [];
 
-      if (extension === 'csv') {
+      if (extension === 'csv' || extension === 'tsv') {
         const result = Papa.parse(content, { header: true });
         const rows = result.data.filter((row: any) => {
           // Filter out empty rows
@@ -668,7 +668,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
             unmappedFields: smartResult.unmappedFields
           });
         }
-      } else if (extension === 'json') {
+      } else if (extension === 'json' || extension === 'jsonl') {
         // Try standard JSON parsing first
         try {
           const jsonData = JSON.parse(content);
