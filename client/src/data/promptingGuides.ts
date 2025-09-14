@@ -929,3 +929,163 @@ ripples, waterfalls, bubbles, wet surfaces
 ];
 
 export const ALL_GUIDES = [...SYNTAX_GUIDES, ...ANATOMY_GUIDES];
+
+export interface Resource {
+  id: string;
+  title: string;
+  description: string;
+  url?: string;
+  category: string;
+  icon?: string;
+  isFavorite?: boolean;
+  buttonText?: string;
+}
+
+export const PROMPT_RESOURCES: Resource[] = [
+  // Tutorials & Guides
+  {
+    id: "midjourney-docs",
+    title: "Midjourney Documentation",
+    description: "Official documentation for Midjourney's advanced prompting features and parameters",
+    url: "https://docs.midjourney.com",
+    category: "tutorials",
+    icon: "book",
+    isFavorite: true
+  },
+  {
+    id: "sd-prompt-guide",
+    title: "Stable Diffusion Prompt Guide",
+    description: "Comprehensive guide to prompting in Stable Diffusion with examples and best practices",
+    url: "https://stable-diffusion-art.com/prompt-guide/",
+    category: "tutorials",
+    icon: "book"
+  },
+  {
+    id: "civitai-guide",
+    title: "Civitai Prompt Guide",
+    description: "Community-driven prompt guide with model-specific tips and techniques",
+    url: "https://civitai.com/articles",
+    category: "tutorials",
+    icon: "book"
+  },
+  
+  // Community Resources
+  {
+    id: "midjourney-showcase",
+    title: "Midjourney Community Showcase",
+    description: "Explore prompts and creations from the Midjourney community",
+    url: "https://www.midjourney.com/showcase",
+    category: "community",
+    icon: "users",
+    isFavorite: true
+  },
+  {
+    id: "prompthero",
+    title: "PromptHero",
+    description: "Browse millions of AI art images and their prompts from various models",
+    url: "https://prompthero.com",
+    category: "community",
+    icon: "users"
+  },
+  
+  // Tools & Applications
+  {
+    id: "automatic1111",
+    title: "Automatic1111 WebUI",
+    description: "Popular Stable Diffusion web interface with advanced features",
+    url: "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+    category: "tools",
+    icon: "tool"
+  },
+  {
+    id: "comfyui",
+    title: "ComfyUI",
+    description: "Node-based interface for advanced Stable Diffusion workflows",
+    url: "https://github.com/comfyanonymous/ComfyUI",
+    category: "tools",
+    icon: "tool"
+  },
+  {
+    id: "invokeai",
+    title: "InvokeAI",
+    description: "Professional creative engine for Stable Diffusion models",
+    url: "https://invoke-ai.github.io/InvokeAI/",
+    category: "tools",
+    icon: "tool"
+  },
+  
+  // Prompt Building Tools
+  {
+    id: "elite-generator",
+    title: "Elite Prompt Generator",
+    description: "Advanced prompt generator with detailed options and templates",
+    category: "builders",
+    icon: "wand",
+    buttonText: "Open Generator",
+    isFavorite: true
+  },
+  {
+    id: "flux-generator",
+    title: "FLUX Prompt Generator",
+    description: "Specialized prompt generator for FLUX models",
+    category: "builders",
+    icon: "wand",
+    buttonText: "Open Generator"
+  },
+  {
+    id: "promptomania",
+    title: "Promptomania Builder",
+    description: "Visual prompt builder with extensive style and modifier options",
+    url: "https://promptomania.com",
+    category: "builders",
+    icon: "wand"
+  }
+];
+
+export const LEARNING_RESOURCES: Resource[] = [
+  {
+    id: "reddit-sd",
+    title: "r/StableDiffusion",
+    description: "Active community for Stable Diffusion discussions and tips",
+    url: "https://reddit.com/r/stablediffusion",
+    category: "learning",
+    icon: "message-circle"
+  },
+  {
+    id: "reddit-mj",
+    title: "r/Midjourney",
+    description: "Midjourney community on Reddit",
+    url: "https://reddit.com/r/midjourney",
+    category: "learning",
+    icon: "message-circle"
+  },
+  {
+    id: "youtube-tutorials",
+    title: "YouTube Tutorials",
+    description: "Video tutorials for AI art generation",
+    url: "https://youtube.com/results?search_query=ai+art+prompting",
+    category: "learning",
+    icon: "play-circle"
+  },
+  {
+    id: "discord-servers",
+    title: "Discord Communities",
+    description: "Join AI art Discord servers for real-time help",
+    url: "https://discord.com",
+    category: "learning",
+    icon: "message-square"
+  }
+];
+
+export const QUICK_TIPS = [
+  "Start simple, then add details gradually",
+  "Use commas to separate concepts clearly",
+  "Quality tags at the beginning often work better",
+  "Negative prompts are as important as positive ones",
+  "Test small changes to understand their impact",
+  "Save prompts that work well for future reference",
+  "Different models respond to different prompt styles",
+  "Combine multiple techniques for unique results",
+  "Learn from community prompts but develop your style",
+  "Experiment with weight values between 0.5-1.5"
+];
