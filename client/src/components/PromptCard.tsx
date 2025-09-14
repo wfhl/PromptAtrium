@@ -63,7 +63,7 @@ export function PromptCard({
   const [editValue, setEditValue] = useState<string>('');
   const [originalValue, setOriginalValue] = useState<string>('');
   
-  // Collapse/expand state - use prompt ID to make it unique per card
+  // Collapse/expand state
   const [isCollapsed, setIsCollapsed] = useState(true);
   
   // Delete confirmation dialog state
@@ -77,7 +77,9 @@ export function PromptCard({
   // Archive confirmation dialog state
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   
-  
+  const toggleCollapsed = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   // Separate queries for likes and favorites
   const { data: userFavorites = [] } = useQuery({
@@ -964,9 +966,8 @@ export function PromptCard({
         variant="ghost"
         className="absolute bottom-4 right-2 h-6 w-6 p-0 z-10 opacity-60 hover:opacity-100 transition-opacity"
         onClick={(e) => {
-          e.preventDefault();
           e.stopPropagation(); // Prevent card selection when clicking toggle
-          setIsCollapsed(!isCollapsed);
+          toggleCollapsed();
         }}
         data-testid={`button-toggle-collapse-${prompt.id}`}
       >
@@ -1418,10 +1419,28 @@ export function PromptCard({
                   data-testid={`image-thumbnail-${prompt.id}-${index}`}
                 >
                   <img
-                    src={imageUrl}
+                    src={imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${encodeURIComponent(imageUrl)}`}
                     alt={`Example ${index + 1} for ${prompt.name}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      // Try fallback URL if not already tried
+                      if (!target.dataset.fallbackTried && !imageUrl.startsWith('http')) {
+                        target.dataset.fallbackTried = 'true';
+                        target.src = imageUrl;
+                      } else {
+                        target.style.display = 'none';
+                        // Add fallback or placeholder
+                        const parent = target.parentElement;
+                        if (parent && !parent.querySelector('.fallback')) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'fallback absolute inset-0 flex items-center justify-center bg-muted';
+                          fallback.innerHTML = '<span class="text-muted-foreground text-xs">Image unavailable</span>';
+                          parent.appendChild(fallback);
+                        }
+                      }
+                    }}
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                     <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -1769,7 +1788,7 @@ export function PromptCard({
             {selectedImage && (
               <div className="relative">
                 <img
-                  src={selectedImage}
+                  src={selectedImage.startsWith('http') ? selectedImage : `/api/objects/serve/${encodeURIComponent(selectedImage)}`}
                   alt="Full size example"
                   className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
                 />
