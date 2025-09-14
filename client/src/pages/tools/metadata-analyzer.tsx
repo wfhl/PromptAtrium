@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ToastAction } from "@/components/ui/toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -23,6 +24,7 @@ import { useLocation } from "wouter";
 import type { Prompt } from "@shared/schema";
 
 export default function MetadataAnalyzerPage() {
+  const { user } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -36,6 +38,22 @@ export default function MetadataAnalyzerPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Apply dark theme for unauthenticated users
+  useEffect(() => {
+    if (!user) {
+      document.documentElement.classList.add('dark');
+    }
+    // Cleanup function to respect user's actual theme preference when they log in
+    return () => {
+      if (!user) {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme !== 'dark') {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+  }, [user]);
 
   const uploadImageToStorage = async (file: File): Promise<string | null> => {
     setIsUploading(true);

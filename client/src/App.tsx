@@ -66,6 +66,12 @@ function Router() {
         <Route path="/user/:username">
           {() => isAuthenticated ? <Layout><UserProfile /></Layout> : <UserProfile />}
         </Route>
+        <Route path="/tools/aspect-ratio-calculator">
+          {() => isAuthenticated ? <Layout><AspectRatioCalculatorPage /></Layout> : <AspectRatioCalculatorPage />}
+        </Route>
+        <Route path="/tools/metadata-analyzer">
+          {() => isAuthenticated ? <Layout><MetadataAnalyzerPage /></Layout> : <MetadataAnalyzerPage />}
+        </Route>
         <Route path="/invite/:code" component={Invite} />
         <Route path="/invite" component={Invite} />
         
@@ -103,12 +109,6 @@ function Router() {
             </Route>
             <Route path="/forked-prompts">
               {() => <Layout><ForkedPrompts /></Layout>}
-            </Route>
-            <Route path="/tools/aspect-ratio-calculator">
-              {() => <Layout><AspectRatioCalculatorPage /></Layout>}
-            </Route>
-            <Route path="/tools/metadata-analyzer">
-              {() => <Layout><MetadataAnalyzerPage /></Layout>}
             </Route>
           </>
         )}
