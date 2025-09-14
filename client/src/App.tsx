@@ -24,10 +24,12 @@ import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import PromptDetail from "@/pages/prompt-detail";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
+import { useDynamicManifest } from "@/hooks/useDynamicManifest";
 import type { User } from "@shared/schema";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  useDynamicManifest();
   const [showIntroModal, setShowIntroModal] = useState(false);
   
   useEffect(() => {
