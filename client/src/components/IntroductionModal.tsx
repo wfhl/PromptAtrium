@@ -147,24 +147,19 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
 
   const canSubmit = form.formState.isValid && usernameAvailable && !isCheckingUsername;
 
-  // Allow closing the modal if user already has a username
-  const canClose = user?.username ? true : false;
+  // Allow closing the modal at any time
+  const canClose = true;
   
   const handleOpenChange = (newOpen: boolean) => {
-    // Allow closing if user already has a username or if they're trying to complete the setup
-    if (!newOpen && canClose) {
+    // Allow closing the modal at any time
+    if (!newOpen) {
       onComplete();
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => {
-        // Only prevent closing on outside click if user doesn't have a username
-        if (!canClose) {
-          e.preventDefault();
-        }
-      }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Welcome to PromptAtrium!</DialogTitle>
           <DialogDescription>
@@ -502,12 +497,10 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                 type="button" 
                 variant="ghost"
                 onClick={() => {
-                  // Skip for now - just submit with username only
-                  if (username && usernameAvailable) {
-                    onSubmit(form.getValues());
-                  }
+                  // Skip for now - close the modal without saving
+                  onComplete();
                 }}
-                disabled={!username || !usernameAvailable || updateProfileMutation.isPending}
+                disabled={updateProfileMutation.isPending}
                 data-testid="button-intro-skip"
               >
                 Skip for now
