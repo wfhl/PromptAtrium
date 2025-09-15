@@ -1624,7 +1624,6 @@ export default function NewPromptGeneratorUI() {
   
   // UI rendering
   return (
-    <>
     <div className="w-full max-w-[1800px] mx-auto px-4 py-6">
       
       {/* Top Section - Subject and Additional Details */}
@@ -1697,12 +1696,10 @@ export default function NewPromptGeneratorUI() {
         </div>
       </div>
       
-      {/* Main Three Column Layout with Resizable Panels */}
-      <div className="w-full" style={{ height: '70vh', minHeight: '600px' }}>
-        <PanelGroup direction="horizontal" className="flex h-full">
-          {/* Left Sidebar - Presets (20% default) */}
-          <Panel defaultSize={20} minSize={15} maxSize={30}>
-          <div className="h-full overflow-y-auto space-y-4 pr-2">
+      {/* Main Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
+        {/* Left Column - Presets */}
+        <div className="space-y-4">
             {/* Global Presets */}
             <div className="glass-card">
               <div className="flex items-center justify-between mb-4">
@@ -2401,21 +2398,10 @@ export default function NewPromptGeneratorUI() {
               </div>
             </div>
           </div>
-        </Panel>
+        </div>
         
-        {/* Resize Handle between Left and Middle */}
-        <PanelResizeHandle 
-          className="w-2 bg-purple-500/20 hover:bg-purple-500/50 active:bg-purple-500 transition-all duration-200 mx-1"
-          style={{ 
-            cursor: 'col-resize',
-            touchAction: 'none',
-            userSelect: 'none'
-          }}
-        />
-        
-        {/* Middle Content - Main Content (50% default) */}
-        <Panel defaultSize={50} minSize={30}>
-          <div className="h-full overflow-y-auto space-y-4 px-2">
+        {/* Right Column - Main Content */}
+        <div className="space-y-4">
           {/* Prompt Settings */}
           <div className="glass-card">
             <div 
@@ -2609,7 +2595,126 @@ export default function NewPromptGeneratorUI() {
                         </div>
                       </div>
                     </div>
-                    {/* Character appearance moved to right sidebar */}
+                    
+                    {/* Character Appearance Section */}
+                    <div className="space-y-4 mt-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                          <Layers className="h-4 w-4" />
+                          Character Appearance
+                        </h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Hair Style */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Hair Style</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={hairstylesOptions}
+                            value={watch('hairstyles') || ""}
+                            onChange={(value) => setValue('hairstyles', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select hair style"
+                          />
+                        </div>
+                        
+                        {/* Hair Color */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Hair Color</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={hairColorOptions}
+                            value={watch('hairColor') || ""}
+                            onChange={(value) => setValue('hairColor', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select hair color"
+                          />
+                        </div>
+                        
+                        {/* Eye Color */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Eye Color</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={eyeColorOptions}
+                            value={watch('eyeColor') || ""}
+                            onChange={(value) => setValue('eyeColor', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select eye color"
+                          />
+                        </div>
+                        
+                        {/* Makeup */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Makeup</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={makeupOptions}
+                            value={watch('makeup') || ""}
+                            onChange={(value) => setValue('makeup', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select makeup style"
+                          />
+                        </div>
+                        
+                        {/* Skin Tone */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Skin Tone</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={skinToneOptions}
+                            value={watch('skinTone') || ""}
+                            onChange={(value) => setValue('skinTone', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select skin tone"
+                          />
+                        </div>
+                        
+                        {/* Clothing */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Clothing</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={clothingOptions}
+                            value={watch('clothing') || ""}
+                            onChange={(value) => setValue('clothing', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select clothing"
+                          />
+                        </div>
+                        
+                        {/* Accessories */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Accessories</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={stuffOptions}
+                            value={watch('accessories') || ""}
+                            onChange={(value) => setValue('accessories', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select accessories"
+                          />
+                        </div>
+                        
+                        {/* Expression */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Expression</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={expressionOptions}
+                            value={watch('expression') || ""}
+                            onChange={(value) => setValue('expression', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select expression"
+                          />
+                        </div>
+                        
+                        {/* Pose */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Pose</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={poseOptions}
+                            value={watch('pose') || ""}
+                            onChange={(value) => setValue('pose', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select pose"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
                 
@@ -2890,146 +2995,12 @@ export default function NewPromptGeneratorUI() {
               </>
             )}
           </div>
-          </div>
-        </Panel>
-        
-        {/* Resize Handle between Middle and Right */}
-        <PanelResizeHandle 
-          className="w-2 bg-purple-500/20 hover:bg-purple-500/50 active:bg-purple-500 transition-all duration-200 mx-1"
-          style={{ 
-            cursor: 'col-resize',
-            touchAction: 'none',
-            userSelect: 'none'
-          }}
-        />
-        
-        {/* Right Sidebar - Character Appearance and Generation Controls (30% default) */}
-        <Panel defaultSize={30} minSize={20}>
-          <div className="h-full overflow-y-auto space-y-4 pl-2">
-          {/* Character Appearance */}
-          <div className="glass-card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="heading-accent text-white">Character Appearance</h3>
-              <Layers className="h-4 w-4 text-gray-400" />
-            </div>
-            
-            <div className="space-y-3">
-              {/* Hair Style */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Hair Style</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={hairstylesOptions}
-                  value={watch('hairstyles') || ""}
-                  onChange={(value) => setValue('hairstyles', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select hair style"
-                />
-              </div>
-              
-              {/* Hair Color */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Hair Color</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={hairColorOptions}
-                  value={watch('hairColor') || ""}
-                  onChange={(value) => setValue('hairColor', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select hair color"
-                />
-              </div>
-              
-              {/* Eye Color */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Eye Color</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={eyeColorOptions}
-                  value={watch('eyeColor') || ""}
-                  onChange={(value) => setValue('eyeColor', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select eye color"
-                />
-              </div>
-              
-              {/* Makeup */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Makeup</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={makeupOptions}
-                  value={watch('makeup') || ""}
-                  onChange={(value) => setValue('makeup', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select makeup style"
-                />
-              </div>
-              
-              {/* Skin Tone */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Skin Tone</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={skinToneOptions}
-                  value={watch('skinTone') || ""}
-                  onChange={(value) => setValue('skinTone', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select skin tone"
-                />
-              </div>
-              
-              {/* Clothing */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Clothing</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={clothingOptions}
-                  value={watch('clothing') || ""}
-                  onChange={(value) => setValue('clothing', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select clothing"
-                />
-              </div>
-              
-              {/* Accessories */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Accessories</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={stuffOptions}
-                  value={watch('accessories') || ""}
-                  onChange={(value) => setValue('accessories', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select accessories"
-                />
-              </div>
-              
-              {/* Expression */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Expression</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={expressionOptions}
-                  value={watch('expression') || ""}
-                  onChange={(value) => setValue('expression', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select expression"
-                />
-              </div>
-              
-              {/* Pose */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Pose</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={poseOptions}
-                  value={watch('pose') || ""}
-                  onChange={(value) => setValue('pose', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select pose"
-                />
-              </div>
-            </div>
-          </div>
           
-          {/* Generation Controls and Output */}
+          {/* Generation Controls */}
           <div className="glass-card">
-            <PanelGroup direction="horizontal" className="gap-4">
-              {/* Aspect Ratio & Seed Panel */}
-              <Panel defaultSize={80} minSize={20}>
-                <div className="rounded-lg border border-transparent p-4 pt-[0px] pb-[0px] h-full pl-[8px] pr-[8px] bg-[#11182700]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Aspect Ratio & Seed Section */}
+              <div className="rounded-lg border border-transparent p-4 pt-[0px] pb-[0px] pl-[8px] pr-[8px] bg-[#11182700]">
               <div 
                 className="flex items-center justify-between p-2 mb-2 bg-purple-900/50 rounded-lg border border-gray-800 cursor-pointer"
                 onClick={() => setIsGenerationControlsOpen(!isGenerationControlsOpen)}
@@ -3136,14 +3107,10 @@ export default function NewPromptGeneratorUI() {
                 </div>
                 </div>
               </div>
-              </Panel>
+              </div>
 
-              {/* Resizable Handle */}
-              <PanelResizeHandle className="w-1 bg-pink-500/20 hover:bg-purple-500 rounded-full transition-colors duration-200 cursor-col-resize" />
-
-              {/* Model Checkpoint Panel */}
-              <Panel defaultSize={80} minSize={20}>
-                <div className="rounded-lg border border-transparent p-4 pt-[0px] pb-[0px] h-full pl-[8px] pr-[8px] bg-[#11182700]">
+              {/* Model Checkpoint Section */}
+              <div className="rounded-lg border border-transparent p-4 pt-[0px] pb-[0px] pl-[8px] pr-[8px] bg-[#11182700]">
               <div 
                 className="flex items-center justify-between p-2 mb-2 bg-purple-900/50 rounded-lg border border-gray-800 cursor-pointer "
                 onClick={() => setIsModelInformationOpen(!isModelInformationOpen)}
@@ -3278,11 +3245,8 @@ export default function NewPromptGeneratorUI() {
                     />
                   </div>
                 </div>
-                </div>
               </div>
-                </div>
-              </Panel>
-            </PanelGroup>
+            </div>
           </div>
           
           {/* Live Prompt Preview - Admin only */}
@@ -3748,9 +3712,7 @@ setSelectedTemplates(prev => {
               </AnimatedCard>
             </div>
           </div>
-          </div>
-        </Panel>
-      </PanelGroup>
+        </div>
       </div>
       
       {/* Modals */}
@@ -3815,6 +3777,5 @@ setSelectedTemplates(prev => {
         />
       )}
     </div>
-    </>
   );
 }
