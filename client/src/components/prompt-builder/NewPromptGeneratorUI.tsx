@@ -1700,7 +1700,7 @@ export default function NewPromptGeneratorUI() {
       {/* Main Content Wrapper */}
       <div>
         {/* Main Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr_380px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_550px_1fr] gap-6">
         {/* Left Column - Presets Side by Side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Global Presets */}
