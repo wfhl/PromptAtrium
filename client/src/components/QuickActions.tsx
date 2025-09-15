@@ -117,7 +117,7 @@ export function QuickActions({
               <RatioIcon className="h-4 w-4 text-orange-500" />
             </div>
             <div className="text-center md:text-left">
-              <p className="text-xs md:text-base font-medium text-foreground">Aspect Ratio</p>
+              <p className="text-xs md:text-base font-medium text-foreground">AR Calc</p>
               <p className="text-xs text-muted-foreground hidden md:block">Calculate dimensions</p>
             </div>
           </Button>
@@ -152,10 +152,11 @@ export function QuickActions({
             <Lock className="h-2.5 w-2.5 text-rose-500 absolute -top-1 -right-1 bg-background rounded-full" />
           </div>
           <div className="text-center md:text-left">
-            <p className="text-xs md:text-base font-medium text-foreground">Wordsmith</p>
+            <p className="text-xs md:text-base font-medium text-foreground">Codex</p>
             <p className="text-xs text-muted-foreground hidden md:block">Coming soon</p>
           </div>
         </Button>
       </div>
+    </div>
   );
 }
