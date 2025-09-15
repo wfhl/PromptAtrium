@@ -96,9 +96,9 @@ export function QuickPrompt() {
               <CardDescription>Generate AI prompts instantly with popular templates</CardDescription>
             </div>
           </div>
-          <Link href="/prompt-generator">
+          <Link href="/new-prompt-generator">
             <Button variant="ghost" size="sm" className="gap-1" data-testid="button-open-full-generator">
-              Full Generator
+              Advanced Generator
               <ExternalLink className="h-3 w-3" />
             </Button>
           </Link>
@@ -352,9 +352,9 @@ export function QuickPrompt() {
                   </Badge>
                 )}
               </div>
-              <Link href="/prompt-generator">
+              <Link href="/new-prompt-generator">
                 <Button variant="link" size="sm" className="text-xs h-auto p-0" data-testid="link-edit-full">
-                  Edit in full generator →
+                  Edit in advanced generator →
                 </Button>
               </Link>
             </div>

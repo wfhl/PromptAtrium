@@ -626,7 +626,7 @@ export default function NewPromptGeneratorUI() {
       
       // Only set favorites set if not already set
       if (templateFavorites.size === 0 && savedTemplateFavorites) {
-        const parsedFavorites = new Set(JSON.parse(savedTemplateFavorites));
+        const parsedFavorites = new Set<string>(JSON.parse(savedTemplateFavorites));
         setTemplateFavorites(parsedFavorites);
       }
       
@@ -1334,28 +1334,29 @@ export default function NewPromptGeneratorUI() {
     // Set loading state to prevent modification tracking
     setIsLoadingPreset(true);
     
-    // Load character preset data into form from database columns
-    setValue('gender', preset.gender || '');
-    setValue('bodyTypes', preset.bodyType || '');
-    setValue('defaultTags', preset.defaultTag || '');
-    setValue('roles', preset.role || '');
-    setValue('hairstyles', preset.hairstyle || '');
-    setValue('hairColor', preset.hairColor || '');
-    setValue('eyeColor', preset.eyeColor || '');
-    setValue('makeup', preset.makeup || '');
-    setValue('skinTone', preset.skinTone || '');
-    setValue('clothing', preset.clothing || '');
-    setValue('additionalDetails', preset.additionalDetails || '');
-    setValue('loraDescription', preset.loraDescription || '');
+    // Load character preset data into form from data property
+    const data = preset.data || {};
+    setValue('gender', data.gender || '');
+    setValue('bodyTypes', data.bodyTypes || '');
+    setValue('defaultTags', data.defaultTags || '');
+    setValue('roles', data.roles || '');
+    setValue('hairstyles', data.hairstyles || '');
+    setValue('hairColor', data.hairColor || '');
+    setValue('eyeColor', data.eyeColor || '');
+    setValue('makeup', data.makeup || '');
+    setValue('skinTone', data.skinTone || '');
+    setValue('clothing', data.clothing || '');
+    setValue('additionalDetails', data.additionalDetails || '');
+    setValue('loraDescription', data.loraDescription || '');
     
-    // Load additional properties if they exist 
-    setValue('expression', (preset as any).expression || '');
-    setValue('accessories', (preset as any).accessories || '');
-    setValue('pose', (preset as any).pose || '');
+    // Load additional properties if they exist from data property
+    setValue('expression', data.expression || '');
+    setValue('accessories', data.accessories || '');
+    setValue('pose', data.pose || '');
     
     // If there's character_data JSON, prioritize that data (it's more complete)
-    if ((preset as any).character_data) {
-      const charData = (preset as any).character_data;
+    if (preset.character_data) {
+      const charData = preset.character_data;
       setValue('characterType', charData.characterType || '');
       setValue('expression', charData.expression || '');
       setValue('accessories', charData.accessories || '');
@@ -2771,7 +2772,7 @@ export default function NewPromptGeneratorUI() {
                                   label="Digital Art Form"
                                   options={digitalArtformOptions}
                                   value={watch('digitalArtform') || ""}
-                                  onChange={(value) => setValue('digitalArtform', value)}
+                                  onChange={(value) => setValue('digitalArtform', Array.isArray(value) ? value.join(', ') : value)}
                                   placeholder="Select digital art form"
                                 />
                               </div>
@@ -2831,8 +2832,7 @@ export default function NewPromptGeneratorUI() {
                       <NestedDetailedOptionsSection
                         categories={createDynamicCategories()}
                         values={detailedOptionValues}
-                        isMultiSelectMode={isMultiSelectMode}
-                        onChangeValue={(categoryName, subCategoryName, value) => {
+                        onChange={(categoryName, subCategoryName, value) => {
                           // Update the nested state
                           setDetailedOptionValues(prev => ({
                             ...prev,
@@ -3101,14 +3101,10 @@ export default function NewPromptGeneratorUI() {
                   {/* Aspect Ratio Calculator */}
                   <div className="mt-4">
                     <AspectRatioCalculator
-                      initialWidth={1024}
-                      initialHeight={1024}
-                      initialRatio="1:1"
-                      onChange={(data) => {
+                      onRatioSelect={(width, height) => {
                         // You can use the aspect ratio data here if needed
-                        console.log('Aspect ratio changed:', data);
+                        console.log('Aspect ratio changed:', { width, height });
                       }}
-                      className="w-full"
                     />
                   </div>
                 </div>
