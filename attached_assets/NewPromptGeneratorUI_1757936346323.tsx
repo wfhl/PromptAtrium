@@ -176,7 +176,7 @@ function Dropdown({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between glass-input rounded-md px-3 py-2.5 text-sm text-white hover:bg-purple-600/20 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-700"
+          className="w-full flex items-center justify-between bg-gray-900 bg-gradient-to-br from-purple-600/10 to-blue-600/10 border border-gray-700 rounded-md px-3 py-2.5 text-sm text-white hover:from-purple-600/20 hover:to-blue-600/20 focus:outline-none focus:ring-1 focus:ring-purple-700"
         >
           <span className="truncate pr-6">{displayText}</span>
           <ChevronDown className="h-4 w-4 opacity-70" />
@@ -626,7 +626,7 @@ export default function NewPromptGeneratorUI() {
       
       // Only set favorites set if not already set
       if (templateFavorites.size === 0 && savedTemplateFavorites) {
-        const parsedFavorites = new Set<string>(JSON.parse(savedTemplateFavorites));
+        const parsedFavorites = new Set(JSON.parse(savedTemplateFavorites));
         setTemplateFavorites(parsedFavorites);
       }
       
@@ -1334,29 +1334,28 @@ export default function NewPromptGeneratorUI() {
     // Set loading state to prevent modification tracking
     setIsLoadingPreset(true);
     
-    // Load character preset data into form from data property
-    const data = preset.data || {};
-    setValue('gender', data.gender || '');
-    setValue('bodyTypes', data.bodyTypes || '');
-    setValue('defaultTags', data.defaultTags || '');
-    setValue('roles', data.roles || '');
-    setValue('hairstyles', data.hairstyles || '');
-    setValue('hairColor', data.hairColor || '');
-    setValue('eyeColor', data.eyeColor || '');
-    setValue('makeup', data.makeup || '');
-    setValue('skinTone', data.skinTone || '');
-    setValue('clothing', data.clothing || '');
-    setValue('additionalDetails', data.additionalDetails || '');
-    setValue('loraDescription', data.loraDescription || '');
+    // Load character preset data into form from database columns
+    setValue('gender', preset.gender || '');
+    setValue('bodyTypes', preset.bodyType || '');
+    setValue('defaultTags', preset.defaultTag || '');
+    setValue('roles', preset.role || '');
+    setValue('hairstyles', preset.hairstyle || '');
+    setValue('hairColor', preset.hairColor || '');
+    setValue('eyeColor', preset.eyeColor || '');
+    setValue('makeup', preset.makeup || '');
+    setValue('skinTone', preset.skinTone || '');
+    setValue('clothing', preset.clothing || '');
+    setValue('additionalDetails', preset.additionalDetails || '');
+    setValue('loraDescription', preset.loraDescription || '');
     
-    // Load additional properties if they exist from data property
-    setValue('expression', data.expression || '');
-    setValue('accessories', data.accessories || '');
-    setValue('pose', data.pose || '');
+    // Load additional properties if they exist 
+    setValue('expression', (preset as any).expression || '');
+    setValue('accessories', (preset as any).accessories || '');
+    setValue('pose', (preset as any).pose || '');
     
     // If there's character_data JSON, prioritize that data (it's more complete)
-    if (preset.character_data) {
-      const charData = preset.character_data;
+    if ((preset as any).character_data) {
+      const charData = (preset as any).character_data;
       setValue('characterType', charData.characterType || '');
       setValue('expression', charData.expression || '');
       setValue('accessories', charData.accessories || '');
@@ -1624,14 +1623,22 @@ export default function NewPromptGeneratorUI() {
   
   // UI rendering
   return (
-    <>
-    <div className="w-full max-w-[1800px] mx-auto px-4 py-6">
+    <div className="max-w-none flex flex-col">
+      <div className="flex-1 flex justify-center">
+        <div className="container max-w-none mx-auto px-1 py-1">
+          {/* Title section styled to match Elite Prompt Generator */}
+          <div className="flex items-center justify-start mb-6 px-2 ">
+           
+          </div>
+
+          <div className="w-full space-y-6">
+
       
-      {/* Top Section - Subject and Additional Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className="glass-card">
-          <div className="flex items-center gap-2 mb-2">
-            <label className="section-label">Subject 🎨</label>
+      {/* Subject and Additional Details fields at the top (based on mockup) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <label className="text-sm text-gray-400">Subject</label>
             {jsonPromptData && (
               <Popover open={sparklePopoverOpen} onOpenChange={setSparklePopoverOpen}>
                 <PopoverTrigger asChild>
@@ -1676,57 +1683,76 @@ export default function NewPromptGeneratorUI() {
             )}
           </div>
           
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-purple-500/10 to-purple-900/00 z-20 focus:outline-none focus:ring-0" />
           <Textarea
             value={watch('subject') || ""}
             onChange={(e) => setValue('subject', e.target.value)}
             placeholder="Enter subject or main focus"
-            className="w-full glass-input rounded-lg p-3 focus:outline-none focus:ring-0"
-            rows={3}
+            className="bg-black/70 border-black z-20 relative focus:outline-none focus:ring-0 mt-[6px] mb-[6px]"
+            rows={1}
           />
+            <BorderBeam 
+              size={250} 
+              duration={6} 
+              borderWidth={4} 
+              colorFrom="#ffaa40" 
+              colorTo="#9c40ff" 
+            />
         </div>
+           </div>
         
-        <div className="glass-card">
-          <label className="section-label block mb-2">Additional Details</label>
-          <Textarea
-            value={watch('additionalDetails') || ""}
-            onChange={(e) => setValue('additionalDetails', e.target.value)}
-            placeholder="Enter additional details for the character or scene"
-            className="w-full glass-input rounded-lg p-3 focus:outline-none focus:ring-0"
-            rows={3}
-          />
+        <div>
+          <label className="text-sm text-gray-400 block mt-[4px] mb-[4px]">Additional Details</label>
+       
+           <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-purple-500/10 to-purple-900/00 z-20" />
+            <Textarea
+              value={watch('additionalDetails') || ""}
+              onChange={(e) => setValue('additionalDetails', e.target.value)}
+              placeholder="Enter additional details for the character or scene"
+              className="bg-black/70 border-black z-20 relative focus:outline-none focus:ring-0"
+              rows={1}
+            />
+            <BorderBeam 
+              size={250} 
+              duration={6} 
+              borderWidth={4} 
+              colorFrom="#ffaa40" 
+              colorTo="#9c40ff" 
+            />
+             </div>
         </div>
-      </div>
-      
-      {/* Main Three Column Layout with Resizable Panels */}
-      <div className="w-full" style={{ height: '70vh', minHeight: '600px' }}>
-        <PanelGroup direction="horizontal" className="flex h-full">
-          {/* Left Sidebar - Presets (20% default) */}
-          <Panel defaultSize={20} minSize={15} maxSize={30}>
-          <div className="h-full overflow-y-auto space-y-4 pr-2">
-            {/* Global Presets */}
-            <div className="glass-card">
-              <div className="flex items-center justify-between mb-4">
+          </div>
+      {/* Main Content Layout - Three Columns as per MOCKUP2.png */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Side - Presets columns - Global and Character side by side */}
+        <div className="lg:col-span-5">
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* Global Presets Section */}
+            <div>
+              <div className="flex items-center justify-between p-2 mb-2 bg-purple-900/50 rounded-lg border border-gray-800">
                 <div>
-                  <h3 className="heading-accent text-white">Global Presets</h3>
+                  <h3 className="text-base font-semibold">Global Presets</h3>
                   <p className="text-xs text-gray-400">All Parameter Settings</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsGlobalPresetsOpen(!isGlobalPresetsOpen)}
-                  className="h-6 w-6 p-0 hover:bg-purple-600/20 transition-colors"
+                  className="h-6 w-6 p-0 hover:bg-gray-800"
                 >
                   <ChevronDown className={cn("h-4 w-4 transition-transform", !isGlobalPresetsOpen && "-rotate-90")} />
                 </Button>
               </div>
               
-              <div className={cn("transition-all", isGlobalPresetsOpen ? "" : "h-0 overflow-hidden")}>
+              <div className={cn("bg-purple-900/10 rounded-lg border border-gray-800 overflow-hidden transition-all", isGlobalPresetsOpen ? "p-4" : "h-0 p-0 border-transparent")}>
                 <div className={cn("transition-opacity", isGlobalPresetsOpen ? "opacity-100" : "opacity-0")}>
                   <div className="mb-4">
                   <div className="flex items-center gap-1 w-full">
                     <ShimmerButton 
                       onClick={() => openGlobalPresetModal()}
-                      className="flex-1 h-7 p-0 btn-purple-grad text-white"
+                      className="flex-1 h-7 p-0 bg-blue-600 border-purple-500/20 text-white"
                       shimmerColor="#3b82f6"
                       borderRadius="4px"
                       title="New Global Preset"
@@ -2019,30 +2045,30 @@ export default function NewPromptGeneratorUI() {
               </div>
             </div>
             
-            {/* Character Presets */}
-            <div className="glass-card">
-              <div className="flex items-center justify-between mb-4">
+            {/* Character Presets Section */}
+            <div>
+              <div className="flex items-center justify-between p-2 mb-2 bg-purple-900/50 rounded-lg border border-gray-800">
                 <div>
-                  <h3 className="heading-accent text-white">Character Presets</h3>
+                  <h3 className="text-base font-semibold">Character Presets</h3>
                   <p className="text-xs text-gray-400">Character Only Settings</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsCharacterPresetsOpen(!isCharacterPresetsOpen)}
-                  className="h-6 w-6 p-0 hover:bg-purple-600/20 transition-colors"
+                  className="h-6 w-6 p-0 hover:bg-gray-800"
                 >
                   <ChevronDown className={cn("h-4 w-4 transition-transform", !isCharacterPresetsOpen && "-rotate-90")} />
                 </Button>
               </div>
               
-              <div className={cn("transition-all", isCharacterPresetsOpen ? "" : "h-0 overflow-hidden")}>
+              <div className={cn("bg-purple-900/10 rounded-lg border border-gray-800 overflow-hidden transition-all", isCharacterPresetsOpen ? "p-4" : "h-0 p-0 border-transparent")}>
                 <div className={cn("transition-opacity", isCharacterPresetsOpen ? "opacity-100" : "opacity-0")}>
                 <div className="mb-4">
                   <div className="flex items-center gap-1 w-full">
                     <ShimmerButton 
                       onClick={() => openCharacterPresetModal()}
-                      className="flex-1 h-7 p-0 btn-purple-grad"
+                      className="flex-1 h-7 p-0 bg-blue-600 border-purple-500/20"
                       shimmerColor="#3b82f6"
                       borderRadius="4px"
                       title="New"
@@ -2401,29 +2427,15 @@ export default function NewPromptGeneratorUI() {
               </div>
             </div>
           </div>
-        </Panel>
-        
-        {/* Resize Handle between Left and Middle */}
-        <PanelResizeHandle 
-          className="w-2 bg-purple-500/20 hover:bg-purple-500/50 active:bg-purple-500 transition-all duration-200 mx-1"
-          style={{ 
-            cursor: 'col-resize',
-            touchAction: 'none',
-            userSelect: 'none'
-          }}
-        />
-        
-        {/* Middle Content - Main Content (50% default) */}
-        <Panel defaultSize={50} minSize={30}>
-          <div className="h-full overflow-y-auto space-y-4 px-2">
+          
           {/* Prompt Settings */}
-          <div className="glass-card">
+          <div className="bg-gray-900 bg-gradient-to-br from-purple-900/20 to-blue-900/10 border border-purple-700/40 rounded-lg border border-gray-800 p-4 mb-6">
             <div 
               className="flex justify-between items-center mb-2"
             >
               <div className="flex items-center gap-3">
                 <h3 
-                  className="heading-accent text-white cursor-pointer"
+                  className="text-base font-semibold cursor-pointer"
                   onClick={() => setIsPromptSettingsOpen(!isPromptSettingsOpen)}
                 >
                   Prompt Settings
@@ -2434,8 +2446,8 @@ export default function NewPromptGeneratorUI() {
                     onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
                     className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
                       isMultiSelectMode 
-                        ? 'btn-purple-grad text-white' 
-                        : 'glass-input text-gray-400 hover:bg-purple-600/20 hover:text-white'
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
                     }`}
                     title={isMultiSelectMode ? 'Switch to single selection mode' : 'Switch to multi-selection mode'}
                   >
@@ -2563,7 +2575,7 @@ export default function NewPromptGeneratorUI() {
                         </p>
                       </div>
                       
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm text-gray-400 mb-1">Gender</label>
                           <SmartDropdown
@@ -2609,14 +2621,130 @@ export default function NewPromptGeneratorUI() {
                         </div>
                       </div>
                     </div>
-                    {/* Character appearance moved to right sidebar */}
+                    
+                    {/* Character Appearance Section - ORGANIZED IN YOUR SPECIFIED ORDER */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                        <Layers className="h-4 w-4" />
+                        Character Appearance
+                      </h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* 11. Hair Style - Position 11 in your order */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Hair Style</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={hairstylesOptions}
+                            value={watch('hairstyles') || ""}
+                            onChange={(value) => setValue('hairstyles', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select hair style"
+                          />
+                        </div>
+                        
+                        {/* 12. Hair Color - Position 12 in your order */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Hair Color</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={hairColorOptions}
+                            value={watch('hairColor') || ""}
+                            onChange={(value) => setValue('hairColor', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select hair color"
+                          />
+                        </div>
+                        
+                        {/* 13. Eye Color - Position 13 in your order */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Eye Color</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={eyeColorOptions}
+                            value={watch('eyeColor') || ""}
+                            onChange={(value) => setValue('eyeColor', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select eye color"
+                          />
+                        </div>
+                        
+                        {/* 14. Makeup - ALWAYS VISIBLE NOW (Position 14 in your order) */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Makeup</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={makeupOptions}
+                            value={watch('makeup') || ""}
+                            onChange={(value) => setValue('makeup', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select makeup style"
+                          />
+                        </div>
+                        
+                        {/* 15. Skin Tone - Position 15 in your order */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Skin Tone</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={skinToneOptions}
+                            value={watch('skinTone') || ""}
+                            onChange={(value) => setValue('skinTone', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select skin tone"
+                          />
+                        </div>
+                        
+                        {/* 16. Clothing - Position 16 in your order */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Clothing</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={clothingOptions}
+                            value={watch('clothing') || ""}
+                            onChange={(value) => setValue('clothing', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select clothing"
+                          />
+                        </div>
+                        
+                        {/* 17. Accessories - Position 17 in your order */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Accessories</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={stuffOptions}
+                            value={watch('accessories') || ""}
+                            onChange={(value) => setValue('accessories', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select accessories"
+                          />
+                        </div>
+                        
+                        {/* Additional fields that were in other sections */}
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Expression</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={expressionOptions}
+                            value={watch('expression') || ""}
+                            onChange={(value) => setValue('expression', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select expression"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Pose</label>
+                          <SmartDropdown
+                            isMultiSelectMode={isMultiSelectMode}
+                            options={poseOptions}
+                            value={watch('pose') || ""}
+                            onChange={(value) => setValue('pose', Array.isArray(value) ? value.join(', ') : value)}
+                            placeholder="Select pose"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
                 
                 {/* Scene Settings Tab Content */}
                 {activeTab === 'scene' && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm text-gray-400 mb-1">Location</label>
                         <SmartDropdown
@@ -2685,7 +2813,7 @@ export default function NewPromptGeneratorUI() {
                         Art Form
                       </h3>
                       
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
                           <SmartDropdown
                             isMultiSelectMode={isMultiSelectMode}
@@ -2786,7 +2914,7 @@ export default function NewPromptGeneratorUI() {
                                   label="Digital Art Form"
                                   options={digitalArtformOptions}
                                   value={watch('digitalArtform') || ""}
-                                  onChange={(value) => setValue('digitalArtform', Array.isArray(value) ? value.join(', ') : value)}
+                                  onChange={(value) => setValue('digitalArtform', value)}
                                   placeholder="Select digital art form"
                                 />
                               </div>
@@ -2846,7 +2974,8 @@ export default function NewPromptGeneratorUI() {
                       <NestedDetailedOptionsSection
                         categories={createDynamicCategories()}
                         values={detailedOptionValues}
-                        onChange={(categoryName, subCategoryName, value) => {
+                        isMultiSelectMode={isMultiSelectMode}
+                        onChangeValue={(categoryName, subCategoryName, value) => {
                           // Update the nested state
                           setDetailedOptionValues(prev => ({
                             ...prev,
@@ -2890,142 +3019,11 @@ export default function NewPromptGeneratorUI() {
               </>
             )}
           </div>
-          </div>
-        </Panel>
+        </div>
         
-        {/* Resize Handle between Middle and Right */}
-        <PanelResizeHandle 
-          className="w-2 bg-purple-500/20 hover:bg-purple-500/50 active:bg-purple-500 transition-all duration-200 mx-1"
-          style={{ 
-            cursor: 'col-resize',
-            touchAction: 'none',
-            userSelect: 'none'
-          }}
-        />
-        
-        {/* Right Sidebar - Character Appearance and Generation Controls (30% default) */}
-        <Panel defaultSize={30} minSize={20}>
-          <div className="h-full overflow-y-auto space-y-4 pl-2">
-          {/* Character Appearance */}
-          <div className="glass-card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="heading-accent text-white">Character Appearance</h3>
-              <Layers className="h-4 w-4 text-gray-400" />
-            </div>
-            
-            <div className="space-y-3">
-              {/* Hair Style */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Hair Style</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={hairstylesOptions}
-                  value={watch('hairstyles') || ""}
-                  onChange={(value) => setValue('hairstyles', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select hair style"
-                />
-              </div>
-              
-              {/* Hair Color */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Hair Color</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={hairColorOptions}
-                  value={watch('hairColor') || ""}
-                  onChange={(value) => setValue('hairColor', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select hair color"
-                />
-              </div>
-              
-              {/* Eye Color */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Eye Color</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={eyeColorOptions}
-                  value={watch('eyeColor') || ""}
-                  onChange={(value) => setValue('eyeColor', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select eye color"
-                />
-              </div>
-              
-              {/* Makeup */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Makeup</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={makeupOptions}
-                  value={watch('makeup') || ""}
-                  onChange={(value) => setValue('makeup', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select makeup style"
-                />
-              </div>
-              
-              {/* Skin Tone */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Skin Tone</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={skinToneOptions}
-                  value={watch('skinTone') || ""}
-                  onChange={(value) => setValue('skinTone', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select skin tone"
-                />
-              </div>
-              
-              {/* Clothing */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Clothing</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={clothingOptions}
-                  value={watch('clothing') || ""}
-                  onChange={(value) => setValue('clothing', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select clothing"
-                />
-              </div>
-              
-              {/* Accessories */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Accessories</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={stuffOptions}
-                  value={watch('accessories') || ""}
-                  onChange={(value) => setValue('accessories', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select accessories"
-                />
-              </div>
-              
-              {/* Expression */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Expression</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={expressionOptions}
-                  value={watch('expression') || ""}
-                  onChange={(value) => setValue('expression', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select expression"
-                />
-              </div>
-              
-              {/* Pose */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Pose</label>
-                <SmartDropdown
-                  isMultiSelectMode={isMultiSelectMode}
-                  options={poseOptions}
-                  value={watch('pose') || ""}
-                  onChange={(value) => setValue('pose', Array.isArray(value) ? value.join(', ') : value)}
-                  placeholder="Select pose"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Generation Controls and Output */}
-          <div className="glass-card">
+        {/* Right column - Generation Controls and Generated Prompt */}
+        <div className="lg:col-span-7">
+          <div className="mb-6">
             <PanelGroup direction="horizontal" className="gap-4">
               {/* Aspect Ratio & Seed Panel */}
               <Panel defaultSize={80} minSize={20}>
@@ -3127,10 +3125,14 @@ export default function NewPromptGeneratorUI() {
                   {/* Aspect Ratio Calculator */}
                   <div className="mt-4">
                     <AspectRatioCalculator
-                      onRatioSelect={(width, height) => {
+                      initialWidth={1024}
+                      initialHeight={1024}
+                      initialRatio="1:1"
+                      onChange={(data) => {
                         // You can use the aspect ratio data here if needed
-                        console.log('Aspect ratio changed:', { width, height });
+                        console.log('Aspect ratio changed:', data);
                       }}
+                      className="w-full"
                     />
                   </div>
                 </div>
@@ -3327,93 +3329,64 @@ export default function NewPromptGeneratorUI() {
           
           {/* Generate Button and Generated Prompt Section */}
           <div className="space-y-6">
-            {/* Generated Prompt Output Section */}
-            <div className="glass-card p-6 bg-gray-900 bg-gradient-to-br from-purple-900/20 to-blue-900/10 border border-purple-700/40 rounded-lg">
-              <div className="space-y-4">
-                {/* Generated Prompt Display */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-white font-medium block">Generated Prompt</label>
-                    {generatedPrompt && (
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(generatedPrompt.prompt);
-                          toast({
-                            title: "Copied!",
-                            description: "Prompt copied to clipboard",
-                            duration: 2000,
-                          });
-                        }}
-                        className="text-purple-400 hover:text-white transition-colors"
-                        data-testid="button-copy-prompt"
-                      >
-                        <CopyIcon className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                  <Textarea
-                    value={generatedPrompt?.prompt || ""}
-                    readOnly
-                    className="w-full glass-input bg-gray-800 bg-gradient-to-br from-purple-900/20 to-gray-800 rounded-lg p-3 min-h-[120px] resize-none border border-purple-800/30 text-purple-300 font-mono"
-                    placeholder="Your generated prompt will appear here..."
-                    data-testid="output-generated-prompt"
-                  />
-                </div>
-
-                {/* Negative Prompt Display */}
-                {generatedPrompt?.negativePrompt && (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-purple-400 text-sm font-medium block">Negative Prompt</label>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(generatedPrompt.negativePrompt || "");
-                          toast({
-                            title: "Copied!",
-                            description: "Negative prompt copied to clipboard",
-                            duration: 2000,
-                          });
-                        }}
-                        className="text-purple-400 hover:text-white transition-colors"
-                        data-testid="button-copy-negative"
-                      >
-                        <CopyIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <Textarea
-                      value={generatedPrompt.negativePrompt || ""}
-                      readOnly
-                      className="w-full glass-input bg-gray-800 bg-gradient-to-br from-purple-900/20 to-gray-800 rounded-lg p-3 min-h-[80px] resize-none border border-purple-800/30 text-purple-400 text-sm font-mono"
-                      placeholder="Negative prompt will appear here..."
-                      data-testid="output-negative-prompt"
-                    />
-                  </div>
+            <div className="flex justify-between items-center">
+              {false && <Button
+                className="px-6 py-5 text-base bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex gap-2 items-center"
+                onClick={generatePrompt}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5" />
+                    Generate Prompt
+                  </>
                 )}
-
-                {/* Generate Button */}
-                <Button
-                  className="w-full btn-purple-grad bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-4 rounded-lg text-lg font-semibold flex items-center justify-center gap-2 transition-all duration-300"
-                  onClick={generatePrompt}
-                  disabled={isGenerating}
-                  data-testid="button-generate-prompt"
-                >
-                  {isGenerating ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5" />
-                      Generate Prompt
-                    </>
-                  )}
-                </Button>
+              </Button>}
+              
+              <div className="text-right text-sm text-gray-400">
+                <div className="flex items-center justify-end">
+                  <Info className="h-4 w-4 mr-1" />
+                  <span>Ready</span>
+                </div>
               </div>
             </div>
+            
+            {false && generatedPrompt && (
+              <div className="bg-gray-900 bg-gradient-to-br from-purple-900/30 to-blue-900/10 rounded-lg border border-purple-700/50 p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-semibold text-white">Generated Prompt</h3>
+                  <div className="flex items-center space-x-2">
+                    <button className="text-purple-400 hover:text-white">
+                      <CopyIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-800 bg-gradient-to-br from-purple-900/20 to-gray-800 rounded-md p-3 text-sm text-purple-300 font-mono whitespace-pre-wrap mb-4 border border-purple-800/30">
+                  {generatedPrompt.prompt}
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-purple-400">Negative Prompt:</span>
+                    <button className="text-purple-400 hover:text-white">
+                      <CopyIcon className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
+                  <div className="bg-gray-800 bg-gradient-to-br from-purple-900/20 to-gray-800 rounded-md p-3 text-xs text-purple-400 font-mono whitespace-pre-wrap border border-purple-800/30">
+                    {generatedPrompt.negativePrompt || "No negative prompt generated"}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Enhanced Rule Template Processor */}
             <div className="mt-8 space-y-4">
@@ -3748,12 +3721,12 @@ setSelectedTemplates(prev => {
               </AnimatedCard>
             </div>
           </div>
-          </div>
-        </Panel>
-      </PanelGroup>
+        </div>
       </div>
-      
-      {/* Modals */}
+      </div>
+      </div>
+      </div>
+      {/* Custom Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmationModal.isOpen}
         onClose={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
@@ -3815,6 +3788,5 @@ setSelectedTemplates(prev => {
         />
       )}
     </div>
-    </>
   );
 }

@@ -465,3 +465,31 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   align-items: center;
   gap: 0.25rem;
 }
+
+/* Panel Resize Handle Styles */
+[data-panel-resize-handle-enabled] {
+  position: relative;
+  user-select: none;
+  touch-action: none;
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+[data-panel-resize-handle-enabled]:hover {
+  background-color: rgb(147 51 234 / 0.5) !important;
+}
+
+[data-panel-resize-handle-enabled]:active {
+  background-color: rgb(147 51 234) !important;
+}
+
+[data-panel-resize-handle-enabled][data-resize-handle-state="drag"] {
+  background-color: rgb(147 51 234) !important;
+}
+
+/* Ensure panel group has proper height */
+[data-panel-group] {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
