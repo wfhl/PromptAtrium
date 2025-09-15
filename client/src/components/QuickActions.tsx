@@ -28,7 +28,7 @@ export function QuickActions({
   return (
     <div data-testid="card-quick-actions">
       <h3 className="text-base md:text-xl font-semibold mb-2 md:mb-3">Quick Actions</h3>
-      <div className="grid grid-cols-4 gap-2 md:grid-cols-2 md:gap-2 lg:flex lg:flex-col lg:space-y-1">
+      <div className="grid grid-cols-4 gap-2 md:grid-cols-2 md:gap-2 lg:grid-cols-2 lg:gap-2 lg:space-y-0"></div>
         <Button
           variant="ghost"
           className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
