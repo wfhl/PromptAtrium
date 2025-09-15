@@ -157,6 +157,5 @@ export function QuickActions({
           </div>
         </Button>
       </div>
-    </div>
   );
 }

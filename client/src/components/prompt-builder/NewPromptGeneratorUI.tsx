@@ -1624,11 +1624,10 @@ export default function NewPromptGeneratorUI() {
   // UI rendering
   return (
     <>
-    <div className="w-full max-w-[1600px] mx-auto space-y-4">
-
+    <div className="w-full max-w-[1800px] mx-auto px-4 py-6">
       
       {/* Top Section - Subject and Additional Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="glass-card">
           <div className="flex items-center gap-2 mb-2">
             <label className="section-label">Subject 🎨</label>
@@ -1696,10 +1695,11 @@ export default function NewPromptGeneratorUI() {
           />
         </div>
       </div>
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        {/* Left Column - Presets (3 columns) */}
-        <div className="xl:col-span-3 space-y-4">
+      
+      {/* Main Three Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left Sidebar - Presets (2 columns) */}
+        <div className="lg:col-span-2 space-y-4">
             {/* Global Presets */}
             <div className="glass-card">
               <div className="flex items-center justify-between mb-4">
@@ -2397,10 +2397,12 @@ export default function NewPromptGeneratorUI() {
                 </div>
               </div>
             </div>
-          </div>
-          
+        </div>
+        
+        {/* Middle Content - Main Content (7 columns) */}
+        <div className="lg:col-span-7 space-y-4">
           {/* Prompt Settings */}
-          <div className="glass-card mb-6">
+          <div className="glass-card">
             <div 
               className="flex justify-between items-center mb-2"
             >
@@ -2546,7 +2548,7 @@ export default function NewPromptGeneratorUI() {
                         </p>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm text-gray-400 mb-1">Gender</label>
                           <SmartDropdown
@@ -2592,130 +2594,14 @@ export default function NewPromptGeneratorUI() {
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Character Appearance Section - ORGANIZED IN YOUR SPECIFIED ORDER */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                        <Layers className="h-4 w-4" />
-                        Character Appearance
-                      </h3>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* 11. Hair Style - Position 11 in your order */}
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Hair Style</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={hairstylesOptions}
-                            value={watch('hairstyles') || ""}
-                            onChange={(value) => setValue('hairstyles', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select hair style"
-                          />
-                        </div>
-                        
-                        {/* 12. Hair Color - Position 12 in your order */}
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Hair Color</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={hairColorOptions}
-                            value={watch('hairColor') || ""}
-                            onChange={(value) => setValue('hairColor', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select hair color"
-                          />
-                        </div>
-                        
-                        {/* 13. Eye Color - Position 13 in your order */}
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Eye Color</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={eyeColorOptions}
-                            value={watch('eyeColor') || ""}
-                            onChange={(value) => setValue('eyeColor', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select eye color"
-                          />
-                        </div>
-                        
-                        {/* 14. Makeup - ALWAYS VISIBLE NOW (Position 14 in your order) */}
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Makeup</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={makeupOptions}
-                            value={watch('makeup') || ""}
-                            onChange={(value) => setValue('makeup', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select makeup style"
-                          />
-                        </div>
-                        
-                        {/* 15. Skin Tone - Position 15 in your order */}
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Skin Tone</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={skinToneOptions}
-                            value={watch('skinTone') || ""}
-                            onChange={(value) => setValue('skinTone', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select skin tone"
-                          />
-                        </div>
-                        
-                        {/* 16. Clothing - Position 16 in your order */}
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Clothing</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={clothingOptions}
-                            value={watch('clothing') || ""}
-                            onChange={(value) => setValue('clothing', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select clothing"
-                          />
-                        </div>
-                        
-                        {/* 17. Accessories - Position 17 in your order */}
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Accessories</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={stuffOptions}
-                            value={watch('accessories') || ""}
-                            onChange={(value) => setValue('accessories', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select accessories"
-                          />
-                        </div>
-                        
-                        {/* Additional fields that were in other sections */}
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Expression</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={expressionOptions}
-                            value={watch('expression') || ""}
-                            onChange={(value) => setValue('expression', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select expression"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm text-gray-400 mb-1">Pose</label>
-                          <SmartDropdown
-                            isMultiSelectMode={isMultiSelectMode}
-                            options={poseOptions}
-                            value={watch('pose') || ""}
-                            onChange={(value) => setValue('pose', Array.isArray(value) ? value.join(', ') : value)}
-                            placeholder="Select pose"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    {/* Character appearance moved to right sidebar */}
                   </div>
                 )}
                 
                 {/* Scene Settings Tab Content */}
                 {activeTab === 'scene' && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm text-gray-400 mb-1">Location</label>
                         <SmartDropdown
@@ -2784,7 +2670,7 @@ export default function NewPromptGeneratorUI() {
                         Art Form
                       </h3>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
                           <SmartDropdown
                             isMultiSelectMode={isMultiSelectMode}
@@ -2992,9 +2878,128 @@ export default function NewPromptGeneratorUI() {
           </div>
         </div>
         
-        {/* Right column - Generation Controls and Generated Prompt */}
-        <div className="lg:col-span-7">
-          <div className="mb-6">
+        {/* Right Sidebar - Character Appearance and Generation Controls (3 columns) */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Character Appearance */}
+          <div className="glass-card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="heading-accent text-white">Character Appearance</h3>
+              <Layers className="h-4 w-4 text-gray-400" />
+            </div>
+            
+            <div className="space-y-3">
+              {/* Hair Style */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Hair Style</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={hairstylesOptions}
+                  value={watch('hairstyles') || ""}
+                  onChange={(value) => setValue('hairstyles', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select hair style"
+                />
+              </div>
+              
+              {/* Hair Color */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Hair Color</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={hairColorOptions}
+                  value={watch('hairColor') || ""}
+                  onChange={(value) => setValue('hairColor', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select hair color"
+                />
+              </div>
+              
+              {/* Eye Color */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Eye Color</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={eyeColorOptions}
+                  value={watch('eyeColor') || ""}
+                  onChange={(value) => setValue('eyeColor', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select eye color"
+                />
+              </div>
+              
+              {/* Makeup */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Makeup</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={makeupOptions}
+                  value={watch('makeup') || ""}
+                  onChange={(value) => setValue('makeup', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select makeup style"
+                />
+              </div>
+              
+              {/* Skin Tone */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Skin Tone</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={skinToneOptions}
+                  value={watch('skinTone') || ""}
+                  onChange={(value) => setValue('skinTone', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select skin tone"
+                />
+              </div>
+              
+              {/* Clothing */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Clothing</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={clothingOptions}
+                  value={watch('clothing') || ""}
+                  onChange={(value) => setValue('clothing', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select clothing"
+                />
+              </div>
+              
+              {/* Accessories */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Accessories</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={stuffOptions}
+                  value={watch('accessories') || ""}
+                  onChange={(value) => setValue('accessories', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select accessories"
+                />
+              </div>
+              
+              {/* Expression */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Expression</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={expressionOptions}
+                  value={watch('expression') || ""}
+                  onChange={(value) => setValue('expression', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select expression"
+                />
+              </div>
+              
+              {/* Pose */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Pose</label>
+                <SmartDropdown
+                  isMultiSelectMode={isMultiSelectMode}
+                  options={poseOptions}
+                  value={watch('pose') || ""}
+                  onChange={(value) => setValue('pose', Array.isArray(value) ? value.join(', ') : value)}
+                  placeholder="Select pose"
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Generation Controls and Output */}
+          <div className="glass-card">
             <PanelGroup direction="horizontal" className="gap-4">
               {/* Aspect Ratio & Seed Panel */}
               <Panel defaultSize={80} minSize={20}>
@@ -3785,6 +3790,7 @@ setSelectedTemplates(prev => {
           }}
         />
       )}
+    </div>
     </>
   );
 }
