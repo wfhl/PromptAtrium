@@ -40,7 +40,7 @@ export function QuickActions({
           </div>
           <div className="text-center md:text-left">
             <p className="text-xs md:text-base font-medium text-foreground">Prompt</p>
-            <p className="text-xs text-muted-foreground hidden md:block">Start with a blank prompt</p>
+            <p className="text-xs text-muted-foreground hidden md:block">Create a new prompt</p>
           </div>
         </Button>
 
@@ -55,7 +55,7 @@ export function QuickActions({
           </div>
           <div className="text-center md:text-left">
             <p className="text-xs md:text-base font-medium text-foreground">Collection</p>
-            <p className="text-xs text-muted-foreground hidden md:block">Organize related prompts</p>
+            <p className="text-xs text-muted-foreground hidden md:block">Organize prompts</p>
           </div>
         </Button>
 
