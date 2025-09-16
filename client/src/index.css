@@ -380,3 +380,45 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   background: rgba(255, 255, 255, 0.1) !important;
   color: white !important;
 }
+
+/* Custom scrollbar styles - minimize width and transparent background */
+::-webkit-scrollbar {
+  width: 6px; /* Half the typical width */
+  height: 6px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox scrollbar styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* For components that need specific scrollbar styling */
+.scroll-area [data-radix-scroll-area-scrollbar] {
+  width: 6px !important;
+}
+
+.scroll-area [data-radix-scroll-area-thumb] {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 3px !important;
+}
