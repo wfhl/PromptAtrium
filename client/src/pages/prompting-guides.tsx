@@ -62,7 +62,7 @@ const getTopicPillName = (title: string) => {
 
 export default function PromptingGuides() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("anatomy");
+  const [activeTab, setActiveTab] = useState("resources");
   const [, setLocation] = useLocation();
 
   // Filter guides based on search
@@ -193,6 +193,14 @@ export default function PromptingGuides() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-gray-900/50">
             <TabsTrigger 
+              value="resources" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-orange-500/20"
+              data-testid="tab-resources"
+            >
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Resources
+            </TabsTrigger>
+            <TabsTrigger 
               value="anatomy" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-teal-500/20"
               data-testid="tab-anatomy-guides"
@@ -207,14 +215,6 @@ export default function PromptingGuides() {
             >
               <Hash className="h-4 w-4 mr-2" />
               Syntax
-            </TabsTrigger>
-            <TabsTrigger 
-              value="resources" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-orange-500/20"
-              data-testid="tab-resources"
-            >
-              <Lightbulb className="h-4 w-4 mr-2" />
-              Resources
             </TabsTrigger>
           </TabsList>
 
