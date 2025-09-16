@@ -44,6 +44,17 @@ function Router() {
       setShowIntroModal(false);
     }
   }, [isAuthenticated, user]);
+
+  // Temporary: Add keyboard shortcut to show intro modal for testing
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === 'I' && isAuthenticated && user) {
+        setShowIntroModal(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isAuthenticated, user]);
   
   const handleIntroComplete = () => {
     setShowIntroModal(false);
