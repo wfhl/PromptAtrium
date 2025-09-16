@@ -569,10 +569,10 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   onChange={(e) => setFormData({ ...formData, promptContent: e.target.value })}
                   placeholder="Enter your prompt content here..."
                   rows={6}
-                  className="font-mono text-sm"
                   style={{
-                    background: 'linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), rgba(20, 83, 45, 0.1)'
+                    background: 'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), rgba(20, 83, 45, 0.8)'
                   }}
+                  className="font-mono text-sm bg-green-900/10"
                   required
                   data-testid="textarea-content"
                 />
@@ -733,6 +733,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               onChange={(e) => setFormData({ ...formData, negativePrompt: e.target.value })}
               placeholder="Things to avoid in the generation..."
               rows={3}
+              style={{
+                background: 'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), rgba(90, 20, 20, 0.8)'
+              }}
               className="font-mono text-s bg-red-900/10"
               data-testid="textarea-negative"
             />
