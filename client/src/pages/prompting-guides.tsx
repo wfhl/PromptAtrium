@@ -223,7 +223,7 @@ export default function PromptingGuides() {
             <div className="space-y-6">
               {/* Header */}
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-100 mb-2">Anatomy of a Great Prompt</h2>
+                <h2 className="text-3xl font-bold text-gray-100 mb-2">Anatomy of a Great Prompt</h2>
                 <p className="text-gray-400">Understanding the essential components that make up effective AI image prompts</p>
               </div>
 
@@ -292,7 +292,7 @@ export default function PromptingGuides() {
             <div className="space-y-6">
               {/* Header */}
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-100 mb-2">Stable Diffusion Syntax Guide</h2>
+                <h2 className="text-3xl font-bold text-gray-100 mb-2">Stable Diffusion Syntax Guide</h2>
                 <p className="text-gray-400">Master the special syntax and formatting techniques for better control</p>
               </div>
 
