@@ -642,7 +642,7 @@ export default function Dashboard() {
       
       {/* Create Collection Modal */}
       <Dialog open={createCollectionModalOpen} onOpenChange={setCreateCollectionModalOpen}>
-        <DialogContent>
+        <DialogContent className="backdrop-blur-md bg-transparent border-white/20">
           <DialogHeader>
             <DialogTitle>Create New Collection</DialogTitle>
           </DialogHeader>
