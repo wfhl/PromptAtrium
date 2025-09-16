@@ -622,7 +622,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -649,7 +649,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select prompt type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -676,7 +676,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select prompt style" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -820,7 +820,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select AI generator" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -847,7 +847,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select model" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
