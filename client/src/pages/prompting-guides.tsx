@@ -228,14 +228,14 @@ export default function PromptingGuides() {
               </div>
 
               {/* Topic Pills */}
-              <div className="flex flex-wrap gap-2 mb-8">
+              <div className="flex flex-wrap gap-2 mb-8 justify-center">
                 {filteredAnatomyGuides.map((guide) => {
                   const colorClass = getTopicColor(guide.title, true);
                   return (
                     <Badge
                       key={guide.id}
                       variant="outline"
-                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity text-sm px-4 py-2`}
+                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity text-xs px-3 py-1.5`}
                       data-testid={`pill-anatomy-${guide.id}`}
                       onClick={() => {
                         const element = document.getElementById(`anatomy-guide-${guide.id}`);
@@ -297,14 +297,14 @@ export default function PromptingGuides() {
               </div>
 
               {/* Topic Pills */}
-              <div className="flex flex-wrap gap-2 mb-8">
+              <div className="flex flex-wrap gap-2 mb-8 justify-center">
                 {filteredSyntaxGuides.map((guide) => {
                   const colorClass = getTopicColor(guide.title, false);
                   return (
                     <Badge
                       key={guide.id}
                       variant="outline"
-                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity text-sm px-4 py-2`}
+                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity text-xs px-3 py-1.5`}
                       data-testid={`pill-syntax-${guide.id}`}
                       onClick={() => {
                         const element = document.getElementById(`syntax-guide-${guide.id}`);
