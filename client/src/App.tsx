@@ -24,6 +24,9 @@ import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import InstallGuide from "@/pages/install-guide";
 import PromptDetail from "@/pages/prompt-detail";
 import PromptingGuides from "@/pages/prompting-guides";
+import GettingStarted from "@/pages/getting-started";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import TermsAndConditions from "@/pages/terms";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -89,6 +92,15 @@ function Router() {
         </Route>
         <Route path="/prompting-guides">
           {() => isAuthenticated ? <Layout><PromptingGuides /></Layout> : <PromptingGuides />}
+        </Route>
+        <Route path="/getting-started">
+          {() => isAuthenticated ? <Layout><GettingStarted /></Layout> : <GettingStarted />}
+        </Route>
+        <Route path="/privacy-policy">
+          {() => isAuthenticated ? <Layout><PrivacyPolicy /></Layout> : <PrivacyPolicy />}
+        </Route>
+        <Route path="/terms">
+          {() => isAuthenticated ? <Layout><TermsAndConditions /></Layout> : <TermsAndConditions />}
         </Route>
         <Route path="/invite/:code" component={Invite} />
         <Route path="/invite" component={Invite} />
