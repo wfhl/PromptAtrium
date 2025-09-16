@@ -567,13 +567,31 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                       <Alert className="border-green-500/50 bg-green-500/10">
                         <CheckCircle className="h-4 w-4 text-green-500" />
                         <AlertDescription>
-                          Install PromptAtrium as a PWA (Progressive Web App) for quick access and an app-like experience!
+                          Install PromptAtrium as a PWA (Progressive Web App) for quick access and an app-like experience! 
+                          <a 
+                            href="https://web.dev/progressive-web-apps/" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="underline text-green-400 ml-1"
+                          >
+                            Learn more about PWAs
+                          </a>
                         </AlertDescription>
                       </Alert>
                       
                       <div className="space-y-4">
                         <div>
-                          <h4 className="font-semibold mb-2 text-sm sm:text-base">Desktop (Chrome/Edge):</h4>
+                          <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                            Desktop (Chrome/Edge):
+                            <a 
+                              href="https://support.google.com/chrome/answer/9658361" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 ml-2 text-xs font-normal underline"
+                            >
+                              Official Guide
+                            </a>
+                          </h4>
                           <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm text-gray-300">
                             <li>Click the install icon in your browser's address bar</li>
                             <li>Or go to Settings → Apps → Install this site as an app</li>
@@ -582,7 +600,17 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                         </div>
                         
                         <div>
-                          <h4 className="font-semibold mb-2 text-sm sm:text-base">Mobile (iOS):</h4>
+                          <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                            Mobile (iOS):
+                            <a 
+                              href="https://support.apple.com/guide/iphone/bookmark-favorite-webpages-iph42ab2f3a7/ios" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 ml-2 text-xs font-normal underline"
+                            >
+                              Safari Guide
+                            </a>
+                          </h4>
                           <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm text-gray-300">
                             <li>Open PromptAtrium in Safari</li>
                             <li>Tap the Share button</li>
@@ -592,7 +620,17 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                         </div>
                         
                         <div>
-                          <h4 className="font-semibold mb-2 text-sm sm:text-base">Mobile (Android):</h4>
+                          <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                            Mobile (Android):
+                            <a 
+                              href="https://support.google.com/chrome/answer/9658361#zippy=%2Candroid" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 ml-2 text-xs font-normal underline"
+                            >
+                              Chrome Guide
+                            </a>
+                          </h4>
                           <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm text-gray-300">
                             <li>Open PromptAtrium in Chrome</li>
                             <li>Tap the menu button (three dots)</li>
