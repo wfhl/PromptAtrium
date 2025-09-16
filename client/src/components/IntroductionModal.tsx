@@ -57,7 +57,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [usernameMessage, setUsernameMessage] = useState("");
-  const [currentTab, setCurrentTab] = useState("guide");
+  const [currentTab, setCurrentTab] = useState("basic");
 
   const form = useForm<IntroFormData>({
     resolver: zodResolver(introSchema),
@@ -151,6 +151,24 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
   };
 
   const canSubmit = form.formState.isValid && usernameAvailable && !isCheckingUsername;
+  
+  // Tab navigation
+  const tabs = ['basic', 'guide', 'social', 'installation', 'privacy-policy', 'terms'];
+  const currentTabIndex = tabs.indexOf(currentTab);
+  const isLastTab = currentTabIndex === tabs.length - 1;
+  const isFirstTab = currentTabIndex === 0;
+  
+  const handleNextTab = () => {
+    if (!isLastTab) {
+      setCurrentTab(tabs[currentTabIndex + 1]);
+    }
+  };
+  
+  const handlePrevTab = () => {
+    if (!isFirstTab) {
+      setCurrentTab(tabs[currentTabIndex - 1]);
+    }
+  };
 
   // Allow closing the modal if user already has a username
   const canClose = user?.username ? true : false;
@@ -164,15 +182,15 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => {
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6" onPointerDownOutside={(e) => {
         // Only prevent closing on outside click if user doesn't have a username
         if (!canClose) {
           e.preventDefault();
         }
       }}>
         <DialogHeader>
-          <DialogTitle className="text-2xl">Welcome to PromptAtrium!</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl sm:text-2xl">Welcome to PromptAtrium!</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base">
             Your AI prompt creation and community hub. Let's get you started!
           </DialogDescription>
         </DialogHeader>
@@ -180,96 +198,51 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="guide" className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Getting Started
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
+                <TabsTrigger value="basic" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                  <User className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Profile Setup</span>
+                  <span className="sm:hidden">Profile</span>
                 </TabsTrigger>
-                <TabsTrigger value="basic" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Profile Setup
+                <TabsTrigger value="guide" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                  <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Getting Started</span>
+                  <span className="sm:hidden">Start</span>
                 </TabsTrigger>
-                <TabsTrigger value="social" className="flex items-center gap-2">
-                  <Link2 className="h-4 w-4" />
-                  Social Links
+                <TabsTrigger value="social" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                  <Link2 className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Social Links</span>
+                  <span className="sm:hidden">Social</span>
                 </TabsTrigger>
-                <TabsTrigger value="installation" className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Installation
+                <TabsTrigger value="installation" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                  <Globe className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Installation</span>
+                  <span className="sm:hidden">Install</span>
                 </TabsTrigger>
-                <TabsTrigger value="privacy-policy" className="flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  Privacy Policy
+                <TabsTrigger value="privacy-policy" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                  <Lock className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Privacy Policy</span>
+                  <span className="sm:hidden">Privacy</span>
                 </TabsTrigger>
-                <TabsTrigger value="terms" className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Terms
+                <TabsTrigger value="terms" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                  <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Terms</span>
+                  <span className="sm:hidden">Terms</span>
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="guide" className="space-y-4 mt-4">
                 <div className="space-y-6">
-                  {/* Username Section - Required */}
-                  <Alert className="border-purple-500 bg-purple-500/10">
-                    <AlertCircle className="h-4 w-4 text-purple-500" />
-                    <AlertDescription className="text-sm">
-                      <strong className="text-purple-400">First things first:</strong> Choose a unique username to get started. This is the only required field!
-                    </AlertDescription>
-                  </Alert>
-
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem className="border-2 border-purple-500/50 rounded-lg p-4 bg-purple-500/5">
-                        <FormLabel className="text-lg font-semibold flex items-center gap-2">
-                          <Sparkles className="h-5 w-5 text-purple-500" />
-                          Choose Your Username <span className="text-red-500 text-xl">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              {...field} 
-                              placeholder="Enter a unique username" 
-                              className={`text-lg py-6 ${usernameAvailable === false ? "pr-10 border-red-500" : usernameAvailable === true ? "pr-10 border-green-500" : "pr-10 border-purple-500/50"}`}
-                              data-testid="input-intro-username"
-                            />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              {isCheckingUsername && (
-                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                              )}
-                              {!isCheckingUsername && usernameAvailable === true && (
-                                <CheckCircle className="h-5 w-5 text-green-500" />
-                              )}
-                              {!isCheckingUsername && usernameAvailable === false && (
-                                <XCircle className="h-5 w-5 text-red-500" />
-                              )}
-                            </div>
-                          </div>
-                        </FormControl>
-                        {usernameMessage && (
-                          <p className={`text-sm mt-2 font-medium ${usernameAvailable ? "text-green-600" : "text-red-600"}`}>
-                            {usernameMessage}
-                          </p>
-                        )}
-                        <FormDescription className="text-sm mt-2">
-                          This will be your unique identifier on PromptAtrium. Choose wisely - it cannot be changed later!
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   {/* App Introduction */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                     <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Wand2 className="h-5 w-5 text-blue-500" />
+                      <CardHeader className="p-3 sm:p-4">
+                        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                          <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                           Creating Prompts & Collections
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-2 text-sm text-gray-300">
+                      <CardContent className="space-y-2 text-xs sm:text-sm text-gray-300 p-3 sm:p-4 pt-0 sm:pt-0">
                         <p><strong>Prompts:</strong> Create and save your AI generation prompts with model settings, negative prompts, and generated images.</p>
                         <p><strong>Collections:</strong> Organize related prompts into themed collections for easy access and sharing.</p>
                         <p>Use our Prompt Builder tool for guided creation or write directly in the editor!</p>
@@ -277,13 +250,13 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                     </Card>
 
                     <Card className="bg-gradient-to-br from-green-500/10 to-blue-500/10 border-green-500/30">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Users className="h-5 w-5 text-green-500" />
+                      <CardHeader className="p-3 sm:p-4">
+                        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                          <Users className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                           Community Features
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-2 text-sm text-gray-300">
+                      <CardContent className="space-y-2 text-xs sm:text-sm text-gray-300 p-3 sm:p-4 pt-0 sm:pt-0">
                         <p><strong>Explore:</strong> Discover prompts from other creators, sorted by popularity, recent, or categories.</p>
                         <p><strong>Follow:</strong> Follow creators whose style you love to see their latest work.</p>
                         <p><strong>Engage:</strong> Like and comment on prompts to show appreciation and provide feedback.</p>
@@ -291,13 +264,13 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                     </Card>
 
                     <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Bookmark className="h-5 w-5 text-purple-500" />
+                      <CardHeader className="p-3 sm:p-4">
+                        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                          <Bookmark className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                           Bookmarks & Forks
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-2 text-sm text-gray-300">
+                      <CardContent className="space-y-2 text-xs sm:text-sm text-gray-300 p-3 sm:p-4 pt-0 sm:pt-0">
                         <p><strong>Bookmark:</strong> Save prompts you love to your personal library for quick access later.</p>
                         <p><strong>Fork:</strong> Create your own version of any public prompt, customizing it while crediting the original creator.</p>
                         <p>Build your inspiration library and iterate on community ideas!</p>
@@ -305,13 +278,13 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                     </Card>
 
                     <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Lightbulb className="h-5 w-5 text-amber-500" />
+                      <CardHeader className="p-3 sm:p-4">
+                        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                          <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                           Resources & Tools
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-2 text-sm text-gray-300">
+                      <CardContent className="space-y-2 text-xs sm:text-sm text-gray-300 p-3 sm:p-4 pt-0 sm:pt-0">
                         <p><strong>Prompt Generator:</strong> AI-powered tool to create complex prompts from simple ideas.</p>
                         <p><strong>Flux Generator:</strong> Specialized tool for Flux model prompting.</p>
                         <p><strong>Guides:</strong> Comprehensive tutorials on prompt anatomy, syntax, and best practices.</p>
@@ -323,21 +296,65 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                   <Alert className="border-green-500/50 bg-green-500/10">
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     <AlertDescription className="text-sm">
-                      <strong>Ready to start?</strong> Enter your username above and click "Start Creating" to begin your journey, or explore the other tabs to complete your profile.
+                      <strong>Welcome to PromptAtrium!</strong> This guide will help you understand the platform's features and capabilities. Click "Next Page" to continue setting up your profile.
                     </AlertDescription>
                   </Alert>
                 </div>
               </TabsContent>
 
               <TabsContent value="basic" className="space-y-4 mt-4">
-                <Alert className="border-amber-500/50 bg-amber-500/10 mb-4">
-                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                {/* Username Section - Required */}
+                <Alert className="border-purple-500 bg-purple-500/10">
+                  <AlertCircle className="h-4 w-4 text-purple-500" />
                   <AlertDescription className="text-sm">
-                    <strong>Note:</strong> You've already set your username. Update your profile details below or skip to explore the app!
+                    <strong className="text-purple-400">Required:</strong> Choose a unique username to get started. You can fill in other profile details later.
                   </AlertDescription>
                 </Alert>
 
-                <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem className="border-2 border-purple-500/50 rounded-lg p-4 bg-purple-500/5">
+                      <FormLabel className="text-base md:text-lg font-semibold flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
+                        Choose Your Username <span className="text-red-500 text-lg md:text-xl">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            {...field} 
+                            placeholder="Enter a unique username" 
+                            className={`text-base md:text-lg py-4 md:py-6 ${usernameAvailable === false ? "pr-10 border-red-500" : usernameAvailable === true ? "pr-10 border-green-500" : "pr-10 border-purple-500/50"}`}
+                            data-testid="input-intro-username"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            {isCheckingUsername && (
+                              <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin text-muted-foreground" />
+                            )}
+                            {!isCheckingUsername && usernameAvailable === true && (
+                              <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
+                            )}
+                            {!isCheckingUsername && usernameAvailable === false && (
+                              <XCircle className="h-4 w-4 md:h-5 md:w-5 text-red-500" />
+                            )}
+                          </div>
+                        </div>
+                      </FormControl>
+                      {usernameMessage && (
+                        <p className={`text-xs md:text-sm mt-2 font-medium ${usernameAvailable ? "text-green-600" : "text-red-600"}`}>
+                          {usernameMessage}
+                        </p>
+                      )}
+                      <FormDescription className="text-xs md:text-sm mt-2">
+                        This will be your unique identifier on PromptAtrium. Choose wisely - it cannot be changed later!
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="firstName"
@@ -389,7 +406,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="birthday"
@@ -427,7 +444,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
               </TabsContent>
 
               <TabsContent value="social" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="instagramHandle"
@@ -511,13 +528,13 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
               <TabsContent value="installation" className="space-y-4 mt-4">
                 <div className="space-y-4">
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Globe className="h-5 w-5 text-blue-500" />
+                    <CardHeader className="p-4">
+                      <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                        <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                         Installing PromptAtrium
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 p-4 pt-0">
                       <Alert className="border-green-500/50 bg-green-500/10">
                         <CheckCircle className="h-4 w-4 text-green-500" />
                         <AlertDescription>
@@ -527,8 +544,8 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                       
                       <div className="space-y-4">
                         <div>
-                          <h4 className="font-semibold mb-2">Desktop (Chrome/Edge):</h4>
-                          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
+                          <h4 className="font-semibold mb-2 text-sm sm:text-base">Desktop (Chrome/Edge):</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm text-gray-300">
                             <li>Click the install icon in your browser's address bar</li>
                             <li>Or go to Settings → Apps → Install this site as an app</li>
                             <li>Click "Install" when prompted</li>
@@ -536,8 +553,8 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                         </div>
                         
                         <div>
-                          <h4 className="font-semibold mb-2">Mobile (iOS):</h4>
-                          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
+                          <h4 className="font-semibold mb-2 text-sm sm:text-base">Mobile (iOS):</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm text-gray-300">
                             <li>Open PromptAtrium in Safari</li>
                             <li>Tap the Share button</li>
                             <li>Scroll down and tap "Add to Home Screen"</li>
@@ -546,8 +563,8 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                         </div>
                         
                         <div>
-                          <h4 className="font-semibold mb-2">Mobile (Android):</h4>
-                          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
+                          <h4 className="font-semibold mb-2 text-sm sm:text-base">Mobile (Android):</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm text-gray-300">
                             <li>Open PromptAtrium in Chrome</li>
                             <li>Tap the menu button (three dots)</li>
                             <li>Tap "Install app" or "Add to Home screen"</li>
@@ -562,14 +579,14 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
 
               <TabsContent value="privacy-policy" className="space-y-4 mt-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Lock className="h-5 w-5 text-purple-500" />
+                  <CardHeader className="p-4">
+                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                      <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                       Privacy Policy
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-sm text-gray-300 space-y-3">
+                  <CardContent className="space-y-4 p-4 pt-0">
+                    <div className="text-xs sm:text-sm text-gray-300 space-y-3">
                       <p><strong>Data Collection:</strong> We collect minimal personal information necessary for providing our services, including your email, username, and profile information you choose to share.</p>
                       
                       <p><strong>Data Usage:</strong> Your data is used solely to provide and improve PromptAtrium's services. We never sell your personal information to third parties.</p>
@@ -587,7 +604,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                     
                     <Alert className="border-blue-500/50 bg-blue-500/10">
                       <AlertCircle className="h-4 w-4 text-blue-500" />
-                      <AlertDescription className="text-sm">
+                      <AlertDescription className="text-xs sm:text-sm">
                         For the full privacy policy, visit <a href="/privacy-policy" className="underline text-blue-400">Privacy Policy page</a>
                       </AlertDescription>
                     </Alert>
@@ -597,14 +614,14 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
 
               <TabsContent value="terms" className="space-y-4 mt-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-amber-500" />
+                  <CardHeader className="p-4">
+                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                      <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                       Terms & Conditions
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-sm text-gray-300 space-y-3">
+                  <CardContent className="space-y-4 p-4 pt-0">
+                    <div className="text-xs sm:text-sm text-gray-300 space-y-3">
                       <p><strong>Acceptance:</strong> By using PromptAtrium, you agree to these terms. If you disagree with any part, please discontinue use of our services.</p>
                       
                       <p><strong>Account Responsibility:</strong> You're responsible for maintaining the security of your account and all activities under your account.</p>
@@ -628,7 +645,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                     
                     <Alert className="border-amber-500/50 bg-amber-500/10">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
-                      <AlertDescription className="text-sm">
+                      <AlertDescription className="text-xs sm:text-sm">
                         For complete terms and conditions, visit <a href="/terms" className="underline text-amber-400">Terms & Conditions page</a>
                       </AlertDescription>
                     </Alert>
@@ -755,39 +772,69 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
               </TabsContent>
             </Tabs>
 
-            <DialogFooter className="flex justify-between">
+            <DialogFooter className="flex flex-col sm:flex-row justify-between gap-2">
+              {/* Left side - Skip button */}
               <Button 
                 type="button" 
                 variant="ghost"
                 onClick={() => {
-                  // Skip for now - just submit with username only
+                  // Skip introduction - just submit with username only
                   if (username && usernameAvailable) {
                     onSubmit(form.getValues());
                   }
                 }}
                 disabled={!username || !usernameAvailable || updateProfileMutation.isPending}
                 data-testid="button-intro-skip"
+                className="w-full sm:w-auto"
               >
-                Skip Profile Setup
+                Skip Introduction
               </Button>
-              <Button 
-                type="submit" 
-                disabled={!canSubmit || updateProfileMutation.isPending}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-                data-testid="button-intro-complete"
-              >
-                {updateProfileMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Start Creating
-                  </>
+              
+              {/* Right side - Navigation buttons */}
+              <div className="flex gap-2 w-full sm:w-auto">
+                {!isFirstTab && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handlePrevTab}
+                    disabled={updateProfileMutation.isPending}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    Previous
+                  </Button>
                 )}
-              </Button>
+                
+                {!isLastTab ? (
+                  <Button
+                    type="button"
+                    onClick={handleNextTab}
+                    disabled={currentTab === 'basic' && (!username || !usernameAvailable)}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 flex-1 sm:flex-initial"
+                    data-testid="button-intro-next"
+                  >
+                    Next Page
+                  </Button>
+                ) : (
+                  <Button 
+                    type="submit" 
+                    disabled={!canSubmit || updateProfileMutation.isPending}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 flex-1 sm:flex-initial"
+                    data-testid="button-intro-complete"
+                  >
+                    {updateProfileMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Start Creating
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </DialogFooter>
           </form>
         </Form>
