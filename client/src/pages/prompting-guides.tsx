@@ -235,7 +235,7 @@ export default function PromptingGuides() {
                     <Badge
                       key={guide.id}
                       variant="outline"
-                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity`}
+                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity text-sm px-4 py-2`}
                       data-testid={`pill-anatomy-${guide.id}`}
                       onClick={() => {
                         const element = document.getElementById(`anatomy-guide-${guide.id}`);
@@ -304,7 +304,7 @@ export default function PromptingGuides() {
                     <Badge
                       key={guide.id}
                       variant="outline"
-                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity`}
+                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity text-sm px-4 py-2`}
                       data-testid={`pill-syntax-${guide.id}`}
                       onClick={() => {
                         const element = document.getElementById(`syntax-guide-${guide.id}`);
