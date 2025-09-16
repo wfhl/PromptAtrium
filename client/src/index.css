@@ -441,8 +441,8 @@ body,
 
 /* Ensure all scrollable containers use the custom scrollbar */
 .overflow-auto, .overflow-y-auto, .overflow-x-auto,
+.overflow-y-scroll, .overflow-x-scroll,
 [data-radix-scroll-area-viewport] {
   scrollbar-width: thin;
-  scrollbar-color: rgba(100, 100, 100, 0.6) rgba(100, 100, 100, 0.6);
-  background: transparent !important;
+  scrollbar-color: rgba(100, 100, 100, 0.6) rgba(30, 30, 30, 0.5);
 }
