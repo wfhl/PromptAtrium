@@ -27,23 +27,24 @@ const formatContent = (content: string) => {
   return processedContent;
 };
 
-// Get color classes for topics
+// Get color classes for topics and cards
 const getTopicColor = (title: string, isAnatomy: boolean = false) => {
   if (isAnatomy) {
     if (title.includes("Subject")) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     if (title.includes("Scene") || title.includes("Environment")) return "bg-green-500/20 text-green-400 border-green-500/30";
-    if (title.includes("Style") || title.includes("Artistic")) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
-    if (title.includes("Details") || title.includes("Quality")) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-    if (title.includes("Lighting") || title.includes("Camera")) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
+    if (title.includes("Style") || title.includes("Medium")) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+    if (title.includes("Details") || title.includes("Textures")) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    if (title.includes("Lighting")) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
     if (title.includes("Color") || title.includes("Mood")) return "bg-pink-500/20 text-pink-400 border-pink-500/30";
-    if (title.includes("Composition")) return "bg-orange-500/20 text-orange-400 border-orange-500/30";
-    if (title.includes("Advanced") || title.includes("Modifiers")) return "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
+    if (title.includes("Camera") || title.includes("Composition")) return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+    if (title.includes("Action") || title.includes("Movement")) return "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
+    if (title.includes("Advanced") || title.includes("Modifiers")) return "bg-teal-500/20 text-teal-400 border-teal-500/30";
     return "bg-gray-500/20 text-gray-400 border-gray-500/30";
   }
   
   // Syntax colors
-  if (title.includes("Weight") || title.includes("Emphasis")) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
-  if (title.includes("Mixing") || title.includes("Blend")) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+  if (title.includes("Weight") || title.includes("Emphasizing")) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+  if (title.includes("Mixing") || title.includes("Blending")) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
   if (title.includes("Bracket") || title.includes("Attention")) return "bg-green-500/20 text-green-400 border-green-500/30";
   if (title.includes("Step") || title.includes("Scheduling")) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
   if (title.includes("Quality") || title.includes("Enhancement")) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
@@ -51,6 +52,27 @@ const getTopicColor = (title: string, isAnatomy: boolean = false) => {
   if (title.includes("SDXL")) return "bg-pink-500/20 text-pink-400 border-pink-500/30";
   if (title.includes("Trigger") || title.includes("Model")) return "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
   return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+};
+
+// Get the main color from the color class string
+const getMainColorFromClass = (colorClass: string): string => {
+  if (colorClass.includes("blue")) return "text-blue-400";
+  if (colorClass.includes("green")) return "text-green-400";
+  if (colorClass.includes("purple")) return "text-purple-400";
+  if (colorClass.includes("amber")) return "text-amber-400";
+  if (colorClass.includes("cyan")) return "text-cyan-400";
+  if (colorClass.includes("pink")) return "text-pink-400";
+  if (colorClass.includes("orange")) return "text-orange-400";
+  if (colorClass.includes("indigo")) return "text-indigo-400";
+  if (colorClass.includes("red")) return "text-red-400";
+  if (colorClass.includes("teal")) return "text-teal-400";
+  return "text-gray-400";
+};
+
+// Get card background color
+const getCardBgColor = (title: string, isAnatomy: boolean = false): string => {
+  const colorClass = getTopicColor(title, isAnatomy);
+  return colorClass.split(' ')[0]; // Returns the bg-color class
 };
 
 // Get simplified topic name for pills
@@ -62,7 +84,7 @@ const getTopicPillName = (title: string) => {
 
 export default function PromptingGuides() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("anatomy");
+  const [activeTab, setActiveTab] = useState("resources");
   const [, setLocation] = useLocation();
 
   // Filter guides based on search
@@ -193,6 +215,14 @@ export default function PromptingGuides() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-gray-900/50">
             <TabsTrigger 
+              value="resources" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-orange-500/20"
+              data-testid="tab-resources"
+            >
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Resources
+            </TabsTrigger>
+            <TabsTrigger 
               value="anatomy" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-teal-500/20"
               data-testid="tab-anatomy-guides"
@@ -208,14 +238,6 @@ export default function PromptingGuides() {
               <Hash className="h-4 w-4 mr-2" />
               Syntax
             </TabsTrigger>
-            <TabsTrigger 
-              value="resources" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-orange-500/20"
-              data-testid="tab-resources"
-            >
-              <Lightbulb className="h-4 w-4 mr-2" />
-              Resources
-            </TabsTrigger>
           </TabsList>
 
           {/* Anatomy Tab Content */}
@@ -229,16 +251,25 @@ export default function PromptingGuides() {
 
               {/* Topic Pills */}
               <div className="flex flex-wrap gap-2 mb-8">
-                {filteredAnatomyGuides.map((guide) => (
-                  <Badge
-                    key={guide.id}
-                    variant="outline"
-                    className={`${getTopicColor(guide.title, true)} border cursor-pointer hover:opacity-80 transition-opacity`}
-                    data-testid={`pill-anatomy-${guide.id}`}
-                  >
-                    {getTopicPillName(guide.title)}
-                  </Badge>
-                ))}
+                {filteredAnatomyGuides.map((guide) => {
+                  const colorClass = getTopicColor(guide.title, true);
+                  const textColor = getMainColorFromClass(colorClass);
+                  return (
+                    <a
+                      key={guide.id}
+                      href={`#anatomy-guide-${guide.id}`}
+                      className="no-underline"
+                    >
+                      <Badge
+                        variant="outline"
+                        className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity`}
+                        data-testid={`pill-anatomy-${guide.id}`}
+                      >
+                        <span className={textColor}>{getTopicPillName(guide.title)}</span>
+                      </Badge>
+                    </a>
+                  );
+                })}
               </div>
 
               {/* All Anatomy Guides */}
@@ -252,19 +283,29 @@ export default function PromptingGuides() {
                     </CardContent>
                   </Card>
                 ) : (
-                  filteredAnatomyGuides.map((guide) => (
-                    <Card key={guide.id} className="bg-gray-900/30 border-gray-800" data-testid={`card-anatomy-guide-${guide.id}`}>
-                      <CardHeader className="border-b border-gray-800">
-                        <CardTitle className="text-xl text-gray-100">{guide.title}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-6">
-                        <div 
-                          className="prose prose-invert max-w-none"
-                          dangerouslySetInnerHTML={{ __html: formatContent(guide.content) }}
-                        />
-                      </CardContent>
-                    </Card>
-                  ))
+                  filteredAnatomyGuides.map((guide) => {
+                    const cardBgColor = getCardBgColor(guide.title, true);
+                    const colorClass = getTopicColor(guide.title, true);
+                    const textColor = getMainColorFromClass(colorClass);
+                    return (
+                      <Card 
+                        key={guide.id} 
+                        id={`anatomy-guide-${guide.id}`}
+                        className={`${cardBgColor} border-gray-800`} 
+                        data-testid={`card-anatomy-guide-${guide.id}`}
+                      >
+                        <CardHeader className="border-b border-gray-800">
+                          <CardTitle className={`text-xl ${textColor}`}>{guide.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <div 
+                            className="prose prose-invert max-w-none"
+                            dangerouslySetInnerHTML={{ __html: formatContent(guide.content) }}
+                          />
+                        </CardContent>
+                      </Card>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -281,16 +322,25 @@ export default function PromptingGuides() {
 
               {/* Topic Pills */}
               <div className="flex flex-wrap gap-2 mb-8">
-                {filteredSyntaxGuides.map((guide) => (
-                  <Badge
-                    key={guide.id}
-                    variant="outline"
-                    className={`${getTopicColor(guide.title, false)} border cursor-pointer hover:opacity-80 transition-opacity`}
-                    data-testid={`pill-syntax-${guide.id}`}
-                  >
-                    {getTopicPillName(guide.title)}
-                  </Badge>
-                ))}
+                {filteredSyntaxGuides.map((guide) => {
+                  const colorClass = getTopicColor(guide.title, false);
+                  const textColor = getMainColorFromClass(colorClass);
+                  return (
+                    <a
+                      key={guide.id}
+                      href={`#syntax-guide-${guide.id}`}
+                      className="no-underline"
+                    >
+                      <Badge
+                        variant="outline"
+                        className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity`}
+                        data-testid={`pill-syntax-${guide.id}`}
+                      >
+                        <span className={textColor}>{getTopicPillName(guide.title)}</span>
+                      </Badge>
+                    </a>
+                  );
+                })}
               </div>
 
               {/* All Syntax Guides */}
@@ -304,19 +354,29 @@ export default function PromptingGuides() {
                     </CardContent>
                   </Card>
                 ) : (
-                  filteredSyntaxGuides.map((guide) => (
-                    <Card key={guide.id} className="bg-gray-900/30 border-gray-800" data-testid={`card-syntax-guide-${guide.id}`}>
-                      <CardHeader className="border-b border-gray-800">
-                        <CardTitle className="text-xl text-gray-100">{guide.title}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-6">
-                        <div 
-                          className="prose prose-invert max-w-none"
-                          dangerouslySetInnerHTML={{ __html: formatContent(guide.content) }}
-                        />
-                      </CardContent>
-                    </Card>
-                  ))
+                  filteredSyntaxGuides.map((guide) => {
+                    const cardBgColor = getCardBgColor(guide.title, false);
+                    const colorClass = getTopicColor(guide.title, false);
+                    const textColor = getMainColorFromClass(colorClass);
+                    return (
+                      <Card 
+                        key={guide.id} 
+                        id={`syntax-guide-${guide.id}`}
+                        className={`${cardBgColor} border-gray-800`} 
+                        data-testid={`card-syntax-guide-${guide.id}`}
+                      >
+                        <CardHeader className="border-b border-gray-800">
+                          <CardTitle className={`text-xl ${textColor}`}>{guide.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <div 
+                            className="prose prose-invert max-w-none"
+                            dangerouslySetInnerHTML={{ __html: formatContent(guide.content) }}
+                          />
+                        </CardContent>
+                      </Card>
+                    );
+                  })
                 )}
               </div>
             </div>
