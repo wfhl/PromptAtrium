@@ -403,8 +403,8 @@ body::-webkit-scrollbar-track,
 html::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb,
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border-radius: 3px !important;
+  background: transparent !important;
+  border-radius: 0 !important;
   border: none !important;
   transition: background-color 0.2s ease;
 }
@@ -412,7 +412,7 @@ body::-webkit-scrollbar-thumb,
 html::-webkit-scrollbar-thumb:hover,
 body::-webkit-scrollbar-thumb:hover,
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25) !important;
+  background: transparent !important;
 }
 
 html::-webkit-scrollbar-corner,
@@ -430,12 +430,12 @@ body::-webkit-scrollbar-button,
   background: transparent !important;
 }
 
-/* Firefox scrollbar styles - slightly visible thumb */
+/* Firefox scrollbar styles - completely transparent */
 html,
 body,
 * {
-  scrollbar-width: thin !important;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent !important;
+  scrollbar-width: none !important;
+  scrollbar-color: transparent transparent !important;
 }
 
 /* For components that need specific scrollbar styling */

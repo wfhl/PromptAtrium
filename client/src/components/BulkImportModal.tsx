@@ -1962,7 +1962,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         onOpenChange(newOpen);
         if (!newOpen) resetModal();
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] backdrop-blur-md bg-transparent overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Bulk Import Prompts</DialogTitle>
           </DialogHeader>
