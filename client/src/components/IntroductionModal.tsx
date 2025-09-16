@@ -365,7 +365,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                         <Textarea 
                           {...field} 
                           placeholder="Tell us about yourself..."
-                          className="min-h-[100px]"
+                          className="min-h-[100px] bg-black"
                           data-testid="textarea-intro-bio"
                         />
                       </FormControl>
@@ -418,6 +418,18 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
+                    name="instagramHandle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instagram</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="@username" data-testid="input-intro-instagram" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="twitterHandle"
                     render={({ field }) => (
                       <FormItem>
@@ -455,18 +467,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="instagramHandle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Instagram</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="@username" data-testid="input-intro-instagram" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                
                 </div>
               </TabsContent>
 
