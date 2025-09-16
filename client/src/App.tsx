@@ -25,7 +25,7 @@ import InstallGuide from "@/pages/install-guide";
 import PromptDetail from "@/pages/prompt-detail";
 import PromptingGuides from "@/pages/prompting-guides";
 import PromptGenerator from "@/pages/prompt-generator";
-import NewPromptGenerator from "@/pages/new-prompt-generator";
+import NewPromptGenerator from "../components/PROMPTGENERATOR/frontend/pages/NewPromptGenerator";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
