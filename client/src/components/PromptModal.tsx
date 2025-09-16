@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -545,69 +546,77 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-1">
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-            <div>
-              <Label htmlFor="name" className="text-purple-400">Prompt Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter a descriptive name..."
-                required
-                data-testid="input-name"
-              />
-            </div>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Prompt Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label htmlFor="name" className="text-purple-400">Prompt Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter a descriptive name..."
+                  required
+                  data-testid="input-name"
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="collection" className="text-orange-400">Collection</Label>
-              <Select value={formData.collectionId} onValueChange={(value) => {
-                if (value === "create-new") {
-                  setShowCreateCollection(true);
-                } else {
-                  setFormData({ ...formData, collectionId: value });
-                }
-              }}>
-                <SelectTrigger data-testid="select-collection">
-                  <SelectValue placeholder="Select collection" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="create-new" className="text-pink-300 font-medium">
-                    <div className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Create New Collection
-                    </div>
-                  </SelectItem>
-                  {optimisticCollections.map((collection) => (
-                    <SelectItem key={`optimistic-${collection.id}`} value={collection.id}>
-                      {collection.name}
+              <div>
+                <Label htmlFor="collection" className="text-orange-400">Collection</Label>
+                <Select value={formData.collectionId} onValueChange={(value) => {
+                  if (value === "create-new") {
+                    setShowCreateCollection(true);
+                  } else {
+                    setFormData({ ...formData, collectionId: value });
+                  }
+                }}>
+                  <SelectTrigger data-testid="select-collection">
+                    <SelectValue placeholder="Select collection" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="create-new" className="text-pink-300 font-medium">
+                      <div className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Create New Collection
+                      </div>
                     </SelectItem>
-                  ))}
-                  {collections?.filter(collection => 
-                    !optimisticCollections.some(opt => opt.id === collection.id)
-                  ).map((collection) => (
-                    <SelectItem key={collection.id} value={collection.id}>
-                      {collection.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
-              <Textarea
-                id="promptContent"
-                value={formData.promptContent}
-                onChange={(e) => setFormData({ ...formData, promptContent: e.target.value })}
-                placeholder="Enter your prompt content here..."
-                rows={6}
-                className="font-mono text-sm"
-                required
-                data-testid="textarea-content"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Use descriptive language for best results</p>
-            </div>
+                    {optimisticCollections.map((collection) => (
+                      <SelectItem key={`optimistic-${collection.id}`} value={collection.id}>
+                        {collection.name}
+                      </SelectItem>
+                    ))}
+                    {collections?.filter(collection => 
+                      !optimisticCollections.some(opt => opt.id === collection.id)
+                    ).map((collection) => (
+                      <SelectItem key={collection.id} value={collection.id}>
+                        {collection.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
+                <Textarea
+                  id="promptContent"
+                  value={formData.promptContent}
+                  onChange={(e) => setFormData({ ...formData, promptContent: e.target.value })}
+                  placeholder="Enter your prompt content here..."
+                  rows={6}
+                  className="font-mono text-sm"
+                  required
+                  data-testid="textarea-content"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Use descriptive language for best results</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <Label htmlFor="category">Category</Label>
@@ -691,16 +700,20 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             </div>
           </div>
             </div>
-          <div>
-            <Label>Example Images</Label>
-            <PromptImageUploader
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-pink-400">Example Images</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PromptImageUploader
               currentImages={formData.exampleImages}
               onImagesUpdate={(imageUrls) => setFormData(prevFormData => ({ ...prevFormData, exampleImages: imageUrls }))}
               maxImages={10}
               className="mt-2"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Upload up to 10 example images to showcase your prompt results</p>
-          </div>
+              />
+              <p className="text-xs text-muted-foreground mt-1">Upload up to 10 example images to showcase your prompt results</p>
+            </CardContent>
+          </Card>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="nsfw"
