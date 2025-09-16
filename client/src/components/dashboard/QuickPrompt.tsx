@@ -98,7 +98,7 @@ export function QuickPrompt() {
           </div>
           <Link href="/new-prompt-generator">
             <Button variant="ghost" size="sm" className="gap-1" data-testid="button-open-full-generator">
-              Advanced Generator
+              Elite Prompt Generator
               <ExternalLink className="h-3 w-3" />
             </Button>
           </Link>
