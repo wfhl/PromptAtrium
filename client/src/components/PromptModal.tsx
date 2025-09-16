@@ -569,7 +569,10 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   onChange={(e) => setFormData({ ...formData, promptContent: e.target.value })}
                   placeholder="Enter your prompt content here..."
                   rows={6}
-                  className="font-mono text-sm bg-black/30 bg-black/30 bg-green-900/10"
+                  className="font-mono text-sm"
+                  style={{
+                    background: 'linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), rgba(20, 83, 45, 0.1)'
+                  }}
                   required
                   data-testid="textarea-content"
                 />
