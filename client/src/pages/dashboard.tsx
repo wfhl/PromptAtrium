@@ -19,7 +19,6 @@ import { QuickActions } from "@/components/QuickActions";
 import { BulkImportModal } from "@/components/BulkImportModal";
 import { StatsCard } from "@/components/StatsCard";
 import { CollectionItem } from "@/components/CollectionItem";
-import { QuickPrompt } from "@/components/dashboard/QuickPrompt";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -422,11 +421,6 @@ export default function Dashboard() {
             onStartProject={handleStartProject}
             onImportPrompts={handleImportPrompts}
           />
-        </div>
-
-        {/* Quick Prompt Generator - Full width */}
-        <div className="mb-6 md:mb-8">
-          <QuickPrompt />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4 lg:gap-8">

@@ -12,8 +12,6 @@ import { z } from "zod";
 import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
 import { devStorage } from "./devStorage";
 import aiAnalyzerRouter from "./routes/aiAnalyzer";
-import { promptTemplateRoutes } from "./routes/prompt-templates";
-import { promptGeneratorRoutes } from "./routes/prompt-generator";
 
 // Helper function to resolve public image URLs for development
 // ONLY affects development mode - production URLs pass through unchanged
@@ -2758,25 +2756,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register AI analyzer routes
   app.use(aiAnalyzerRouter);
-
-  // Register prompt template routes
-  promptTemplateRoutes(app, storage);
-  
-  // Register prompt generator routes
-  promptGeneratorRoutes(app);
-
-  // Add simplified /api/prompt-components endpoint for backward compatibility
-  app.get('/api/prompt-components', async (req, res) => {
-    try {
-      const components = await storage.getPromptGeneratorComponents({
-        limit: 1000 // Get a reasonable amount of components
-      });
-      res.json(components);
-    } catch (error) {
-      console.error("Error fetching prompt components:", error);
-      res.status(500).json({ error: "Failed to fetch prompt components" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;
