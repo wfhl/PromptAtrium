@@ -547,7 +547,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         <form onSubmit={handleSubmit} className="space-y-6 pt-1">
           <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <div>
-              <Label htmlFor="name">Prompt Name *</Label>
+              <Label htmlFor="name" className="text-purple-400">Prompt Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -559,7 +559,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             </div>
 
             <div>
-              <Label htmlFor="collection">Collection</Label>
+              <Label htmlFor="collection" className="text-orange-400">Collection</Label>
               <Select value={formData.collectionId} onValueChange={(value) => {
                 if (value === "create-new") {
                   setShowCreateCollection(true);
@@ -595,7 +595,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             </div>
             
             <div>
-              <Label htmlFor="promptContent">Prompt Content *</Label>
+              <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
               <Textarea
                 id="promptContent"
                 value={formData.promptContent}
@@ -622,6 +622,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -648,6 +649,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select prompt type" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -674,6 +676,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select prompt style" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -703,6 +706,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               id="nsfw"
               checked={formData.isNsfw}
               onCheckedChange={(checked) => setFormData({ ...formData, isNsfw: !!checked })}
+              className="border-pink-400"
               data-testid="checkbox-nsfw"
             />
             <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -711,7 +715,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           </div>
 
           <div>
-            <Label htmlFor="negativePrompt">Negative Prompt (Optional)</Label>
+            <Label htmlFor="negativePrompt" className="text-red-400">Negative Prompt (Optional)</Label>
             <Textarea
               id="negativePrompt"
               value={formData.negativePrompt}
@@ -816,6 +820,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select AI generator" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -842,6 +847,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select model" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">None</SelectItem>
                   <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -860,7 +866,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
 
         
           <div>
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes" className="text-yellow-400">Notes</Label>
             <Textarea
               id="notes"
               value={formData.notes}
