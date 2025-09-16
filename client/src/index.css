@@ -229,12 +229,12 @@
 /* Semi-transparent purple dropdown menu styles */
 [data-radix-popper-content-wrapper] [role="menu"],
 [data-radix-popper-content-wrapper] .dropdown-menu-content {
-  background: rgba(139, 92, 246, 0.1) !important;
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgb(2, 142, 198, 0.3) 0%, rgb(104, 81, 200, 0.3) !important;
+  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  border: 1px solid rgba(59, 40, 103, 0.5) !important;
   color: white !important;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 8px 32px rgba(59, 40, 103, 0.5);
 }
 
 /* Dropdown menu items */
@@ -262,28 +262,28 @@
 
 /* Semi-transparent purple mobile navigation menu styles */
 .mobile-nav-dropdown {
-  background: rgba(139, 92, 246, 0.08) !important;
+  background: rgba(59, 40, 103, 0.5) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(139, 92, 246, 0.2) !important;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(59, 40, 103, 0.5) !important;
+  box-shadow: 0 8px 32px rgba(59, 40, 103, 0.5);
 }
 
 /* Mobile hamburger menu background */
 .md\:hidden.bg-gray-900\/30 {
-  background: rgba(139, 92, 246, 0.8) !important;
+  background: rgba(13959, 40, 103, 0.5) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.4) !important;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+  border-bottom: 1px solid rgba(59, 40, 103, 0.5) !important;
+  box-shadow: 0 8px 32px rgba(59, 40, 103, 0.5);
 }
 
 .md\:hidden.bg-gray-900\/70 {
-  background: rgba(139, 92, 246, 0.8) !important;
+  background: rgba(59, 40, 103, 0.5) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.4) !important;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+  border-bottom: 1px solid rgba(59, 40, 103, 0.5) !important;
+  box-shadow: 0 8px 32px rgba(59, 40, 103, 0.5);
 }
 
 /* Direct mobile navigation container */
