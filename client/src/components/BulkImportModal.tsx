@@ -1323,7 +1323,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         </div>
 
         {file && (
-          <div className="p-4 bg-muted rounded-lg">
+          <div className="p-4 backdrop-blur-md bg-transparent rounded-lg">
             <div className="flex items-center space-x-2">
               <FileText className="h-4 w-4" />
               <span className="font-medium">{file.name}</span>
@@ -1452,7 +1452,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
             </p>
           </div>
 
-          <Card className="bg-muted/50">
+          <Card className="backdrop-blur-md bg-transparent">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Supported Formats</CardTitle>
             </CardHeader>
@@ -1476,7 +1476,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
   );
 
   const renderPreviewStep = () => (
-    <div className="space-y-4">
+    <div className="space-y-4 ">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Preview Import Data</h3>
         <Badge variant="secondary">{parsedData.length} prompts found</Badge>
