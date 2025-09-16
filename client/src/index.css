@@ -381,40 +381,29 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   color: white !important;
 }
 
-/* Custom scrollbar styles - minimize width and transparent background */
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
-*::-webkit-scrollbar {
-  width: 6px !important;
-  height: 6px !important;
-  background: transparent !important;
+/* Custom scrollbar styles - consistent across all pages and modals */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
 }
 
-html::-webkit-scrollbar-track,
-body::-webkit-scrollbar-track,
-*::-webkit-scrollbar-track {
-  background: transparent !important;
-  border-radius: 3px;
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 4px;
 }
 
-html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb,
-*::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 3px;
+::-webkit-scrollbar-thumb {
+  background: rgba(155, 155, 155, 0.3) !important;
+  border-radius: 4px;
   transition: background-color 0.2s ease;
 }
 
-html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover,
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 155, 155, 0.5) !important;
 }
 
-html::-webkit-scrollbar-corner,
-body::-webkit-scrollbar-corner,
-*::-webkit-scrollbar-corner {
-  background: transparent !important;
+::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Firefox scrollbar styles */
@@ -422,23 +411,27 @@ html,
 body,
 * {
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent !important;
+  scrollbar-color: rgba(155, 155, 155, 0.3) rgba(0, 0, 0, 0.1) !important;
 }
 
-/* For components that need specific scrollbar styling */
+/* For Radix UI scroll areas */
 .scroll-area [data-radix-scroll-area-scrollbar] {
-  width: 6px !important;
-  background: transparent !important;
+  width: 8px !important;
 }
 
 .scroll-area [data-radix-scroll-area-thumb] {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 3px !important;
+  background: rgba(155, 155, 155, 0.3) !important;
+  border-radius: 4px !important;
+  transition: background-color 0.2s ease;
+}
+
+.scroll-area [data-radix-scroll-area-thumb]:hover {
+  background: rgba(155, 155, 155, 0.5) !important;
 }
 
 /* Ensure all scrollable containers use the custom scrollbar */
 .overflow-auto, .overflow-y-auto, .overflow-x-auto,
 [data-radix-scroll-area-viewport] {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: rgba(155, 155, 155, 0.3) rgba(0, 0, 0, 0.1);
 }
