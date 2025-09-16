@@ -1140,16 +1140,7 @@ export interface Resource {
 
 export const PROMPT_RESOURCES: Resource[] = [
   // Tutorials & Guides
-  {
-    id: "midjourney-docs",
-    title: "Midjourney Documentation",
-    description: "Official documentation for Midjourney's advanced prompting features and parameters",
-    url: "https://docs.midjourney.com",
-    category: "tutorials",
-    icon: "book",
-    isFavorite: true
-  },
-  {
+   {
     id: "sd-prompt-guide",
     title: "Stable Diffusion Prompt Guide",
     description: "Comprehensive guide to prompting in Stable Diffusion with examples and best practices",
@@ -1164,6 +1155,15 @@ export const PROMPT_RESOURCES: Resource[] = [
     url: "https://civitai.com/articles",
     category: "tutorials",
     icon: "book"
+  },
+  {
+    id: "midjourney-docs",
+    title: "Midjourney Documentation",
+    description: "Official documentation for Midjourney's advanced prompting features and parameters",
+    url: "https://docs.midjourney.com",
+    category: "tutorials",
+    icon: "book",
+    isFavorite: true
   },
   
   // Community Resources
