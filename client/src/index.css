@@ -381,26 +381,26 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   color: white !important;
 }
 
-/* Custom scrollbar styles - minimize width and transparent background */
+/* Custom scrollbar styles - minimal design like modal */
 ::-webkit-scrollbar {
-  width: 6px; /* Half the typical width */
-  height: 6px;
+  width: 4px;
+  height: 4px;
   background: transparent;
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(0, 98, 255, 0.2);
-  border-radius: 3px;
-  transition: background-color 0.2s ease;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  transition: background-color 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(0, 98, 255, 0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 ::-webkit-scrollbar-corner {
@@ -410,15 +410,29 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
 /* Firefox scrollbar styles */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(0, 98, 255, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-/* For components that need specific scrollbar styling */
+/* For Radix UI scroll area components */
 .scroll-area [data-radix-scroll-area-scrollbar] {
-  width: 6px !important;
+  width: 4px !important;
+  height: 4px !important;
+  background: transparent !important;
 }
 
 .scroll-area [data-radix-scroll-area-thumb] {
-  background: transparent !important;
-  border-radius: 3px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 2px !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.scroll-area [data-radix-scroll-area-thumb]:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Ensure all scrollable containers use the custom scrollbar */
+.overflow-auto, .overflow-y-auto, .overflow-x-auto,
+[data-radix-scroll-area-viewport] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
