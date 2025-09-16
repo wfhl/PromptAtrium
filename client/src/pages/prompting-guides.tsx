@@ -267,7 +267,7 @@ export default function PromptingGuides() {
                       <Card 
                         key={guide.id} 
                         id={`anatomy-guide-${guide.id}`}
-                        className={`${bgClass} border-gray-800 scroll-mt-4`} 
+                        className={`${bgClass} ${colorClass.split(' ')[2]} scroll-mt-4`} 
                         data-testid={`card-anatomy-guide-${guide.id}`}
                       >
                         <CardHeader className="border-b border-gray-800">
@@ -336,7 +336,7 @@ export default function PromptingGuides() {
                       <Card 
                         key={guide.id} 
                         id={`syntax-guide-${guide.id}`}
-                        className={`${bgClass} border-gray-800 scroll-mt-4`} 
+                        className={`${bgClass} ${colorClass.split(' ')[2]} scroll-mt-4`} 
                         data-testid={`card-syntax-guide-${guide.id}`}
                       >
                         <CardHeader className="border-b border-gray-800">
