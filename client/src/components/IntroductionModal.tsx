@@ -18,6 +18,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Profile form schema
 const introSchema = z.object({
@@ -28,7 +32,7 @@ const introSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
-  birthday: z.string().optional(),
+  birthday: z.date().optional(),
   website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   twitterHandle: z.string().optional(),
   githubHandle: z.string().optional(),
@@ -66,7 +70,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       bio: "",
-      birthday: "",
+      birthday: user?.birthday ? new Date(user.birthday) : undefined,
       website: "",
       twitterHandle: "",
       githubHandle: "",
@@ -115,7 +119,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
     mutationFn: async (data: IntroFormData) => {
       const profileData = {
         ...data,
-        birthday: data.birthday ? new Date(data.birthday) : null,
+        birthday: data.birthday || null,
         hasCompletedIntro: true, // Mark intro as completed
       };
       const response = await apiRequest("PUT", "/api/profile", profileData);
@@ -417,7 +421,32 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                           Birthday
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} type="date" data-testid="input-intro-birthday" />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                                data-testid="input-intro-birthday"
+                              >
+                                <Calendar className="mr-2 h-4 w-4" />
+                                {field.value ? format(field.value, "PPP") : "Pick a date"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <CalendarComponent
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                  date > new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

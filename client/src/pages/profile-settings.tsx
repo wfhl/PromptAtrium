@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,7 +44,7 @@ const profileSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
-  birthday: z.string().optional(), // Date string
+  birthday: z.date().optional(),
   website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   twitterHandle: z.string().optional(),
   githubHandle: z.string().optional(),
@@ -87,7 +91,7 @@ export default function ProfileSettings() {
         firstName: typedUser.firstName || "",
         lastName: typedUser.lastName || "",
         bio: typedUser.bio || "",
-        birthday: typedUser.birthday ? new Date(typedUser.birthday).toISOString().split('T')[0] : "",
+        birthday: typedUser.birthday ? new Date(typedUser.birthday) : undefined,
         website: typedUser.website || "",
         twitterHandle: typedUser.twitterHandle || "",
         githubHandle: typedUser.githubHandle || "",
@@ -117,7 +121,7 @@ export default function ProfileSettings() {
     mutationFn: async (data: ProfileFormData) => {
       const profileData = {
         ...data,
-        birthday: data.birthday ? new Date(data.birthday) : null, // Convert string to Date object
+        birthday: data.birthday || null,
         customSocials,
       };
       const response = await apiRequest("PUT", "/api/profile", profileData);
@@ -262,11 +266,38 @@ export default function ProfileSettings() {
 
               <div className="space-y-2">
                 <Label htmlFor="birthday">Birthday</Label>
-                <Input
-                  id="birthday"
-                  type="date"
-                  {...form.register("birthday")}
-                  data-testid="input-birthday"
+                <Controller
+                  name="birthday"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="birthday"
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                          data-testid="input-birthday"
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {field.value ? format(field.value, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 />
               </div>
             </CardContent>
