@@ -143,7 +143,16 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-border py-8 px-6">
         <div className="container mx-auto text-center text-muted-foreground">
-          <p data-testid="text-footer">© 2024 PromptAtrium. Built for the AI community.</p>
+          <p data-testid="text-footer">© 2025 PromptAtrium. Built for the AI community.</p>
+          <div className="mt-4 space-x-4">
+            <a href="/terms" className="hover:text-foreground transition-colors" data-testid="link-footer-terms">
+              Terms & Conditions
+            </a>
+            <span>•</span>
+            <a href="/privacy-policy" className="hover:text-foreground transition-colors" data-testid="link-footer-privacy">
+              Privacy Policy
+            </a>
+          </div>
         </div>
       </footer>
     </div>

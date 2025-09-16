@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch, Download } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch, Download, Shield, ScrollText, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -406,6 +406,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                       Install Guide
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/getting-started" className="flex items-center cursor-pointer" data-testid="menu-getting-started">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Getting Started
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -567,6 +573,22 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
 
                 <DropdownMenuSeparator />
 
+                <DropdownMenuItem asChild>
+                  <Link href="/terms" className="flex items-center cursor-pointer" data-testid="menu-terms">
+                    <ScrollText className="mr-2 h-4 w-4" />
+                    Terms & Conditions
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link href="/privacy-policy" className="flex items-center cursor-pointer" data-testid="menu-privacy">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Privacy Policy
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600" data-testid="menu-logout">
                   <LogOut className="mr-2 h-4 w-4" />
                   Log Out
@@ -670,6 +692,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     <Link href="/install-guide" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-install-guide">
                       <Download className="mr-2 h-4 w-4" />
                       Install Guide
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/getting-started" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-getting-started">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Getting Started
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
