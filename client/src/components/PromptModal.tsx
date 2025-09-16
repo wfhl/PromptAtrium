@@ -544,8 +544,8 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-6 pt-1">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <div>
               <Label htmlFor="name">Prompt Name *</Label>
               <Input
@@ -559,6 +559,57 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             </div>
 
             <div>
+              <Label htmlFor="collection">Collection</Label>
+              <Select value={formData.collectionId} onValueChange={(value) => {
+                if (value === "create-new") {
+                  setShowCreateCollection(true);
+                } else {
+                  setFormData({ ...formData, collectionId: value });
+                }
+              }}>
+                <SelectTrigger data-testid="select-collection">
+                  <SelectValue placeholder="Select collection" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="create-new" className="text-pink-300 font-medium">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create New Collection
+                    </div>
+                  </SelectItem>
+                  {optimisticCollections.map((collection) => (
+                    <SelectItem key={`optimistic-${collection.id}`} value={collection.id}>
+                      {collection.name}
+                    </SelectItem>
+                  ))}
+                  {collections?.filter(collection => 
+                    !optimisticCollections.some(opt => opt.id === collection.id)
+                  ).map((collection) => (
+                    <SelectItem key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="promptContent">Prompt Content *</Label>
+              <Textarea
+                id="promptContent"
+                value={formData.promptContent}
+                onChange={(e) => setFormData({ ...formData, promptContent: e.target.value })}
+                placeholder="Enter your prompt content here..."
+                rows={6}
+                className="font-mono text-sm"
+                required
+                data-testid="textarea-content"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Use descriptive language for best results</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
               <Label htmlFor="category">Category</Label>
               <Select value={formData.category} onValueChange={(value) => {
                 if (value === "create-new") {
@@ -571,7 +622,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
                       Create New Category
@@ -583,7 +634,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                 </SelectContent>
               </Select>
             </div>
-
+          
             <div>
               <Label htmlFor="promptType">Prompt Type</Label>
               <Select value={formData.promptType} onValueChange={(value) => {
@@ -597,7 +648,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select prompt type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
                       Create New Type
@@ -623,7 +674,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select prompt style" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
                       Create New Style
@@ -636,20 +687,27 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               </Select>
             </div>
           </div>
-
+            </div>
           <div>
-            <Label htmlFor="promptContent">Prompt Content *</Label>
-            <Textarea
-              id="promptContent"
-              value={formData.promptContent}
-              onChange={(e) => setFormData({ ...formData, promptContent: e.target.value })}
-              placeholder="Enter your prompt content here..."
-              rows={6}
-              className="font-mono text-sm"
-              required
-              data-testid="textarea-content"
+            <Label>Example Images</Label>
+            <PromptImageUploader
+              currentImages={formData.exampleImages}
+              onImagesUpdate={(imageUrls) => setFormData(prevFormData => ({ ...prevFormData, exampleImages: imageUrls }))}
+              maxImages={10}
+              className="mt-2"
             />
-            <p className="text-xs text-muted-foreground mt-1">Use descriptive language for best results</p>
+            <p className="text-xs text-muted-foreground mt-1">Upload up to 10 example images to showcase your prompt results</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="nsfw"
+              checked={formData.isNsfw}
+              onCheckedChange={(checked) => setFormData({ ...formData, isNsfw: !!checked })}
+              data-testid="checkbox-nsfw"
+            />
+            <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Mark as NSFW (Not Safe For Work)
+            </Label>
           </div>
 
           <div>
@@ -665,7 +723,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="visibility">Visibility</Label>
               <Select value={formData.isPublic ? "public" : "private"} onValueChange={(value) => setFormData({ ...formData, isPublic: value === "public" })}>
@@ -679,41 +737,6 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="collection">Collection</Label>
-              <Select value={formData.collectionId} onValueChange={(value) => {
-                if (value === "create-new") {
-                  setShowCreateCollection(true);
-                } else {
-                  setFormData({ ...formData, collectionId: value });
-                }
-              }}>
-                <SelectTrigger data-testid="select-collection">
-                  <SelectValue placeholder="Select collection" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="create-new" className="text-blue-600 font-medium">
-                    <div className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Create New Collection
-                    </div>
-                  </SelectItem>
-                  {optimisticCollections.map((collection) => (
-                    <SelectItem key={`optimistic-${collection.id}`} value={collection.id}>
-                      {collection.name}
-                    </SelectItem>
-                  ))}
-                  {collections?.filter(collection => 
-                    !optimisticCollections.some(opt => opt.id === collection.id)
-                  ).map((collection) => (
-                    <SelectItem key={collection.id} value={collection.id}>
-                      {collection.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             <div>
               <Label htmlFor="license">License</Label>
@@ -793,7 +816,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select AI generator" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
                       Create New Generator
@@ -819,7 +842,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                   <SelectValue placeholder="Select model" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="create-new" className="text-blue-600 font-medium">
+                  <SelectItem value="create-new" className="text-pink-300 font-medium">
                     <div className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
                       Create New Model
@@ -833,29 +856,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             </div>
           </div>
 
-          <div>
-            <Label>Example Images</Label>
-            <PromptImageUploader
-              currentImages={formData.exampleImages}
-              onImagesUpdate={(imageUrls) => setFormData(prevFormData => ({ ...prevFormData, exampleImages: imageUrls }))}
-              maxImages={5}
-              className="mt-2"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Upload up to 5 example images to showcase your prompt results</p>
-          </div>
+        
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="nsfw"
-              checked={formData.isNsfw}
-              onCheckedChange={(checked) => setFormData({ ...formData, isNsfw: !!checked })}
-              data-testid="checkbox-nsfw"
-            />
-            <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Mark as NSFW (Not Safe For Work)
-            </Label>
-          </div>
-
+        
           <div>
             <Label htmlFor="notes">Notes</Label>
             <Textarea
