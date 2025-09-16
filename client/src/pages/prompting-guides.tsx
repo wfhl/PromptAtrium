@@ -14,7 +14,7 @@ import type { Guide, Resource } from "@/data/promptingGuides";
 const formatContent = (content: string) => {
   // Replace backticks with proper code blocks
   const processedContent = content
-    .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-800/50 p-4 rounded-lg overflow-x-auto my-4 text-gray-300 text-sm"><code>$1</code></pre>')
+    .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-900/90 p-4 rounded-lg overflow-x-auto my-4 text-gray-300 text-sm"><code>$1</code></pre>')
     .replace(/`([^`]+)`/g, '<code class="bg-gray-800/50 px-2 py-1 rounded text-sm text-blue-400">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-gray-100 font-semibold">$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
