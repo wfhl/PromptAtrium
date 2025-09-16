@@ -36,7 +36,7 @@ export function BorderBeam({
           animation: `beam ${duration}s linear infinite`,
         }}
       />
-      <style jsx>{`
+      <style>{`
         @keyframes beam {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
