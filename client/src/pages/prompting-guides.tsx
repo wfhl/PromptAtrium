@@ -42,14 +42,14 @@ const getTopicColor = (title: string, isAnatomy: boolean = false) => {
   }
   
   // Syntax colors
-  if (title.includes("Weight") || title.includes("Emphasis")) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
-  if (title.includes("Mixing") || title.includes("Blend")) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-  if (title.includes("Bracket") || title.includes("Attention")) return "bg-green-500/20 text-green-400 border-green-500/30";
-  if (title.includes("Step") || title.includes("Scheduling")) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-  if (title.includes("Quality") || title.includes("Enhancement")) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
-  if (title.includes("Negative")) return "bg-red-500/20 text-red-400 border-red-500/30";
-  if (title.includes("SDXL")) return "bg-pink-500/20 text-pink-400 border-pink-500/30";
-  if (title.includes("Trigger") || title.includes("Model")) return "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
+  if (title.includes("Weight") || title.includes("Emphasis")) return "bg-purple-500/10 text-purple-400 border-purple-500/30";
+  if (title.includes("Mixing") || title.includes("Blend")) return "bg-blue-500/10 text-blue-400 border-blue-500/30";
+  if (title.includes("Bracket") || title.includes("Attention")) return "bg-green-500/10 text-green-400 border-green-500/30";
+  if (title.includes("Step") || title.includes("Scheduling")) return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+  if (title.includes("Quality") || title.includes("Enhancement")) return "bg-cyan-500/10 text-cyan-400 border-cyan-500/30";
+  if (title.includes("Negative")) return "bg-red-500/10 text-red-400 border-red-500/30";
+  if (title.includes("SDXL")) return "bg-pink-500/10 text-pink-400 border-pink-500/30";
+  if (title.includes("Trigger") || title.includes("Model")) return "bg-indigo-500/10 text-indigo-400 border-indigo-500/30";
   return "bg-gray-500/20 text-gray-400 border-gray-500/30";
 };
 
