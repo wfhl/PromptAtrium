@@ -381,12 +381,12 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   color: white !important;
 }
 
-/* Custom scrollbar styles - minimize width and transparent background */
+/* Custom scrollbar styles - completely transparent track */
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 *::-webkit-scrollbar {
-  width: 6px !important;
-  height: 6px !important;
+  width: 3px !important;
+  height: 3px !important;
   background: transparent !important;
 }
 
@@ -394,16 +394,19 @@ html::-webkit-scrollbar-track,
 body::-webkit-scrollbar-track,
 *::-webkit-scrollbar-track {
   background: transparent !important;
-  border-radius: 3px;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 html::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb,
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 3px;
-  transition: background-color 0.2s ease;
   background: transparent !important;
+  border-radius: 0 !important;
+  border: none !important;
+  transition: background-color 0.2s ease;
 }
 
 html::-webkit-scrollbar-thumb:hover,
@@ -418,31 +421,72 @@ body::-webkit-scrollbar-corner,
   background: transparent !important;
 }
 
-/* Firefox scrollbar styles */
+html::-webkit-scrollbar-button,
+body::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* Firefox scrollbar styles - completely transparent */
 html,
 body,
 * {
-  scrollbar-width: thin !important;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent !important;
-  
+  scrollbar-width: none !important;
+  scrollbar-color: transparent transparent !important;
 }
 
 /* For components that need specific scrollbar styling */
 .scroll-area [data-radix-scroll-area-scrollbar] {
-  width: 6px !important;
+  width: 0px !important;
   background: transparent !important;
+  display: none !important;
 }
 
 .scroll-area [data-radix-scroll-area-thumb] {
   background: transparent !important;
-  border-radius: 3px !important;
-  
+  border-radius: 0 !important;
+  display: none !important;
 }
 
-/* Ensure all scrollable containers use the custom scrollbar */
+/* Ensure all scrollable containers use invisible scrollbars */
 .overflow-auto, .overflow-y-auto, .overflow-x-auto,
 .overflow-y-scroll, .overflow-x-scroll,
 [data-radix-scroll-area-viewport] {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 100, 100, 0.6) rgba(30, 30, 30, 0.5);
+  scrollbar-width: none !important;
+  scrollbar-color: transparent transparent !important;
+}
+
+.overflow-auto::-webkit-scrollbar, 
+.overflow-y-auto::-webkit-scrollbar, 
+.overflow-x-auto::-webkit-scrollbar,
+.overflow-y-scroll::-webkit-scrollbar,
+.overflow-x-scroll::-webkit-scrollbar,
+[data-radix-scroll-area-viewport]::-webkit-scrollbar {
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+  display: none !important;
+}
+
+.overflow-auto::-webkit-scrollbar-track, 
+.overflow-y-auto::-webkit-scrollbar-track, 
+.overflow-x-auto::-webkit-scrollbar-track,
+.overflow-y-scroll::-webkit-scrollbar-track,
+.overflow-x-scroll::-webkit-scrollbar-track,
+[data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
+  background: transparent !important;
+  display: none !important;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb, 
+.overflow-y-auto::-webkit-scrollbar-thumb, 
+.overflow-x-auto::-webkit-scrollbar-thumb,
+.overflow-y-scroll::-webkit-scrollbar-thumb,
+.overflow-x-scroll::-webkit-scrollbar-thumb,
+[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  display: none !important;
 }
