@@ -394,13 +394,13 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(0, 98, 255, 0.2);
   border-radius: 3px;
   transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgb(0, 98, 255, 0.2);
 }
 
 ::-webkit-scrollbar-corner {
@@ -410,7 +410,7 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
 /* Firefox scrollbar styles */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: rgb(0, 98, 255, 0.2) transparent;
 }
 
 /* For components that need specific scrollbar styling */

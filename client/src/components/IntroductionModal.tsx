@@ -34,6 +34,8 @@ const introSchema = z.object({
   githubHandle: z.string().optional(),
   linkedinHandle: z.string().optional(),
   instagramHandle: z.string().optional(),
+  redditHandle: z.string().optional(),
+  tiktokHandle: z.string().optional(),
   profileVisibility: z.enum(["public", "private"]).default("public"),
   emailVisibility: z.boolean().default(false),
   showStats: z.boolean().default(true),
@@ -70,6 +72,8 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
       githubHandle: "",
       linkedinHandle: "",
       instagramHandle: "",
+      redditHandle: "",
+      tiktokHandle: "",
       profileVisibility: "public",
       emailVisibility: false,
       showStats: true,
@@ -176,7 +180,7 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="guide" className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Getting Started
@@ -189,9 +193,17 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                   <Link2 className="h-4 w-4" />
                   Social Links
                 </TabsTrigger>
-                <TabsTrigger value="privacy" className="flex items-center gap-2">
+                <TabsTrigger value="installation" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Installation
+                </TabsTrigger>
+                <TabsTrigger value="privacy-policy" className="flex items-center gap-2">
                   <Lock className="h-4 w-4" />
-                  Privacy
+                  Privacy Policy
+                </TabsTrigger>
+                <TabsTrigger value="terms" className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Terms
                 </TabsTrigger>
               </TabsList>
 
@@ -467,8 +479,161 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="redditHandle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reddit</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="u/username" data-testid="input-intro-reddit" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tiktokHandle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>TikTok</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="@username" data-testid="input-intro-tiktok" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 
                 </div>
+              </TabsContent>
+
+              <TabsContent value="installation" className="space-y-4 mt-4">
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Globe className="h-5 w-5 text-blue-500" />
+                        Installing PromptAtrium
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Alert className="border-green-500/50 bg-green-500/10">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <AlertDescription>
+                          Install PromptAtrium as a PWA (Progressive Web App) for quick access and an app-like experience!
+                        </AlertDescription>
+                      </Alert>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-semibold mb-2">Desktop (Chrome/Edge):</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
+                            <li>Click the install icon in your browser's address bar</li>
+                            <li>Or go to Settings → Apps → Install this site as an app</li>
+                            <li>Click "Install" when prompted</li>
+                          </ol>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-semibold mb-2">Mobile (iOS):</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
+                            <li>Open PromptAtrium in Safari</li>
+                            <li>Tap the Share button</li>
+                            <li>Scroll down and tap "Add to Home Screen"</li>
+                            <li>Tap "Add" to confirm</li>
+                          </ol>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-semibold mb-2">Mobile (Android):</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
+                            <li>Open PromptAtrium in Chrome</li>
+                            <li>Tap the menu button (three dots)</li>
+                            <li>Tap "Install app" or "Add to Home screen"</li>
+                            <li>Tap "Install" to confirm</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="privacy-policy" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Lock className="h-5 w-5 text-purple-500" />
+                      Privacy Policy
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-sm text-gray-300 space-y-3">
+                      <p><strong>Data Collection:</strong> We collect minimal personal information necessary for providing our services, including your email, username, and profile information you choose to share.</p>
+                      
+                      <p><strong>Data Usage:</strong> Your data is used solely to provide and improve PromptAtrium's services. We never sell your personal information to third parties.</p>
+                      
+                      <p><strong>Content Ownership:</strong> You retain full ownership of all prompts and content you create. Public prompts may be viewed by other users as part of the community features.</p>
+                      
+                      <p><strong>Security:</strong> We implement industry-standard security measures to protect your data. All communications are encrypted using HTTPS.</p>
+                      
+                      <p><strong>Cookies:</strong> We use essential cookies for authentication and user preferences. No tracking cookies are used without your consent.</p>
+                      
+                      <p><strong>Your Rights:</strong> You can request to view, export, or delete your data at any time through your account settings.</p>
+                      
+                      <p><strong>Updates:</strong> We may update this policy occasionally. You'll be notified of significant changes via email or platform notifications.</p>
+                    </div>
+                    
+                    <Alert className="border-blue-500/50 bg-blue-500/10">
+                      <AlertCircle className="h-4 w-4 text-blue-500" />
+                      <AlertDescription className="text-sm">
+                        For the full privacy policy, visit <a href="/privacy-policy" className="underline text-blue-400">Privacy Policy page</a>
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="terms" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-amber-500" />
+                      Terms & Conditions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-sm text-gray-300 space-y-3">
+                      <p><strong>Acceptance:</strong> By using PromptAtrium, you agree to these terms. If you disagree with any part, please discontinue use of our services.</p>
+                      
+                      <p><strong>Account Responsibility:</strong> You're responsible for maintaining the security of your account and all activities under your account.</p>
+                      
+                      <p><strong>Content Guidelines:</strong></p>
+                      <ul className="list-disc list-inside ml-4 space-y-1">
+                        <li>No illegal, harmful, or offensive content</li>
+                        <li>Respect intellectual property rights</li>
+                        <li>No spam or misleading information</li>
+                        <li>Mark NSFW content appropriately</li>
+                      </ul>
+                      
+                      <p><strong>Service Availability:</strong> We strive for 99.9% uptime but cannot guarantee uninterrupted service. Scheduled maintenance will be announced in advance.</p>
+                      
+                      <p><strong>Intellectual Property:</strong> Content you create remains yours. By sharing publicly, you grant us a license to display it within the platform.</p>
+                      
+                      <p><strong>Termination:</strong> We reserve the right to suspend or terminate accounts that violate these terms or engage in harmful behavior.</p>
+                      
+                      <p><strong>Limitation of Liability:</strong> PromptAtrium is provided "as is" without warranties. We're not liable for any indirect damages from using our service.</p>
+                    </div>
+                    
+                    <Alert className="border-amber-500/50 bg-amber-500/10">
+                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                      <AlertDescription className="text-sm">
+                        For complete terms and conditions, visit <a href="/terms" className="underline text-amber-400">Terms & Conditions page</a>
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="privacy" className="space-y-4 mt-4">
