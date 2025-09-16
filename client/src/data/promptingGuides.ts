@@ -325,6 +325,203 @@ rating_safe, rating_questionable, // Content rating
 *Source: Model Training Documentation*`,
     category: "syntax",
     order: 8
+  },
+  {
+    id: 9,
+    title: "Wildcards - Dynamic Prompt Variations",
+    content: `**Wildcards enable random selection from predefined lists, creating diverse variations from a single prompt template.**
+
+### What Are Wildcards?
+Wildcards are placeholder tokens that get replaced with random selections from predefined word lists during generation. They allow you to create thousands of variations from a single prompt template.
+
+### Basic Wildcard Syntax
+\`\`\`
+__wildcard__ - Single random selection
+{option1|option2|option3} - Inline choices
+{2$$option1|option2} - Weighted selection
+{1-3$$option1|option2} - Random quantity selection
+\`\`\`
+
+### Common Wildcard Categories
+
+**Character Wildcards:**
+\`\`\`
+__hair-color__ → blonde, brunette, red, black, silver
+__eye-color__ → blue, green, brown, hazel, amber
+__clothing__ → dress, suit, armor, casual wear
+__profession__ → doctor, artist, warrior, scientist
+__emotion__ → happy, sad, angry, contemplative
+\`\`\`
+
+**Environment Wildcards:**
+\`\`\`
+__location__ → forest, city, beach, mountain, space
+__weather__ → sunny, rainy, snowy, foggy, stormy
+__time-of-day__ → dawn, morning, noon, evening, night
+__season__ → spring, summer, autumn, winter
+\`\`\`
+
+**Style Wildcards:**
+\`\`\`
+__art-style__ → realistic, anime, watercolor, oil painting
+__color-scheme__ → vibrant, monochrome, pastel, dark
+__lighting__ → soft, dramatic, natural, neon
+__camera-angle__ → close-up, wide shot, aerial, low angle
+\`\`\`
+
+### Advanced Wildcard Usage
+
+**Nested Wildcards:**
+\`\`\`
+__character__ wearing __outfit__ in __location__
+// Expands to multiple combinations like:
+// "warrior wearing armor in forest"
+// "scientist wearing lab coat in laboratory"
+\`\`\`
+
+**Conditional Wildcards:**
+\`\`\`
+{__fantasy__|__scifi__|__modern__} setting
+// Each wildcard contains theme-appropriate elements
+\`\`\`
+
+**Combinatorial Wildcards:**
+\`\`\`
+{2$$__adjective__} __subject__ with __feature__
+// Creates combinations like:
+// "beautiful, mysterious woman with glowing eyes"
+// "ancient, powerful wizard with magical staff"
+\`\`\`
+
+### Creating Custom Wildcard Files
+
+**File Structure:**
+\`\`\`
+wildcards/
+├── colors.txt
+├── emotions.txt
+├── locations.txt
+└── characters/
+    ├── fantasy.txt
+    ├── scifi.txt
+    └── modern.txt
+\`\`\`
+
+**Example colors.txt:**
+\`\`\`
+crimson
+azure
+emerald
+golden
+silver
+obsidian
+pearl
+\`\`\`
+
+### Dynamic Prompt Templates
+
+**Portrait Template:**
+\`\`\`
+__age__ __gender__ with __hair-length__ __hair-color__ hair 
+and __eye-color__ eyes, wearing __outfit__, 
+__emotion__ expression, __lighting__ lighting, 
+__art-style__ style
+\`\`\`
+
+**Landscape Template:**
+\`\`\`
+__adjective__ __landscape-type__ during __time-of-day__, 
+__weather__ weather, __season__ season, 
+__color-mood__ color palette, __art-style__ style
+\`\`\`
+
+**Action Scene Template:**
+\`\`\`
+__character-type__ __action-verb__ through __environment__, 
+__particle-effects__, dynamic pose, __camera-angle__, 
+__lighting-type__ lighting, __art-style__
+\`\`\`
+
+### Wildcard Modifiers
+
+**Syntax Variations:**
+\`\`\`
+__wildcard!__ - Force uppercase
+__wildcard~__ - Force lowercase
+__wildcard^__ - Capitalize first letter
+__{wildcard}__ - Optional inclusion
+__wildcard*3__ - Repeat 3 times with different values
+\`\`\`
+
+**Probability Control:**
+\`\`\`
+{70%::__rare-feature__|__common-feature__}
+// 70% chance of rare feature, 30% common
+
+{__option__::0.8} - Include with 80% probability
+\`\`\`
+
+### Platform-Specific Support
+
+**Automatic1111:**
+- Native wildcard support with Dynamic Prompts extension
+- Supports nested and combinatorial wildcards
+- Custom wildcard directories
+
+**ComfyUI:**
+- Wildcard nodes available
+- Text randomization nodes
+- Custom wildcard paths
+
+**InvokeAI:**
+- Built-in wildcard support
+- Dynamic prompt templates
+- Wildcard manager UI
+
+**Forge:**
+- Full wildcard compatibility
+- Enhanced wildcard syntax
+- Batch wildcard processing
+
+### Best Practices
+
+1. **Organize wildcards** by category and theme
+2. **Test combinations** to ensure coherent results
+3. **Balance variety** with consistency
+4. **Use weights** for rare vs common options
+5. **Create theme-specific** wildcard sets
+6. **Document your wildcards** for team sharing
+7. **Avoid conflicts** between incompatible options
+
+### Common Wildcard Libraries
+
+**Popular Collections:**
+- AUTOMATIC1111 Wildcards
+- Booru tag wildcards
+- Artist name collections
+- Style movement lists
+- Color palette sets
+- Emotion/expression lists
+
+### Troubleshooting Wildcards
+
+**Common Issues:**
+- Missing wildcard files → Check file paths
+- No variation → Verify wildcard syntax
+- Incompatible combinations → Review wildcard contents
+- Performance issues → Limit nested wildcards
+
+### Example Workflow
+
+1. Create base prompt template with wildcards
+2. Define wildcard files with options
+3. Test generations for variety
+4. Refine wildcard lists based on results
+5. Save successful templates for reuse
+
+*Source: Dynamic Prompts Extension Documentation & Community Guides*`,
+    category: "syntax",
+    order: 9
   }
 ];
 

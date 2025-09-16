@@ -50,6 +50,7 @@ const getTopicColor = (title: string, isAnatomy: boolean = false) => {
   if (title.includes("Negative")) return "bg-red-500/10 text-red-400 border-red-500/30";
   if (title.includes("SDXL")) return "bg-pink-500/10 text-pink-400 border-pink-500/30";
   if (title.includes("Trigger") || title.includes("Model")) return "bg-indigo-500/10 text-indigo-400 border-indigo-500/30";
+  if (title.includes("Wildcards") || title.includes("Dynamic")) return "bg-orange-500/10 text-orange-400 border-orange-500/30";
   return "bg-gray-500/20 text-gray-400 border-gray-500/30";
 };
 
@@ -191,10 +192,10 @@ export default function PromptingGuides() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-900/50">
+          <TabsList className="grid w-full grid-cols-3 bg-black">
             <TabsTrigger 
               value="resources" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-orange-500/20"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20"
               data-testid="tab-resources"
             >
               <Lightbulb className="h-4 w-4 mr-2" />
@@ -202,7 +203,7 @@ export default function PromptingGuides() {
             </TabsTrigger>
             <TabsTrigger 
               value="anatomy" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-teal-500/20"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20"
               data-testid="tab-anatomy-guides"
             >
               <Palette className="h-4 w-4 mr-2" />
@@ -383,15 +384,14 @@ export default function PromptingGuides() {
                               data-testid={`resource-${resource.id}`}
                             >
                               <div className="flex items-center gap-3">
-                                <IconComponent className="h-5 w-5 text-amber-500" />
+                                <IconComponent className="h-5 w-5 text-purple-500" />
                                 <div>
-                                  <h4 className="text-sm font-medium text-gray-200 group-hover:text-amber-400 transition-colors">{resource.title}</h4>
+                                  <h4 className="text-sm font-medium text-gray-200 group-hover:text-purple-400 transition-colors">{resource.title}</h4>
                                   <p className="text-xs text-gray-500 mt-1">{resource.description}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
-                                <span className="text-xs text-amber-500 group-hover:text-amber-400">View Resource →</span>
+                                <span className="text-xs text-purple-500 group-hover:text-purple-400">View Resource →</span>
                               </div>
                             </div>
                           );
@@ -413,15 +413,14 @@ export default function PromptingGuides() {
                               data-testid={`resource-${resource.id}`}
                             >
                               <div className="flex items-center gap-3">
-                                <IconComponent className="h-5 w-5 text-amber-500" />
+                                <IconComponent className="h-5 w-5 text-pink-500" />
                                 <div>
-                                  <h4 className="text-sm font-medium text-gray-200 group-hover:text-amber-400 transition-colors">{resource.title}</h4>
+                                  <h4 className="text-sm font-medium text-gray-200 group-hover:text-pink-400 transition-colors">{resource.title}</h4>
                                   <p className="text-xs text-gray-500 mt-1">{resource.description}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
-                                <span className="text-xs text-amber-500 group-hover:text-amber-400">View Resource →</span>
+                                <span className="text-xs text-pink-500 group-hover:text-pink-400">View Resource →</span>
                               </div>
                             </div>
                           );
@@ -449,13 +448,13 @@ export default function PromptingGuides() {
                                 data-testid={`resource-${resource.id}`}
                               >
                                 <div className="flex items-center gap-3">
-                                  <IconComponent className="h-5 w-5 text-amber-500" />
+                                  <IconComponent className="h-5 w-5 text-blue-500" />
                                   <div>
-                                    <h4 className="text-sm font-medium text-gray-200 group-hover:text-amber-400 transition-colors">{resource.title}</h4>
+                                    <h4 className="text-sm font-medium text-gray-200 group-hover:text-blue-400 transition-colors">{resource.title}</h4>
                                     <p className="text-xs text-gray-500 mt-1">{resource.description}</p>
                                   </div>
                                 </div>
-                                <span className="text-xs text-amber-500 group-hover:text-amber-400">View Resource →</span>
+                                <span className="text-xs text-blue-500 group-hover:text-blue-400">View Resource →</span>
                               </div>
                             );
                           })}
@@ -483,7 +482,6 @@ export default function PromptingGuides() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                {resource.isFavorite && <Heart className="h-4 w-4 text-red-500 fill-red-500" />}
                                 <Button 
                                   size="sm" 
                                   variant="outline" 
