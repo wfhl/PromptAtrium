@@ -381,77 +381,68 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   color: white !important;
 }
 
-/* Custom scrollbar styles - matching modal appearance */
-/* Apply to all scrollbars globally */
-*::-webkit-scrollbar,
+/* Custom scrollbar styles - minimize width and transparent background */
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
-div::-webkit-scrollbar {
-  width: 10px !important;
-  height: 10px !important;
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+  background: transparent !important;
 }
 
-*::-webkit-scrollbar-track,
 html::-webkit-scrollbar-track,
 body::-webkit-scrollbar-track,
-div::-webkit-scrollbar-track {
-  background: transpa !important;
-  border-radius: 5px !important;
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 3px;
 }
 
-*::-webkit-scrollbar-thumb,
 html::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb,
-div::-webkit-scrollbar-thumb {
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
   background: transparent !important;
-  border-radius: 5px !important;
-  border: 0px solid rgba(60, 60, 60, 0.5) !important;
 }
 
-*::-webkit-scrollbar-thumb:hover,
 html::-webkit-scrollbar-thumb:hover,
 body::-webkit-scrollbar-thumb:hover,
-div::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 120, 120, 0.8) !important;
+*::-webkit-scrollbar-thumb:hover {
+  background: transparent !important;
 }
 
-*::-webkit-scrollbar-corner,
 html::-webkit-scrollbar-corner,
 body::-webkit-scrollbar-corner,
-div::-webkit-scrollbar-corner {
+*::-webkit-scrollbar-corner {
   background: transparent !important;
 }
 
 /* Firefox scrollbar styles */
+html,
+body,
 * {
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(100, 100, 100, 0.6) rgba(30, 30, 30, 0.5) !important;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent !important;
+  
 }
 
-/* For Radix UI scroll areas */
-[data-radix-scroll-area-scrollbar] {
-  width: 10px !important;
+/* For components that need specific scrollbar styling */
+.scroll-area [data-radix-scroll-area-scrollbar] {
+  width: 6px !important;
   background: transparent !important;
 }
 
-[data-radix-scroll-area-scrollbar] [data-radix-scroll-area-thumb] {
+.scroll-area [data-radix-scroll-area-thumb] {
   background: transparent !important;
-  border-radius: 5px !important;
-}
-
-[data-radix-scroll-area-scrollbar] [data-radix-scroll-area-thumb]:hover {
-  background: rgb(143, 143, 143, 0.8) !important;
-}
-
-/* Force scrollbar visibility */
-html, body {
-  overflow-y: auto !important;
+  border-radius: 3px !important;
+  
 }
 
 /* Ensure all scrollable containers use the custom scrollbar */
 .overflow-auto, .overflow-y-auto, .overflow-x-auto,
-.overflow-y-scroll, .overflow-x-scroll,
 [data-radix-scroll-area-viewport] {
   scrollbar-width: thin;
-  scrollbar-color: rgba(100, 100, 100, 0.6) rgba(30, 30, 30, 0.5);
+  scrollbar-color: rgba(100, 100, 100, 0.6) rgba(100, 100, 100, 0.6);
+  background: transparent !important;
 }
