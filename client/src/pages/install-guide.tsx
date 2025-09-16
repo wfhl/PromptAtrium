@@ -69,9 +69,9 @@ import {
 } from "lucide-react";
 
 // Import data and generator
-import elitePromptGenerator, { ElitePromptOptions, GeneratedPrompt, SavedPreset, CharacterPreset } from "./ElitePromptGenerator";
+import { generatePrompt, ElitePromptOptions, GeneratedPrompt, SavedPreset, CharacterPreset } from "@/lib/prompt-generator";
 // Import detailed options components
-import { NestedDetailedOptionsSection, CategoryOption } from "./components/NestedDetailedOptionsDropdown";
+import { CategoryOption, NestedDetailedOptionsSection } from "../../components/PROMPTGENERATOR/frontend/components/NestedDetailedOptionsDropdown";
 import { DETAILED_OPTIONS_CATEGORIES } from "@/data/detailedOptionsData";
 // Import our new TemplateProcessor component
 import { TemplateProcessor } from "@/components/prompt-builder/TemplateProcessor";
@@ -1499,7 +1499,7 @@ export default function NewPromptGeneratorUI() {
       };
 
       // Generate the prompt using the ElitePromptGenerator
-      const result = elitePromptGenerator.generatePrompt(options);
+      const result = generatePrompt(options);
 
       // Update the live preview state - use original field which contains the raw prompt
       setLivePrompt(result.original || "");
@@ -1546,7 +1546,7 @@ export default function NewPromptGeneratorUI() {
       });
 
       // Create options object for generator with all the processed form values
-      const result = await elitePromptGenerator.generatePrompt(processedValues);
+      const result = generatePrompt(processedValues);
       setGeneratedPrompt(result);
 
     } catch (error) {
