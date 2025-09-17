@@ -231,6 +231,7 @@ export const prompt_components = pgTable("prompt_components", {
   value: text("value"),
   description: text("description"),
   subcategory: varchar("subcategory"),
+  anatomy_group: varchar("anatomy_group"), // Group for organized display (Subject, Style, Environment, etc.)
   usage_count: integer("usage_count"),
   order_index: integer("order_index"),
   is_default: boolean("is_default"),
