@@ -1247,6 +1247,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin route to cleanup duplicate likes (super admin only)
+  app.post('/api/admin/cleanup-likes', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const result = await storage.cleanupDuplicateLikes();
+      res.json({
+        message: `Cleanup completed successfully`,
+        duplicatesRemoved: result.duplicatesRemoved,
+        promptsFixed: result.promptsFixed
+      });
+    } catch (error) {
+      console.error("Error cleaning up likes:", error);
+      res.status(500).json({ message: "Failed to cleanup likes" });
+    }
+  });
+
   // Toggle featured status (super admin only)
   app.post('/api/prompts/:id/featured', requireSuperAdmin, async (req: any, res) => {
     try {

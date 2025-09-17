@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupOpenGraph } from "./openGraph";
+import { storage } from "./storage";
 
 const app = express();
 // Increase body size limit to 50MB to handle image data
@@ -70,7 +71,17 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, () => {
+  }, async () => {
     log(`serving on port ${port}`);
+    
+    // Run cleanup of duplicate likes on startup
+    try {
+      log("Running duplicate likes cleanup...");
+      const cleanupResult = await storage.cleanupDuplicateLikes();
+      log(`Cleanup completed: removed ${cleanupResult.duplicatesRemoved} duplicates, fixed ${cleanupResult.promptsFixed} prompts`);
+    } catch (error) {
+      log(`Error during likes cleanup: ${error}`);
+      // Don't crash the server if cleanup fails
+    }
   });
 })();

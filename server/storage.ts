@@ -158,6 +158,7 @@ export interface IStorage {
   removeAllFavorites(promptId: string): Promise<void>;
   checkIfLiked(userId: string, promptId: string): Promise<boolean>;
   checkIfFavorited(userId: string, promptId: string): Promise<boolean>;
+  cleanupDuplicateLikes(): Promise<{ duplicatesRemoved: number; promptsFixed: number }>;
   ratePrompt(rating: InsertPromptRating): Promise<PromptRating>;
   getUserFavorites(userId: string): Promise<PromptFavorite[]>;
   getUserLikes(userId: string): Promise<PromptLike[]>;
@@ -1020,38 +1021,48 @@ export class DatabaseStorage implements IStorage {
 
   // Social operations
   async toggleLike(userId: string, promptId: string): Promise<boolean> {
-    // Find all likes (in case there are duplicates)
-    const existingLikes = await db
-      .select()
-      .from(promptLikes)
-      .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
-
-    if (existingLikes.length > 0) {
-      // Remove all duplicates if they exist
-      const duplicateCount = existingLikes.length;
-      await db.delete(promptLikes)
+    // Use a transaction to ensure data consistency
+    return await db.transaction(async (tx) => {
+      // Find existing likes for this user and prompt
+      const existingLikes = await tx
+        .select()
+        .from(promptLikes)
         .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
-      
-      // Decrement the like count by the number of duplicates removed
-      await db.update(prompts)
-        .set({ likes: sql`GREATEST(0, ${prompts.likes} - ${duplicateCount})` })
-        .where(eq(prompts.id, promptId));
-      
-      return false; // Unlike
-    } else {
-      // Add a new like (with unique constraint, this will fail if duplicate attempt)
-      try {
-        await db.insert(promptLikes).values({ userId, promptId });
-        await db.update(prompts)
+
+      if (existingLikes.length > 0) {
+        // User has already liked this prompt - remove the like(s)
+        // If there are duplicates, remove all of them
+        await tx.delete(promptLikes)
+          .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
+        
+        // Recalculate the actual like count from the database
+        const [likeCount] = await tx
+          .select({ count: sql<number>`count(*)` })
+          .from(promptLikes)
+          .where(eq(promptLikes.promptId, promptId));
+        
+        // Update the prompt with the correct count
+        await tx.update(prompts)
+          .set({ likes: likeCount.count })
+          .where(eq(prompts.id, promptId));
+        
+        return false; // Successfully unliked
+      } else {
+        // User hasn't liked this prompt - add a like
+        await tx.insert(promptLikes).values({ userId, promptId });
+        
+        // Increment the like count
+        await tx.update(prompts)
           .set({ likes: sql`${prompts.likes} + 1` })
           .where(eq(prompts.id, promptId));
-        return true; // Like
-      } catch (error) {
-        // If insert fails due to unique constraint, treat as unlike
-        console.error("Error inserting like (possible race condition):", error);
-        return false;
+        
+        return true; // Successfully liked
       }
-    }
+    }).catch((error) => {
+      console.error("Error toggling like:", error);
+      // Re-throw the error so the API can handle it properly
+      throw new Error("Failed to toggle like");
+    });
   }
 
   async toggleFavorite(userId: string, promptId: string): Promise<boolean> {
@@ -1080,6 +1091,84 @@ export class DatabaseStorage implements IStorage {
       .from(promptLikes)
       .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
     return !!existing;
+  }
+  
+  // Cleanup function to remove duplicate likes and fix counts
+  async cleanupDuplicateLikes(): Promise<{ duplicatesRemoved: number; promptsFixed: number }> {
+    return await db.transaction(async (tx) => {
+      // Find all unique user-prompt combinations that have duplicates
+      const duplicates = await tx.execute(sql`
+        SELECT user_id, prompt_id, COUNT(*) as count
+        FROM prompt_likes
+        GROUP BY user_id, prompt_id
+        HAVING COUNT(*) > 1
+      `);
+      
+      let duplicatesRemoved = 0;
+      const promptsToFix = new Set<string>();
+      
+      // Remove duplicates, keeping only one like per user-prompt combination
+      for (const dup of duplicates.rows as any[]) {
+        // Get all likes for this combination
+        const likes = await tx
+          .select()
+          .from(promptLikes)
+          .where(and(
+            eq(promptLikes.userId, dup.user_id),
+            eq(promptLikes.promptId, dup.prompt_id)
+          ));
+        
+        // Keep the first like, delete the rest
+        if (likes.length > 1) {
+          const toDelete = likes.slice(1);
+          for (const like of toDelete) {
+            await tx.delete(promptLikes).where(eq(promptLikes.id, like.id));
+            duplicatesRemoved++;
+          }
+          promptsToFix.add(dup.prompt_id);
+        }
+      }
+      
+      // Fix the like counts for all affected prompts
+      for (const promptId of promptsToFix) {
+        const [actualCount] = await tx
+          .select({ count: sql<number>`count(*)` })
+          .from(promptLikes)
+          .where(eq(promptLikes.promptId, promptId));
+        
+        await tx.update(prompts)
+          .set({ likes: actualCount.count })
+          .where(eq(prompts.id, promptId));
+      }
+      
+      // Also fix any prompts with incorrect like counts (even without duplicates)
+      const allPrompts = await tx.select({ id: prompts.id }).from(prompts);
+      let additionalFixed = 0;
+      
+      for (const prompt of allPrompts) {
+        const [actualCount] = await tx
+          .select({ count: sql<number>`count(*)` })
+          .from(promptLikes)
+          .where(eq(promptLikes.promptId, prompt.id));
+        
+        const [currentPrompt] = await tx
+          .select({ likes: prompts.likes })
+          .from(prompts)
+          .where(eq(prompts.id, prompt.id));
+        
+        if (currentPrompt.likes !== actualCount.count) {
+          await tx.update(prompts)
+            .set({ likes: actualCount.count })
+            .where(eq(prompts.id, prompt.id));
+          additionalFixed++;
+        }
+      }
+      
+      return { 
+        duplicatesRemoved, 
+        promptsFixed: promptsToFix.size + additionalFixed 
+      };
+    });
   }
 
   async checkIfFavorited(userId: string, promptId: string): Promise<boolean> {
