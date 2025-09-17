@@ -19,8 +19,8 @@ export const requireRole = (requiredRole: UserRole): RequestHandler => {
 
       const userRole = user.role as UserRole;
       
-      // Super admin can access everything
-      if (userRole === "super_admin") {
+      // Super admin and developer can access everything
+      if (userRole === "super_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -67,8 +67,8 @@ export const requireCommunityAdmin: RequestHandler = async (req: any, res, next)
 
     const userRole = user.role as UserRole;
     
-    // Super admin or community admin can access
-    if (userRole === "super_admin" || userRole === "community_admin") {
+    // Super admin, developer, or community admin can access
+    if (userRole === "super_admin" || userRole === "developer" || userRole === "community_admin") {
       req.userRole = userRole;
       return next();
     }
@@ -97,8 +97,8 @@ export const requireCommunityAdminRole = (communityIdParam = "communityId"): Req
 
       const userRole = user.role as UserRole;
       
-      // Super admin can access everything
-      if (userRole === "super_admin") {
+      // Super admin and developer can access everything
+      if (userRole === "super_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -144,8 +144,8 @@ export const requireCommunityMember = (communityIdParam = "communityId"): Reques
 
       const userRole = user.role as UserRole;
       
-      // Super admin can access everything
-      if (userRole === "super_admin") {
+      // Super admin and developer can access everything
+      if (userRole === "super_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -191,8 +191,8 @@ export const canAccessCollection = async (userId: string, collectionId: string):
 
     const userRole = user.role as UserRole;
     
-    // Super admin can access everything
-    if (userRole === "super_admin") {
+    // Super admin and developer can access everything
+    if (userRole === "super_admin" || userRole === "developer") {
       return true;
     }
 
@@ -212,8 +212,8 @@ export const canAccessCollection = async (userId: string, collectionId: string):
       return isMember;
     }
 
-    // Global collections can be accessed by community admins
-    if (collection.type === "global" && userRole === "community_admin") {
+    // Global collections can be accessed by community admins and developers
+    if (collection.type === "global" && (userRole === "community_admin" || userRole === "developer")) {
       return true;
     }
 
