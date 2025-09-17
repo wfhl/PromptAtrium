@@ -1104,7 +1104,7 @@ export default function Codex() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7"
+                                  className="h-7 w-7 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                   onClick={() => {
                                     // Recall: Load preset back into assembler
                                     const terms = preset.content.split(', ');
@@ -1122,7 +1122,7 @@ export default function Codex() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7"
+                                  className="h-7 w-7 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                   onClick={() => {
                                     navigator.clipboard.writeText(preset.content);
                                     toast({
@@ -1137,7 +1137,7 @@ export default function Codex() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7"
+                                  className="h-7 w-7 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                   onClick={() => {
                                     const blob = new Blob([preset.content], { type: 'text/plain' });
                                     const url = URL.createObjectURL(blob);
@@ -1154,7 +1154,7 @@ export default function Codex() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7"
+                                  className="h-7 w-7 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                   onClick={() => {
                                     // Share functionality - copy a shareable link or format
                                     const shareText = `Preset: ${preset.name}\n${preset.content}`;
@@ -1171,7 +1171,7 @@ export default function Codex() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7"
+                                  className="h-7 w-7 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                   onClick={() => {
                                     if (confirm(`Delete "${preset.name}"?`)) {
                                       deleteAssembledStringMutation.mutate(preset.id);
@@ -1234,7 +1234,7 @@ export default function Codex() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-7 w-7 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                     onClick={() => {
                                       // Recall: Load wildcard back into assembler
                                       const terms = wildcard.content.split(', ');
@@ -1253,7 +1253,7 @@ export default function Codex() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-7 w-7 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                     onClick={() => {
                                       navigator.clipboard.writeText(wildcard.content);
                                       toast({
@@ -1269,7 +1269,7 @@ export default function Codex() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-7 w-7 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                     onClick={() => {
                                       const blob = new Blob([`__${wildcard.name}__\n${wildcard.content}`], { type: 'text/plain' });
                                       const url = URL.createObjectURL(blob);
@@ -1287,7 +1287,7 @@ export default function Codex() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-7 w-7 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                     onClick={() => {
                                       // Share functionality
                                       const shareText = `Wildcard: ${wildcard.name}\n${wildcard.content}`;
@@ -1305,7 +1305,7 @@ export default function Codex() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-7 w-7 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                     onClick={() => {
                                       if (confirm(`Delete "${wildcard.name}"?`)) {
                                         deleteAssembledStringMutation.mutate(wildcard.id);
