@@ -272,7 +272,7 @@ export interface IStorage {
   deleteRecommendedModel(id: string): Promise<void>;
 
   // Wordsmith Codex operations - Using prompt_components and aesthetics tables
-  getWordsmithCategories(): Promise<{ id: string; name: string; termCount: number }[]>;
+  getWordsmithCategories(): Promise<{ id: string; name: string; termCount: number; anatomyGroup?: string; subcategories?: string[] }[]>;
   getPromptComponents(options?: {
     category?: string;
     search?: string;
@@ -2061,7 +2061,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Wordsmith Codex operations - Using prompt_components and aesthetics tables
-  async getWordsmithCategories(): Promise<{ id: string; name: string; termCount: number; subcategories?: string[] }[]> {
+  async getWordsmithCategories(): Promise<{ id: string; name: string; termCount: number; anatomyGroup?: string; subcategories?: string[] }[]> {
     // Use optimized single query with GROUP BY for prompt_components
     const promptComponentCounts = await db
       .select({
@@ -2093,8 +2093,91 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Define anatomy group mappings for categories
+    const anatomyGroupMapping: { [key: string]: string } = {
+      // Subject related
+      'characters': 'Subject',
+      'character': 'Subject',
+      'creatures': 'Subject',
+      'creature': 'Subject',
+      'animals': 'Subject',
+      'animal': 'Subject',
+      'people': 'Subject',
+      'person': 'Subject',
+      'objects': 'Subject',
+      'object': 'Subject',
+      
+      // Style & Medium
+      'art style': 'Style & Medium',
+      'art-style': 'Style & Medium',
+      'style': 'Style & Medium',
+      'medium': 'Style & Medium',
+      'technique': 'Style & Medium',
+      'art movement': 'Style & Medium',
+      'art-movement': 'Style & Medium',
+      'genre': 'Style & Medium',
+      
+      // Environment & Setting
+      'environment': 'Environment & Setting',
+      'setting': 'Environment & Setting',
+      'location': 'Environment & Setting',
+      'scene': 'Environment & Setting',
+      'background': 'Environment & Setting',
+      'landscape': 'Environment & Setting',
+      'weather': 'Environment & Setting',
+      'time': 'Environment & Setting',
+      
+      // Lighting
+      'lighting': 'Lighting',
+      'light': 'Lighting',
+      'illumination': 'Lighting',
+      
+      // Camera & Composition
+      'camera': 'Camera & Composition',
+      'angle': 'Camera & Composition',
+      'shot': 'Camera & Composition',
+      'composition': 'Camera & Composition',
+      'perspective': 'Camera & Composition',
+      'framing': 'Camera & Composition',
+      
+      // Color & Mood
+      'color': 'Color & Mood',
+      'colors': 'Color & Mood',
+      'colour': 'Color & Mood',
+      'colours': 'Color & Mood',
+      'mood': 'Color & Mood',
+      'emotion': 'Color & Mood',
+      'atmosphere': 'Color & Mood',
+      'tone': 'Color & Mood',
+      
+      // Details & Textures
+      'details': 'Details & Textures',
+      'detail': 'Details & Textures',
+      'texture': 'Details & Textures',
+      'textures': 'Details & Textures',
+      'material': 'Details & Textures',
+      'materials': 'Details & Textures',
+      'quality': 'Details & Textures',
+      
+      // Action & Movement
+      'action': 'Action & Movement',
+      'pose': 'Action & Movement',
+      'movement': 'Action & Movement',
+      'motion': 'Action & Movement',
+      'activity': 'Action & Movement',
+      
+      // Special Effects
+      'effects': 'Special Effects',
+      'effect': 'Special Effects',
+      'special': 'Special Effects',
+      'fx': 'Special Effects',
+      'vfx': 'Special Effects',
+      'magic': 'Special Effects',
+      'particle': 'Special Effects'
+    };
+    
     // Build category list
-    const categories: { id: string; name: string; termCount: number; subcategories?: string[] }[] = [];
+    const categories: { id: string; name: string; termCount: number; anatomyGroup?: string; subcategories?: string[] }[] = [];
     
     // Add Aesthetics as a special category with subcategories
     categories.push({
@@ -2104,13 +2187,17 @@ export class DatabaseStorage implements IStorage {
       subcategories: Array.from(aestheticSubcategories).sort()
     });
     
-    // Add prompt component categories
+    // Add prompt component categories with anatomy groups
     for (const row of promptComponentCounts) {
       if (row.category) {
+        const categoryId = row.category.toLowerCase().replace(/\s+/g, '-');
+        const anatomyGroup = anatomyGroupMapping[categoryId] || anatomyGroupMapping[row.category.toLowerCase()];
+        
         categories.push({
-          id: row.category.toLowerCase().replace(/\s+/g, '-'),
+          id: categoryId,
           name: row.category,
-          termCount: Number(row.count)
+          termCount: Number(row.count),
+          anatomyGroup: anatomyGroup
         });
       }
     }
