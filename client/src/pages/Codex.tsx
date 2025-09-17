@@ -913,7 +913,7 @@ export default function Codex() {
                         data-testid={`card-term-${term.id}`}
                       >
                         <CardContent className="p-2 sm:p-3">
-                          <div className="font-medium text-xs sm:text-sm mb-1 break-words line-clamp-2">{term.term}</div>
+                          <div className="font-medium text-xs sm:text-sm break-words line-clamp-2 mt-[0px] mb-[0px]">{term.term}</div>
                           {term.subcategory && (
                             <div className="mt-1 text-xs text-muted-foreground truncate">
                               {term.subcategory}
