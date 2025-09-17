@@ -282,7 +282,6 @@ export default function Dashboard() {
 
             <div className="mt-2 md:mt-0">
               <SearchWithFilters
-                
                 placeholder="Search prompts..."
                 onSearchChange={(query) => setSearchQuery(query)}
                 onResultsChange={(results) => setSearchResults(results)}
