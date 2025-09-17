@@ -61,7 +61,7 @@ export default function Codex() {
   const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
   const [categoryHeight, setCategoryHeight] = useState(250); // Default mobile height in pixels
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Refs for smooth dragging without re-renders
   const scrollAreaRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
@@ -87,28 +87,28 @@ export default function Codex() {
     startYRef.current = touch.clientY;
     startHeightRef.current = categoryHeight;
     currentHeightRef.current = categoryHeight;
-    
+
     // Prevent text selection and scrolling while dragging
     document.body.style.userSelect = 'none';
     document.body.style.overflow = 'hidden';
     e.preventDefault();
-    
+
     // Add global handlers
     const handleGlobalTouchMove = (evt: TouchEvent) => {
       if (!isDraggingRef.current) return;
       evt.preventDefault();
-      
+
       const touch = evt.touches[0];
       const currentY = touch.clientY;
       // FIXED: Drag down increases height (like textarea)
       const deltaY = currentY - startYRef.current;
       const newHeight = Math.min(Math.max(150, startHeightRef.current + deltaY), window.innerHeight * 0.7);
-      
+
       // Cancel previous RAF if pending
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
       }
-      
+
       // Use requestAnimationFrame for smooth updates
       rafIdRef.current = requestAnimationFrame(() => {
         if (scrollAreaRef.current) {
@@ -123,30 +123,30 @@ export default function Codex() {
         rafIdRef.current = null;
       });
     };
-    
+
     const handleGlobalTouchEnd = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
-        
+
         // Cancel any pending RAF
         if (rafIdRef.current !== null) {
           cancelAnimationFrame(rafIdRef.current);
           rafIdRef.current = null;
         }
-        
+
         // Commit final height to React state
         setCategoryHeight(currentHeightRef.current);
-        
+
         // Restore body styles
         document.body.style.userSelect = '';
         document.body.style.overflow = '';
-        
+
         // Remove global listeners
         document.removeEventListener('touchmove', handleGlobalTouchMove);
         document.removeEventListener('touchend', handleGlobalTouchEnd);
       }
     };
-    
+
     // Add global listeners
     document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
     document.addEventListener('touchend', handleGlobalTouchEnd);
@@ -219,7 +219,7 @@ export default function Codex() {
   // Toggle term in assembled string (for clicking on terms)
   const toggleTermInAssembly = (term: any) => {
     const isSelected = selectedTerms.some(t => t.id === term.id);
-    
+
     if (isSelected) {
       // Remove term
       setSelectedTerms(prev => prev.filter(t => t.id !== term.id));
@@ -876,11 +876,11 @@ export default function Codex() {
         {/* Live String Assembly Toast - Moved to top */}
       {showAssemblyToast && (
         <div 
-          className={`fixed top-10 ${
+          className={`fixed top-20 ${
             toastMinimized ? 'right-4 w-auto' : 'left-4 right-4 sm:right-4 sm:left-auto sm:w-96'
-          } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-[60] text-white`}
+          } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-[100] text-white`}
         >
-         
+
           {toastMinimized ? (
             <div className="flex items-center gap-2 p-3">
               <span className="text-sm font-medium">{assembledString.length} terms selected</span>
@@ -916,7 +916,7 @@ export default function Codex() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="p-3">
                 <div className="bg-black/20 rounded-lg p-3 min-h-[60px] max-h-[150px] overflow-y-auto mb-3">
                   {assembledString.length === 0 ? (
@@ -925,9 +925,9 @@ export default function Codex() {
                     <p className="text-sm break-words text-white">{assembledString.join(', ')}</p>
                   )}
                 </div>
-                
+
                 <div className="flex flex-col gap-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex justify-center gap-2"> {/* Changed from grid to flex for single row */}
                     <Button
                       variant="outline"
                       size="sm"
@@ -948,8 +948,6 @@ export default function Codex() {
                       <Copy className="w-3 h-3 mr-1" />
                       Copy
                     </Button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -989,7 +987,6 @@ export default function Codex() {
             </div>
           )}
         </div>
-      )}
       </div>
   );
 }
