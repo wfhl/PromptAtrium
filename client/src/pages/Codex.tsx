@@ -43,9 +43,12 @@ export default function Codex() {
   const [selectedTerms, setSelectedTerms] = useState<CodexTerm[]>([]);
   const [assembledString, setAssembledString] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("browse");
+  const [categoryTab, setCategoryTab] = useState<"all" | "aesthetics">("all");
 
   // Fetch categories
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<
+    { id: string; name: string; termCount: number; subcategories?: string[] }[]
+  >({
     queryKey: ["/api/codex/categories"],
   });
 
@@ -148,57 +151,88 @@ export default function Codex() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[150px] sm:h-[200px] lg:h-[600px]">
-                <div className="p-2 sm:p-3 space-y-2">
-                  {/* All Categories Button */}
-                  <Button
-                    variant={!selectedCategory ? "secondary" : "ghost"}
-                    className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
-                    onClick={() => setSelectedCategory(null)}
-                    data-testid="button-all-categories"
-                  >
+              <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
+                <TabsList className="w-full rounded-none">
+                  <TabsTrigger value="all" className="flex-1 text-xs sm:text-sm" data-testid="tab-all-categories">
                     All Categories
-                  </Button>
-                  
-                  {/* Aesthetics as separate category */}
-                  <Button
-                    variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                    className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 font-semibold"
-                    onClick={() => setSelectedCategory("aesthetics")}
-                    data-testid="button-category-aesthetics"
-                  >
+                  </TabsTrigger>
+                  <TabsTrigger value="aesthetics" className="flex-1 text-xs sm:text-sm" data-testid="tab-aesthetics">
                     <Star className="w-3 h-3 mr-1" />
                     Aesthetics
-                  </Button>
-                  
-                  <Separator className="my-2" />
-                  
-                  {/* Other categories in 2-column grid on mobile */}
-                  {categoriesLoading ? (
-                    <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
-                  ) : (
-                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
-                      {categories.filter((c: any) => c.id !== "aesthetics").map((category: any) => (
-                        <Button
-                          key={category.id}
-                          variant={selectedCategory === category.id ? "secondary" : "ghost"}
-                          className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
-                          onClick={() => setSelectedCategory(category.id)}
-                          data-testid={`button-category-${category.id}`}
-                        >
-                          <span className="truncate">{category.name}</span>
-                          {category.termCount > 0 && (
-                            <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
-                              {category.termCount}
-                            </Badge>
-                          )}
-                        </Button>
-                      ))
-                    }
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="all" className="mt-0">
+                  <ScrollArea className="h-[150px] sm:h-[200px] lg:h-[550px]">
+                    <div className="p-2 sm:p-3 space-y-1">
+                      <Button
+                        variant={!selectedCategory ? "secondary" : "ghost"}
+                        className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
+                        onClick={() => setSelectedCategory(null)}
+                        data-testid="button-all-categories"
+                      >
+                        All Categories
+                      </Button>
+                      {categoriesLoading ? (
+                        <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                      ) : (
+                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
+                          {categories.filter(c => c.id !== "aesthetics").map(category => (
+                            <Button
+                              key={category.id}
+                              variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                              className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
+                              onClick={() => setSelectedCategory(category.id)}
+                              data-testid={`button-category-${category.id}`}
+                            >
+                              <span className="truncate">{category.name}</span>
+                              {category.termCount > 0 && (
+                                <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
+                                  {category.termCount}
+                                </Badge>
+                              )}
+                            </Button>
+                          ))
+                          }
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </ScrollArea>
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="aesthetics" className="mt-0">
+                  <ScrollArea className="h-[150px] sm:h-[200px] lg:h-[550px]">
+                    <div className="p-2 sm:p-3 space-y-1">
+                      <Button
+                        variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
+                        className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
+                        onClick={() => setSelectedCategory("aesthetics")}
+                        data-testid="button-all-aesthetics"
+                      >
+                        All Aesthetics
+                      </Button>
+                      {categoriesLoading ? (
+                        <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                      ) : (
+                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
+                          {/* Extract aesthetic subcategories */}
+                          {categories
+                            .find(c => c.id === "aesthetics")
+                            ?.subcategories?.map(subcat => (
+                              <Button
+                                key={subcat}
+                                variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
+                                className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
+                                onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
+                                data-testid={`button-aesthetic-${subcat}`}
+                              >
+                                <span className="truncate">{subcat}</span>
+                              </Button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
@@ -212,48 +246,50 @@ export default function Codex() {
                 <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">String Assembly</TabsTrigger>
                 <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
               </TabsList>
-              <div className="flex gap-2 self-end sm:self-auto">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "grid" ? "bg-secondary" : ""}`}
-                  onClick={() => setViewMode("grid")}
-                  data-testid="button-view-grid"
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "list" ? "bg-secondary" : ""}`}
-                  onClick={() => setViewMode("list")}
-                  data-testid="button-view-list"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
 
             {/* Browse Terms Tab - NO CARD WRAPPER */}
             <TabsContent value="browse" className="space-y-3">
-              {/* Search and Title Bar */}
+              {/* Title, Search and View Options Bar */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <h3 className="text-base sm:text-lg font-semibold">
                   {selectedCategory === "aesthetics" 
                     ? "Aesthetics"
-                    : selectedCategory
-                      ? categories.find((c: any) => c.id === selectedCategory)?.name || "Terms"
-                      : "All Terms"}
+                    : selectedCategory?.startsWith("aesthetics:")
+                      ? selectedCategory.replace("aesthetics:", "")
+                      : selectedCategory
+                        ? categories.find(c => c.id === selectedCategory)?.name || "Terms"
+                        : "All Terms"}
                 </h3>
-                <div className="relative w-full sm:w-auto">
-                  <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3 h-3 sm:w-4 sm:h-4" />
-                  <Input
-                    placeholder="Search..."
-                    className="pl-7 sm:pl-10 h-8 sm:h-10 text-xs sm:text-sm w-full sm:w-64"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    data-testid="input-search"
-                  />
+                <div className="flex gap-2 items-center">
+                  <div className="relative">
+                    <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3 h-3 sm:w-4 sm:h-4" />
+                    <Input
+                      placeholder="Search..."
+                      className="pl-7 sm:pl-10 h-8 sm:h-10 text-xs sm:text-sm w-32 sm:w-48"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      data-testid="input-search"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "grid" ? "bg-secondary" : ""}`}
+                    onClick={() => setViewMode("grid")}
+                    data-testid="button-view-grid"
+                  >
+                    <Grid className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "list" ? "bg-secondary" : ""}`}
+                    onClick={() => setViewMode("list")}
+                    data-testid="button-view-list"
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
 
@@ -458,7 +494,6 @@ export default function Codex() {
                                 </div>
                               </div>
                               <div className="flex gap-2 mt-2">
-                                <Badge variant="secondary">{list.termCount || 0} terms</Badge>
                                 {list.isPublic && <Badge>Public</Badge>}
                               </div>
                             </CardContent>
@@ -510,7 +545,6 @@ export default function Codex() {
                                 </Button>
                               </div>
                               <div className="flex gap-2 mt-2">
-                                <Badge variant="secondary">{list.termCount || 0} terms</Badge>
                                 <Badge variant="outline">
                                   {list.downloadCount || 0} downloads
                                 </Badge>

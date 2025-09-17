@@ -2060,7 +2060,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Wordsmith Codex operations - Using prompt_components and aesthetics tables
-  async getWordsmithCategories(): Promise<{ id: string; name: string; termCount: number }[]> {
+  async getWordsmithCategories(): Promise<{ id: string; name: string; termCount: number; subcategories?: string[] }[]> {
     // Use optimized single query with GROUP BY for prompt_components
     const promptComponentCounts = await db
       .select({
@@ -2075,15 +2075,32 @@ export class DatabaseStorage implements IStorage {
     const [aestheticsCount] = await db
       .select({ count: sql<string>`COUNT(*)::int` })
       .from(aesthetics);
+    
+    // Get unique aesthetic categories/subcategories
+    const aestheticsCategoriesResult = await db
+      .selectDistinct({ categories: aesthetics.categories })
+      .from(aesthetics)
+      .where(sql`${aesthetics.categories} IS NOT NULL`);
+    
+    // Extract unique subcategories from aesthetics
+    const aestheticSubcategories = new Set<string>();
+    for (const row of aestheticsCategoriesResult) {
+      if (row.categories) {
+        // Split by comma and clean up
+        const cats = row.categories.split(',').map(c => c.trim()).filter(c => c);
+        cats.forEach(cat => aestheticSubcategories.add(cat));
+      }
+    }
 
     // Build category list
-    const categories: { id: string; name: string; termCount: number }[] = [];
+    const categories: { id: string; name: string; termCount: number; subcategories?: string[] }[] = [];
     
-    // Add Aesthetics as a special category
+    // Add Aesthetics as a special category with subcategories
     categories.push({
       id: 'aesthetics',
       name: 'Aesthetics',
-      termCount: Number(aestheticsCount?.count || 0)
+      termCount: Number(aestheticsCount?.count || 0),
+      subcategories: Array.from(aestheticSubcategories).sort()
     });
     
     // Add prompt component categories
@@ -2211,6 +2228,17 @@ export class DatabaseStorage implements IStorage {
       return await this.getAesthetics({ 
         ...options, 
         category: undefined, // Don't filter by category for aesthetics 
+        limit, 
+        offset 
+      });
+    }
+    
+    // Handle aesthetic subcategories (aesthetics:<subcategory>)
+    if (options.category?.startsWith('aesthetics:')) {
+      const subcategory = options.category.replace('aesthetics:', '');
+      return await this.getAesthetics({ 
+        ...options, 
+        category: subcategory, // Pass the subcategory to filter by
         limit, 
         offset 
       });
