@@ -228,7 +228,8 @@ export default function Codex() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "category" | "random">("default");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 24; // Doubled from default to 24
+  const [randomSeed, setRandomSeed] = useState(0); // For re-randomizing
+  const itemsPerPage = 100; // Show 100 items per page
   const [selectedTerms, setSelectedTerms] = useState<CodexTerm[]>([]);
   const [assembledString, setAssembledString] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("browse");
@@ -393,9 +394,14 @@ export default function Codex() {
         });
         break;
       case "random":
-        // Fisher-Yates shuffle algorithm
+        // Use seed for consistent random within same seed, but different when seed changes
+        const seededRandom = (seed: number) => {
+          let x = Math.sin(seed) * 10000;
+          return x - Math.floor(x);
+        };
+        // Fisher-Yates shuffle algorithm with seeded random
         for (let i = sorted.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
+          const j = Math.floor(seededRandom(i + randomSeed) * (i + 1));
           [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
         }
         break;
@@ -405,7 +411,7 @@ export default function Codex() {
     }
     
     return sorted;
-  }, [rawTerms, sortMode]);
+  }, [rawTerms, sortMode, randomSeed]);
 
   // Paginate terms
   const paginatedTerms = useMemo(() => {
@@ -956,7 +962,13 @@ export default function Codex() {
                           By Category
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setSortMode("random")}
+                          onClick={() => {
+                            setSortMode("random");
+                            // If already random, change seed to re-randomize
+                            if (sortMode === "random") {
+                              setRandomSeed(prev => prev + 1);
+                            }
+                          }}
                           className={sortMode === "random" ? "bg-accent" : ""}
                         >
                           <Shuffle className="w-4 h-4 mr-2" />
