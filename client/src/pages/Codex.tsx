@@ -873,12 +873,12 @@ export default function Codex() {
           </div>
         </div>
 
-        {/* Live String Assembly Toast */}
-        {showAssemblyToast && (
-          <div 
-          className={`fixed ${
-            toastMinimized ? 'bottom-4 right-4 w-auto' : 'bottom-0 left-0 right-0 sm:bottom-4 sm:right-4 sm:left-auto sm:w-96'
-          } bg-background border shadow-lg rounded-lg transition-all duration-300 z-50`}
+        {/* Live String Assembly Toast - Moved to top */}
+      {showAssemblyToast && (
+        <div 
+          className={`fixed top-4 ${
+            toastMinimized ? 'right-4 w-auto' : 'left-4 right-4 sm:right-4 sm:left-auto sm:w-96'
+          } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-50 text-white`}
         >
           {toastMinimized ? (
             <div className="flex items-center gap-2 p-3">
@@ -887,19 +887,21 @@ export default function Codex() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setToastMinimized(false)}
+                className="text-white/70 hover:text-white hover:bg-white/10"
               >
                 <Maximize2 className="w-4 h-4" />
               </Button>
             </div>
           ) : (
             <div className="flex flex-col">
-              <div className="flex items-center justify-between p-3 border-b">
-                <h3 className="font-semibold text-sm">String Assembly</h3>
+              <div className="flex items-center justify-between p-3 border-b border-white/20">
+                <h3 className="font-semibold text-sm text-white">String Assembly</h3>
                 <div className="flex gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setToastMinimized(true)}
+                    className="text-white/70 hover:text-white hover:bg-white/10"
                   >
                     <Minimize2 className="w-4 h-4" />
                   </Button>
@@ -907,6 +909,7 @@ export default function Codex() {
                     variant="ghost"
                     size="sm"
                     onClick={clearAllSelections}
+                    className="text-white/70 hover:text-white hover:bg-white/10"
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -914,11 +917,11 @@ export default function Codex() {
               </div>
               
               <div className="p-3">
-                <div className="bg-secondary/50 rounded-lg p-3 min-h-[60px] max-h-[150px] overflow-y-auto mb-3">
+                <div className="bg-black/20 rounded-lg p-3 min-h-[60px] max-h-[150px] overflow-y-auto mb-3">
                   {assembledString.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Click terms to add them here...</p>
+                    <p className="text-sm text-white/70">Click terms to add them here...</p>
                   ) : (
-                    <p className="text-sm break-words">{assembledString.join(', ')}</p>
+                    <p className="text-sm break-words text-white">{assembledString.join(', ')}</p>
                   )}
                 </div>
                 
@@ -928,6 +931,7 @@ export default function Codex() {
                     size="sm"
                     onClick={randomizeAssembledString}
                     disabled={assembledString.length === 0}
+                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50"
                   >
                     <Shuffle className="w-4 h-4 mr-1" />
                     Randomize
@@ -937,6 +941,7 @@ export default function Codex() {
                     size="sm"
                     onClick={copyAssembledString}
                     disabled={assembledString.length === 0}
+                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50"
                   >
                     <Copy className="w-4 h-4 mr-1" />
                     Copy
@@ -954,6 +959,7 @@ export default function Codex() {
                       }
                     }}
                     disabled={assembledString.length === 0}
+                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50"
                   >
                     <Save className="w-4 h-4 mr-1" />
                     Save
@@ -968,6 +974,7 @@ export default function Codex() {
                       });
                     }}
                     disabled={assembledString.length === 0}
+                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50"
                   >
                     <Send className="w-4 h-4 mr-1" />
                     Send
