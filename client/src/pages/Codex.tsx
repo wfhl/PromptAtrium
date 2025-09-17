@@ -1393,8 +1393,11 @@ export default function Codex() {
             </div>
             <DialogFooter className="gap-2">
               <Button 
+                type="button"
                 variant="outline" 
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   setSaveDialogOpen(false);
                   setSaveName("");
                 }}
@@ -1403,16 +1406,23 @@ export default function Codex() {
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  if (saveName.trim()) {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Save button clicked!', { saveName, saveType, assembledString });
+                  if (saveName && saveName.trim()) {
+                    console.log('Triggering save mutation...');
                     saveAssembledStringMutation.mutate({
                       name: saveName.trim(),
                       type: saveType,
                       content: assembledString,
                     });
+                  } else {
+                    console.log('Save name is empty!');
                   }
                 }}
-                disabled={!saveName.trim() || saveAssembledStringMutation.isPending}
+                disabled={!saveName || !saveName.trim() || saveAssembledStringMutation.isPending}
                 className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saveAssembledStringMutation.isPending ? "Saving..." : `Save ${saveType === "preset" ? "Preset" : "Wildcard"}`}
