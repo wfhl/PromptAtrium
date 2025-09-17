@@ -2391,7 +2391,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCodexAssembledString(assembledString: InsertCodexAssembledString): Promise<CodexAssembledString> {
-    const [newAssembledString] = await db.insert(codexAssembledStrings).values(assembledString).returning();
+    // Ensure we have the correct column names
+    const dataToInsert = {
+      ...assembledString,
+      content: assembledString.content || assembledString.stringContent, // Handle both property names
+      metadata: assembledString.metadata || { termsUsed: assembledString.termsUsed || [] }
+    };
+    // Remove the old property names if they exist
+    delete dataToInsert.stringContent;
+    delete dataToInsert.termsUsed;
+    
+    const [newAssembledString] = await db.insert(codexAssembledStrings).values(dataToInsert).returning();
     return newAssembledString;
   }
 

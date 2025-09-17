@@ -467,9 +467,8 @@ export const codexAssembledStrings = pgTable("codex_assembled_strings", {
   userId: varchar("user_id").notNull().references(() => users.id),
   name: varchar("name").notNull(),
   type: varchar("type", { enum: ["preset", "wildcard"] }).notNull().default("preset"), // Distinguish between presets and wildcards
-  stringContent: text("string_content").notNull(),
-  termsUsed: jsonb("terms_used").default([]), // Array of term IDs used in this string
-  metadata: jsonb("metadata").default({}), // Additional metadata
+  content: text("content").notNull(), // Changed from stringContent to match database
+  metadata: jsonb("metadata").default({}), // Stores termsUsed and other metadata
   isPublic: boolean("is_public").default(false), // For future sharing functionality
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

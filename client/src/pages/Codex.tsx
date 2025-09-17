@@ -505,8 +505,8 @@ export default function Codex() {
       return apiRequest("/api/codex/assembled-strings", "POST", {
         name: data.name,
         type: data.type,
-        stringContent: data.content.join(", "),
-        termsUsed: selectedTerms.map(t => t.id),
+        content: data.content.join(", "),
+        metadata: { termsUsed: selectedTerms.map(t => t.id) },
       });
     },
     onSuccess: (_, variables) => {
@@ -1101,7 +1101,7 @@ export default function Codex() {
                               <div className="flex-1 min-w-0">
                                 <div className="font-semibold text-sm mb-1">{preset.name}</div>
                                 <div className="text-xs text-muted-foreground break-words">
-                                  {preset.stringContent}
+                                  {preset.content}
                                 </div>
                               </div>
                               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1111,7 +1111,7 @@ export default function Codex() {
                                   className="h-7 w-7"
                                   onClick={() => {
                                     // Recall: Load preset back into assembler
-                                    const terms = preset.stringContent.split(', ');
+                                    const terms = preset.content.split(', ');
                                     setAssembledString(terms);
                                     setShowAssemblyToast(true);
                                     toast({
@@ -1128,7 +1128,7 @@ export default function Codex() {
                                   size="icon"
                                   className="h-7 w-7"
                                   onClick={() => {
-                                    navigator.clipboard.writeText(preset.stringContent);
+                                    navigator.clipboard.writeText(preset.content);
                                     toast({
                                       title: "Copied!",
                                       description: "Preset copied to clipboard",
@@ -1143,7 +1143,7 @@ export default function Codex() {
                                   size="icon"
                                   className="h-7 w-7"
                                   onClick={() => {
-                                    const blob = new Blob([preset.stringContent], { type: 'text/plain' });
+                                    const blob = new Blob([preset.content], { type: 'text/plain' });
                                     const url = URL.createObjectURL(blob);
                                     const a = document.createElement('a');
                                     a.href = url;
@@ -1161,7 +1161,7 @@ export default function Codex() {
                                   className="h-7 w-7"
                                   onClick={() => {
                                     // Share functionality - copy a shareable link or format
-                                    const shareText = `Preset: ${preset.name}\n${preset.stringContent}`;
+                                    const shareText = `Preset: ${preset.name}\n${preset.content}`;
                                     navigator.clipboard.writeText(shareText);
                                     toast({
                                       title: "Ready to share!",
@@ -1222,15 +1222,15 @@ export default function Codex() {
                                   <div className="flex-1 min-w-0">
                                     <h4 className="font-semibold">{wildcard.name}</h4>
                                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                                      {wildcard.stringContent}
+                                      {wildcard.content}
                                     </p>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground mb-3">
                                   <span>{wildcard.createdAt ? new Date(wildcard.createdAt).toLocaleDateString() : ''}</span>
-                                  {wildcard.termsUsed && Array.isArray(wildcard.termsUsed) && wildcard.termsUsed.length > 0 && (
+                                  {wildcard.metadata && wildcard.metadata.termsUsed && Array.isArray(wildcard.metadata.termsUsed) && wildcard.metadata.termsUsed.length > 0 && (
                                     <Badge variant="secondary" className="text-xs">
-                                      {wildcard.termsUsed.length} terms
+                                      {wildcard.metadata.termsUsed.length} terms
                                     </Badge>
                                   )}
                                 </div>
@@ -1241,7 +1241,7 @@ export default function Codex() {
                                     className="h-7 w-7"
                                     onClick={() => {
                                       // Recall: Load wildcard back into assembler
-                                      const terms = wildcard.stringContent.split(', ');
+                                      const terms = wildcard.content.split(', ');
                                       setAssembledString(terms);
                                       setShowAssemblyToast(true);
                                       toast({
@@ -1259,7 +1259,7 @@ export default function Codex() {
                                     size="icon"
                                     className="h-7 w-7"
                                     onClick={() => {
-                                      navigator.clipboard.writeText(wildcard.stringContent);
+                                      navigator.clipboard.writeText(wildcard.content);
                                       toast({
                                         title: "Copied!",
                                         description: "Wildcard copied to clipboard",
@@ -1275,7 +1275,7 @@ export default function Codex() {
                                     size="icon"
                                     className="h-7 w-7"
                                     onClick={() => {
-                                      const blob = new Blob([`__${wildcard.name}__\n${wildcard.stringContent}`], { type: 'text/plain' });
+                                      const blob = new Blob([`__${wildcard.name}__\n${wildcard.content}`], { type: 'text/plain' });
                                       const url = URL.createObjectURL(blob);
                                       const a = document.createElement('a');
                                       a.href = url;
@@ -1294,7 +1294,7 @@ export default function Codex() {
                                     className="h-7 w-7"
                                     onClick={() => {
                                       // Share functionality
-                                      const shareText = `Wildcard: ${wildcard.name}\n${wildcard.stringContent}`;
+                                      const shareText = `Wildcard: ${wildcard.name}\n${wildcard.content}`;
                                       navigator.clipboard.writeText(shareText);
                                       toast({
                                         title: "Ready to share!",
