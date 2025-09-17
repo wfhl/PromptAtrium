@@ -27,6 +27,7 @@ import PromptingGuides from "@/pages/prompting-guides";
 import GettingStarted from "@/pages/getting-started";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsAndConditions from "@/pages/terms";
+import Codex from "@/pages/Codex";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -142,6 +143,9 @@ function Router() {
             </Route>
             <Route path="/install-guide">
               {() => <Layout><InstallGuide /></Layout>}
+            </Route>
+            <Route path="/codex">
+              {() => <Layout><Codex /></Layout>}
             </Route>
           </>
         )}
