@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { saveToGoogleDrive, isGoogleDriveConnected } from "@/utils/googleDrive";
 import { PromptImageCarousel } from "./PromptImageCarousel";
+import { AddExampleImagesDialog } from "./AddExampleImagesDialog";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -77,6 +78,9 @@ export function PromptCard({
   
   // Archive confirmation dialog state
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  
+  // Add Example Images dialog state
+  const [showAddImagesDialog, setShowAddImagesDialog] = useState(false);
   
   const toggleCollapsed = () => {
     setIsCollapsed(!isCollapsed);
@@ -1309,7 +1313,7 @@ export function PromptCard({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => toast({ title: "Add Example Images", description: "Example image upload coming soon!" })}
+                    onClick={() => setShowAddImagesDialog(true)}
                     className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid={`button-add-images-${prompt.id}`}
                     title="Add example images to this prompt"
@@ -1899,6 +1903,15 @@ export function PromptCard({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        {/* Add Example Images Dialog */}
+        {showAddImagesDialog && (
+          <AddExampleImagesDialog
+            open={showAddImagesDialog}
+            onOpenChange={setShowAddImagesDialog}
+            prompt={prompt}
+          />
+        )}
       </CardContent>
     </Card>
   );
