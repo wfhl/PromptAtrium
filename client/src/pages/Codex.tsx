@@ -676,11 +676,11 @@ export default function Codex() {
                                   <Button
                                     key={category.id}
                                     variant={selectedCategory === category.id ? "secondary" : "ghost"}
-                                    className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
+                                    className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2"
                                     onClick={() => setSelectedCategory(category.id)}
                                     data-testid={`button-category-${category.id}`}
                                   >
-                                    <span className="truncate">{category.name}</span>
+                                    <span>{category.name}</span>
                                     {category.termCount > 0 && (
                                       <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
                                         {category.termCount}
@@ -765,7 +765,7 @@ export default function Codex() {
                                               onClick={() => setSelectedCategory(category.id)}
                                               data-testid={`button-organized-${category.id}`}
                                             >
-                                              <span className="truncate">{category.name}</span>
+                                              <span>{category.name}</span>
                                               {category.termCount > 0 && (
                                                 <Badge variant="outline" className="ml-auto text-xs px-1 py-0 h-4">
                                                   {category.termCount}
@@ -822,11 +822,11 @@ export default function Codex() {
                                     <Button
                                       key={subcat}
                                       variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
-                                      className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
+                                      className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2"
                                       onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
                                       data-testid={`button-aesthetic-${subcat}`}
                                     >
-                                      <span className="truncate">{subcat}</span>
+                                      <span>{subcat}</span>
                                     </Button>
                                   ))}
                               </div>
@@ -870,7 +870,7 @@ export default function Codex() {
                                           onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
                                           data-testid={`button-aesthetic-organized-${subcat}`}
                                         >
-                                          <span className="truncate">{subcat}</span>
+                                          <span>{subcat}</span>
                                         </Button>
                                       ))}
                                   </div>
@@ -1016,9 +1016,9 @@ export default function Codex() {
                         data-testid={`card-term-${term.id}`}
                       >
                         <CardContent className="p-1 sm:p-1 pl-[12px] pr-[12px] pt-[4px] pb-[4px]">
-                          <div className="font-medium text-xs sm:text-sm break-words line-clamp-2 mt-[0px] mb-[0px]">{term.term}</div>
+                          <div className="font-medium text-xs sm:text-sm break-words mt-[0px] mb-[0px]">{term.term}</div>
                           {term.subcategory && (
-                            <div className="mt-1 text-xs text-muted-foreground truncate">
+                            <div className="mt-1 text-xs text-muted-foreground">
                               {term.subcategory}
                             </div>
                           )}
@@ -1037,7 +1037,7 @@ export default function Codex() {
                         data-testid={`row-term-${term.id}`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs sm:text-sm truncate">{term.term}</div>
+                          <div className="font-medium text-xs sm:text-sm">{term.term}</div>
                         </div>
                         <div className="flex gap-1 sm:gap-2 ml-2">
                           <Button

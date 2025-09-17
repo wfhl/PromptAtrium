@@ -2326,7 +2326,7 @@ export class DatabaseStorage implements IStorage {
     excludeAesthetics?: boolean;
     userId?: string;
   } = {}): Promise<any[]> {
-    const limit = options.limit || 100;
+    const limit = options.limit || 10000; // Return up to 10000 results by default (essentially unlimited)
     const offset = options.offset || 0;
     
     // If aesthetics category is selected, only return aesthetics
