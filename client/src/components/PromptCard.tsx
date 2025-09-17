@@ -179,8 +179,10 @@ export function PromptCard({
   const likeMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/like`);
-      return await response.json();
+      const data = await response.json();
+      return data;
     },
+    retry: 1, // Allow one retry for network issues
     onMutate: async () => {
       // Cancel all prompt queries and likes queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
@@ -252,9 +254,16 @@ export function PromptCard({
         }, 500);
         return;
       }
+      
+      // Check if it's a network error
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const isNetworkError = errorMessage.includes("Failed to fetch") || errorMessage.includes("NetworkError");
+      
       toast({
         title: "Error",
-        description: "Failed to like prompt",
+        description: isNetworkError 
+          ? "Network error. Please check your connection and try again." 
+          : "Failed to update like. Please try again.",
         variant: "destructive",
       });
     },
