@@ -36,13 +36,14 @@ import {
   X,
   Layers
 } from "lucide-react";
-import type { 
-  CodexCategory, 
-  CodexTerm, 
-  CodexUserList, 
-  CodexUserTerm, 
-  CodexAssembledString 
+import type {
+  CodexCategory,
+  CodexTerm,
+  CodexUserList,
+  CodexUserTerm,
+  CodexAssembledString
 } from "@shared/schema";
+import { Resizable } from 'react-resizable'; // Import Resizable
 
 export default function Codex() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -161,6 +162,14 @@ export default function Codex() {
     },
   });
 
+  const handleResize = (
+    _event: any,
+    { size }: { size: { width: number; height: number } }
+  ) => {
+    // You can use the size state here if you want to persist the size
+    // For now, we'll just let the component render with the new size
+  };
+
   return (
     <div className="container mx-auto p-3 sm:p-6">
       <div className="mb-4 sm:mb-6">
@@ -173,562 +182,570 @@ export default function Codex() {
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
-          <Card className="lg:sticky lg:top-4">
-            <CardContent className="p-0">
-              <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
-                <TabsList className="w-full rounded-none">
-                  <TabsTrigger value="all" className="flex-1 text-xs sm:text-sm" data-testid="tab-all-categories">
-                    Subject Terms
-                  </TabsTrigger>
-                  <TabsTrigger value="aesthetics" className="flex-1 text-xs sm:text-sm" data-testid="tab-aesthetics">
-                    <Star className="w-3 h-3 mr-1" />
-                    Aesthetics
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="all" className="mt-0">
-                  <Tabs value={categoryView} onValueChange={(v) => setCategoryView(v as "all" | "organized")} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 h-6">
-                      <TabsTrigger value="all" className="text-xs py-0.2" data-testid="tab-all-view">
-                        <Grid className="w-3 h-3 mr-1" />
-                        All
-                      </TabsTrigger>
-                      <TabsTrigger value="organized" className="text-xs py-0.2" data-testid="tab-organized-view">
-                        <Layers className="w-3 h-3 mr-1" />
-                        Organized
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="all" className="mt-2">
-                      <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
-                        <div className="p-2 sm:p-3 space-y-1">
-                          <Button
-                            variant={!selectedCategory ? "secondary" : "ghost"}
-                            className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
-                            onClick={() => setSelectedCategory(null)}
-                            data-testid="button-all-categories"
-                          >
-                            All Categories
-                          </Button>
-                          {categoriesLoading ? (
-                            <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
-                          ) : (
-                            <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
-                              {categories.filter(c => c.id !== "aesthetics").map(category => (
-                                <Button
-                                  key={category.id}
-                                  variant={selectedCategory === category.id ? "secondary" : "ghost"}
-                                  className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
-                                  onClick={() => setSelectedCategory(category.id)}
-                                  data-testid={`button-category-${category.id}`}
-                                >
-                                  <span className="truncate">{category.name}</span>
-                                  {category.termCount > 0 && (
-                                    <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
-                                      {category.termCount}
-                                    </Badge>
-                                  )}
-                                </Button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-                    
-                    <TabsContent value="organized" className="mt-2">
-                      <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
-                        <div className="p-2 sm:p-3">
-                          <Button
-                            variant={!selectedCategory ? "secondary" : "ghost"}
-                            className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
-                            onClick={() => setSelectedCategory(null)}
-                            data-testid="button-all-organized"
-                          >
-                            All Categories
-                          </Button>
-                          {categoriesLoading ? (
-                            <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
-                          ) : (
-                            <Accordion type="single" collapsible className="w-full space-y-1">
-                              {/* Group categories by anatomy group */}
-                              {Object.entries(
-                                categories
-                                  .filter(c => c.id !== "aesthetics")
-                                  .reduce((acc, cat) => {
-                                    const group = cat.anatomyGroup || "Other";
-                                    if (!acc[group]) acc[group] = [];
-                                    acc[group].push(cat);
-                                    return acc;
-                                  }, {} as { [key: string]: typeof categories })
-                              )
-                                .sort(([a], [b]) => {
-                                  // Define custom sort order for anatomy groups
-                                  const order = [
-                                    'Subject', 
-                                    'Style & Medium', 
-                                    'Environment & Setting',
-                                    'Lighting',
-                                    'Camera & Composition',
-                                    'Color & Mood',
-                                    'Details & Textures',
-                                    'Action & Movement',
-                                    'Special Effects',
-                                    'Other'
-                                  ];
-                                  return order.indexOf(a) - order.indexOf(b);
-                                })
-                                .map(([group, groupCategories]) => (
-                                  <AccordionItem
-                                    key={group}
-                                    value={group}
-                                    className={`border rounded-lg px-2 ${getAnatomyGroupColor(group)}`}
-                                  >
-                                    <AccordionTrigger className="hover:no-underline py-2 text-xs sm:text-sm">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold">{group}</span>
-                                        <Badge variant="secondary" className="text-xs">
-                                          {groupCategories.length}
-                                        </Badge>
-                                      </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                      <div className="space-y-1 pt-1">
-                                        {groupCategories.map(category => (
-                                          <Button
-                                            key={category.id}
-                                            variant={selectedCategory === category.id ? "secondary" : "ghost"}
-                                            className="w-full justify-start h-7 sm:h-8 text-xs sm:text-sm px-2 bg-background/50"
-                                            onClick={() => setSelectedCategory(category.id)}
-                                            data-testid={`button-organized-${category.id}`}
-                                          >
-                                            <span className="truncate">{category.name}</span>
-                                            {category.termCount > 0 && (
-                                              <Badge variant="outline" className="ml-auto text-xs px-1 py-0 h-4">
-                                                {category.termCount}
-                                              </Badge>
-                                            )}
-                                          </Button>
-                                        ))}
-                                      </div>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                ))}
-                            </Accordion>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-                  </Tabs>
-                </TabsContent>
-                <TabsContent value="aesthetics" className="mt-0">
-                  <Tabs value={aestheticsView} onValueChange={(v) => setAestheticsView(v as "all" | "organized")} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 h-6">
-                      <TabsTrigger value="all" className="text-xs py-0.2" data-testid="tab-aesthetics-all">
-                        <Grid className="w-3 h-3 mr-1" />
-                        All
-                      </TabsTrigger>
-                      <TabsTrigger value="organized" className="text-xs py-0.2" data-testid="tab-aesthetics-organized">
-                        <Layers className="w-3 h-3 mr-1" />
-                        Organized
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="all" className="mt-2">
-                      <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
-                        <div className="p-2 sm:p-3 space-y-1">
-                          <Button
-                            variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                            className="w-full justify-start h-8 text-xs py-0.2"
-                            onClick={() => setSelectedCategory("aesthetics")}
-                            data-testid="button-all-aesthetics"
-                          >
-                            All Aesthetics
-                          </Button>
-                          {categoriesLoading ? (
-                            <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
-                          ) : (
-                            <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
-                              {/* Extract aesthetic subcategories */}
-                              {categories
-                                .find(c => c.id === "aesthetics")
-                                ?.subcategories?.map(subcat => (
+          <Resizable
+            defaultSize={{ width: 300, height: 600 }} // Default size for the category section
+            minConstraints={[200, 300]} // Minimum width and height
+            maxConstraints={[500, 800]} // Maximum width and height
+            onResize={handleResize}
+            axis="both" // Allow resizing in both directions
+          >
+            <Card className="h-full lg:sticky lg:top-4">
+              <CardContent className="p-0">
+                <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
+                  <TabsList className="w-full rounded-none">
+                    <TabsTrigger value="all" className="flex-1 text-xs sm:text-sm" data-testid="tab-all-categories">
+                      Subject Terms
+                    </TabsTrigger>
+                    <TabsTrigger value="aesthetics" className="flex-1 text-xs sm:text-sm" data-testid="tab-aesthetics">
+                      <Star className="w-3 h-3 mr-1" />
+                      Aesthetics
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="all" className="mt-0">
+                    <Tabs value={categoryView} onValueChange={(v) => setCategoryView(v as "all" | "organized")} className="w-full">
+                      <TabsList className="grid w-full grid-cols-2 h-6">
+                        <TabsTrigger value="all" className="text-xs py-0.2" data-testid="tab-all-view">
+                          <Grid className="w-3 h-3 mr-1" />
+                          All
+                        </TabsTrigger>
+                        <TabsTrigger value="organized" className="text-xs py-0.2" data-testid="tab-organized-view">
+                          <Layers className="w-3 h-3 mr-1" />
+                          Organized
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="all" className="mt-2">
+                        <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                          <div className="p-2 sm:p-3 space-y-1">
+                            <Button
+                              variant={!selectedCategory ? "secondary" : "ghost"}
+                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
+                              onClick={() => setSelectedCategory(null)}
+                              data-testid="button-all-categories"
+                            >
+                              All Categories
+                            </Button>
+                            {categoriesLoading ? (
+                              <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                            ) : (
+                              <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
+                                {categories.filter(c => c.id !== "aesthetics").map(category => (
                                   <Button
-                                    key={subcat}
-                                    variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
+                                    key={category.id}
+                                    variant={selectedCategory === category.id ? "secondary" : "ghost"}
                                     className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
-                                    onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
-                                    data-testid={`button-aesthetic-${subcat}`}
+                                    onClick={() => setSelectedCategory(category.id)}
+                                    data-testid={`button-category-${category.id}`}
                                   >
-                                    <span className="truncate">{subcat}</span>
+                                    <span className="truncate">{category.name}</span>
+                                    {category.termCount > 0 && (
+                                      <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
+                                        {category.termCount}
+                                      </Badge>
+                                    )}
                                   </Button>
                                 ))}
-                            </div>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-                    
-                    <TabsContent value="organized" className="mt-2">
-                      <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
-                        <div className="p-2 sm:p-3">
-                          <Button
-                            variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                            className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
-                            onClick={() => setSelectedCategory("aesthetics")}
-                            data-testid="button-all-aesthetics-organized"
-                          >
-                            All Aesthetics
-                          </Button>
-                          {categoriesLoading ? (
-                            <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
-                          ) : (
-                            <div className="space-y-2">
-                              {/* Group aesthetic subcategories - for now just show them as a styled list */}
-                              {/* In the future, these could be organized by era, style, etc. */}
-                              <div className="rounded-lg border p-3 bg-purple-500/10 border-purple-500/30">
-                                <h4 className="text-xs sm:text-sm font-semibold text-purple-400 mb-2">
-                                  Style Categories
-                                </h4>
-                                <div className="grid grid-cols-2 lg:grid-cols-1 gap-1">
-                                  {categories
-                                    .find(c => c.id === "aesthetics")
-                                    ?.subcategories?.map(subcat => (
-                                      <Button
-                                        key={subcat}
-                                        variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
-                                        className="justify-start h-7 sm:h-8 text-xs sm:text-sm px-2 bg-background/50"
-                                        onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
-                                        data-testid={`button-aesthetic-organized-${subcat}`}
-                                      >
-                                        <span className="truncate">{subcat}</span>
-                                      </Button>
-                                    ))}
+                              </div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+
+                      <TabsContent value="organized" className="mt-2">
+                        <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                          <div className="p-2 sm:p-3">
+                            <Button
+                              variant={!selectedCategory ? "secondary" : "ghost"}
+                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
+                              onClick={() => setSelectedCategory(null)}
+                              data-testid="button-all-organized"
+                            >
+                              All Categories
+                            </Button>
+                            {categoriesLoading ? (
+                              <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                            ) : (
+                              <Accordion type="single" collapsible className="w-full space-y-1">
+                                {/* Group categories by anatomy group */}
+                                {Object.entries(
+                                  categories
+                                    .filter(c => c.id !== "aesthetics")
+                                    .reduce((acc, cat) => {
+                                      const group = cat.anatomyGroup || "Other";
+                                      if (!acc[group]) acc[group] = [];
+                                      acc[group].push(cat);
+                                      return acc;
+                                    }, {} as { [key: string]: typeof categories })
+                                )
+                                  .sort(([a], [b]) => {
+                                    // Define custom sort order for anatomy groups
+                                    const order = [
+                                      'Subject',
+                                      'Style & Medium',
+                                      'Environment & Setting',
+                                      'Lighting',
+                                      'Camera & Composition',
+                                      'Color & Mood',
+                                      'Details & Textures',
+                                      'Action & Movement',
+                                      'Special Effects',
+                                      'Other'
+                                    ];
+                                    return order.indexOf(a) - order.indexOf(b);
+                                  })
+                                  .map(([group, groupCategories]) => (
+                                    <AccordionItem
+                                      key={group}
+                                      value={group}
+                                      className={`border rounded-lg px-2 ${getAnatomyGroupColor(group)}`}
+                                    >
+                                      <AccordionTrigger className="hover:no-underline py-2 text-xs sm:text-sm">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-semibold">{group}</span>
+                                          <Badge variant="secondary" className="text-xs">
+                                            {groupCategories.length}
+                                          </Badge>
+                                        </div>
+                                      </AccordionTrigger>
+                                      <AccordionContent>
+                                        <div className="space-y-1 pt-1">
+                                          {groupCategories.map(category => (
+                                            <Button
+                                              key={category.id}
+                                              variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                                              className="w-full justify-start h-7 sm:h-8 text-xs sm:text-sm px-2 bg-background/50"
+                                              onClick={() => setSelectedCategory(category.id)}
+                                              data-testid={`button-organized-${category.id}`}
+                                            >
+                                              <span className="truncate">{category.name}</span>
+                                              {category.termCount > 0 && (
+                                                <Badge variant="outline" className="ml-auto text-xs px-1 py-0 h-4">
+                                                  {category.termCount}
+                                                </Badge>
+                                              )}
+                                            </Button>
+                                          ))}
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  ))}
+                              </Accordion>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+                    </Tabs>
+                  </TabsContent>
+                  <TabsContent value="aesthetics" className="mt-0">
+                    <Tabs value={aestheticsView} onValueChange={(v) => setAestheticsView(v as "all" | "organized")} className="w-full">
+                      <TabsList className="grid w-full grid-cols-2 h-6">
+                        <TabsTrigger value="all" className="text-xs py-0.2" data-testid="tab-aesthetics-all">
+                          <Grid className="w-3 h-3 mr-1" />
+                          All
+                        </TabsTrigger>
+                        <TabsTrigger value="organized" className="text-xs py-0.2" data-testid="tab-aesthetics-organized">
+                          <Layers className="w-3 h-3 mr-1" />
+                          Organized
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="all" className="mt-2">
+                        <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                          <div className="p-2 sm:p-3 space-y-1">
+                            <Button
+                              variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
+                              className="w-full justify-start h-8 text-xs py-0.2"
+                              onClick={() => setSelectedCategory("aesthetics")}
+                              data-testid="button-all-aesthetics"
+                            >
+                              All Aesthetics
+                            </Button>
+                            {categoriesLoading ? (
+                              <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                            ) : (
+                              <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
+                                {/* Extract aesthetic subcategories */}
+                                {categories
+                                  .find(c => c.id === "aesthetics")
+                                  ?.subcategories?.map(subcat => (
+                                    <Button
+                                      key={subcat}
+                                      variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
+                                      className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
+                                      onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
+                                      data-testid={`button-aesthetic-${subcat}`}
+                                    >
+                                      <span className="truncate">{subcat}</span>
+                                    </Button>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+
+                      <TabsContent value="organized" className="mt-2">
+                        <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                          <div className="p-2 sm:p-3">
+                            <Button
+                              variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
+                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
+                              onClick={() => setSelectedCategory("aesthetics")}
+                              data-testid="button-all-aesthetics-organized"
+                            >
+                              All Aesthetics
+                            </Button>
+                            {categoriesLoading ? (
+                              <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {/* Group aesthetic subcategories - for now just show them as a styled list */}
+                                {/* In the future, these could be organized by era, style, etc. */}
+                                <div className="rounded-lg border p-3 bg-purple-500/10 border-purple-500/30">
+                                  <h4 className="text-xs sm:text-sm font-semibold text-purple-400 mb-2">
+                                    Style Categories
+                                  </h4>
+                                  <div className="grid grid-cols-2 lg:grid-cols-1 gap-1">
+                                    {categories
+                                      .find(c => c.id === "aesthetics")
+                                      ?.subcategories?.map(subcat => (
+                                        <Button
+                                          key={subcat}
+                                          variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
+                                          className="justify-start h-7 sm:h-8 text-xs sm:text-sm px-2 bg-background/50"
+                                          onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
+                                          data-testid={`button-aesthetic-organized-${subcat}`}
+                                        >
+                                          <span className="truncate">{subcat}</span>
+                                        </Button>
+                                      ))}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-                  </Tabs>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+                    </Tabs>
+                  </TabsContent>
+                </Tabs>
+              </Card>
+            </Resizable> {/* End Resizable wrapper */}
+          </div>
 
-        {/* Main Content Area - Shows below categories on mobile, beside on desktop */}
-        <div className="lg:col-span-3 order-2 lg:order-2">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-              <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
-                <TabsTrigger value="browse" data-testid="tab-browse" className="text-xs sm:text-sm">Browse Terms</TabsTrigger>
-                <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">String Assembly</TabsTrigger>
-                <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
-              </TabsList>
-            </div>
-
-            {/* Browse Terms Tab - NO CARD WRAPPER */}
-            <TabsContent value="browse" className="space-y-3">
-              {/* Title, Search and View Options Bar - All on one row */}
-              <div className="flex flex-row justify-between items-center gap-2">
-                <h3 className="text-base sm:text-lg font-semibold flex-shrink-0">
-                  {selectedCategory === "aesthetics" 
-                    ? "Aesthetics"
-                    : selectedCategory?.startsWith("aesthetics:")
-                      ? selectedCategory.replace("aesthetics:", "")
-                      : selectedCategory
-                        ? categories.find(c => c.id === selectedCategory)?.name || "Terms"
-                        : "All Terms"}
-                </h3>
-                <div className="flex gap-2 items-center">
-                  <div className="relative">
-                    <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3 h-3 sm:w-4 sm:h-4" />
-                    <Input
-                      placeholder="Search..."
-                      className="pl-7 sm:pl-10 h-8 sm:h-10 text-xs sm:text-sm w-32 sm:w-48"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      data-testid="input-search"
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "grid" ? "bg-secondary" : ""}`}
-                    onClick={() => setViewMode("grid")}
-                    data-testid="button-view-grid"
-                  >
-                    <Grid className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "list" ? "bg-secondary" : ""}`}
-                    onClick={() => setViewMode("list")}
-                    data-testid="button-view-list"
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                </div>
+          {/* Main Content Area - Shows below categories on mobile, beside on desktop */}
+          <div className="lg:col-span-3 order-2 lg:order-2">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
+                  <TabsTrigger value="browse" data-testid="tab-browse" className="text-xs sm:text-sm">Browse Terms</TabsTrigger>
+                  <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">String Assembly</TabsTrigger>
+                  <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
+                </TabsList>
               </div>
 
-              {/* Terms Content - NO CARD */}
-              {termsLoading ? (
-                <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">Loading terms...</div>
-              ) : terms.length === 0 ? (
-                <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">
-                  No terms found. Try a different search or category.
-                </div>
-              ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                  {terms.map((term: any) => (
-                    <Card
-                      key={term.id}
-                      className="cursor-pointer hover:shadow-md transition-shadow h-full"
-                      onClick={() => addToAssembledString(term)}
-                      data-testid={`card-term-${term.id}`}
-                    >
-                      <CardContent className="p-2 sm:p-3">
-                        <div className="font-medium text-xs sm:text-sm mb-1 break-words line-clamp-2">{term.term}</div>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {term.description || ''}
-                        </p>
-                        {term.subcategory && (
-                          <div className="mt-1 text-xs text-muted-foreground truncate">
-                            {term.subcategory}
-                          </div>
-                        )}
-                        
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-1 sm:space-y-2">
-                  {terms.map((term: any) => (
-                    <div
-                      key={term.id}
-                      className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer"
-                      onClick={() => addToAssembledString(term)}
-                      data-testid={`row-term-${term.id}`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-xs sm:text-sm truncate">{term.term}</div>
-                        <p className="text-xs text-muted-foreground truncate">{term.description || ''}</p>
-                      </div>
-                      <div className="flex gap-1 sm:gap-2 ml-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 sm:h-8 sm:w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToAssembledString(term);
-                          }}
-                        >
-                          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </Button>
-                      </div>
+              {/* Browse Terms Tab - NO CARD WRAPPER */}
+              <TabsContent value="browse" className="space-y-3">
+                {/* Title, Search and View Options Bar - All on one row */}
+                <div className="flex flex-row justify-between items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-semibold flex-shrink-0">
+                    {selectedCategory === "aesthetics"
+                      ? "Aesthetics"
+                      : selectedCategory?.startsWith("aesthetics:")
+                        ? selectedCategory.replace("aesthetics:", "")
+                        : selectedCategory
+                          ? categories.find(c => c.id === selectedCategory)?.name || "Terms"
+                          : "All Terms"}
+                  </h3>
+                  <div className="flex gap-2 items-center">
+                    <div className="relative">
+                      <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3 h-3 sm:w-4 sm:h-4" />
+                      <Input
+                        placeholder="Search..."
+                        className="pl-7 sm:pl-10 h-8 sm:h-10 text-xs sm:text-sm w-32 sm:w-48"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        data-testid="input-search"
+                      />
                     </div>
-                  ))}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "grid" ? "bg-secondary" : ""}`}
+                      onClick={() => setViewMode("grid")}
+                      data-testid="button-view-grid"
+                    >
+                      <Grid className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "list" ? "bg-secondary" : ""}`}
+                      onClick={() => setViewMode("list")}
+                      data-testid="button-view-list"
+                    >
+                      <List className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </TabsContent>
 
-            {/* String Assembly Tab */}
-            <TabsContent value="assemble">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>String Assembly</span>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={randomizeOrder}
-                        disabled={assembledString.length === 0}
-                        data-testid="button-randomize"
+                {/* Terms Content - NO CARD */}
+                {termsLoading ? (
+                  <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">Loading terms...</div>
+                ) : terms.length === 0 ? (
+                  <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">
+                    No terms found. Try a different search or category.
+                  </div>
+                ) : viewMode === "grid" ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                    {terms.map((term: any) => (
+                      <Card
+                        key={term.id}
+                        className="cursor-pointer hover:shadow-md transition-shadow h-full"
+                        onClick={() => addToAssembledString(term)}
+                        data-testid={`card-term-${term.id}`}
                       >
-                        <Shuffle className="w-4 h-4 mr-2" />
-                        Randomize
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyToClipboard}
-                        disabled={assembledString.length === 0}
-                        data-testid="button-copy"
+                        <CardContent className="p-2 sm:p-3">
+                          <div className="font-medium text-xs sm:text-sm mb-1 break-words line-clamp-2">{term.term}</div>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {term.description || ''}
+                          </p>
+                          {term.subcategory && (
+                            <div className="mt-1 text-xs text-muted-foreground truncate">
+                              {term.subcategory}
+                            </div>
+                          )}
+
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-1 sm:space-y-2">
+                    {terms.map((term: any) => (
+                      <div
+                        key={term.id}
+                        className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer"
+                        onClick={() => addToAssembledString(term)}
+                        data-testid={`row-term-${term.id}`}
                       >
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const name = prompt("Enter a name for this assembled string:");
-                          if (name) {
-                            saveAssembledStringMutation.mutate({
-                              name,
-                              content: assembledString,
-                            });
-                          }
-                        }}
-                        disabled={assembledString.length === 0}
-                        data-testid="button-save-assembled"
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {assembledString.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Click on terms from the Browse tab to add them to your assembled string
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-4 p-4 bg-secondary/50 rounded-lg">
-                        <div className="font-mono text-sm" data-testid="text-assembled-string">
-                          {assembledString.join(", ")}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs sm:text-sm truncate">{term.term}</div>
+                          <p className="text-xs text-muted-foreground truncate">{term.description || ''}</p>
+                        </div>
+                        <div className="flex gap-1 sm:gap-2 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 sm:h-8 sm:w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToAssembledString(term);
+                            }}
+                          >
+                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </Button>
                         </div>
                       </div>
-                      <Separator className="my-4" />
-                      <div className="space-y-2">
-                        <h4 className="font-semibold mb-2">Selected Terms ({selectedTerms.length})</h4>
-                        {selectedTerms.map((term, index) => (
-                          <div
-                            key={`${term.id}-${index}`}
-                            className="flex items-center justify-between p-3 border rounded-lg"
-                            data-testid={`item-selected-term-${index}`}
-                          >
-                            <div>
-                              <div className="font-semibold">{term.term}</div>
-                              <div className="text-sm text-muted-foreground">{term.description || ''}</div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFromAssembledString(index)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
 
-            {/* Wildcard Lists Tab */}
-            <TabsContent value="lists">
-              <div className="space-y-6">
-                {/* User's Lists */}
+              {/* String Assembly Tab */}
+              <TabsContent value="assemble">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>My Wildcard Lists</span>
-                      <Button size="sm" data-testid="button-create-list">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create List
-                      </Button>
+                      <span>String Assembly</span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={randomizeOrder}
+                          disabled={assembledString.length === 0}
+                          data-testid="button-randomize"
+                        >
+                          <Shuffle className="w-4 h-4 mr-2" />
+                          Randomize
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyToClipboard}
+                          disabled={assembledString.length === 0}
+                          data-testid="button-copy"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const name = prompt("Enter a name for this assembled string:");
+                            if (name) {
+                              saveAssembledStringMutation.mutate({
+                                name,
+                                content: assembledString,
+                              });
+                            }
+                          }}
+                          disabled={assembledString.length === 0}
+                          data-testid="button-save-assembled"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          Save
+                        </Button>
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {userLists.length === 0 ? (
+                    {assembledString.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        You haven't created any wildcard lists yet
+                        Click on terms from the Browse tab to add them to your assembled string
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {userLists.map((list: CodexUserList) => (
-                          <Card key={list.id} data-testid={`card-user-list-${list.id}`}>
-                            <CardContent className="p-4">
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <h4 className="font-semibold">{list.name}</h4>
-                                  <p className="text-sm text-muted-foreground">{list.description}</p>
+                      <>
+                        <div className="mb-4 p-4 bg-secondary/50 rounded-lg">
+                          <div className="font-mono text-sm" data-testid="text-assembled-string">
+                            {assembledString.join(", ")}
+                          </div>
+                        </div>
+                        <Separator className="my-4" />
+                        <div className="space-y-2">
+                          <h4 className="font-semibold mb-2">Selected Terms ({selectedTerms.length})</h4>
+                          {selectedTerms.map((term, index) => (
+                            <div
+                              key={`${term.id}-${index}`}
+                              className="flex items-center justify-between p-3 border rounded-lg"
+                              data-testid={`item-selected-term-${index}`}
+                            >
+                              <div>
+                                <div className="font-semibold">{term.term}</div>
+                                <div className="text-sm text-muted-foreground">{term.description || ''}</div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFromAssembledString(index)}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Wildcard Lists Tab */}
+              <TabsContent value="lists">
+                <div className="space-y-6">
+                  {/* User's Lists */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>My Wildcard Lists</span>
+                        <Button size="sm" data-testid="button-create-list">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create List
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {userLists.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          You haven't created any wildcard lists yet
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {userLists.map((list: CodexUserList) => (
+                            <Card key={list.id} data-testid={`card-user-list-${list.id}`}>
+                              <CardContent className="p-4">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <h4 className="font-semibold">{list.name}</h4>
+                                    <p className="text-sm text-muted-foreground">{list.description}</p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <Download className="w-4 h-4" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div className="flex gap-1">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <div className="flex gap-2 mt-2">
+                                  {list.isPublic && <Badge>Public</Badge>}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Public Lists */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Public Wildcard Lists</CardTitle>
+                      <CardDescription>
+                        Browse and download wildcard lists shared by the community
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {publicLists.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No public lists available in this category
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {publicLists.map((list: CodexUserList) => (
+                            <Card key={list.id} data-testid={`card-public-list-${list.id}`}>
+                              <CardContent className="p-4">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <h4 className="font-semibold">{list.name}</h4>
+                                    <p className="text-sm text-muted-foreground">{list.description}</p>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={async () => {
+                                      await fetch(`/api/codex/lists/${list.id}/download`, {
+                                        method: 'POST',
+                                      });
+                                      toast({
+                                        title: "Downloaded!",
+                                        description: `${list.name} has been downloaded`,
+                                      });
+                                    }}
+                                  >
                                     <Download className="w-4 h-4" />
                                   </Button>
                                 </div>
-                              </div>
-                              <div className="flex gap-2 mt-2">
-                                {list.isPublic && <Badge>Public</Badge>}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Public Lists */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Public Wildcard Lists</CardTitle>
-                    <CardDescription>
-                      Browse and download wildcard lists shared by the community
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {publicLists.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No public lists available in this category
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {publicLists.map((list: CodexUserList) => (
-                          <Card key={list.id} data-testid={`card-public-list-${list.id}`}>
-                            <CardContent className="p-4">
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <h4 className="font-semibold">{list.name}</h4>
-                                  <p className="text-sm text-muted-foreground">{list.description}</p>
+                                <div className="flex gap-2 mt-2">
+                                  <Badge variant="outline">
+                                    {list.downloadCount || 0} downloads
+                                  </Badge>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={async () => {
-                                    await fetch(`/api/codex/lists/${list.id}/download`, {
-                                      method: 'POST',
-                                    });
-                                    toast({
-                                      title: "Downloaded!",
-                                      description: `${list.name} has been downloaded`,
-                                    });
-                                  }}
-                                >
-                                  <Download className="w-4 h-4" />
-                                </Button>
-                              </div>
-                              <div className="flex gap-2 mt-2">
-                                <Badge variant="outline">
-                                  {list.downloadCount || 0} downloads
-                                </Badge>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>
