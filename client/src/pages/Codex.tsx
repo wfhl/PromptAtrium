@@ -43,7 +43,6 @@ import type {
   CodexUserTerm,
   CodexAssembledString
 } from "@shared/schema";
-import { Resizable } from 'react-resizable'; // Import Resizable
 
 export default function Codex() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -162,13 +161,6 @@ export default function Codex() {
     },
   });
 
-  const handleResize = (
-    _event: any,
-    { size }: { size: { width: number; height: number } }
-  ) => {
-    // You can use the size state here if you want to persist the size
-    // For now, we'll just let the component render with the new size
-  };
 
   return (
     <div className="container mx-auto p-3 sm:p-6">
@@ -182,15 +174,7 @@ export default function Codex() {
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
-          <Resizable
-            width={300}
-            height={600}
-            minConstraints={[200, 300]}
-            maxConstraints={[500, 800]}
-            onResize={handleResize}
-            axis="both"
-          >
-            <Card className="h-full lg:sticky lg:top-4">
+          <Card className="h-full lg:sticky lg:top-4">
               <CardContent className="p-0">
                 <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
                   <TabsList className="w-full rounded-none">
@@ -432,9 +416,7 @@ export default function Codex() {
                 </Tabs>
               </CardContent>
             </Card>
-            </Resizable> 
-            {/* End Resizable wrapper */}
-          </div>
+        </div>
 
           {/* Main Content Area - Shows below categories on mobile, beside on desktop */}
           <div className="lg:col-span-3 order-2 lg:order-2">
@@ -702,6 +684,5 @@ export default function Codex() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
