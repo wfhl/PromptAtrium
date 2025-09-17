@@ -134,10 +134,12 @@ export function SearchWithFilters({
     onFiltersChange?.(newFilters);
   };
 
-  // Pass search results to parent component
+  // Pass search results to parent component when they actually change
   useEffect(() => {
-    onResultsChange?.(searchResults);
-  }, [searchResults, onResultsChange]);
+    if (onResultsChange && searchResults.length > 0) {
+      onResultsChange(searchResults);
+    }
+  }, [searchResults]); // Only depend on searchResults, not onResultsChange
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
