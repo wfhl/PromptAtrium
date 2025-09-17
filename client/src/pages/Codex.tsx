@@ -250,9 +250,9 @@ export default function Codex() {
 
             {/* Browse Terms Tab - NO CARD WRAPPER */}
             <TabsContent value="browse" className="space-y-3">
-              {/* Title, Search and View Options Bar */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <h3 className="text-base sm:text-lg font-semibold">
+              {/* Title, Search and View Options Bar - All on one row */}
+              <div className="flex flex-row justify-between items-center gap-2">
+                <h3 className="text-base sm:text-lg font-semibold flex-shrink-0">
                   {selectedCategory === "aesthetics" 
                     ? "Aesthetics"
                     : selectedCategory?.startsWith("aesthetics:")
