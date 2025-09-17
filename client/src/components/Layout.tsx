@@ -660,7 +660,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer") && (
                 <Link 
                   href="/admin" 
-                  className={isActiveRoute("/admin") ? "text-yellow-400 font-medium py-2 flex items-center gap-1" : "text-yellow-400 hover:text-yellow-300 transition-colors py-2 flex items-center gap-1"} 
+                  className={isActiveRoute("/admin") ? "text-yellow-400 px-2 py-2 rounded-md bg-yellow-400/10 border border-yellow-400/30 flex items-center gap-1 font-medium" : "text-yellow-400 hover:text-yellow-300 px-2 py-2 rounded-md transition-colors flex items-center gap-1"} 
                   onClick={() => setMobileMenuOpen(false)}
                   data-testid="mobile-nav-admin"
                 >
@@ -672,7 +672,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               {typedUser?.role === "developer" && (
                 <Link 
                   href="/dev" 
-                  className={isActiveRoute("/dev") ? "text-cyan-400 font-medium py-2 flex items-center gap-1" : "text-cyan-400 hover:text-cyan-300 transition-colors py-2 flex items-center gap-1"} 
+                  className={isActiveRoute("/dev") ? "text-cyan-400 px-2 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30 flex items-center gap-1 font-medium" : "text-cyan-400 hover:text-cyan-300 px-2 py-2 rounded-md transition-colors flex items-center gap-1"} 
                   onClick={() => setMobileMenuOpen(false)}
                   data-testid="mobile-nav-dev"
                 >
