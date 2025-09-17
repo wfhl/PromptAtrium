@@ -290,6 +290,7 @@ export interface IStorage {
     search?: string;
     limit?: number;
     offset?: number;
+    excludeAesthetics?: boolean;
   }): Promise<any[]>;
 
   // Codex Assembled String operations (keep for string assembly feature)
@@ -2219,6 +2220,7 @@ export class DatabaseStorage implements IStorage {
     search?: string;
     limit?: number;
     offset?: number;
+    excludeAesthetics?: boolean;
   } = {}): Promise<any[]> {
     const limit = options.limit || 100;
     const offset = options.offset || 0;
@@ -2249,7 +2251,12 @@ export class DatabaseStorage implements IStorage {
       return await this.getPromptComponents({ ...options, limit, offset });
     }
     
-    // If no category selected, get both prompt components and aesthetics
+    // If no category selected and excludeAesthetics is true, only return prompt components
+    if (options.excludeAesthetics) {
+      return await this.getPromptComponents({ ...options, limit, offset });
+    }
+    
+    // If no category selected and excludeAesthetics is false/undefined, get both prompt components and aesthetics
     const [promptComponents, aestheticsData] = await Promise.all([
       this.getPromptComponents({ ...options, limit: limit / 2, offset: offset / 2 }),
       this.getAesthetics({ ...options, limit: limit / 2, offset: offset / 2 })

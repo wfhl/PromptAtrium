@@ -54,11 +54,15 @@ export default function Codex() {
 
   // Fetch terms based on selected category and search
   const { data: terms = [], isLoading: termsLoading } = useQuery({
-    queryKey: ["/api/codex/terms", selectedCategory, searchQuery],
+    queryKey: ["/api/codex/terms", selectedCategory, searchQuery, categoryTab],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedCategory) params.append("categoryId", selectedCategory);
       if (searchQuery) params.append("search", searchQuery);
+      // Exclude aesthetics when in Subject Terms tab and no category is selected
+      if (categoryTab === "all" && !selectedCategory) {
+        params.append("excludeAesthetics", "true");
+      }
       const response = await fetch(`/api/codex/terms?${params}`);
       if (!response.ok) throw new Error("Failed to fetch terms");
       return response.json();

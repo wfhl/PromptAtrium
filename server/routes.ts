@@ -2966,6 +2966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         search: req.query.search as string,
         limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
         offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
+        excludeAesthetics: req.query.excludeAesthetics === 'true',
       });
       res.json(terms);
     } catch (error) {
