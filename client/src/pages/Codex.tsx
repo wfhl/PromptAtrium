@@ -876,10 +876,11 @@ export default function Codex() {
         {/* Live String Assembly Toast - Moved to top */}
       {showAssemblyToast && (
         <div 
-          className={`fixed top-20 ${
+          className={`fixed top-10 ${
             toastMinimized ? 'right-4 w-auto' : 'left-4 right-4 sm:right-4 sm:left-auto sm:w-96'
           } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-40 text-white`}
-        ></old_str>
+        >
+         
           {toastMinimized ? (
             <div className="flex items-center gap-2 p-3">
               <span className="text-sm font-medium">{assembledString.length} terms selected</span>
