@@ -842,7 +842,7 @@ export default function Codex() {
           <div className="lg:col-span-3 order-2 lg:order-2">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <div className="flex flex-col sm:flex-row justify-center items-center sm:items-center gap-6 mb-4">
-                <TabsList className="w-full sm:w-full overflow-x-auto flex-nowrap">
+                <TabsList className="w-full grid grid-cols-3">
                   <TabsTrigger value="browse" data-testid="tab-browse" className="text-xs sm:text-sm">Browse Terms</TabsTrigger>
                   <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">Collected Terms</TabsTrigger>
                   <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
@@ -1228,9 +1228,9 @@ export default function Codex() {
                                 </div>
                                 <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground mb-3">
                                   <span>{wildcard.createdAt ? new Date(wildcard.createdAt).toLocaleDateString() : ''}</span>
-                                  {wildcard.metadata && (wildcard.metadata as any).termsUsed && Array.isArray((wildcard.metadata as any).termsUsed) && (wildcard.metadata as any).termsUsed.length > 0 && (
+                                  {wildcard.metadata && wildcard.metadata.termsUsed && Array.isArray(wildcard.metadata.termsUsed) && wildcard.metadata.termsUsed.length > 0 && (
                                     <Badge variant="secondary" className="text-xs">
-                                      {(wildcard.metadata as any).termsUsed.length} terms
+                                      {wildcard.metadata.termsUsed.length} terms
                                     </Badge>
                                   )}
                                 </div>
@@ -1410,12 +1410,16 @@ export default function Codex() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  console.log('Save button clicked!', { saveName, saveType, assembledString });
                   if (saveName && saveName.trim()) {
+                    console.log('Triggering save mutation...');
                     saveAssembledStringMutation.mutate({
                       name: saveName.trim(),
                       type: saveType,
                       content: assembledString,
                     });
+                  } else {
+                    console.log('Save name is empty!');
                   }
                 }}
                 disabled={!saveName || !saveName.trim() || saveAssembledStringMutation.isPending}
