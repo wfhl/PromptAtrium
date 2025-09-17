@@ -2801,6 +2801,471 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Codex API Routes
+  // Helper middleware for admin checking
+  const isAdminUser = async (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      // Check if user is super_admin or community_admin
+      if (user.role === "super_admin" || user.role === "community_admin") {
+        return next();
+      }
+      return res.status(403).json({ message: "Admin privileges required" });
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
+
+  // Category endpoints
+  app.get('/api/codex/categories', async (req, res) => {
+    try {
+      const categories = await storage.getCodexCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching codex categories:', error);
+      res.status(500).json({ message: 'Failed to fetch categories' });
+    }
+  });
+
+  app.get('/api/codex/categories/:id', async (req, res) => {
+    try {
+      const category = await storage.getCodexCategory(req.params.id);
+      if (!category) {
+        return res.status(404).json({ message: 'Category not found' });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error('Error fetching codex category:', error);
+      res.status(500).json({ message: 'Failed to fetch category' });
+    }
+  });
+
+  app.post('/api/codex/categories', isAdminUser, async (req: any, res) => {
+    try {
+      const category = await storage.createCodexCategory(req.body);
+      res.json(category);
+    } catch (error) {
+      console.error('Error creating codex category:', error);
+      res.status(500).json({ message: 'Failed to create category' });
+    }
+  });
+
+  app.put('/api/codex/categories/:id', isAdminUser, async (req: any, res) => {
+    try {
+      const category = await storage.updateCodexCategory(req.params.id, req.body);
+      res.json(category);
+    } catch (error) {
+      console.error('Error updating codex category:', error);
+      res.status(500).json({ message: 'Failed to update category' });
+    }
+  });
+
+  app.delete('/api/codex/categories/:id', isAdminUser, async (req: any, res) => {
+    try {
+      await storage.deleteCodexCategory(req.params.id);
+      res.json({ message: 'Category deleted' });
+    } catch (error) {
+      console.error('Error deleting codex category:', error);
+      res.status(500).json({ message: 'Failed to delete category' });
+    }
+  });
+
+  // Term endpoints
+  app.get('/api/codex/terms', async (req, res) => {
+    try {
+      const terms = await storage.getCodexTerms({
+        categoryId: req.query.categoryId as string,
+        search: req.query.search as string,
+        isOfficial: req.query.isOfficial ? req.query.isOfficial === 'true' : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
+      });
+      res.json(terms);
+    } catch (error) {
+      console.error('Error fetching codex terms:', error);
+      res.status(500).json({ message: 'Failed to fetch terms' });
+    }
+  });
+
+  app.get('/api/codex/terms/search', async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query) {
+        return res.status(400).json({ message: 'Search query required' });
+      }
+      const terms = await storage.searchCodexTerms(query, req.query.categoryId as string);
+      res.json(terms);
+    } catch (error) {
+      console.error('Error searching codex terms:', error);
+      res.status(500).json({ message: 'Failed to search terms' });
+    }
+  });
+
+  app.get('/api/codex/terms/:id', async (req, res) => {
+    try {
+      const term = await storage.getCodexTerm(req.params.id);
+      if (!term) {
+        return res.status(404).json({ message: 'Term not found' });
+      }
+      res.json(term);
+    } catch (error) {
+      console.error('Error fetching codex term:', error);
+      res.status(500).json({ message: 'Failed to fetch term' });
+    }
+  });
+
+  app.post('/api/codex/terms', isAuthenticated, async (req: any, res) => {
+    try {
+      const term = await storage.createCodexTerm({
+        ...req.body,
+        createdBy: req.user.id,
+        isOfficial: false, // Will be true only when approved through contributions
+      });
+      res.json(term);
+    } catch (error) {
+      console.error('Error creating codex term:', error);
+      res.status(500).json({ message: 'Failed to create term' });
+    }
+  });
+
+  app.put('/api/codex/terms/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const term = await storage.getCodexTerm(req.params.id);
+      if (!term) {
+        return res.status(404).json({ message: 'Term not found' });
+      }
+      
+      // Only allow editing if user created the term or is admin
+      const user = await storage.getUser(req.user.id);
+      if (term.createdBy !== req.user.id && user?.role !== 'super_admin' && user?.role !== 'community_admin') {
+        return res.status(403).json({ message: 'Not authorized to edit this term' });
+      }
+      
+      const updatedTerm = await storage.updateCodexTerm(req.params.id, req.body);
+      res.json(updatedTerm);
+    } catch (error) {
+      console.error('Error updating codex term:', error);
+      res.status(500).json({ message: 'Failed to update term' });
+    }
+  });
+
+  app.delete('/api/codex/terms/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const term = await storage.getCodexTerm(req.params.id);
+      if (!term) {
+        return res.status(404).json({ message: 'Term not found' });
+      }
+      
+      // Only allow deletion if user created the term or is admin
+      const user = await storage.getUser(req.user.id);
+      if (term.createdBy !== req.user.id && user?.role !== 'super_admin' && user?.role !== 'community_admin') {
+        return res.status(403).json({ message: 'Not authorized to delete this term' });
+      }
+      
+      await storage.deleteCodexTerm(req.params.id);
+      res.json({ message: 'Term deleted' });
+    } catch (error) {
+      console.error('Error deleting codex term:', error);
+      res.status(500).json({ message: 'Failed to delete term' });
+    }
+  });
+
+  // User List endpoints
+  app.get('/api/codex/lists', async (req: any, res) => {
+    try {
+      if (req.query.public === 'true') {
+        const lists = await storage.getPublicCodexLists(req.query.categoryId as string);
+        res.json(lists);
+      } else if (req.query.userId) {
+        const lists = await storage.getCodexUserLists(req.query.userId as string);
+        res.json(lists);
+      } else {
+        res.status(400).json({ message: 'Either public or userId parameter required' });
+      }
+    } catch (error) {
+      console.error('Error fetching codex lists:', error);
+      res.status(500).json({ message: 'Failed to fetch lists' });
+    }
+  });
+
+  app.get('/api/codex/lists/:id', async (req, res) => {
+    try {
+      const list = await storage.getCodexUserList(req.params.id);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+      res.json(list);
+    } catch (error) {
+      console.error('Error fetching codex list:', error);
+      res.status(500).json({ message: 'Failed to fetch list' });
+    }
+  });
+
+  app.get('/api/codex/lists/:id/terms', async (req, res) => {
+    try {
+      const terms = await storage.getCodexUserTerms(req.params.id);
+      res.json(terms);
+    } catch (error) {
+      console.error('Error fetching list terms:', error);
+      res.status(500).json({ message: 'Failed to fetch list terms' });
+    }
+  });
+
+  app.post('/api/codex/lists', isAuthenticated, async (req: any, res) => {
+    try {
+      const list = await storage.createCodexUserList({
+        ...req.body,
+        userId: req.user.id,
+      });
+      res.json(list);
+    } catch (error) {
+      console.error('Error creating codex list:', error);
+      res.status(500).json({ message: 'Failed to create list' });
+    }
+  });
+
+  app.put('/api/codex/lists/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const list = await storage.getCodexUserList(req.params.id);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+      
+      // Only allow editing if user owns the list
+      if (list.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized to edit this list' });
+      }
+      
+      const updatedList = await storage.updateCodexUserList(req.params.id, req.body);
+      res.json(updatedList);
+    } catch (error) {
+      console.error('Error updating codex list:', error);
+      res.status(500).json({ message: 'Failed to update list' });
+    }
+  });
+
+  app.delete('/api/codex/lists/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const list = await storage.getCodexUserList(req.params.id);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+      
+      // Only allow deletion if user owns the list
+      if (list.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized to delete this list' });
+      }
+      
+      await storage.deleteCodexUserList(req.params.id);
+      res.json({ message: 'List deleted' });
+    } catch (error) {
+      console.error('Error deleting codex list:', error);
+      res.status(500).json({ message: 'Failed to delete list' });
+    }
+  });
+
+  app.post('/api/codex/lists/:id/download', async (req, res) => {
+    try {
+      await storage.incrementDownloadCount(req.params.id);
+      res.json({ message: 'Download count incremented' });
+    } catch (error) {
+      console.error('Error incrementing download count:', error);
+      res.status(500).json({ message: 'Failed to increment download count' });
+    }
+  });
+
+  // User List Term management
+  app.post('/api/codex/lists/:listId/terms', isAuthenticated, async (req: any, res) => {
+    try {
+      const list = await storage.getCodexUserList(req.params.listId);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+      
+      // Only allow adding if user owns the list
+      if (list.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized to modify this list' });
+      }
+      
+      const userTerm = await storage.addTermToUserList(req.params.listId, req.body);
+      res.json(userTerm);
+    } catch (error) {
+      console.error('Error adding term to list:', error);
+      res.status(500).json({ message: 'Failed to add term to list' });
+    }
+  });
+
+  app.delete('/api/codex/user-terms/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.removeTermFromUserList(req.params.id);
+      res.json({ message: 'Term removed from list' });
+    } catch (error) {
+      console.error('Error removing term from list:', error);
+      res.status(500).json({ message: 'Failed to remove term from list' });
+    }
+  });
+
+  app.put('/api/codex/lists/:listId/reorder', isAuthenticated, async (req: any, res) => {
+    try {
+      const list = await storage.getCodexUserList(req.params.listId);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+      
+      // Only allow reordering if user owns the list
+      if (list.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized to modify this list' });
+      }
+      
+      await storage.reorderUserListTerms(req.params.listId, req.body.termIds);
+      res.json({ message: 'List reordered' });
+    } catch (error) {
+      console.error('Error reordering list:', error);
+      res.status(500).json({ message: 'Failed to reorder list' });
+    }
+  });
+
+  // Contribution endpoints
+  app.get('/api/codex/contributions', async (req: any, res) => {
+    try {
+      const contributions = await storage.getCodexContributions({
+        userId: req.query.userId as string,
+        status: req.query.status as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
+      });
+      res.json(contributions);
+    } catch (error) {
+      console.error('Error fetching contributions:', error);
+      res.status(500).json({ message: 'Failed to fetch contributions' });
+    }
+  });
+
+  app.post('/api/codex/contributions', isAuthenticated, async (req: any, res) => {
+    try {
+      const contribution = await storage.createCodexContribution({
+        ...req.body,
+        submittedBy: req.user.id,
+        status: 'pending',
+      });
+      res.json(contribution);
+    } catch (error) {
+      console.error('Error creating contribution:', error);
+      res.status(500).json({ message: 'Failed to create contribution' });
+    }
+  });
+
+  app.post('/api/codex/contributions/:id/approve', isAdminUser, async (req: any, res) => {
+    try {
+      const term = await storage.approveCodexContribution(req.params.id, req.user.id);
+      res.json(term);
+    } catch (error) {
+      console.error('Error approving contribution:', error);
+      res.status(500).json({ message: 'Failed to approve contribution' });
+    }
+  });
+
+  app.post('/api/codex/contributions/:id/reject', isAdminUser, async (req: any, res) => {
+    try {
+      await storage.rejectCodexContribution(req.params.id, req.user.id, req.body.reviewNotes || '');
+      res.json({ message: 'Contribution rejected' });
+    } catch (error) {
+      console.error('Error rejecting contribution:', error);
+      res.status(500).json({ message: 'Failed to reject contribution' });
+    }
+  });
+
+  // Assembled String endpoints
+  app.get('/api/codex/assembled-strings', isAuthenticated, async (req: any, res) => {
+    try {
+      const strings = await storage.getCodexAssembledStrings(req.user.id);
+      res.json(strings);
+    } catch (error) {
+      console.error('Error fetching assembled strings:', error);
+      res.status(500).json({ message: 'Failed to fetch assembled strings' });
+    }
+  });
+
+  app.get('/api/codex/assembled-strings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const assembledString = await storage.getCodexAssembledString(req.params.id);
+      if (!assembledString) {
+        return res.status(404).json({ message: 'Assembled string not found' });
+      }
+      
+      // Only allow viewing if user owns the string
+      if (assembledString.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized to view this assembled string' });
+      }
+      
+      res.json(assembledString);
+    } catch (error) {
+      console.error('Error fetching assembled string:', error);
+      res.status(500).json({ message: 'Failed to fetch assembled string' });
+    }
+  });
+
+  app.post('/api/codex/assembled-strings', isAuthenticated, async (req: any, res) => {
+    try {
+      const assembledString = await storage.createCodexAssembledString({
+        ...req.body,
+        userId: req.user.id,
+      });
+      res.json(assembledString);
+    } catch (error) {
+      console.error('Error creating assembled string:', error);
+      res.status(500).json({ message: 'Failed to create assembled string' });
+    }
+  });
+
+  app.put('/api/codex/assembled-strings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const assembledString = await storage.getCodexAssembledString(req.params.id);
+      if (!assembledString) {
+        return res.status(404).json({ message: 'Assembled string not found' });
+      }
+      
+      // Only allow editing if user owns the string
+      if (assembledString.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized to edit this assembled string' });
+      }
+      
+      const updated = await storage.updateCodexAssembledString(req.params.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating assembled string:', error);
+      res.status(500).json({ message: 'Failed to update assembled string' });
+    }
+  });
+
+  app.delete('/api/codex/assembled-strings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const assembledString = await storage.getCodexAssembledString(req.params.id);
+      if (!assembledString) {
+        return res.status(404).json({ message: 'Assembled string not found' });
+      }
+      
+      // Only allow deletion if user owns the string
+      if (assembledString.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized to delete this assembled string' });
+      }
+      
+      await storage.deleteCodexAssembledString(req.params.id);
+      res.json({ message: 'Assembled string deleted' });
+    } catch (error) {
+      console.error('Error deleting assembled string:', error);
+      res.status(500).json({ message: 'Failed to delete assembled string' });
+    }
+  });
+
   // Register AI analyzer routes
   app.use(aiAnalyzerRouter);
 
