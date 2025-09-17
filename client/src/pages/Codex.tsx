@@ -10,6 +10,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Search,
   Plus,
   Download,
@@ -19,6 +25,7 @@ import {
   Save,
   FolderOpen,
   ChevronRight,
+  ChevronDown,
   Grid,
   List,
   Star,
@@ -26,7 +33,8 @@ import {
   Edit,
   Trash,
   Check,
-  X
+  X,
+  Layers
 } from "lucide-react";
 import type { 
   CodexCategory, 
@@ -44,10 +52,28 @@ export default function Codex() {
   const [assembledString, setAssembledString] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("browse");
   const [categoryTab, setCategoryTab] = useState<"all" | "aesthetics">("all");
+  const [categoryView, setCategoryView] = useState<"all" | "organized">("all");
+  const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
+
+  // Color mapping for anatomy groups
+  const getAnatomyGroupColor = (group: string) => {
+    const colors: { [key: string]: string } = {
+      'Subject': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      'Style & Medium': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      'Environment & Setting': 'bg-green-500/20 text-green-400 border-green-500/30',
+      'Lighting': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+      'Camera & Composition': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      'Color & Mood': 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+      'Details & Textures': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+      'Action & Movement': 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+      'Special Effects': 'bg-red-500/20 text-red-400 border-red-500/30',
+    };
+    return colors[group] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  };
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<
-    { id: string; name: string; termCount: number; subcategories?: string[] }[]
+    { id: string; name: string; termCount: number; anatomyGroup?: string; subcategories?: string[] }[]
   >({
     queryKey: ["/api/codex/categories"],
   });
@@ -160,75 +186,231 @@ export default function Codex() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="all" className="mt-0">
-                  <ScrollArea className="h-[150px] sm:h-[200px] lg:h-[550px]">
-                    <div className="p-2 sm:p-3 space-y-1">
-                      <Button
-                        variant={!selectedCategory ? "secondary" : "ghost"}
-                        className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
-                        onClick={() => setSelectedCategory(null)}
-                        data-testid="button-all-categories"
-                      >
-                        All Categories
-                      </Button>
-                      {categoriesLoading ? (
-                        <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
-                      ) : (
-                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
-                          {categories.filter(c => c.id !== "aesthetics").map(category => (
-                            <Button
-                              key={category.id}
-                              variant={selectedCategory === category.id ? "secondary" : "ghost"}
-                              className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
-                              onClick={() => setSelectedCategory(category.id)}
-                              data-testid={`button-category-${category.id}`}
-                            >
-                              <span className="truncate">{category.name}</span>
-                              {category.termCount > 0 && (
-                                <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
-                                  {category.termCount}
-                                </Badge>
-                              )}
-                            </Button>
-                          ))
-                          }
+                  <Tabs value={categoryView} onValueChange={(v) => setCategoryView(v as "all" | "organized")} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 h-8">
+                      <TabsTrigger value="all" className="text-xs" data-testid="tab-all-view">
+                        <Grid className="w-3 h-3 mr-1" />
+                        All
+                      </TabsTrigger>
+                      <TabsTrigger value="organized" className="text-xs" data-testid="tab-organized-view">
+                        <Layers className="w-3 h-3 mr-1" />
+                        Organized
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="all" className="mt-2">
+                      <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                        <div className="p-2 sm:p-3 space-y-1">
+                          <Button
+                            variant={!selectedCategory ? "secondary" : "ghost"}
+                            className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
+                            onClick={() => setSelectedCategory(null)}
+                            data-testid="button-all-categories"
+                          >
+                            All Categories
+                          </Button>
+                          {categoriesLoading ? (
+                            <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                          ) : (
+                            <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
+                              {categories.filter(c => c.id !== "aesthetics").map(category => (
+                                <Button
+                                  key={category.id}
+                                  variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                                  className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
+                                  onClick={() => setSelectedCategory(category.id)}
+                                  data-testid={`button-category-${category.id}`}
+                                >
+                                  <span className="truncate">{category.name}</span>
+                                  {category.termCount > 0 && (
+                                    <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
+                                      {category.termCount}
+                                    </Badge>
+                                  )}
+                                </Button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </ScrollArea>
+                      </ScrollArea>
+                    </TabsContent>
+                    
+                    <TabsContent value="organized" className="mt-2">
+                      <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                        <div className="p-2 sm:p-3">
+                          <Button
+                            variant={!selectedCategory ? "secondary" : "ghost"}
+                            className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
+                            onClick={() => setSelectedCategory(null)}
+                            data-testid="button-all-organized"
+                          >
+                            All Categories
+                          </Button>
+                          {categoriesLoading ? (
+                            <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                          ) : (
+                            <Accordion type="single" collapsible className="w-full space-y-1">
+                              {/* Group categories by anatomy group */}
+                              {Object.entries(
+                                categories
+                                  .filter(c => c.id !== "aesthetics")
+                                  .reduce((acc, cat) => {
+                                    const group = cat.anatomyGroup || "Other";
+                                    if (!acc[group]) acc[group] = [];
+                                    acc[group].push(cat);
+                                    return acc;
+                                  }, {} as { [key: string]: typeof categories })
+                              )
+                                .sort(([a], [b]) => {
+                                  // Define custom sort order for anatomy groups
+                                  const order = [
+                                    'Subject', 
+                                    'Style & Medium', 
+                                    'Environment & Setting',
+                                    'Lighting',
+                                    'Camera & Composition',
+                                    'Color & Mood',
+                                    'Details & Textures',
+                                    'Action & Movement',
+                                    'Special Effects',
+                                    'Other'
+                                  ];
+                                  return order.indexOf(a) - order.indexOf(b);
+                                })
+                                .map(([group, groupCategories]) => (
+                                  <AccordionItem
+                                    key={group}
+                                    value={group}
+                                    className={`border rounded-lg px-2 ${getAnatomyGroupColor(group)}`}
+                                  >
+                                    <AccordionTrigger className="hover:no-underline py-2 text-xs sm:text-sm">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold">{group}</span>
+                                        <Badge variant="secondary" className="text-xs">
+                                          {groupCategories.length}
+                                        </Badge>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                      <div className="space-y-1 pt-1">
+                                        {groupCategories.map(category => (
+                                          <Button
+                                            key={category.id}
+                                            variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                                            className="w-full justify-start h-7 sm:h-8 text-xs sm:text-sm px-2 bg-background/50"
+                                            onClick={() => setSelectedCategory(category.id)}
+                                            data-testid={`button-organized-${category.id}`}
+                                          >
+                                            <span className="truncate">{category.name}</span>
+                                            {category.termCount > 0 && (
+                                              <Badge variant="outline" className="ml-auto text-xs px-1 py-0 h-4">
+                                                {category.termCount}
+                                              </Badge>
+                                            )}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                ))}
+                            </Accordion>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </TabsContent>
+                  </Tabs>
                 </TabsContent>
                 <TabsContent value="aesthetics" className="mt-0">
-                  <ScrollArea className="h-[150px] sm:h-[200px] lg:h-[550px]">
-                    <div className="p-2 sm:p-3 space-y-1">
-                      <Button
-                        variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                        className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
-                        onClick={() => setSelectedCategory("aesthetics")}
-                        data-testid="button-all-aesthetics"
-                      >
-                        All Aesthetics
-                      </Button>
-                      {categoriesLoading ? (
-                        <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
-                      ) : (
-                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
-                          {/* Extract aesthetic subcategories */}
-                          {categories
-                            .find(c => c.id === "aesthetics")
-                            ?.subcategories?.map(subcat => (
-                              <Button
-                                key={subcat}
-                                variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
-                                className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
-                                onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
-                                data-testid={`button-aesthetic-${subcat}`}
-                              >
-                                <span className="truncate">{subcat}</span>
-                              </Button>
-                            ))}
+                  <Tabs value={aestheticsView} onValueChange={(v) => setAestheticsView(v as "all" | "organized")} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 h-8">
+                      <TabsTrigger value="all" className="text-xs" data-testid="tab-aesthetics-all">
+                        <Grid className="w-3 h-3 mr-1" />
+                        All
+                      </TabsTrigger>
+                      <TabsTrigger value="organized" className="text-xs" data-testid="tab-aesthetics-organized">
+                        <Layers className="w-3 h-3 mr-1" />
+                        Organized
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="all" className="mt-2">
+                      <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                        <div className="p-2 sm:p-3 space-y-1">
+                          <Button
+                            variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
+                            className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
+                            onClick={() => setSelectedCategory("aesthetics")}
+                            data-testid="button-all-aesthetics"
+                          >
+                            All Aesthetics
+                          </Button>
+                          {categoriesLoading ? (
+                            <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                          ) : (
+                            <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
+                              {/* Extract aesthetic subcategories */}
+                              {categories
+                                .find(c => c.id === "aesthetics")
+                                ?.subcategories?.map(subcat => (
+                                  <Button
+                                    key={subcat}
+                                    variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
+                                    className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
+                                    onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
+                                    data-testid={`button-aesthetic-${subcat}`}
+                                  >
+                                    <span className="truncate">{subcat}</span>
+                                  </Button>
+                                ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </ScrollArea>
+                      </ScrollArea>
+                    </TabsContent>
+                    
+                    <TabsContent value="organized" className="mt-2">
+                      <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                        <div className="p-2 sm:p-3">
+                          <Button
+                            variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
+                            className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
+                            onClick={() => setSelectedCategory("aesthetics")}
+                            data-testid="button-all-aesthetics-organized"
+                          >
+                            All Aesthetics
+                          </Button>
+                          {categoriesLoading ? (
+                            <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                          ) : (
+                            <div className="space-y-2">
+                              {/* Group aesthetic subcategories - for now just show them as a styled list */}
+                              {/* In the future, these could be organized by era, style, etc. */}
+                              <div className="rounded-lg border p-3 bg-purple-500/10 border-purple-500/30">
+                                <h4 className="text-xs sm:text-sm font-semibold text-purple-400 mb-2">
+                                  Style Categories
+                                </h4>
+                                <div className="grid grid-cols-2 lg:grid-cols-1 gap-1">
+                                  {categories
+                                    .find(c => c.id === "aesthetics")
+                                    ?.subcategories?.map(subcat => (
+                                      <Button
+                                        key={subcat}
+                                        variant={selectedCategory === `aesthetics:${subcat}` ? "secondary" : "ghost"}
+                                        className="justify-start h-7 sm:h-8 text-xs sm:text-sm px-2 bg-background/50"
+                                        onClick={() => setSelectedCategory(`aesthetics:${subcat}`)}
+                                        data-testid={`button-aesthetic-organized-${subcat}`}
+                                      >
+                                        <span className="truncate">{subcat}</span>
+                                      </Button>
+                                    ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </TabsContent>
+                  </Tabs>
                 </TabsContent>
               </Tabs>
             </CardContent>
