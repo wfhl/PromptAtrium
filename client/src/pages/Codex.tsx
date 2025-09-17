@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -60,7 +61,8 @@ import {
   ChevronDownIcon,
   Share2,
   FileText,
-  Zap
+  Zap,
+  Info
 } from "lucide-react";
 import type {
   CodexCategory,
@@ -620,7 +622,19 @@ export default function Codex() {
     <>
       <div className="container mx-auto p-3 sm:p-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Wordsmith Codex</h1>
+        <div className="flex items-center gap-2 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold">Wordsmith Codex</h1>
+          <Link href="/getting-started?tab=codex" className="inline-flex">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+              data-testid="codex-info-button"
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
         <p className="text-sm sm:text-base text-muted-foreground">
           Browse and assemble AI prompt components from our extensive wildcard database
         </p>
