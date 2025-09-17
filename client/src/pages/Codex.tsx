@@ -912,7 +912,7 @@ export default function Codex() {
                         onClick={() => toggleTermInAssembly(term)}
                         data-testid={`card-term-${term.id}`}
                       >
-                        <CardContent className="p-2 sm:p-3 pl-[12px] pr-[12px] pt-[4px] pb-[4px]">
+                        <CardContent className="p-1 sm:p-1 pl-[12px] pr-[12px] pt-[4px] pb-[4px]">
                           <div className="font-medium text-xs sm:text-sm break-words line-clamp-2 mt-[0px] mb-[0px]">{term.term}</div>
                           {term.subcategory && (
                             <div className="mt-1 text-xs text-muted-foreground truncate">
@@ -929,9 +929,7 @@ export default function Codex() {
                     {terms.map((term: any) => (
                       <div
                         key={term.id}
-                        className={`flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all ${
-                          isTermSelected(term.id) ? 'ring-2 ring-primary bg-primary/10' : ''
-                        }`}
+                        className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all pt-[4px] pb-[4px]"
                         onClick={() => toggleTermInAssembly(term)}
                         data-testid={`row-term-${term.id}`}
                       >
