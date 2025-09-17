@@ -319,7 +319,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </Link>
               </div>
 
-              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
+              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer") && (
                 <div 
                   ref={setLinkRef('/admin')}
                   onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/admin')}
