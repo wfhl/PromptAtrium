@@ -232,6 +232,7 @@ export const prompt_components = pgTable("prompt_components", {
   description: text("description"),
   subcategory: varchar("subcategory"),
   anatomy_group: varchar("anatomy_group"), // Group for organized display (Subject, Style, Environment, etc.)
+  is_nsfw: boolean("is_nsfw").default(false), // Flag for NSFW content
   usage_count: integer("usage_count"),
   order_index: integer("order_index"),
   is_default: boolean("is_default"),
