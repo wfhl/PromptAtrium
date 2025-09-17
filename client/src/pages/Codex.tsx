@@ -1089,7 +1089,7 @@ export default function Codex() {
                           {savedPresets.map((preset: CodexAssembledString) => (
                             <div
                               key={preset.id}
-                              className="group flex items-start justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors pt-[2px] pb-[2px]"
+                              className="group flex items-start justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors pt-[4px] pb-[4px]"
                               data-testid={`item-preset-${preset.id}`}
                             >
                               <div className="flex-1 min-w-0">
