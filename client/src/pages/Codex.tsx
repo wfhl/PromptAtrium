@@ -54,7 +54,7 @@ export default function Codex() {
   const [categoryTab, setCategoryTab] = useState<"all" | "aesthetics">("all");
   const [categoryView, setCategoryView] = useState<"all" | "organized">("all");
   const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
-  const [categoryHeight, setCategoryHeight] = useState(200); // Default mobile height in pixels
+  const [categoryHeight, setCategoryHeight] = useState(250); // Default mobile height in pixels
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [startHeight, setStartHeight] = useState(0);
@@ -72,25 +72,62 @@ export default function Codex() {
 
   // Handle touch start for resizing
   const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
     setIsDragging(true);
-    setStartY(e.touches[0].clientY);
+    setStartY(touch.clientY);
     setStartHeight(categoryHeight);
-    e.preventDefault();
+    // Prevent text selection and scrolling while dragging
+    document.body.style.userSelect = 'none';
+    document.body.style.overflow = 'hidden';
   };
 
   // Handle touch move for resizing
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    const deltaY = startY - e.touches[0].clientY; // Negative delta increases height
-    const newHeight = Math.min(Math.max(120, startHeight + deltaY), 500); // Min 120px, Max 500px
+    const touch = e.touches[0];
+    const currentY = touch.clientY;
+    const deltaY = startY - currentY; // Dragging up increases height
+    const newHeight = Math.min(Math.max(150, startHeight + deltaY), window.innerHeight * 0.7); // Min 150px, Max 70% of viewport
     setCategoryHeight(newHeight);
-    e.preventDefault();
   };
 
   // Handle touch end
   const handleTouchEnd = () => {
     setIsDragging(false);
+    // Restore body styles
+    document.body.style.userSelect = '';
+    document.body.style.overflow = '';
   };
+
+  // Add global touch handlers when dragging
+  useEffect(() => {
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const currentY = touch.clientY;
+      const deltaY = startY - currentY;
+      const newHeight = Math.min(Math.max(150, startHeight + deltaY), window.innerHeight * 0.7);
+      setCategoryHeight(newHeight);
+    };
+
+    const handleGlobalTouchEnd = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        document.body.style.userSelect = '';
+        document.body.style.overflow = '';
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+      document.addEventListener('touchend', handleGlobalTouchEnd);
+      return () => {
+        document.removeEventListener('touchmove', handleGlobalTouchMove);
+        document.removeEventListener('touchend', handleGlobalTouchEnd);
+      };
+    }
+  }, [isDragging, startY, startHeight]);
 
   // Color mapping for anatomy groups
   const getAnatomyGroupColor = (group: string) => {
@@ -466,12 +503,14 @@ export default function Codex() {
               </CardContent>
               {/* Touch drag handle for mobile */}
               <div 
-                className="lg:hidden absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-muted/10 to-transparent flex items-end justify-center pb-1 cursor-ns-resize touch-none"
+                className="lg:hidden absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background/80 to-transparent flex items-center justify-center cursor-ns-resize touch-none border-t border-muted/20"
                 onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
+                style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
               >
-                <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+                <div className="flex flex-col items-center gap-0.5 py-2">
+                  <div className="w-16 h-1 bg-muted-foreground/50 rounded-full" />
+                  <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+                </div>
               </div>
             </Card>
         </div>
