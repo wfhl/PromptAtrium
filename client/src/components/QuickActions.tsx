@@ -122,7 +122,7 @@ export function QuickActions({
         </Button>
 
         {/* Wordsmith Codex */}
-        <Link to="/codex">
+        <Link to="/codex" className="contents">
           <Button
             variant="ghost"
             className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
