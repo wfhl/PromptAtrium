@@ -34,7 +34,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role", { enum: ["user", "community_admin", "super_admin"] }).default("user"),
+  role: varchar("role", { enum: ["user", "community_admin", "super_admin", "developer"] }).default("user"),
   
   // Extended profile fields
   username: varchar("username").unique(),
@@ -818,6 +818,6 @@ export type BulkOperationResult = z.infer<typeof bulkOperationResultSchema>;
 export type BulkOperationType = BulkOperation["operation"];
 
 // User role types
-export type UserRole = "user" | "community_admin" | "super_admin";
+export type UserRole = "user" | "community_admin" | "super_admin" | "developer";
 export type CommunityRole = "member" | "admin";
 export type CollectionType = "user" | "community" | "global";

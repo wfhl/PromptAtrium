@@ -48,6 +48,9 @@ export const requireRole = (requiredRole: UserRole): RequestHandler => {
 // Middleware to check if user is super admin
 export const requireSuperAdmin = requireRole("super_admin");
 
+// Middleware to check if user is developer
+export const requireDeveloper = requireRole("developer");
+
 // Middleware to check if user is community admin or higher
 export const requireCommunityAdmin: RequestHandler = async (req: any, res, next) => {
   if (!req.isAuthenticated() || !req.user?.claims?.sub) {

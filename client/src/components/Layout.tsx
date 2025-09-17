@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch, Download, Shield, ScrollText, FileText } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -180,6 +180,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     if (path === '/library') gradient = 'library';
     else if (path === '/community') gradient = 'community';
     else if (path === '/admin') gradient = 'admin';
+    else if (path === '/dev') gradient = 'dev';
 
     setUnderline({ 
       left: r.left - navRect.left, 
@@ -193,7 +194,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   useEffect(() => {
     const activeKey = location.startsWith('/community') ? '/community' 
       : location.startsWith('/library') ? '/library' 
-      : location.startsWith('/admin') ? '/admin' 
+      : location.startsWith('/admin') ? '/admin'
+      : location.startsWith('/dev') ? '/dev'
       : '/';
     positionTo(linkRefs.current[activeKey], activeKey);
   }, [location]);
@@ -203,7 +205,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     const onResize = () => {
       const activeKey = location.startsWith('/community') ? '/community' 
         : location.startsWith('/library') ? '/library' 
-        : location.startsWith('/admin') ? '/admin' 
+        : location.startsWith('/admin') ? '/admin'
+        : location.startsWith('/dev') ? '/dev'
         : '/';
       positionTo(linkRefs.current[activeKey], activeKey);
     };
@@ -328,6 +331,22 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   >
                     <Crown className="h-4 w-4" />
                     Admin
+                  </Link>
+                </div>
+              )}
+
+              {typedUser?.role === "developer" && (
+                <div 
+                  ref={setLinkRef('/dev')}
+                  onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/dev')}
+                >
+                  <Link 
+                    href="/dev" 
+                    className={isActiveRoute("/dev") ? "text-cyan-400 px-4 py-2 rounded-md bg-cyan-400/10 border border-cyan-400/30 flex items-center gap-1" : "text-cyan-400 hover:text-cyan-300 px-4 py-2 rounded-md transition-colors flex items-center gap-1"} 
+                    data-testid="nav-dev"
+                  >
+                    <Code2 className="h-4 w-4" />
+                    Dev
                   </Link>
                 </div>
               )}

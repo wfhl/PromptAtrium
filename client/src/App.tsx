@@ -12,6 +12,7 @@ import Library from "@/pages/library";
 import Community from "@/pages/community";
 import Projects from "@/pages/projects";
 import Admin from "@/pages/admin";
+import Dev from "@/pages/Dev";
 import Collections from "@/pages/collections";
 import CollectionView from "@/pages/CollectionView";
 import Invite from "@/pages/invite";
@@ -131,6 +132,9 @@ function Router() {
             </Route>
             <Route path="/admin">
               {() => <Layout><Admin /></Layout>}
+            </Route>
+            <Route path="/dev">
+              {() => <Layout><Dev /></Layout>}
             </Route>
             <Route path="/profile/settings">
               {() => <Layout><ProfileSettings /></Layout>}
