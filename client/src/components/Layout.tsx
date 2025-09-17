@@ -793,7 +793,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin") && (
+              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer") && (
                 <Link 
                   href="/admin" 
                   className={isActiveRoute("/admin") ? "text-yellow-400 font-medium py-2 flex items-center gap-1" : "text-yellow-400 hover:text-yellow-300 transition-colors py-2 flex items-center gap-1"} 
@@ -802,6 +802,18 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 >
                   <Crown className="h-4 w-4" />
                   Admin
+                </Link>
+              )}
+
+              {typedUser?.role === "developer" && (
+                <Link 
+                  href="/dev" 
+                  className={isActiveRoute("/dev") ? "text-cyan-400 font-medium py-2 flex items-center gap-1" : "text-cyan-400 hover:text-cyan-300 transition-colors py-2 flex items-center gap-1"} 
+                  onClick={() => setMobileMenuOpen(false)}
+                  data-testid="mobile-nav-dev"
+                >
+                  <Code2 className="h-4 w-4" />
+                  Dev
                 </Link>
               )}
 

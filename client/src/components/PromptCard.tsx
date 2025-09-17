@@ -56,7 +56,7 @@ export function PromptCard({
   const { toast } = useToast();
   const { user } = useAuth();
   const typedUser = user as any;
-  const isSuperAdmin = (user as any)?.role === "super_admin";
+  const isSuperAdmin = (user as any)?.role === "super_admin" || (user as any)?.role === "developer";
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   
