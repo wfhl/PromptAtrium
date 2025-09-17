@@ -800,19 +800,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     <Lightbulb className="mr-2 h-4 w-4" />
                     Prompt Generator
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Wordsmith Codex will be available soon!",
-                      });
-                      setMobileMenuOpen(false);
-                    }}
-                    className="cursor-pointer"
-                    data-testid="mobile-menu-wordsmith-codex"
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Wordsmith Codex
+                  <DropdownMenuItem asChild>
+                    <Link href="/codex" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-wordsmith-codex">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Wordsmith Codex
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

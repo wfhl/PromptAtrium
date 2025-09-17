@@ -311,9 +311,9 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
 }
 
 /* Mobile navigation links styling - Default white text */
-.mobile-nav-dropdown nav a:not(.nav-gradient-library):not(.nav-gradient-community),
-.md\:hidden.bg-gray-900\/30 nav a:not(.nav-gradient-library):not(.nav-gradient-community),
-.md\:hidden.bg-gray-900\/70 nav a:not(.nav-gradient-library):not(.nav-gradient-community),
+.mobile-nav-dropdown nav a:not(.nav-gradient-library):not(.nav-gradient-community):not([href="/admin"]):not([href="/dev"]),
+.md\:hidden.bg-gray-900\/30 nav a:not(.nav-gradient-library):not(.nav-gradient-community):not([href="/admin"]):not([href="/dev"]),
+.md\:hidden.bg-gray-900\/70 nav a:not(.nav-gradient-library):not(.nav-gradient-community):not([href="/admin"]):not([href="/dev"]),
 .mobile-nav-dropdown nav button,
 .md\:hidden.bg-gray-900\/30 nav button,
 .md\:hidden.bg-gray-900\/70 nav button {
@@ -321,9 +321,9 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   transition: all 0.2s ease;
 }
 
-.mobile-nav-dropdown nav a:not(.nav-gradient-library):not(.nav-gradient-community):hover,
-.md\:hidden.bg-gray-900\/30 nav a:not(.nav-gradient-library):not(.nav-gradient-community):hover,
-.md\:hidden.bg-gray-900\/70 nav a:not(.nav-gradient-library):not(.nav-gradient-community):hover,
+.mobile-nav-dropdown nav a:not(.nav-gradient-library):not(.nav-gradient-community):not([href="/admin"]):not([href="/dev"]):hover,
+.md\:hidden.bg-gray-900\/30 nav a:not(.nav-gradient-library):not(.nav-gradient-community):not([href="/admin"]):not([href="/dev"]):hover,
+.md\:hidden.bg-gray-900\/70 nav a:not(.nav-gradient-library):not(.nav-gradient-community):not([href="/admin"]):not([href="/dev"]):hover,
 .mobile-nav-dropdown nav button:hover,
 .md\:hidden.bg-gray-900\/30 nav button:hover,
 .md\:hidden.bg-gray-900\/70 nav button:hover {
