@@ -11,6 +11,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -38,7 +53,11 @@ import {
   Layers,
   Send,
   Minimize2,
-  Maximize2
+  Maximize2,
+  ChevronDownIcon,
+  Share2,
+  FileText,
+  Zap
 } from "lucide-react";
 import type {
   CodexCategory,
@@ -137,24 +156,52 @@ function AssemblyToastPortal({
                   <Copy className="w-3 h-3 mr-1" />
                   Copy
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const name = prompt("Name for this assembled string:");
-                    if (name) {
-                      saveAssembledStringMutation.mutate({ 
-                        name, 
-                        content: assembledString 
-                      });
-                    }
-                  }}
-                  disabled={assembledString.length === 0}
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
-                >
-                  <Save className="w-3 h-3 mr-1" />
-                  Save
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={assembledString.length === 0}
+                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      Save
+                      <ChevronDownIcon className="w-3 h-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-background border-border">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const name = prompt("Name for this preset:");
+                        if (name) {
+                          saveAssembledStringMutation.mutate({ 
+                            name, 
+                            type: "preset",
+                            content: assembledString 
+                          });
+                        }
+                      }}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Save as Preset
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const name = prompt("Name for this wildcard:");
+                        if (name) {
+                          saveAssembledStringMutation.mutate({ 
+                            name,
+                            type: "wildcard", 
+                            content: assembledString 
+                          });
+                        }
+                      }}
+                    >
+                      <Zap className="w-4 h-4 mr-2" />
+                      Save as Wildcard
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button
                   variant="outline"
                   size="sm"
@@ -194,6 +241,10 @@ export default function Codex() {
   const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
   const [categoryHeight, setCategoryHeight] = useState(250); // Default mobile height in pixels
   const [isMobile, setIsMobile] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveType, setSaveType] = useState<"preset" | "wildcard">("preset");
+  const [saveName, setSaveName] = useState("");
+  const [editingItem, setEditingItem] = useState<CodexAssembledString | null>(null);
 
   // Refs for smooth dragging without re-renders
   const scrollAreaRef = useRef<HTMLDivElement | null>(null);
@@ -436,15 +487,73 @@ export default function Codex() {
     });
   };
 
+  // Fetch saved presets
+  const { data: savedPresets = [] } = useQuery({
+    queryKey: ["/api/codex/assembled-strings", "preset"],
+    queryFn: async () => {
+      const response = await fetch("/api/codex/assembled-strings?type=preset");
+      if (!response.ok) throw new Error("Failed to fetch presets");
+      return response.json();
+    },
+  });
+
+  // Fetch saved wildcards
+  const { data: savedWildcards = [] } = useQuery({
+    queryKey: ["/api/codex/assembled-strings", "wildcard"],
+    queryFn: async () => {
+      const response = await fetch("/api/codex/assembled-strings?type=wildcard");
+      if (!response.ok) throw new Error("Failed to fetch wildcards");
+      return response.json();
+    },
+  });
+
   // Save assembled string mutation
   const saveAssembledStringMutation = useMutation({
-    mutationFn: async (data: { name: string; content: string[] }) => {
-      return apiRequest("/api/codex/assembled-strings", "POST", data);
+    mutationFn: async (data: { name: string; type: "preset" | "wildcard"; content: string[] }) => {
+      return apiRequest("/api/codex/assembled-strings", "POST", {
+        name: data.name,
+        type: data.type,
+        stringContent: data.content.join(", "),
+        termsUsed: selectedTerms.map(t => t.id),
+      });
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: "Saved!",
+        description: `Your ${variables.type} has been saved`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/codex/assembled-strings"] });
+      setSaveDialogOpen(false);
+      setSaveName("");
+    },
+  });
+
+  // Update assembled string mutation
+  const updateAssembledStringMutation = useMutation({
+    mutationFn: async (data: { id: string; name: string }) => {
+      return apiRequest(`/api/codex/assembled-strings/${data.id}`, "PUT", {
+        name: data.name,
+      });
     },
     onSuccess: () => {
       toast({
-        title: "Saved!",
-        description: "Your assembled string has been saved",
+        title: "Updated!",
+        description: "Item has been renamed",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/codex/assembled-strings"] });
+      setEditingItem(null);
+    },
+  });
+
+  // Delete assembled string mutation  
+  const deleteAssembledStringMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/codex/assembled-strings/${id}`, "DELETE");
+    },
+    onSuccess: () => {
+      toast({
+        title: "Deleted!",
+        description: "Item has been removed",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/codex/assembled-strings"] });
     },
@@ -740,6 +849,7 @@ export default function Codex() {
                 <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
                   <TabsTrigger value="browse" data-testid="tab-browse" className="text-xs sm:text-sm">Browse Terms</TabsTrigger>
                   <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">Collected Terms</TabsTrigger>
+                  <TabsTrigger value="saved" data-testid="tab-saved" className="text-xs sm:text-sm">Saved Items</TabsTrigger>
                   <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
                 </TabsList>
               </div>
@@ -866,9 +976,9 @@ export default function Codex() {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span>Collected Terms</span>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-6">
                         <Button
-                          variant="default"
+                          variant="outline"
                           size="sm"
                           onClick={() => {
                             toast({
@@ -877,11 +987,11 @@ export default function Codex() {
                             });
                           }}
                           disabled={assembledString.length === 0}
-                          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                          
                           data-testid="button-send-to-generator"
                         >
-                          <Send className="w-4 h-4 mr-2" />
-                          Send to Generator
+                          <Send className="w-6 h-4 mr-2" />
+                          Send
                         </Button>
                         <Button
                           variant="outline"
@@ -890,7 +1000,7 @@ export default function Codex() {
                           disabled={assembledString.length === 0}
                           data-testid="button-randomize"
                         >
-                          <Shuffle className="w-4 h-4 mr-2" />
+                          <Shuffle className="w-6 h-4 mr-2" />
                           Randomize
                         </Button>
                         <Button
@@ -903,24 +1013,40 @@ export default function Codex() {
                           <Copy className="w-4 h-4 mr-2" />
                           Copy
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const name = prompt("Enter a name for this assembled string:");
-                            if (name) {
-                              saveAssembledStringMutation.mutate({
-                                name,
-                                content: assembledString,
-                              });
-                            }
-                          }}
-                          disabled={assembledString.length === 0}
-                          data-testid="button-save-assembled"
-                        >
-                          <Save className="w-4 h-4 mr-2" />
-                          Save
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={assembledString.length === 0}
+                              data-testid="button-save-assembled"
+                            >
+                              <Save className="w-4 h-4 mr-2" />
+                              Save As
+                              <ChevronDownIcon className="w-4 h-4 ml-1" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSaveType("preset");
+                                setSaveDialogOpen(true);
+                              }}
+                            >
+                              <FileText className="w-4 h-4 mr-2" />
+                              Save as Preset
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSaveType("wildcard");
+                                setSaveDialogOpen(true);
+                              }}
+                            >
+                              <Zap className="w-4 h-4 mr-2" />
+                              Save as Wildcard
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </CardTitle>
                   </CardHeader>
@@ -963,6 +1089,229 @@ export default function Codex() {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* Saved Items Tab */}
+              <TabsContent value="saved">
+                <div className="space-y-6">
+                  {/* Saved Presets Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Saved Presets
+                      </CardTitle>
+                      <CardDescription>
+                        Complete prompts ready to use with your AI generators
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {savedPresets.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No presets saved yet. Save your assembled terms as a preset to see them here.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {savedPresets.map((preset: CodexAssembledString) => (
+                            <div
+                              key={preset.id}
+                              className="group flex items-start justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                              data-testid={`item-preset-${preset.id}`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold mb-1">{preset.name}</div>
+                                <div className="text-sm text-muted-foreground break-words">
+                                  {preset.stringContent}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                  <span>{new Date(preset.createdAt).toLocaleDateString()}</span>
+                                  {preset.termsUsed && preset.termsUsed.length > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {preset.termsUsed.length} terms
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(preset.stringContent);
+                                    toast({
+                                      title: "Copied!",
+                                      description: "Preset copied to clipboard",
+                                    });
+                                  }}
+                                  data-testid={`button-copy-preset-${preset.id}`}
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    const newName = prompt("Rename preset:", preset.name);
+                                    if (newName && newName !== preset.name) {
+                                      updateAssembledStringMutation.mutate({
+                                        id: preset.id,
+                                        name: newName,
+                                      });
+                                    }
+                                  }}
+                                  data-testid={`button-edit-preset-${preset.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    const blob = new Blob([preset.stringContent], { type: 'text/plain' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `${preset.name.toLowerCase().replace(/\s+/g, '-')}.txt`;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                  }}
+                                  data-testid={`button-download-preset-${preset.id}`}
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    if (confirm(`Delete "${preset.name}"?`)) {
+                                      deleteAssembledStringMutation.mutate(preset.id);
+                                    }
+                                  }}
+                                  data-testid={`button-delete-preset-${preset.id}`}
+                                >
+                                  <Trash className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Saved Wildcards Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Zap className="w-5 h-5" />
+                        Saved Wildcards
+                      </CardTitle>
+                      <CardDescription>
+                        Dynamic term collections for randomized prompt generation
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {savedWildcards.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No wildcards saved yet. Save your assembled terms as a wildcard to see them here.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {savedWildcards.map((wildcard: CodexAssembledString) => (
+                            <div
+                              key={wildcard.id}
+                              className="group flex items-start justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                              data-testid={`item-wildcard-${wildcard.id}`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold mb-1">{wildcard.name}</div>
+                                <div className="text-sm text-muted-foreground break-words">
+                                  {wildcard.stringContent}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                  <span>{new Date(wildcard.createdAt).toLocaleDateString()}</span>
+                                  {wildcard.termsUsed && wildcard.termsUsed.length > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {wildcard.termsUsed.length} terms
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(wildcard.stringContent);
+                                    toast({
+                                      title: "Copied!",
+                                      description: "Wildcard copied to clipboard",
+                                    });
+                                  }}
+                                  data-testid={`button-copy-wildcard-${wildcard.id}`}
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    const newName = prompt("Rename wildcard:", wildcard.name);
+                                    if (newName && newName !== wildcard.name) {
+                                      updateAssembledStringMutation.mutate({
+                                        id: wildcard.id,
+                                        name: newName,
+                                      });
+                                    }
+                                  }}
+                                  data-testid={`button-edit-wildcard-${wildcard.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    const blob = new Blob([`__${wildcard.name}__\n${wildcard.stringContent}`], { type: 'text/plain' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `${wildcard.name.toLowerCase().replace(/\s+/g, '-')}.txt`;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                  }}
+                                  data-testid={`button-download-wildcard-${wildcard.id}`}
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    if (confirm(`Delete "${wildcard.name}"?`)) {
+                                      deleteAssembledStringMutation.mutate(wildcard.id);
+                                    }
+                                  }}
+                                  data-testid={`button-delete-wildcard-${wildcard.id}`}
+                                >
+                                  <Trash className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
               {/* Wildcard Lists Tab */}
@@ -1035,6 +1384,59 @@ export default function Codex() {
             saveAssembledStringMutation={saveAssembledStringMutation}
           />
         ) : null}
+
+        {/* Save Dialog */}
+        <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Save as {saveType === "preset" ? "Preset" : "Wildcard"}
+              </DialogTitle>
+              <DialogDescription>
+                {saveType === "preset" 
+                  ? "Save your assembled string as a complete prompt preset"
+                  : "Save your assembled string as a wildcard for random generation"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="save-name">Name</Label>
+                <Input
+                  id="save-name"
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder={`Enter ${saveType} name...`}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label>Preview</Label>
+                <div className="mt-2 p-3 bg-secondary/50 rounded-md text-sm">
+                  {assembledString.join(", ")}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (saveName.trim()) {
+                    saveAssembledStringMutation.mutate({
+                      name: saveName.trim(),
+                      type: saveType,
+                      content: assembledString,
+                    });
+                  }
+                }}
+                disabled={!saveName.trim() || saveAssembledStringMutation.isPending}
+              >
+                {saveAssembledStringMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );

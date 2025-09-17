@@ -461,14 +461,16 @@ export const codexContributions = pgTable("codex_contributions", {
   reviewedAt: timestamp("reviewed_at"),
 });
 
-// User's assembled strings
+// User's assembled strings (both presets and wildcards)
 export const codexAssembledStrings = pgTable("codex_assembled_strings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   name: varchar("name").notNull(),
+  type: varchar("type", { enum: ["preset", "wildcard"] }).notNull().default("preset"), // Distinguish between presets and wildcards
   stringContent: text("string_content").notNull(),
   termsUsed: jsonb("terms_used").default([]), // Array of term IDs used in this string
   metadata: jsonb("metadata").default({}), // Additional metadata
+  isPublic: boolean("is_public").default(false), // For future sharing functionality
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

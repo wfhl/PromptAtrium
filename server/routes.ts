@@ -3040,7 +3040,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assembled String endpoints
   app.get('/api/codex/assembled-strings', isAuthenticated, async (req: any, res) => {
     try {
-      const strings = await storage.getCodexAssembledStrings(req.user.id);
+      const type = req.query.type as "preset" | "wildcard" | undefined;
+      const strings = await storage.getCodexAssembledStrings(req.user.id, type);
       res.json(strings);
     } catch (error) {
       console.error('Error fetching assembled strings:', error);

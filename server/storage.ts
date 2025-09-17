@@ -296,7 +296,7 @@ export interface IStorage {
   }): Promise<any[]>;
 
   // Codex Assembled String operations (keep for string assembly feature)
-  getCodexAssembledStrings(userId: string): Promise<CodexAssembledString[]>;
+  getCodexAssembledStrings(userId: string, type?: "preset" | "wildcard"): Promise<CodexAssembledString[]>;
   getCodexAssembledString(id: string): Promise<CodexAssembledString | undefined>;
   createCodexAssembledString(assembledString: InsertCodexAssembledString): Promise<CodexAssembledString>;
   updateCodexAssembledString(id: string, updates: Partial<InsertCodexAssembledString>): Promise<CodexAssembledString>;
@@ -2372,11 +2372,16 @@ export class DatabaseStorage implements IStorage {
 
 
   // Codex Assembled String operations
-  async getCodexAssembledStrings(userId: string): Promise<CodexAssembledString[]> {
+  async getCodexAssembledStrings(userId: string, type?: "preset" | "wildcard"): Promise<CodexAssembledString[]> {
+    const conditions = [eq(codexAssembledStrings.userId, userId)];
+    if (type) {
+      conditions.push(eq(codexAssembledStrings.type, type));
+    }
+    
     return await db
       .select()
       .from(codexAssembledStrings)
-      .where(eq(codexAssembledStrings.userId, userId))
+      .where(and(...conditions))
       .orderBy(desc(codexAssembledStrings.createdAt));
   }
 
