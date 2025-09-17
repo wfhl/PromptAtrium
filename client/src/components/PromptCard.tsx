@@ -1166,19 +1166,6 @@ export function PromptCard({
                   <GitBranch className="h-4 w-4" />
                 </Button>
 
-                {/* Add Example Images - Available for all users on public prompts */}
-                {prompt.isPublic && typedUser?.id && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => toast({ title: "Add Example Images", description: "Example image upload coming soon!" })}
-                    className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                    data-testid={`button-add-images-${prompt.id}`}
-                    title="Add example images to this prompt"
-                  >
-                    <ImagePlus className="h-4 w-4" />
-                  </Button>
-                )}
 
                 {/* 7. Archive/Featured - Archive for owner/admin, Star for super admin on community page */}
                 {isSuperAdmin && isCommunityPage ? (
@@ -1251,7 +1238,7 @@ export function PromptCard({
             ) : (
               /* Community page action buttons - Show different actions based on ownership */
               <div className="flex items-center space-x-1" data-testid={`actions-community-${prompt.id}`}>
-                {/* Show Edit and Collections for prompt owners and admins on Community page */}
+                {/* Show ALL action buttons for prompt owners and admins on Community page */}
                 {isCommunityPage && typedUser?.id && (String(typedUser.id) === String(prompt.userId) || isSuperAdmin) && (
                   <>
                     {/* Edit Button */}
@@ -1286,11 +1273,39 @@ export function PromptCard({
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    
+                    {/* Archive Button for owners */}
+                    {String(typedUser.id) === String(prompt.userId) && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleArchiveClick}
+                        disabled={archiveMutation.isPending}
+                        className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                        data-testid={`button-archive-${prompt.id}`}
+                      >
+                        <Archive className="h-4 w-4" />
+                      </Button>
+                    )}
+                    
+                    {/* Delete Button for owners */}
+                    {String(typedUser.id) === String(prompt.userId) && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleDeleteClick}
+                        disabled={deleteMutation.isPending}
+                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                        data-testid={`button-delete-${prompt.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </>
                 )}
                 
-                {/* Show Add Example Images for all users on public prompts on Community page */}
-                {isCommunityPage && prompt.isPublic && typedUser?.id && (
+                {/* Show Add Example Images only for other people's public prompts on Community page */}
+                {isCommunityPage && prompt.isPublic && typedUser?.id && String(typedUser.id) !== String(prompt.userId) && (
                   <Button
                     size="sm"
                     variant="ghost"
