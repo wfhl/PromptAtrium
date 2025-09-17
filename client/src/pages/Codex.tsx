@@ -1351,37 +1351,55 @@ export default function Codex() {
 
         {/* Save Dialog */}
         <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md bg-purple-900/95 backdrop-blur-md border border-purple-500/30 text-white">
             <DialogHeader>
-              <DialogTitle>
-                Save as {saveType === "preset" ? "Preset" : "Wildcard"}
+              <DialogTitle className="text-white flex items-center gap-2">
+                {saveType === "preset" ? (
+                  <>
+                    <FileText className="w-4 h-4" />
+                    Save as Preset
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    Save as Wildcard
+                  </>
+                )}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-white/70 text-sm">
                 {saveType === "preset" 
-                  ? "Save your assembled string as a complete prompt preset"
-                  : "Save your assembled string as a wildcard for random generation"}
+                  ? "Save as a complete prompt preset"
+                  : "Save as a wildcard for random generation"}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 py-3">
               <div>
-                <Label htmlFor="save-name">Name</Label>
+                <Label htmlFor="save-name" className="text-white/90 text-sm">Name</Label>
                 <Input
                   id="save-name"
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   placeholder={`Enter ${saveType} name...`}
-                  className="mt-2"
+                  className="mt-1.5 bg-black/20 border-white/30 text-white placeholder:text-white/50"
+                  autoFocus
                 />
               </div>
               <div>
-                <Label>Preview</Label>
-                <div className="mt-2 p-3 bg-secondary/50 rounded-md text-sm">
+                <Label className="text-white/90 text-sm">Preview</Label>
+                <div className="mt-1.5 p-2.5 bg-black/20 rounded-md text-sm text-white/90 max-h-24 overflow-y-auto">
                   {assembledString.join(", ")}
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSaveDialogOpen(false);
+                  setSaveName("");
+                }}
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white"
+              >
                 Cancel
               </Button>
               <Button
@@ -1395,8 +1413,9 @@ export default function Codex() {
                   }
                 }}
                 disabled={!saveName.trim() || saveAssembledStringMutation.isPending}
+                className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saveAssembledStringMutation.isPending ? "Saving..." : "Save"}
+                {saveAssembledStringMutation.isPending ? "Saving..." : `Save ${saveType === "preset" ? "Preset" : "Wildcard"}`}
               </Button>
             </DialogFooter>
           </DialogContent>
