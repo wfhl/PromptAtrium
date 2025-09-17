@@ -12,6 +12,7 @@ import {
   decimal,
   char,
   serial,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -299,6 +300,10 @@ export const promptLikes = pgTable("prompt_likes", {
   userId: varchar("user_id").notNull().references(() => users.id),
   promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id),
   createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    uniqueLike: unique().on(table.userId, table.promptId),
+  };
 });
 
 // Prompt favorites table - tracks user bookmarks/favorites
@@ -307,6 +312,10 @@ export const promptFavorites = pgTable("prompt_favorites", {
   userId: varchar("user_id").notNull().references(() => users.id),
   promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id),
   createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    uniqueFavorite: unique().on(table.userId, table.promptId),
+  };
 });
 
 // Prompt ratings table

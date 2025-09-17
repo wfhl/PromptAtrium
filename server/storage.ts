@@ -1020,19 +1020,37 @@ export class DatabaseStorage implements IStorage {
 
   // Social operations
   async toggleLike(userId: string, promptId: string): Promise<boolean> {
-    const [existing] = await db
+    // Find all likes (in case there are duplicates)
+    const existingLikes = await db
       .select()
       .from(promptLikes)
       .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
 
-    if (existing) {
-      await db.delete(promptLikes).where(eq(promptLikes.id, existing.id));
-      await db.update(prompts).set({ likes: sql`${prompts.likes} - 1` }).where(eq(prompts.id, promptId));
-      return false;
+    if (existingLikes.length > 0) {
+      // Remove all duplicates if they exist
+      const duplicateCount = existingLikes.length;
+      await db.delete(promptLikes)
+        .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
+      
+      // Decrement the like count by the number of duplicates removed
+      await db.update(prompts)
+        .set({ likes: sql`GREATEST(0, ${prompts.likes} - ${duplicateCount})` })
+        .where(eq(prompts.id, promptId));
+      
+      return false; // Unlike
     } else {
-      await db.insert(promptLikes).values({ userId, promptId });
-      await db.update(prompts).set({ likes: sql`${prompts.likes} + 1` }).where(eq(prompts.id, promptId));
-      return true;
+      // Add a new like (with unique constraint, this will fail if duplicate attempt)
+      try {
+        await db.insert(promptLikes).values({ userId, promptId });
+        await db.update(prompts)
+          .set({ likes: sql`${prompts.likes} + 1` })
+          .where(eq(prompts.id, promptId));
+        return true; // Like
+      } catch (error) {
+        // If insert fails due to unique constraint, treat as unlike
+        console.error("Error inserting like (possible race condition):", error);
+        return false;
+      }
     }
   }
 
