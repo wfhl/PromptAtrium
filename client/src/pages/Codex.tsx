@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -54,9 +54,6 @@ export default function Codex() {
   const [categoryTab, setCategoryTab] = useState<"all" | "aesthetics">("all");
   const [categoryView, setCategoryView] = useState<"all" | "organized">("all");
   const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
-  const [cardSize, setCardSize] = useState({ width: 300, height: 600 });
-  const cardRef = useRef<HTMLDivElement>(null);
-  const isResizingRef = useRef(false);
 
   // Color mapping for anatomy groups
   const getAnatomyGroupColor = (group: string) => {
@@ -73,35 +70,6 @@ export default function Codex() {
     };
     return colors[group] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
   };
-
-  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    isResizingRef.current = true;
-    
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startWidth = cardSize.width;
-    const startHeight = cardSize.height;
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizingRef.current) return;
-      
-      const newWidth = Math.max(200, Math.min(500, startWidth + e.clientX - startX));
-      const newHeight = Math.max(300, Math.min(800, startHeight + e.clientY - startY));
-      
-      setCardSize({ width: newWidth, height: newHeight });
-    };
-    
-    const handleMouseUp = () => {
-      isResizingRef.current = false;
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [cardSize.width, cardSize.height]);
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<
@@ -206,12 +174,7 @@ export default function Codex() {
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
-          <div 
-            ref={cardRef}
-            className="relative"
-            style={{ width: `${cardSize.width}px`, height: `${cardSize.height}px` }}
-          >
-            <Card className="h-full lg:sticky lg:top-4">
+          <Card className="h-full lg:sticky lg:top-4">
               <CardContent className="p-0">
                 <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
                   <TabsList className="w-full rounded-none">
@@ -241,7 +204,7 @@ export default function Codex() {
                           <div className="p-2 sm:p-3 space-y-1">
                             <Button
                               variant={!selectedCategory ? "secondary" : "ghost"}
-                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-1"
+                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
                               onClick={() => setSelectedCategory(null)}
                               data-testid="button-all-categories"
                             >
@@ -278,7 +241,7 @@ export default function Codex() {
                           <div className="p-2 sm:p-3">
                             <Button
                               variant={!selectedCategory ? "secondary" : "ghost"}
-                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-2"
+                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
                               onClick={() => setSelectedCategory(null)}
                               data-testid="button-all-organized"
                             >
@@ -376,7 +339,7 @@ export default function Codex() {
                           <div className="p-2 sm:p-3 space-y-1">
                             <Button
                               variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                              className="w-full justify-start h-6 text-[10px] sm:text-xs py-0.2 mb-1"
+                              className="w-full justify-start h-8 text-xs py-0.2"
                               onClick={() => setSelectedCategory("aesthetics")}
                               data-testid="button-all-aesthetics"
                             >
@@ -411,7 +374,7 @@ export default function Codex() {
                           <div className="p-2 sm:p-3">
                             <Button
                               variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-2"
+                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
                               onClick={() => setSelectedCategory("aesthetics")}
                               data-testid="button-all-aesthetics-organized"
                             >
@@ -453,24 +416,6 @@ export default function Codex() {
                 </Tabs>
               </CardContent>
             </Card>
-            {/* Resize handle */}
-            <div 
-              onMouseDown={handleResizeMouseDown}
-              className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize group hover:bg-primary/20 transition-colors"
-              style={{ 
-                background: 'linear-gradient(135deg, transparent 50%, currentColor 50%)',
-                color: 'rgb(148 163 184 / 0.5)'
-              }}
-              data-testid="resize-handle"
-            >
-              <div className="absolute bottom-0 right-0 w-3 h-3" 
-                style={{ 
-                  background: 'linear-gradient(135deg, transparent 40%, currentColor 40%, currentColor 60%, transparent 60%)',
-                  opacity: 0.7
-                }}
-              />
-            </div>
-          </div>
         </div>
 
           {/* Main Content Area - Shows below categories on mobile, beside on desktop */}
