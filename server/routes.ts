@@ -876,6 +876,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).claims.sub;
       const forkedPrompt = await storage.forkPrompt(req.params.id, userId);
+      
+      // Get the original prompt to find the owner
+      const originalPrompt = await storage.getPrompt(req.params.id);
+      if (originalPrompt && originalPrompt.userId !== userId) {
+        const forker = await storage.getUser(userId);
+        if (forker) {
+          await storage.createNotification({
+            userId: originalPrompt.userId,
+            type: "fork",
+            message: `${forker.username || forker.firstName || 'Someone'} forked your prompt "${originalPrompt.name}"`,
+            relatedUserId: userId,
+            relatedPromptId: req.params.id,
+            relatedListId: null,
+            isRead: false,
+            metadata: { promptName: originalPrompt.name, forkedPromptId: forkedPrompt.id }
+          });
+        }
+      }
+      
       res.status(201).json(forkedPrompt);
     } catch (error) {
       console.error("Error forking prompt:", error);
@@ -1174,6 +1193,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             targetType: "prompt",
             metadata: { promptName: prompt.name }
           });
+          
+          // Create notification for prompt owner (if not liking own prompt)
+          if (prompt.userId !== userId) {
+            const liker = await storage.getUser(userId);
+            if (liker) {
+              await storage.createNotification({
+                userId: prompt.userId,
+                type: "like",
+                message: `${liker.username || liker.firstName || 'Someone'} liked your prompt "${prompt.name}"`,
+                relatedUserId: userId,
+                relatedPromptId: promptId,
+                relatedListId: null,
+                isRead: false,
+                metadata: { promptName: prompt.name }
+              });
+            }
+          }
         }
       }
       
@@ -1892,6 +1928,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const follow = await storage.followUser(currentUserId, targetUserId);
+      
+      // Create notification for the followed user
+      const follower = await storage.getUser(currentUserId);
+      if (follower) {
+        await storage.createNotification({
+          userId: targetUserId,
+          type: "follow",
+          message: `${follower.username || follower.firstName || 'Someone'} started following you`,
+          relatedUserId: currentUserId,
+          relatedPromptId: null,
+          relatedListId: null,
+          isRead: false,
+          metadata: {}
+        });
+      }
+      
       res.json(follow);
     } catch (error) {
       console.error("Error following user:", error);
@@ -2008,6 +2060,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user activities:", error);
       res.status(500).json({ message: "Failed to fetch user activities" });
+    }
+  });
+
+  // Notification routes
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const notifications = await storage.getNotifications(userId, limit, offset);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get('/api/notifications/unread-count', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const count = await storage.getUnreadCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      res.status(500).json({ message: "Failed to fetch unread count" });
+    }
+  });
+
+  app.put('/api/notifications/:id/read', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { id } = req.params;
+      
+      const notification = await storage.markNotificationRead(id, userId);
+      res.json(notification);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.put('/api/notifications/read-all', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      await storage.markAllNotificationsRead(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
     }
   });
 

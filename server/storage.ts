@@ -17,6 +17,7 @@ import {
   promptRatings,
   follows,
   activities,
+  notifications,
   type User,
   type UpsertUser,
   type Prompt,
@@ -51,6 +52,8 @@ import {
   type InsertFollow,
   type Activity,
   type InsertActivity,
+  type Notification,
+  type InsertNotification,
   type UserRole,
   type CommunityRole,
   codexCategories,
@@ -186,6 +189,15 @@ export interface IStorage {
   getRecentActivities(limit?: number): Promise<any[]>;
   getUserActivities(userId: string, limit?: number, offset?: number): Promise<any[]>;
   getFollowedUsersActivities(userId: string, limit?: number, offset?: number): Promise<Activity[]>;
+
+  // Notification operations
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotifications(userId: string, limit?: number, offset?: number): Promise<Notification[]>;
+  getNotification(id: string): Promise<Notification | undefined>;
+  markNotificationRead(notificationId: string, userId: string): Promise<Notification>;
+  markAllNotificationsRead(userId: string): Promise<void>;
+  getUnreadCount(userId: string): Promise<number>;
+  deleteNotification(id: string): Promise<void>;
 
   // User management operations (for Super Admin)
   getAllUsers(options?: {
@@ -1503,6 +1515,89 @@ export class DatabaseStorage implements IStorage {
       ...r.activity,
       user: r.user
     } as Activity & { user: User }));
+  }
+
+  // Notification operations
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
+    
+    return newNotification;
+  }
+
+  async getNotifications(userId: string, limit: number = 50, offset: number = 0): Promise<Notification[]> {
+    const results = await db
+      .select({
+        notification: notifications,
+        relatedUser: users,
+        relatedPrompt: prompts,
+      })
+      .from(notifications)
+      .leftJoin(users, eq(notifications.relatedUserId, users.id))
+      .leftJoin(prompts, eq(notifications.relatedPromptId, prompts.id))
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return results.map(r => ({
+      ...r.notification,
+      relatedUser: r.relatedUser,
+      relatedPrompt: r.relatedPrompt,
+    }) as any);
+  }
+
+  async getNotification(id: string): Promise<Notification | undefined> {
+    const result = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, id))
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async markNotificationRead(notificationId: string, userId: string): Promise<Notification> {
+    const [updated] = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userId, userId)
+      ))
+      .returning();
+    
+    return updated;
+  }
+
+  async markAllNotificationsRead(userId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+  }
+
+  async getUnreadCount(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+    
+    return Number(result[0]?.count || 0);
+  }
+
+  async deleteNotification(id: string): Promise<void> {
+    await db
+      .delete(notifications)
+      .where(eq(notifications.id, id));
   }
 
   // User management operations (for Super Admin)

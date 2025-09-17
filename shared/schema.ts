@@ -356,6 +356,27 @@ export const activities = pgTable("activities", {
   index("idx_activities_action_type").on(table.actionType),
 ]);
 
+// Notifications table - tracks notifications for user actions
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id), // Who receives the notification
+  type: varchar("type", { 
+    enum: ["follow", "like", "fork", "approval", "contribution_approved", "comment", "mention"] 
+  }).notNull(),
+  message: text("message").notNull(),
+  relatedUserId: varchar("related_user_id").references(() => users.id), // Who triggered the notification
+  relatedPromptId: char("related_prompt_id", { length: 10 }).references(() => prompts.id), // Related prompt if applicable
+  relatedListId: varchar("related_list_id").references(() => codexUserLists.id), // For codex list approvals
+  isRead: boolean("is_read").default(false),
+  metadata: jsonb("metadata"), // Additional notification-specific data
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  // Index for fetching user's notifications
+  index("idx_notifications_user_created").on(table.userId, table.createdAt),
+  // Index for unread notifications count
+  index("idx_notifications_user_unread").on(table.userId, table.isRead),
+]);
+
 // Wordsmith Codex Tables
 
 // Categories for organizing terms (e.g., "Styles", "Lighting", "Aesthetics", etc.)
@@ -463,6 +484,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   followers: many(follows, { relationName: "following" }),
   following: many(follows, { relationName: "follower" }),
   activities: many(activities),
+  notifications: many(notifications, { relationName: "recipient" }),
+  triggeredNotifications: many(notifications, { relationName: "trigger" }),
 }));
 
 export const communitiesRelations = relations(communities, ({ many }) => ({
@@ -516,6 +539,13 @@ export const followsRelations = relations(follows, ({ one }) => ({
 
 export const activitiesRelations = relations(activities, ({ one }) => ({
   user: one(users, { fields: [activities.userId], references: [users.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id], relationName: "recipient" }),
+  relatedUser: one(users, { fields: [notifications.relatedUserId], references: [users.id], relationName: "trigger" }),
+  relatedPrompt: one(prompts, { fields: [notifications.relatedPromptId], references: [prompts.id] }),
+  relatedList: one(codexUserLists, { fields: [notifications.relatedListId], references: [codexUserLists.id] }),
 }));
 
 export const communityAdminsRelations = relations(communityAdmins, ({ one }) => ({
@@ -623,6 +653,11 @@ export const insertFollowSchema = createInsertSchema(follows).omit({
 });
 
 export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
   createdAt: true,
 });
@@ -757,6 +792,8 @@ export type InsertFollow = z.infer<typeof insertFollowSchema>;
 export type Follow = typeof follows.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
 
 // Codex types
 export type InsertCodexCategory = z.infer<typeof insertCodexCategorySchema>;

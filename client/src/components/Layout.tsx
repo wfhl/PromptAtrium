@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/NotificationBell";
+import { NotificationModal } from "@/components/NotificationModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,6 +63,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
 
   // Apply theme to document
   useEffect(() => {
@@ -455,6 +458,9 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            {/* Notification Bell */}
+            <NotificationBell onClick={() => setNotificationModalOpen(true)} />
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -878,6 +884,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Notification Modal */}
+      <NotificationModal 
+        open={notificationModalOpen} 
+        onOpenChange={setNotificationModalOpen} 
+      />
     </div>
   );
 }
