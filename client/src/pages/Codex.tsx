@@ -187,12 +187,12 @@ export default function Codex() {
                 </TabsList>
                 <TabsContent value="all" className="mt-0">
                   <Tabs value={categoryView} onValueChange={(v) => setCategoryView(v as "all" | "organized")} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 h-8">
-                      <TabsTrigger value="all" className="text-xs" data-testid="tab-all-view">
+                    <TabsList className="grid w-full grid-cols-2 h-6">
+                      <TabsTrigger value="all" className="text-xs py-0.5" data-testid="tab-all-view">
                         <Grid className="w-3 h-3 mr-1" />
                         All
                       </TabsTrigger>
-                      <TabsTrigger value="organized" className="text-xs" data-testid="tab-organized-view">
+                      <TabsTrigger value="organized" className="text-xs py-0.5" data-testid="tab-organized-view">
                         <Layers className="w-3 h-3 mr-1" />
                         Organized
                       </TabsTrigger>
@@ -322,12 +322,12 @@ export default function Codex() {
                 </TabsContent>
                 <TabsContent value="aesthetics" className="mt-0">
                   <Tabs value={aestheticsView} onValueChange={(v) => setAestheticsView(v as "all" | "organized")} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 h-8">
-                      <TabsTrigger value="all" className="text-xs" data-testid="tab-aesthetics-all">
+                    <TabsList className="grid w-full grid-cols-2 h-6">
+                      <TabsTrigger value="all" className="text-xs py-0.5" data-testid="tab-aesthetics-all">
                         <Grid className="w-3 h-3 mr-1" />
                         All
                       </TabsTrigger>
-                      <TabsTrigger value="organized" className="text-xs" data-testid="tab-aesthetics-organized">
+                      <TabsTrigger value="organized" className="text-xs py-0.5" data-testid="tab-aesthetics-organized">
                         <Layers className="w-3 h-3 mr-1" />
                         Organized
                       </TabsTrigger>
