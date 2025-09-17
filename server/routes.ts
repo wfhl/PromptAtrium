@@ -1388,6 +1388,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contribute images to a prompt (community contribution feature)
+  app.post('/api/prompts/:id/contribute-images', isAuthenticated, async (req: any, res) => {
+    try {
+      const contributorId = (req.user as any).claims.sub;
+      const { imageUrls } = req.body;
+      
+      // Validate imageUrls
+      if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+        return res.status(400).json({ message: "No images provided" });
+      }
+      
+      if (imageUrls.length > 5) {
+        return res.status(400).json({ message: "Cannot contribute more than 5 images at once" });
+      }
+      
+      // Contribute images to the prompt
+      const updatedPrompt = await storage.contributeImagesToPrompt(
+        req.params.id, 
+        imageUrls, 
+        contributorId
+      );
+      
+      res.json({ 
+        success: true, 
+        prompt: updatedPrompt,
+        message: `Successfully contributed ${imageUrls.length} image(s)`
+      });
+    } catch (error) {
+      console.error("Error contributing images:", error);
+      
+      if (error instanceof Error) {
+        // Handle specific error messages from storage
+        if (error.message.includes("not found")) {
+          return res.status(404).json({ message: error.message });
+        }
+        if (error.message.includes("private") || error.message.includes("own prompts")) {
+          return res.status(403).json({ message: error.message });
+        }
+        if (error.message.includes("more than")) {
+          return res.status(400).json({ message: error.message });
+        }
+      }
+      
+      res.status(500).json({ message: "Failed to contribute images" });
+    }
+  });
+
   // Project routes
   app.get('/api/projects', isAuthenticated, async (req: any, res) => {
     try {

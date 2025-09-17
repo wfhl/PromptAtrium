@@ -89,6 +89,7 @@ export interface IStorage {
     ratingsCount: number;
   }>;
   forkPrompt(promptId: string, userId: string): Promise<Prompt>;
+  contributeImagesToPrompt(promptId: string, imageUrls: string[], contributorId: string): Promise<Prompt>;
   
   // Project operations
   getProjects(userId: string): Promise<Project[]>;
@@ -650,6 +651,55 @@ export class DatabaseStorage implements IStorage {
     };
 
     return await this.createPrompt(forkedPrompt);
+  }
+
+  async contributeImagesToPrompt(promptId: string, imageUrls: string[], contributorId: string): Promise<Prompt> {
+    // Get the prompt to check if it exists and is public
+    const [prompt] = await db.select().from(prompts).where(eq(prompts.id, promptId));
+    if (!prompt) {
+      throw new Error("Prompt not found");
+    }
+    if (!prompt.isPublic) {
+      throw new Error("Cannot contribute images to private prompts");
+    }
+    // Don't allow users to contribute to their own prompts through this endpoint
+    if (prompt.userId === contributorId) {
+      throw new Error("Use the edit prompt endpoint to add images to your own prompts");
+    }
+
+    // Merge the new images with existing ones
+    const existingImages = prompt.exampleImagesUrl || [];
+    const updatedImages = [...existingImages, ...imageUrls];
+    
+    // Limit total images per prompt to prevent abuse
+    const maxImages = 30;
+    if (updatedImages.length > maxImages) {
+      throw new Error(`Prompt cannot have more than ${maxImages} example images`);
+    }
+
+    // Update the prompt with new images
+    const [updatedPrompt] = await db
+      .update(prompts)
+      .set({ 
+        exampleImagesUrl: updatedImages,
+        updatedAt: new Date() 
+      })
+      .where(eq(prompts.id, promptId))
+      .returning();
+
+    // Log the contribution as an activity (optional, for tracking contributions)
+    await db.insert(activities).values({
+      userId: contributorId,
+      actionType: "shared_prompt",
+      targetId: promptId,
+      targetType: "prompt",
+      metadata: { 
+        action: "contributed_images",
+        imageCount: imageUrls.length 
+      },
+    });
+
+    return updatedPrompt;
   }
 
   // Project operations
