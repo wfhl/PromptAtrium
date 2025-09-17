@@ -665,6 +665,15 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48" data-testid="mobile-dropdown-resources">
+
+                  <DropdownMenuItem asChild>
+                    <Link href="/prompting-guides" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-prompting-guides">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Prompting Guides
+                    </Link>
+                  </DropdownMenuItem>
+                
+                  
                   <DropdownMenuItem 
                     onClick={() => {
                       toast({
@@ -795,17 +804,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   Admin
                 </Link>
               )}
-              <Button
-                className="w-full flex items-center justify-center space-x-2 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border border-cyan-400/30"
-                onClick={() => {
-                  handleCreatePrompt();
-                  setMobileMenuOpen(false);
-                }}
-                data-testid="mobile-button-new-prompt"
-              >
-                <Plus className="h-4 w-4" />
-                <span>New Prompt</span>
-              </Button>
+
             </nav>
           </div>
         )}
