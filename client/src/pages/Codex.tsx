@@ -875,7 +875,7 @@ export default function Codex() {
 
         {/* Live String Assembly Toast */}
         {showAssemblyToast && (
-        <div 
+          <div 
           className={`fixed ${
             toastMinimized ? 'bottom-4 right-4 w-auto' : 'bottom-0 left-0 right-0 sm:bottom-4 sm:right-4 sm:left-auto sm:w-96'
           } bg-background border shadow-lg rounded-lg transition-all duration-300 z-50`}
@@ -979,6 +979,5 @@ export default function Codex() {
         </div>
       )}
       </div>
-    </div>
   );
 }
