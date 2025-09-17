@@ -876,9 +876,9 @@ export default function Codex() {
         {/* Live String Assembly Toast - Moved to top */}
       {showAssemblyToast && (
         <div 
-          className={`fixed top-10 ${
+          className={`fixed top-20 ${
             toastMinimized ? 'right-4 w-auto' : 'left-4 right-4 sm:right-4 sm:left-auto sm:w-96'
-          } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-40 text-white`}
+          } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-[60] text-white`}
         >
          
           {toastMinimized ? (
@@ -926,60 +926,64 @@ export default function Codex() {
                   )}
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={randomizeAssembledString}
-                    disabled={assembledString.length === 0}
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50"
-                  >
-                    <Shuffle className="w-4 h-4 mr-1" />
-                    Randomize
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyAssembledString}
-                    disabled={assembledString.length === 0}
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50"
-                  >
-                    <Copy className="w-4 h-4 mr-1" />
-                    Copy
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const name = prompt("Name for this assembled string:");
-                      if (name) {
-                        saveAssembledStringMutation.mutate({ 
-                          name, 
-                          content: assembledString 
+                <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={randomizeAssembledString}
+                      disabled={assembledString.length === 0}
+                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                    >
+                      <Shuffle className="w-3 h-3 mr-1" />
+                      Randomize
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyAssembledString}
+                      disabled={assembledString.length === 0}
+                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                    >
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const name = prompt("Name for this assembled string:");
+                        if (name) {
+                          saveAssembledStringMutation.mutate({ 
+                            name, 
+                            content: assembledString 
+                          });
+                        }
+                      }}
+                      disabled={assembledString.length === 0}
+                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        toast({
+                          title: "Coming Soon",
+                          description: "Send to Generator feature will be implemented later",
                         });
-                      }
-                    }}
-                    disabled={assembledString.length === 0}
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4 mr-1" />
-                    Save
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Send to Generator feature will be implemented later",
-                      });
-                    }}
-                    disabled={assembledString.length === 0}
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50"
-                  >
-                    <Send className="w-4 h-4 mr-1" />
-                    Send
-                  </Button>
+                      }}
+                      disabled={assembledString.length === 0}
+                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                    >
+                      <Send className="w-3 h-3 mr-1" />
+                      Send
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
