@@ -925,11 +925,11 @@ export default function Codex() {
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-1 sm:space-y-2">
+                  <div className="space-y-1 sm:space-y-1">
                     {terms.map((term: any) => (
                       <div
                         key={term.id}
-                        className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all pt-[4px] pb-[4px] mt-[0px] mb-[0px]"
+                        className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all"
                         onClick={() => toggleTermInAssembly(term)}
                         data-testid={`row-term-${term.id}`}
                       >
