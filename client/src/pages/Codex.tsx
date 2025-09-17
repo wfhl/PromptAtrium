@@ -75,7 +75,9 @@ function AssemblyToastPortal({
   clearAllSelections,
   randomizeAssembledString, 
   copyAssembledString,
-  saveAssembledStringMutation 
+  saveAssembledStringMutation,
+  setSaveType,
+  setSaveDialogOpen
 }: {
   assembledString: string[];
   toastMinimized: boolean;
@@ -84,6 +86,8 @@ function AssemblyToastPortal({
   randomizeAssembledString: () => void;
   copyAssembledString: () => void;
   saveAssembledStringMutation: any;
+  setSaveType: (type: "preset" | "wildcard") => void;
+  setSaveDialogOpen: (open: boolean) => void;
 }) {
   return createPortal(
     <div 
@@ -172,14 +176,8 @@ function AssemblyToastPortal({
                   <DropdownMenuContent className="bg-background border-border">
                     <DropdownMenuItem
                       onClick={() => {
-                        const name = prompt("Name for this preset:");
-                        if (name) {
-                          saveAssembledStringMutation.mutate({ 
-                            name, 
-                            type: "preset",
-                            content: assembledString 
-                          });
-                        }
+                        setSaveType("preset");
+                        setSaveDialogOpen(true);
                       }}
                     >
                       <FileText className="w-4 h-4 mr-2" />
@@ -187,14 +185,8 @@ function AssemblyToastPortal({
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        const name = prompt("Name for this wildcard:");
-                        if (name) {
-                          saveAssembledStringMutation.mutate({ 
-                            name,
-                            type: "wildcard", 
-                            content: assembledString 
-                          });
-                        }
+                        setSaveType("wildcard");
+                        setSaveDialogOpen(true);
                       }}
                     >
                       <Zap className="w-4 h-4 mr-2" />
@@ -522,9 +514,13 @@ export default function Codex() {
         title: "Saved!",
         description: `Your ${variables.type} has been saved`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/codex/assembled-strings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/codex/assembled-strings", "preset"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/codex/assembled-strings", "wildcard"] });
       setSaveDialogOpen(false);
       setSaveName("");
+      // Clear the assembled string after successful save
+      setAssembledString([]);
+      setSelectedTerms([]);
     },
   });
 
@@ -845,11 +841,10 @@ export default function Codex() {
           {/* Main Content Area - Shows below categories on mobile, beside on desktop */}
           <div className="lg:col-span-3 order-2 lg:order-2">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
                 <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
                   <TabsTrigger value="browse" data-testid="tab-browse" className="text-xs sm:text-sm">Browse Terms</TabsTrigger>
                   <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">Collected Terms</TabsTrigger>
-                  <TabsTrigger value="saved" data-testid="tab-saved" className="text-xs sm:text-sm">Saved Items</TabsTrigger>
                   <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
                 </TabsList>
               </div>
@@ -1087,56 +1082,51 @@ export default function Codex() {
                         </div>
                       </>
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Saved Items Tab */}
-              <TabsContent value="saved">
-                <div className="space-y-6">
-                  {/* Saved Presets Section */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        Saved Presets
-                      </CardTitle>
-                      <CardDescription>
-                        Complete prompts ready to use with your AI generators
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {savedPresets.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No presets saved yet. Save your assembled terms as a preset to see them here.
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
+                    
+                    {/* Saved Presets Section at Bottom */}
+                    {savedPresets.length > 0 && (
+                      <>
+                        <Separator className="my-4" />
+                        <div className="space-y-2">
+                          <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            Saved Presets ({savedPresets.length})
+                          </h4>
                           {savedPresets.map((preset: CodexAssembledString) => (
                             <div
                               key={preset.id}
-                              className="group flex items-start justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                              className="group flex items-start justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
                               data-testid={`item-preset-${preset.id}`}
                             >
                               <div className="flex-1 min-w-0">
-                                <div className="font-semibold mb-1">{preset.name}</div>
-                                <div className="text-sm text-muted-foreground break-words">
+                                <div className="font-semibold text-sm mb-1">{preset.name}</div>
+                                <div className="text-xs text-muted-foreground break-words">
                                   {preset.stringContent}
-                                </div>
-                                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                  <span>{new Date(preset.createdAt).toLocaleDateString()}</span>
-                                  {preset.termsUsed && preset.termsUsed.length > 0 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      {preset.termsUsed.length} terms
-                                    </Badge>
-                                  )}
                                 </div>
                               </div>
                               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8"
+                                  className="h-7 w-7"
+                                  onClick={() => {
+                                    // Recall: Load preset back into assembler
+                                    const terms = preset.stringContent.split(', ');
+                                    setAssembledString(terms);
+                                    setShowAssemblyToast(true);
+                                    toast({
+                                      title: "Recalled!",
+                                      description: `Loaded "${preset.name}" into assembler`,
+                                    });
+                                  }}
+                                  title="Recall this preset"
+                                >
+                                  <Upload className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
                                   onClick={() => {
                                     navigator.clipboard.writeText(preset.stringContent);
                                     toast({
@@ -1144,31 +1134,14 @@ export default function Codex() {
                                       description: "Preset copied to clipboard",
                                     });
                                   }}
-                                  data-testid={`button-copy-preset-${preset.id}`}
+                                  title="Copy to clipboard"
                                 >
-                                  <Copy className="w-4 h-4" />
+                                  <Copy className="w-3 h-3" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    const newName = prompt("Rename preset:", preset.name);
-                                    if (newName && newName !== preset.name) {
-                                      updateAssembledStringMutation.mutate({
-                                        id: preset.id,
-                                        name: newName,
-                                      });
-                                    }
-                                  }}
-                                  data-testid={`button-edit-preset-${preset.id}`}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
+                                  className="h-7 w-7"
                                   onClick={() => {
                                     const blob = new Blob([preset.stringContent], { type: 'text/plain' });
                                     const url = URL.createObjectURL(blob);
@@ -1178,41 +1151,62 @@ export default function Codex() {
                                     a.click();
                                     URL.revokeObjectURL(url);
                                   }}
-                                  data-testid={`button-download-preset-${preset.id}`}
+                                  title="Download as text file"
                                 >
-                                  <Download className="w-4 h-4" />
+                                  <Download className="w-3 h-3" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8"
+                                  className="h-7 w-7"
+                                  onClick={() => {
+                                    // Share functionality - copy a shareable link or format
+                                    const shareText = `Preset: ${preset.name}\n${preset.stringContent}`;
+                                    navigator.clipboard.writeText(shareText);
+                                    toast({
+                                      title: "Ready to share!",
+                                      description: "Preset copied in shareable format",
+                                    });
+                                  }}
+                                  title="Share this preset"
+                                >
+                                  <Share2 className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
                                   onClick={() => {
                                     if (confirm(`Delete "${preset.name}"?`)) {
                                       deleteAssembledStringMutation.mutate(preset.id);
                                     }
                                   }}
-                                  data-testid={`button-delete-preset-${preset.id}`}
+                                  title="Delete this preset"
                                 >
-                                  <Trash className="w-4 h-4" />
+                                  <Trash className="w-3 h-3" />
                                 </Button>
                               </div>
                             </div>
                           ))}
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                  {/* Saved Wildcards Section */}
+              {/* Wildcard Lists Tab */}
+              <TabsContent value="lists">
+                <div className="space-y-6">
+                  {/* My Wildcards Section */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Zap className="w-5 h-5" />
-                        Saved Wildcards
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Zap className="w-5 h-5" />
+                          My Wildcards
+                        </span>
                       </CardTitle>
-                      <CardDescription>
-                        Dynamic term collections for randomized prompt generation
-                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {savedWildcards.length === 0 ? (
@@ -1220,140 +1214,112 @@ export default function Codex() {
                           No wildcards saved yet. Save your assembled terms as a wildcard to see them here.
                         </div>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {savedWildcards.map((wildcard: CodexAssembledString) => (
-                            <div
-                              key={wildcard.id}
-                              className="group flex items-start justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                              data-testid={`item-wildcard-${wildcard.id}`}
-                            >
-                              <div className="flex-1 min-w-0">
-                                <div className="font-semibold mb-1">{wildcard.name}</div>
-                                <div className="text-sm text-muted-foreground break-words">
-                                  {wildcard.stringContent}
+                            <Card key={wildcard.id} className="group">
+                              <CardContent className="p-4">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold">{wildcard.name}</h4>
+                                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                      {wildcard.stringContent}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                  <span>{new Date(wildcard.createdAt).toLocaleDateString()}</span>
-                                  {wildcard.termsUsed && wildcard.termsUsed.length > 0 && (
+                                <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground mb-3">
+                                  <span>{wildcard.createdAt ? new Date(wildcard.createdAt).toLocaleDateString() : ''}</span>
+                                  {wildcard.termsUsed && Array.isArray(wildcard.termsUsed) && wildcard.termsUsed.length > 0 && (
                                     <Badge variant="secondary" className="text-xs">
                                       {wildcard.termsUsed.length} terms
                                     </Badge>
                                   )}
                                 </div>
-                              </div>
-                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(wildcard.stringContent);
-                                    toast({
-                                      title: "Copied!",
-                                      description: "Wildcard copied to clipboard",
-                                    });
-                                  }}
-                                  data-testid={`button-copy-wildcard-${wildcard.id}`}
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    const newName = prompt("Rename wildcard:", wildcard.name);
-                                    if (newName && newName !== wildcard.name) {
-                                      updateAssembledStringMutation.mutate({
-                                        id: wildcard.id,
-                                        name: newName,
+                                <div className="flex gap-1 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      // Recall: Load wildcard back into assembler
+                                      const terms = wildcard.stringContent.split(', ');
+                                      setAssembledString(terms);
+                                      setShowAssemblyToast(true);
+                                      toast({
+                                        title: "Recalled!",
+                                        description: `Loaded "${wildcard.name}" into assembler`,
                                       });
-                                    }
-                                  }}
-                                  data-testid={`button-edit-wildcard-${wildcard.id}`}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    const blob = new Blob([`__${wildcard.name}__\n${wildcard.stringContent}`], { type: 'text/plain' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `${wildcard.name.toLowerCase().replace(/\s+/g, '-')}.txt`;
-                                    a.click();
-                                    URL.revokeObjectURL(url);
-                                  }}
-                                  data-testid={`button-download-wildcard-${wildcard.id}`}
-                                >
-                                  <Download className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    if (confirm(`Delete "${wildcard.name}"?`)) {
-                                      deleteAssembledStringMutation.mutate(wildcard.id);
-                                    }
-                                  }}
-                                  data-testid={`button-delete-wildcard-${wildcard.id}`}
-                                >
-                                  <Trash className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              {/* Wildcard Lists Tab */}
-              <TabsContent value="lists">
-                <div className="space-y-6">
-                  {/* User's Lists */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span>My Wildcard Lists</span>
-                        <Button size="sm" data-testid="button-create-list">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create List
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {userLists.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          You haven't created any wildcard lists yet
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {userLists.map((list: CodexUserList) => (
-                            <Card key={list.id} data-testid={`card-user-list-${list.id}`}>
-                              <CardContent className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                  <div>
-                                    <h4 className="font-semibold">{list.name}</h4>
-                                    <p className="text-sm text-muted-foreground">{list.description}</p>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <Download className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2 mt-2">
-                                  {list.isPublic && <Badge>Public</Badge>}
+                                    }}
+                                    title="Recall this wildcard"
+                                    data-testid={`button-recall-wildcard-${wildcard.id}`}
+                                  >
+                                    <Upload className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(wildcard.stringContent);
+                                      toast({
+                                        title: "Copied!",
+                                        description: "Wildcard copied to clipboard",
+                                      });
+                                    }}
+                                    title="Copy to clipboard"
+                                    data-testid={`button-copy-wildcard-${wildcard.id}`}
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      const blob = new Blob([`__${wildcard.name}__\n${wildcard.stringContent}`], { type: 'text/plain' });
+                                      const url = URL.createObjectURL(blob);
+                                      const a = document.createElement('a');
+                                      a.href = url;
+                                      a.download = `${wildcard.name.toLowerCase().replace(/\s+/g, '-')}.txt`;
+                                      a.click();
+                                      URL.revokeObjectURL(url);
+                                    }}
+                                    title="Download as text file"
+                                    data-testid={`button-download-wildcard-${wildcard.id}`}
+                                  >
+                                    <Download className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      // Share functionality
+                                      const shareText = `Wildcard: ${wildcard.name}\n${wildcard.stringContent}`;
+                                      navigator.clipboard.writeText(shareText);
+                                      toast({
+                                        title: "Ready to share!",
+                                        description: "Wildcard copied in shareable format",
+                                      });
+                                    }}
+                                    title="Share this wildcard"
+                                    data-testid={`button-share-wildcard-${wildcard.id}`}
+                                  >
+                                    <Share2 className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      if (confirm(`Delete "${wildcard.name}"?`)) {
+                                        deleteAssembledStringMutation.mutate(wildcard.id);
+                                      }
+                                    }}
+                                    title="Delete this wildcard"
+                                    data-testid={`button-delete-wildcard-${wildcard.id}`}
+                                  >
+                                    <Trash className="w-3 h-3" />
+                                  </Button>
                                 </div>
                               </CardContent>
                             </Card>
@@ -1362,10 +1328,6 @@ export default function Codex() {
                       )}
                     </CardContent>
                   </Card>
-
-                  <div className="text-center py-8 text-muted-foreground">
-                    Public Lists section temporarily disabled for debugging
-                  </div>
                 </div>
               </TabsContent>
             </Tabs>
@@ -1382,6 +1344,8 @@ export default function Codex() {
             randomizeAssembledString={randomizeAssembledString}
             copyAssembledString={copyAssembledString}
             saveAssembledStringMutation={saveAssembledStringMutation}
+            setSaveType={setSaveType}
+            setSaveDialogOpen={setSaveDialogOpen}
           />
         ) : null}
 
