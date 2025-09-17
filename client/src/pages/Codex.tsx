@@ -596,7 +596,7 @@ export default function Codex() {
 
                       <TabsContent value="all" className="mt-1">
                         <ScrollArea 
-                          className="lg:h-[500px] resize-target" 
+                          className="lg:h-[calc(100vh-280px)] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
                           <div className="p-1 sm:p-1 space-y-1">
@@ -636,7 +636,7 @@ export default function Codex() {
 
                       <TabsContent value="organized" className="mt-1">
                         <ScrollArea 
-                          className="lg:h-[500px] resize-target" 
+                          className="lg:h-[calc(100vh-280px)] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
                           <div className="p-1 sm:p-1">
@@ -739,7 +739,7 @@ export default function Codex() {
 
                       <TabsContent value="all" className="mt-1">
                         <ScrollArea 
-                          className="lg:h-[500px] resize-target" 
+                          className="lg:h-[calc(100vh-280px)] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
                           <div className="p-1 sm:p-1 space-y-1">
@@ -777,7 +777,7 @@ export default function Codex() {
 
                       <TabsContent value="organized" className="mt-1">
                         <ScrollArea 
-                          className="lg:h-[500px] resize-target" 
+                          className="lg:h-[calc(100vh-280px)] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
                           <div className="p-1 sm:p-1">
@@ -982,7 +982,7 @@ export default function Codex() {
                             });
                           }}
                           disabled={assembledString.length === 0}
-                          
+
                           data-testid="button-send-to-generator"
                         >
                           <Send className="w-6 h-4 mr-2" />
@@ -1082,7 +1082,7 @@ export default function Codex() {
                         </div>
                       </>
                     )}
-                    
+
                     {/* Saved Presets Section at Bottom */}
                     {savedPresets.length > 0 && (
                       <>
