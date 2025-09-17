@@ -586,11 +586,6 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   )}
                 </DropdownMenuItem>
 
-                <DropdownMenuItem className="cursor-pointer" data-testid="menu-status-options">
-                  <Eye className="mr-2 h-4 w-4" />
-                  Status Display Options
-                </DropdownMenuItem>
-
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem asChild>
