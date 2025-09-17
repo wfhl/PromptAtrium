@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -34,7 +34,10 @@ import {
   Trash,
   Check,
   X,
-  Layers
+  Layers,
+  Send,
+  Minimize2,
+  Maximize2
 } from "lucide-react";
 import type {
   CodexCategory,
@@ -51,6 +54,8 @@ export default function Codex() {
   const [selectedTerms, setSelectedTerms] = useState<CodexTerm[]>([]);
   const [assembledString, setAssembledString] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("browse");
+  const [showAssemblyToast, setShowAssemblyToast] = useState(false);
+  const [toastMinimized, setToastMinimized] = useState(false);
   const [categoryTab, setCategoryTab] = useState<"all" | "aesthetics">("all");
   const [categoryView, setCategoryView] = useState<"all" | "organized">("all");
   const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
@@ -211,16 +216,75 @@ export default function Codex() {
     },
   });
 
-  // Add term to assembled string
+  // Toggle term in assembled string (for clicking on terms)
+  const toggleTermInAssembly = (term: any) => {
+    const isSelected = selectedTerms.some(t => t.id === term.id);
+    
+    if (isSelected) {
+      // Remove term
+      setSelectedTerms(prev => prev.filter(t => t.id !== term.id));
+      setAssembledString(prev => {
+        const index = prev.indexOf(term.term);
+        if (index > -1) {
+          const newArray = [...prev];
+          newArray.splice(index, 1);
+          return newArray;
+        }
+        return prev;
+      });
+    } else {
+      // Add term
+      setSelectedTerms(prev => [...prev, term]);
+      setAssembledString(prev => [...prev, term.term]);
+    }
+  };
+
+  // Add term to assembled string (for String Assembly tab)
   const addToAssembledString = (term: any) => {
-    setAssembledString(prev => [...prev, term.term]);
-    setSelectedTerms(prev => [...prev, term]);
+    if (!selectedTerms.some(t => t.id === term.id)) {
+      setAssembledString(prev => [...prev, term.term]);
+      setSelectedTerms(prev => [...prev, term]);
+    }
   };
 
   // Remove term from assembled string
   const removeFromAssembledString = (index: number) => {
     setAssembledString(prev => prev.filter((_, i) => i !== index));
     setSelectedTerms(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Show toast when terms are selected
+  useEffect(() => {
+    setShowAssemblyToast(selectedTerms.length > 0);
+    if (selectedTerms.length === 0) {
+      setToastMinimized(false);
+    }
+  }, [selectedTerms]);
+
+  // Check if a term is selected
+  const isTermSelected = (termId: string) => {
+    return selectedTerms.some(t => t.id === termId);
+  };
+
+  // Clear all selections
+  const clearAllSelections = () => {
+    setSelectedTerms([]);
+    setAssembledString([]);
+  };
+
+  // Randomize assembled string order
+  const randomizeAssembledString = () => {
+    const shuffled = [...assembledString].sort(() => Math.random() - 0.5);
+    setAssembledString(shuffled);
+  };
+
+  // Copy assembled string to clipboard
+  const copyAssembledString = () => {
+    navigator.clipboard.writeText(assembledString.join(', '));
+    toast({
+      title: "Copied!",
+      description: "Assembled string copied to clipboard",
+    });
   };
 
   // Randomize assembled string order
@@ -291,15 +355,15 @@ export default function Codex() {
                         </TabsTrigger>
                       </TabsList>
 
-                      <TabsContent value="all" className="mt-2">
+                      <TabsContent value="all" className="mt-1">
                         <ScrollArea 
                           className="lg:h-[500px] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
-                          <div className="p-2 sm:p-3 space-y-1">
+                          <div className="p-1 sm:p-1 space-y-1">
                             <Button
                               variant={!selectedCategory ? "secondary" : "ghost"}
-                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-1"
+                              className="w-full justify-center h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-1"
                               onClick={() => setSelectedCategory(null)}
                               data-testid="button-all-categories"
                             >
@@ -331,24 +395,24 @@ export default function Codex() {
                         </ScrollArea>
                       </TabsContent>
 
-                      <TabsContent value="organized" className="mt-2">
+                      <TabsContent value="organized" className="mt-1">
                         <ScrollArea 
                           className="lg:h-[500px] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
-                          <div className="p-2 sm:p-3">
+                          <div className="p-1 sm:p-1">
                             <Button
                               variant={!selectedCategory ? "secondary" : "ghost"}
-                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-3"
+                              className="w-full justify-center h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-2"
                               onClick={() => setSelectedCategory(null)}
                               data-testid="button-all-organized"
                             >
                               All Categories
                             </Button>
                             {categoriesLoading ? (
-                              <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
+                              <div className="text-center py-1 text-xs sm:text-xs text-muted-foreground">Loading...</div>
                             ) : (
-                              <Accordion type="single" collapsible className="w-full space-y-1">
+                              <Accordion type="single" collapsible className="w-full py-1 h-7 space-y-1">
                                 {/* Group categories by anatomy group */}
                                 {Object.entries(
                                   categories
@@ -372,7 +436,9 @@ export default function Codex() {
                                       'Details & Textures',
                                       'Action & Movement',
                                       'Special Effects',
-                                      'Other'
+                                      'Other',
+
+'NSFW'
                                     ];
                                     return order.indexOf(a) - order.indexOf(b);
                                   })
@@ -382,7 +448,7 @@ export default function Codex() {
                                       value={group}
                                       className={`border rounded-lg px-2 ${getAnatomyGroupColor(group)}`}
                                     >
-                                      <AccordionTrigger className="hover:no-underline py-2 text-xs sm:text-sm">
+                                      <AccordionTrigger className="hover:no-underline py-2 h-7 text-xs sm:text-sm">
                                         <div className="flex items-center gap-2">
                                           <span className="font-semibold">{group}</span>
                                           <Badge variant="secondary" className="text-xs">
@@ -432,15 +498,15 @@ export default function Codex() {
                         </TabsTrigger>
                       </TabsList>
 
-                      <TabsContent value="all" className="mt-2">
+                      <TabsContent value="all" className="mt-1">
                         <ScrollArea 
                           className="lg:h-[500px] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
-                          <div className="p-2 sm:p-3 space-y-1">
+                          <div className="p-1 sm:p-1 space-y-1">
                             <Button
                               variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-1"
+                              className="w-full justify-center h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-1"
                               onClick={() => setSelectedCategory("aesthetics")}
                               data-testid="button-all-aesthetics"
                             >
@@ -470,15 +536,15 @@ export default function Codex() {
                         </ScrollArea>
                       </TabsContent>
 
-                      <TabsContent value="organized" className="mt-2">
+                      <TabsContent value="organized" className="mt-1">
                         <ScrollArea 
                           className="lg:h-[500px] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
-                          <div className="p-2 sm:p-3">
+                          <div className="p-1 sm:p-1">
                             <Button
                               variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-3"
+                              className="w-full justify-center h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-3"
                               onClick={() => setSelectedCategory("aesthetics")}
                               data-testid="button-all-aesthetics-organized"
                             >
@@ -521,13 +587,13 @@ export default function Codex() {
               </CardContent>
               {/* Touch drag handle for mobile - positioned below content */}
               <div 
-                className="lg:hidden h-8 bg-background border-t border-muted/20 flex items-center justify-center cursor-ns-resize touch-none flex-shrink-0"
+                className="lg:hidden h-4 bg-purple-900/20 border-t border-muted/20 flex items-center justify-center cursor-ns-resize touch-none flex-shrink-0"
                 onTouchStart={handleTouchStart}
                 style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
               >
-                <div className="flex flex-col items-center gap-0.5 py-2">
-                  <div className="w-16 h-1 bg-muted-foreground/50 rounded-full" />
-                  <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+                <div className="flex flex-col items-center gap-0.5 py-1">
+                  <div className="w-16 h-0.5 bg-blue-400/10 rounded-full" />
+                  <div className="w-12 h-0.5 bg-blue-400/10 rounded-full" />
                 </div>
               </div>
             </Card>
@@ -601,8 +667,10 @@ export default function Codex() {
                     {terms.map((term: any) => (
                       <Card
                         key={term.id}
-                        className="cursor-pointer hover:shadow-md transition-shadow h-full"
-                        onClick={() => addToAssembledString(term)}
+                        className={`cursor-pointer hover:shadow-md transition-all h-full ${
+                          isTermSelected(term.id) ? 'ring-2 ring-primary bg-primary/10' : ''
+                        }`}
+                        onClick={() => toggleTermInAssembly(term)}
                         data-testid={`card-term-${term.id}`}
                       >
                         <CardContent className="p-2 sm:p-3">
@@ -625,8 +693,10 @@ export default function Codex() {
                     {terms.map((term: any) => (
                       <div
                         key={term.id}
-                        className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer"
-                        onClick={() => addToAssembledString(term)}
+                        className={`flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all ${
+                          isTermSelected(term.id) ? 'ring-2 ring-primary bg-primary/10' : ''
+                        }`}
+                        onClick={() => toggleTermInAssembly(term)}
                         data-testid={`row-term-${term.id}`}
                       >
                         <div className="flex-1 min-w-0">
@@ -640,10 +710,14 @@ export default function Codex() {
                             className="h-6 w-6 sm:h-8 sm:w-8"
                             onClick={(e) => {
                               e.stopPropagation();
-                              addToAssembledString(term);
+                              toggleTermInAssembly(term);
                             }}
                           >
-                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                            {isTermSelected(term.id) ? (
+                              <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                            ) : (
+                              <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -798,6 +872,113 @@ export default function Codex() {
             </Tabs>
           </div>
         </div>
+
+        {/* Live String Assembly Toast */}
+        {showAssemblyToast && (
+        <div 
+          className={`fixed ${
+            toastMinimized ? 'bottom-4 right-4 w-auto' : 'bottom-0 left-0 right-0 sm:bottom-4 sm:right-4 sm:left-auto sm:w-96'
+          } bg-background border shadow-lg rounded-lg transition-all duration-300 z-50`}
+        >
+          {toastMinimized ? (
+            <div className="flex items-center gap-2 p-3">
+              <span className="text-sm font-medium">{assembledString.length} terms selected</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setToastMinimized(false)}
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between p-3 border-b">
+                <h3 className="font-semibold text-sm">String Assembly</h3>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setToastMinimized(true)}
+                  >
+                    <Minimize2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllSelections}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-3">
+                <div className="bg-secondary/50 rounded-lg p-3 min-h-[60px] max-h-[150px] overflow-y-auto mb-3">
+                  {assembledString.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Click terms to add them here...</p>
+                  ) : (
+                    <p className="text-sm break-words">{assembledString.join(', ')}</p>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={randomizeAssembledString}
+                    disabled={assembledString.length === 0}
+                  >
+                    <Shuffle className="w-4 h-4 mr-1" />
+                    Randomize
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copyAssembledString}
+                    disabled={assembledString.length === 0}
+                  >
+                    <Copy className="w-4 h-4 mr-1" />
+                    Copy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const name = prompt("Name for this assembled string:");
+                      if (name) {
+                        saveAssembledStringMutation.mutate({ 
+                          name, 
+                          content: assembledString 
+                        });
+                      }
+                    }}
+                    disabled={assembledString.length === 0}
+                  >
+                    <Save className="w-4 h-4 mr-1" />
+                    Save
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Send to Generator feature will be implemented later",
+                      });
+                    }}
+                    disabled={assembledString.length === 0}
+                  >
+                    <Send className="w-4 h-4 mr-1" />
+                    Send
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       </div>
+    </div>
   );
 }
