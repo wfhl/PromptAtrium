@@ -183,11 +183,12 @@ export default function Codex() {
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
           <Resizable
-            defaultSize={{ width: 300, height: 600 }} // Default size for the category section
-            minConstraints={[200, 300]} // Minimum width and height
-            maxConstraints={[500, 800]} // Maximum width and height
+            width={300}
+            height={600}
+            minConstraints={[200, 300]}
+            maxConstraints={[500, 800]}
             onResize={handleResize}
-            axis="both" // Allow resizing in both directions
+            axis="both"
           >
             <Card className="h-full lg:sticky lg:top-4">
               <CardContent className="p-0">
@@ -429,7 +430,8 @@ export default function Codex() {
                     </Tabs>
                   </TabsContent>
                 </Tabs>
-              </Card>
+              </CardContent>
+            </Card>
             </Resizable> 
             {/* End Resizable wrapper */}
           </div>
@@ -691,58 +693,9 @@ export default function Codex() {
                     </CardContent>
                   </Card>
 
-                  {/* Public Lists */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Public Wildcard Lists</CardTitle>
-                      <CardDescription>
-                        Browse and download wildcard lists shared by the community
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {publicLists.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No public lists available in this category
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {publicLists.map((list: CodexUserList) => (
-                            <Card key={list.id} data-testid={`card-public-list-${list.id}`}>
-                              <CardContent className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                  <div>
-                                    <h4 className="font-semibold">{list.name}</h4>
-                                    <p className="text-sm text-muted-foreground">{list.description}</p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={async () => {
-                                      await fetch(`/api/codex/lists/${list.id}/download`, {
-                                        method: 'POST',
-                                      });
-                                      toast({
-                                        title: "Downloaded!",
-                                        description: `${list.name} has been downloaded`,
-                                      });
-                                    }}
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                                <div className="flex gap-2 mt-2">
-                                  <Badge variant="outline">
-                                    {list.downloadCount || 0} downloads
-                                  </Badge>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <div className="text-center py-8 text-muted-foreground">
+                    Public Lists section temporarily disabled for debugging
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
