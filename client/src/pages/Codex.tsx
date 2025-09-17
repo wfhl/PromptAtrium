@@ -108,9 +108,10 @@ export default function Codex() {
       rafIdRef.current = requestAnimationFrame(() => {
         if (scrollAreaRef.current) {
           // Update all ScrollArea heights directly in DOM for smooth resizing
+          // Subtract 32px (8 * 4 in Tailwind) for the drag handle height
           const scrollAreas = scrollAreaRef.current.querySelectorAll('.resize-target');
           scrollAreas.forEach((el) => {
-            (el as HTMLElement).style.height = `${newHeight}px`;
+            (el as HTMLElement).style.height = `${newHeight - 32}px`;
           });
           currentHeightRef.current = newHeight;
         }
@@ -265,8 +266,8 @@ export default function Codex() {
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
-          <Card className="h-full lg:sticky lg:top-4 relative" ref={scrollAreaRef}>
-              <CardContent className="p-0">
+          <Card className="h-full lg:sticky lg:top-4 flex flex-col" ref={scrollAreaRef}>
+              <CardContent className="p-0 flex-1">
                 <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
                   <TabsList className="w-full rounded-none">
                     <TabsTrigger value="all" className="flex-1 text-xs sm:text-sm" data-testid="tab-all-categories">
@@ -293,7 +294,7 @@ export default function Codex() {
                       <TabsContent value="all" className="mt-2">
                         <ScrollArea 
                           className="lg:h-[500px] resize-target" 
-                          style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
+                          style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
                           <div className="p-2 sm:p-3 space-y-1">
                             <Button
@@ -333,7 +334,7 @@ export default function Codex() {
                       <TabsContent value="organized" className="mt-2">
                         <ScrollArea 
                           className="lg:h-[500px] resize-target" 
-                          style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
+                          style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
                           <div className="p-2 sm:p-3">
                             <Button
@@ -434,7 +435,7 @@ export default function Codex() {
                       <TabsContent value="all" className="mt-2">
                         <ScrollArea 
                           className="lg:h-[500px] resize-target" 
-                          style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
+                          style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
                           <div className="p-2 sm:p-3 space-y-1">
                             <Button
@@ -472,7 +473,7 @@ export default function Codex() {
                       <TabsContent value="organized" className="mt-2">
                         <ScrollArea 
                           className="lg:h-[500px] resize-target" 
-                          style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
+                          style={{ height: isMobile ? `${categoryHeight - 32}px` : undefined }}
                         >
                           <div className="p-2 sm:p-3">
                             <Button
@@ -518,9 +519,9 @@ export default function Codex() {
                   </TabsContent>
                 </Tabs>
               </CardContent>
-              {/* Touch drag handle for mobile */}
+              {/* Touch drag handle for mobile - positioned below content */}
               <div 
-                className="lg:hidden absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background/80 to-transparent flex items-center justify-center cursor-ns-resize touch-none border-t border-muted/20"
+                className="lg:hidden h-8 bg-background border-t border-muted/20 flex items-center justify-center cursor-ns-resize touch-none flex-shrink-0"
                 onTouchStart={handleTouchStart}
                 style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
               >
