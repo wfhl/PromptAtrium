@@ -50,7 +50,6 @@ const getTopicColor = (title: string, isAnatomy: boolean = false) => {
   if (title.includes("Negative")) return "bg-red-500/10 text-red-400 border-red-500/30";
   if (title.includes("SDXL")) return "bg-pink-500/10 text-pink-400 border-pink-500/30";
   if (title.includes("Trigger") || title.includes("Model")) return "bg-indigo-500/10 text-indigo-400 border-indigo-500/30";
-  if (title.includes("Wildcards") || title.includes("Dynamic")) return "bg-orange-500/10 text-orange-400 border-orange-500/30";
   return "bg-gray-500/20 text-gray-400 border-gray-500/30";
 };
 

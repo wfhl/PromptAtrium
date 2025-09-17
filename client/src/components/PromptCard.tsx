@@ -1074,38 +1074,43 @@ export function PromptCard({
           <div className="flex items-center space-x-1 ml-4">
             {showActions ? (
               <div className="flex items-center space-x-1" data-testid={`actions-personal-${prompt.id}`}>
-                {/* Edit Button - Green edit icon */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onEdit?.(prompt)}
-                  className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                  data-testid={`button-edit-${prompt.id}`}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-
-                {/* 3. Collections - Yellow folder with dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                {/* Only show Edit and Collections buttons if user is owner or admin */}
+                {typedUser?.id && (String(typedUser.id) === String(prompt.userId) || isSuperAdmin) && (
+                  <>
+                    {/* Edit Button - Green edit icon */}
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                      data-testid={`button-collections-${prompt.id}`}
+                      onClick={() => onEdit?.(prompt)}
+                      className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                      data-testid={`button-edit-${prompt.id}`}
                     >
-                      <Folder className="h-4 w-4" />
+                      <Edit className="h-4 w-4" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
-                      Add to Collection
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
-                      Create New Collection
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+
+                    {/* 3. Collections - Yellow folder with dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                          data-testid={`button-collections-${prompt.id}`}
+                        >
+                          <Folder className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
+                          Add to Collection
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
+                          Create New Collection
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
 
                 {/* 4. Share Menu - Share icon with dropdown */}
                 <DropdownMenu>
@@ -1161,7 +1166,7 @@ export function PromptCard({
                   <GitBranch className="h-4 w-4" />
                 </Button>
 
-                {/* 7. Archive/Featured - Archive icon for regular users, Star for super admin */}
+                {/* 7. Archive/Featured - Archive for owner/admin, Star for super admin on community page */}
                 {isSuperAdmin && isCommunityPage ? (
                   <Button
                     size="sm"
@@ -1174,19 +1179,22 @@ export function PromptCard({
                     <Star className={`h-4 w-4 transition-all duration-200 ${prompt.isFeatured ? 'fill-yellow-600' : ''}`} />
                   </Button>
                 ) : (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleArchiveClick}
-                    disabled={archiveMutation.isPending}
-                    className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                    data-testid={`button-archive-${prompt.id}`}
-                  >
-                    <Archive className="h-4 w-4" />
-                  </Button>
+                  // Only show Archive button for owner or admin
+                  typedUser?.id && (String(typedUser.id) === String(prompt.userId) || isSuperAdmin) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleArchiveClick}
+                      disabled={archiveMutation.isPending}
+                      className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                      data-testid={`button-archive-${prompt.id}`}
+                    >
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                  )
                 )}
 
-                {/* 8. Delete/Hidden - Trash icon for regular users, Eye for super admin */}
+                {/* 8. Delete/Hidden - Trash for owner/admin, Eye for super admin on community */}
                 {isSuperAdmin && isCommunityPage ? (
                   <Button
                     size="sm"
@@ -1199,16 +1207,19 @@ export function PromptCard({
                     <Eye className="h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleDeleteClick}
-                    disabled={deleteMutation.isPending}
-                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                    data-testid={`button-delete-${prompt.id}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  // Only show Delete button for owner or admin
+                  typedUser?.id && (String(typedUser.id) === String(prompt.userId) || isSuperAdmin) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleDeleteClick}
+                      disabled={deleteMutation.isPending}
+                      className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                      data-testid={`button-delete-${prompt.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )
                 )}
 
                 {/* 9. Bookmark - Bookmark (outline → filled) */}
