@@ -1210,27 +1210,20 @@ export default function Codex() {
                           No wildcards saved yet. Save your assembled terms as a wildcard to see them here.
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-2">
                           {savedWildcards.map((wildcard: CodexAssembledString) => (
-                            <Card key={wildcard.id} className="group">
-                              <CardContent className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-semibold">{wildcard.name}</h4>
-                                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                                      {wildcard.content}
-                                    </p>
-                                  </div>
+                            <div
+                              key={wildcard.id}
+                              className="group flex items-start justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                              data-testid={`item-wildcard-${wildcard.id}`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-sm mb-1">{wildcard.name}</div>
+                                <div className="text-xs text-muted-foreground break-words">
+                                  {wildcard.content}
                                 </div>
-                                <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground mb-3">
-                                  <span>{wildcard.createdAt ? new Date(wildcard.createdAt).toLocaleDateString() : ''}</span>
-                                  {wildcard.metadata && wildcard.metadata.termsUsed && Array.isArray(wildcard.metadata.termsUsed) && wildcard.metadata.termsUsed.length > 0 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      {wildcard.metadata.termsUsed.length} terms
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="flex gap-1 justify-end">
+                              </div>
+                              <div className="flex gap-1">
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -1317,8 +1310,8 @@ export default function Codex() {
                                     <Trash className="w-3 h-3" />
                                   </Button>
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
                           ))}
                         </div>
                       )}
