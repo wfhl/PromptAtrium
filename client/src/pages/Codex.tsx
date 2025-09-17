@@ -502,7 +502,7 @@ export default function Codex() {
   // Save assembled string mutation
   const saveAssembledStringMutation = useMutation({
     mutationFn: async (data: { name: string; type: "preset" | "wildcard"; content: string[] }) => {
-      return apiRequest("/api/codex/assembled-strings", "POST", {
+      return apiRequest("POST", "/api/codex/assembled-strings", {
         name: data.name,
         type: data.type,
         content: data.content.join(", "),
@@ -841,8 +841,8 @@ export default function Codex() {
           {/* Main Content Area - Shows below categories on mobile, beside on desktop */}
           <div className="lg:col-span-3 order-2 lg:order-2">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-                <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
+              <div className="flex flex-col sm:flex-row justify-center items-center sm:items-center gap-6 mb-4">
+                <TabsList className="w-full sm:w-full overflow-x-auto flex-nowrap">
                   <TabsTrigger value="browse" data-testid="tab-browse" className="text-xs sm:text-sm">Browse Terms</TabsTrigger>
                   <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">Collected Terms</TabsTrigger>
                   <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
@@ -1351,7 +1351,7 @@ export default function Codex() {
 
         {/* Save Dialog */}
         <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-          <DialogContent className="sm:max-w-md bg-purple-900/95 backdrop-blur-md border border-purple-500/30 text-white">
+          <DialogContent className="sm:max-w-md p-4 bg-purple-900/10 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-[100] text-white">
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 {saveType === "preset" ? (
@@ -1372,7 +1372,7 @@ export default function Codex() {
                   : "Save as a wildcard for random generation"}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-3">
+            <div className="space-y-4 py-1">
               <div>
                 <Label htmlFor="save-name" className="text-white/90 text-sm">Name</Label>
                 <Input
@@ -1380,13 +1380,13 @@ export default function Codex() {
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   placeholder={`Enter ${saveType} name...`}
-                  className="mt-1.5 bg-black/20 border-white/30 text-white placeholder:text-white/50"
+                  className="mt-1.5 bg-black/20 border-white/30 h-8 text-white placeholder:text-white/50"
                   autoFocus
                 />
               </div>
               <div>
                 <Label className="text-white/90 text-sm">Preview</Label>
-                <div className="mt-1.5 p-2.5 bg-black/20 rounded-md text-sm text-white/90 max-h-24 overflow-y-auto">
+                <div className="mt-1 p-2 bg-black rounded-md text-sm text-white/90 max-h-24 overflow-y-auto">
                   {assembledString.join(", ")}
                 </div>
               </div>
