@@ -54,6 +54,43 @@ export default function Codex() {
   const [categoryTab, setCategoryTab] = useState<"all" | "aesthetics">("all");
   const [categoryView, setCategoryView] = useState<"all" | "organized">("all");
   const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
+  const [categoryHeight, setCategoryHeight] = useState(200); // Default mobile height in pixels
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [startHeight, setStartHeight] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Handle touch start for resizing
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setStartY(e.touches[0].clientY);
+    setStartHeight(categoryHeight);
+    e.preventDefault();
+  };
+
+  // Handle touch move for resizing
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const deltaY = startY - e.touches[0].clientY; // Negative delta increases height
+    const newHeight = Math.min(Math.max(120, startHeight + deltaY), 500); // Min 120px, Max 500px
+    setCategoryHeight(newHeight);
+    e.preventDefault();
+  };
+
+  // Handle touch end
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
 
   // Color mapping for anatomy groups
   const getAnatomyGroupColor = (group: string) => {
@@ -174,7 +211,7 @@ export default function Codex() {
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
-          <Card className="h-full lg:sticky lg:top-4">
+          <Card className="h-full lg:sticky lg:top-4 relative">
               <CardContent className="p-0">
                 <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
                   <TabsList className="w-full rounded-none">
@@ -200,11 +237,14 @@ export default function Codex() {
                       </TabsList>
 
                       <TabsContent value="all" className="mt-2">
-                        <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                        <ScrollArea 
+                          className="lg:h-[500px]" 
+                          style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
+                        >
                           <div className="p-2 sm:p-3 space-y-1">
                             <Button
                               variant={!selectedCategory ? "secondary" : "ghost"}
-                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
+                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-1"
                               onClick={() => setSelectedCategory(null)}
                               data-testid="button-all-categories"
                             >
@@ -237,11 +277,14 @@ export default function Codex() {
                       </TabsContent>
 
                       <TabsContent value="organized" className="mt-2">
-                        <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                        <ScrollArea 
+                          className="lg:h-[500px]" 
+                          style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
+                        >
                           <div className="p-2 sm:p-3">
                             <Button
                               variant={!selectedCategory ? "secondary" : "ghost"}
-                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
+                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-3"
                               onClick={() => setSelectedCategory(null)}
                               data-testid="button-all-organized"
                             >
@@ -335,11 +378,14 @@ export default function Codex() {
                       </TabsList>
 
                       <TabsContent value="all" className="mt-2">
-                        <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                        <ScrollArea 
+                          className="lg:h-[500px]" 
+                          style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
+                        >
                           <div className="p-2 sm:p-3 space-y-1">
                             <Button
                               variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                              className="w-full justify-start h-8 text-xs py-0.2"
+                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-1"
                               onClick={() => setSelectedCategory("aesthetics")}
                               data-testid="button-all-aesthetics"
                             >
@@ -370,11 +416,14 @@ export default function Codex() {
                       </TabsContent>
 
                       <TabsContent value="organized" className="mt-2">
-                        <ScrollArea className="h-[120px] sm:h-[170px] lg:h-[500px]">
+                        <ScrollArea 
+                          className="lg:h-[500px]" 
+                          style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
+                        >
                           <div className="p-2 sm:p-3">
                             <Button
                               variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                              className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 mb-2"
+                              className="w-full justify-start h-6 sm:h-7 text-[10px] sm:text-xs px-2 mb-3"
                               onClick={() => setSelectedCategory("aesthetics")}
                               data-testid="button-all-aesthetics-organized"
                             >
@@ -415,6 +464,15 @@ export default function Codex() {
                   </TabsContent>
                 </Tabs>
               </CardContent>
+              {/* Touch drag handle for mobile */}
+              <div 
+                className="lg:hidden absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-muted/10 to-transparent flex items-end justify-center pb-1 cursor-ns-resize touch-none"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+              </div>
             </Card>
         </div>
 
