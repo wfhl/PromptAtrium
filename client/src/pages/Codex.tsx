@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -46,6 +47,138 @@ import type {
   CodexUserTerm,
   CodexAssembledString
 } from "@shared/schema";
+
+// Assembly Toast Portal Component
+function AssemblyToastPortal({ 
+  assembledString, 
+  toastMinimized, 
+  setToastMinimized, 
+  clearAllSelections,
+  randomizeAssembledString, 
+  copyAssembledString,
+  saveAssembledStringMutation 
+}: {
+  assembledString: string[];
+  toastMinimized: boolean;
+  setToastMinimized: (minimized: boolean) => void;
+  clearAllSelections: () => void;
+  randomizeAssembledString: () => void;
+  copyAssembledString: () => void;
+  saveAssembledStringMutation: any;
+}) {
+  return createPortal(
+    <div 
+      className={`fixed top-20 ${
+        toastMinimized ? 'right-4 w-auto' : 'left-4 right-4 sm:right-4 sm:left-auto sm:w-96'
+      } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-[100] text-white`}
+    >
+      {toastMinimized ? (
+        <div className="flex items-center gap-2 p-3">
+          <span className="text-sm font-medium">{assembledString.length} terms selected</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setToastMinimized(false)}
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between p-3 border-b border-white/20">
+            <h3 className="font-semibold text-sm text-white">String Assembly</h3>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setToastMinimized(true)}
+                className="text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <Minimize2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllSelections}
+                className="text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="p-3">
+            <div className="bg-black/20 rounded-lg p-3 min-h-[60px] max-h-[150px] overflow-y-auto mb-3">
+              {assembledString.length === 0 ? (
+                <p className="text-sm text-white/70">Click terms to add them here...</p>
+              ) : (
+                <p className="text-sm break-words text-white">{assembledString.join(', ')}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={randomizeAssembledString}
+                  disabled={assembledString.length === 0}
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                >
+                  <Shuffle className="w-3 h-3 mr-1" />
+                  Randomize
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyAssembledString}
+                  disabled={assembledString.length === 0}
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                >
+                  <Copy className="w-3 h-3 mr-1" />
+                  Copy
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const name = prompt("Name for this assembled string:");
+                    if (name) {
+                      saveAssembledStringMutation.mutate({ 
+                        name, 
+                        content: assembledString 
+                      });
+                    }
+                  }}
+                  disabled={assembledString.length === 0}
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                >
+                  <Save className="w-3 h-3 mr-1" />
+                  Save
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    toast({
+                      title: "Coming Soon",
+                      description: "Send to Generator feature will be implemented later",
+                    });
+                  }}
+                  disabled={assembledString.length === 0}
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
+                >
+                  <Send className="w-3 h-3 mr-1" />
+                  Send
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>,
+    document.body
+  );
+}
 
 export default function Codex() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -319,7 +452,8 @@ export default function Codex() {
 
 
   return (
-    <div className="container mx-auto p-3 sm:p-6">
+    <>
+      <div className="container mx-auto p-3 sm:p-6">
       <div className="mb-4 sm:mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Wordsmith Codex</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
@@ -328,8 +462,8 @@ export default function Codex() {
       </div>
 
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
-        {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
-        <div className="lg:col-span-1 order-1 lg:order-1">
+          {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
+          <div className="lg:col-span-1 order-1 lg:order-1">
           <Card className="h-full lg:sticky lg:top-4 flex flex-col" ref={scrollAreaRef}>
               <CardContent className="p-0 flex-1">
                 <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
@@ -873,120 +1007,19 @@ export default function Codex() {
           </div>
         </div>
 
-        {/* Live String Assembly Toast - Moved to top */}
-      {showAssemblyToast && (
-        <div 
-          className={`fixed top-20 ${
-            toastMinimized ? 'right-4 w-auto' : 'left-4 right-4 sm:right-4 sm:left-auto sm:w-96'
-          } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-[100] text-white`}
-        >
-
-          {toastMinimized ? (
-            <div className="flex items-center gap-2 p-3">
-              <span className="text-sm font-medium">{assembledString.length} terms selected</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setToastMinimized(false)}
-                className="text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between p-3 border-b border-white/20">
-                <h3 className="font-semibold text-sm text-white">String Assembly</h3>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setToastMinimized(true)}
-                    className="text-white/70 hover:text-white hover:bg-white/10"
-                  >
-                    <Minimize2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearAllSelections}
-                    className="text-white/70 hover:text-white hover:bg-white/10"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="p-3">
-                <div className="bg-black/20 rounded-lg p-3 min-h-[60px] max-h-[150px] overflow-y-auto mb-3">
-                  {assembledString.length === 0 ? (
-                    <p className="text-sm text-white/70">Click terms to add them here...</p>
-                  ) : (
-                    <p className="text-sm break-words text-white">{assembledString.join(', ')}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-center gap-2"> {/* Changed from grid to flex for single row */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={randomizeAssembledString}
-                      disabled={assembledString.length === 0}
-                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
-                    >
-                      <Shuffle className="w-3 h-3 mr-1" />
-                      Randomize
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={copyAssembledString}
-                      disabled={assembledString.length === 0}
-                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
-                    >
-                      <Copy className="w-3 h-3 mr-1" />
-                      Copy
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const name = prompt("Name for this assembled string:");
-                        if (name) {
-                          saveAssembledStringMutation.mutate({ 
-                            name, 
-                            content: assembledString 
-                          });
-                        }
-                      }}
-                      disabled={assembledString.length === 0}
-                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
-                    >
-                      <Save className="w-3 h-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        toast({
-                          title: "Coming Soon",
-                          description: "Send to Generator feature will be implemented later",
-                        });
-                      }}
-                      disabled={assembledString.length === 0}
-                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
-                    >
-                      <Send className="w-3 h-3 mr-1" />
-                      Send
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Live String Assembly Toast Portal */}
+        {showAssemblyToast ? (
+          <AssemblyToastPortal
+            assembledString={assembledString}
+            toastMinimized={toastMinimized}
+            setToastMinimized={setToastMinimized}
+            clearAllSelections={clearAllSelections}
+            randomizeAssembledString={randomizeAssembledString}
+            copyAssembledString={copyAssembledString}
+            saveAssembledStringMutation={saveAssembledStringMutation}
+          />
+        ) : null}
       </div>
+    </>
   );
 }
