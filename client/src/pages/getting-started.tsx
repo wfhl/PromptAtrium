@@ -38,7 +38,9 @@ import {
   Download,
   GraduationCap,
   Image,
-  Wrench
+  Wrench,
+  UserPlus,
+  Bell
 } from "lucide-react";
 
 export default function GettingStarted() {
@@ -135,11 +137,11 @@ export default function GettingStarted() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="library">Library & Community</TabsTrigger>
-            <TabsTrigger value="codex">Wordsmith Codex</TabsTrigger>
-            <TabsTrigger value="tools">Tools</TabsTrigger>
-            <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+            <TabsTrigger value="library" className="text-xs md:text-sm px-2 md:px-4" data-testid="tab-library">Library & Community</TabsTrigger>
+            <TabsTrigger value="codex" className="text-xs md:text-sm px-2 md:px-4" data-testid="tab-codex">Wordsmith Codex</TabsTrigger>
+            <TabsTrigger value="tools" className="text-xs md:text-sm px-2 md:px-4" data-testid="tab-tools">Tools</TabsTrigger>
+            <TabsTrigger value="resources" className="text-xs md:text-sm px-2 md:px-4" data-testid="tab-resources">Resources</TabsTrigger>
           </TabsList>
 
           {/* Tab 1: Prompt Library & Community */}
@@ -201,9 +203,9 @@ export default function GettingStarted() {
                   </ul>
                 </div>
 
-                <div className="flex gap-4">
-                  <Link href="/library">
-                    <Button className="gap-2">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link href="/library" className="flex-1">
+                    <Button className="w-full gap-2" data-testid="button-go-to-library">
                       <Library className="h-4 w-4" />
                       Go to My Library
                     </Button>
@@ -254,12 +256,17 @@ export default function GettingStarted() {
                   <div>
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
                       <Heart className="h-4 w-4 text-red-500" />
-                      Liking & Following
+                      Liking & Following Users
                     </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Show appreciation by liking prompts and follow creators you admire. 
-                      Your liked prompts are saved to your personal collection.
+                    <p className="text-muted-foreground text-sm mb-2">
+                      Build your network by connecting with talented creators and staying updated with their latest work.
                     </p>
+                    <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+                      <li>• <strong>Follow Users:</strong> Get notified when creators you follow publish new prompts</li>
+                      <li>• <strong>Like Prompts:</strong> Show appreciation and save prompts to your liked collection</li>
+                      <li>• <strong>Creator Profiles:</strong> View portfolios, follower counts, and prompt collections</li>
+                      <li>• <strong>Following Feed:</strong> See latest updates from creators you follow</li>
+                    </ul>
                   </div>
 
                   <div>
@@ -283,6 +290,39 @@ export default function GettingStarted() {
                 </Alert>
 
                 <div>
+                  <h3 className="font-semibold mb-2">Building Your Network</h3>
+                  <p className="text-muted-foreground text-sm mb-3">
+                    Following other users is a great way to discover new content and build relationships in the community.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    <div className="flex items-start gap-2">
+                      <UserPlus className="h-4 w-4 text-green-500 mt-1" />
+                      <div>
+                        <strong>Follow Creators:</strong> Click the follow button on user profiles to stay updated
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Bell className="h-4 w-4 text-blue-500 mt-1" />
+                      <div>
+                        <strong>Get Notifications:</strong> Receive updates when followed users share new prompts
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Users className="h-4 w-4 text-purple-500 mt-1" />
+                      <div>
+                        <strong>View Followers:</strong> See who's following you and discover mutual connections
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <TrendingUp className="h-4 w-4 text-orange-500 mt-1" />
+                      <div>
+                        <strong>Discover Talent:</strong> Find creators through trending prompts and featured collections
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
                   <h3 className="font-semibold mb-2">Community Etiquette</h3>
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• Always credit original creators when forking or adapting</li>
@@ -293,9 +333,9 @@ export default function GettingStarted() {
                   </ul>
                 </div>
 
-                <div className="flex gap-4">
-                  <Link href="/community">
-                    <Button className="gap-2">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link href="/community" className="flex-1">
+                    <Button className="w-full gap-2" data-testid="button-explore-community">
                       <Users className="h-4 w-4" />
                       Explore Community
                     </Button>
