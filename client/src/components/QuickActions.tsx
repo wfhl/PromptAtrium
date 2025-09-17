@@ -122,7 +122,7 @@ export function QuickActions({
         </Button>
 
         {/* Wordsmith Codex */}
-        <Link href="/codex" className="contents">
+        <Link to="/codex">
           <Button
             variant="ghost"
             className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
@@ -133,7 +133,7 @@ export function QuickActions({
             </div>
             <div className="text-center md:text-left">
               <p className="text-xs md:text-base font-medium text-foreground">Codex</p>
-              <p className="text-xs text-muted-foreground hidden md:block">Browse AI keywords</p>
+              <p className="text-xs text-muted-foreground hidden md:block">Browse Wildcards</p>
             </div>
           </Button>
         </Link>
