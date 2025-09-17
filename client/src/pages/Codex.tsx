@@ -912,7 +912,7 @@ export default function Codex() {
                         onClick={() => toggleTermInAssembly(term)}
                         data-testid={`card-term-${term.id}`}
                       >
-                        <CardContent className="p-2 sm:p-3">
+                        <CardContent className="p-2 sm:p-3 pl-[12px] pr-[12px] pt-[4px] pb-[4px]">
                           <div className="font-medium text-xs sm:text-sm break-words line-clamp-2 mt-[0px] mb-[0px]">{term.term}</div>
                           {term.subcategory && (
                             <div className="mt-1 text-xs text-muted-foreground truncate">
