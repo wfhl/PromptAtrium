@@ -929,7 +929,7 @@ export default function Codex() {
                     {terms.map((term: any) => (
                       <div
                         key={term.id}
-                        className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all pt-[4px] pb-[4px]"
+                        className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all pt-[4px] pb-[4px] mt-[0px] mb-[0px]"
                         onClick={() => toggleTermInAssembly(term)}
                         data-testid={`row-term-${term.id}`}
                       >
