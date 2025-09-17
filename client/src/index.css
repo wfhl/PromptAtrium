@@ -148,6 +148,25 @@
   font-weight: 600;
 }
 
+/* Admin and Dev navigation colors - ensure consistency on mobile */
+.mobile-nav-dropdown a[href="/admin"],
+.mobile-nav-dropdown a[href="/admin"]:visited {
+  color: #facc15 !important; /* yellow-400 */
+}
+
+.mobile-nav-dropdown a[href="/admin"]:hover {
+  color: #fde047 !important; /* yellow-300 */
+}
+
+.mobile-nav-dropdown a[href="/dev"],
+.mobile-nav-dropdown a[href="/dev"]:visited {
+  color: #22d3ee !important; /* cyan-400 */
+}
+
+.mobile-nav-dropdown a[href="/dev"]:hover {
+  color: #67e8f9 !important; /* cyan-300 */
+}
+
 .button-gradient-library {
   background: linear-gradient(135deg, #028ec6 0%, #6851c8 30%, #6851c8 70%, #028ec6 100%);
   backdrop-filter: blur(10px);
