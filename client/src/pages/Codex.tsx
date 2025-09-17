@@ -1082,7 +1082,7 @@ export default function Codex() {
                       <>
                         <Separator className="my-4" />
                         <div className="space-y-2">
-                          <h4 className="font-semibold mb-2 flex items-center gap-2">
+                          <h4 className="font-semibold flex items-center gap-2 mt-[12px] mb-[12px]">
                             <FileText className="w-4 h-4" />
                             Saved Presets ({savedPresets.length})
                           </h4>
