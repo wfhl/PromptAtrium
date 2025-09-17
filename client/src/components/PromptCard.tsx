@@ -348,7 +348,7 @@ export function PromptCard({
       });
       toast({
         title: "Success",
-        description: "Prompt forked successfully!",
+        description: "Prompt forked successfully! You now have the forked prompt available in your own Library",
       });
     },
     onError: (error) => {

@@ -144,17 +144,11 @@ export default function Codex() {
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
           <Card className="lg:sticky lg:top-4">
-            <CardHeader className="p-3 sm:p-4">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4" />
-                Categories
-              </CardTitle>
-            </CardHeader>
             <CardContent className="p-0">
               <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
                 <TabsList className="w-full rounded-none">
                   <TabsTrigger value="all" className="flex-1 text-xs sm:text-sm" data-testid="tab-all-categories">
-                    All Categories
+                    Subject Terms
                   </TabsTrigger>
                   <TabsTrigger value="aesthetics" className="flex-1 text-xs sm:text-sm" data-testid="tab-aesthetics">
                     <Star className="w-3 h-3 mr-1" />
