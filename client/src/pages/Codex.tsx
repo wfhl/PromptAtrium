@@ -87,7 +87,7 @@ export default function Codex() {
   });
 
   // Add term to assembled string
-  const addToAssembledString = (term: CodexTerm) => {
+  const addToAssembledString = (term: any) => {
     setAssembledString(prev => [...prev, term.term]);
     setSelectedTerms(prev => [...prev, term]);
   };
@@ -138,8 +138,8 @@ export default function Codex() {
       </div>
 
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-6">
-        {/* Category Sidebar - Mobile Collapsible */}
-        <div className="lg:col-span-1 order-2 lg:order-1">
+        {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
+        <div className="lg:col-span-1 order-1 lg:order-1">
           <Card className="lg:sticky lg:top-4">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export default function Codex() {
                   {categoriesLoading ? (
                     <div className="text-center py-4 text-muted-foreground">Loading...</div>
                   ) : (
-                    categories.map((category: CodexCategory) => (
+                    categories.map((category: any) => (
                       <Button
                         key={category.id}
                         variant={selectedCategory === category.id ? "secondary" : "ghost"}
@@ -185,8 +185,8 @@ export default function Codex() {
           </Card>
         </div>
 
-        {/* Main Content Area */}
-        <div className="lg:col-span-3 order-1 lg:order-2">
+        {/* Main Content Area - Shows below categories on mobile, beside on desktop */}
+        <div className="lg:col-span-3 order-2 lg:order-2">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
               <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
@@ -223,7 +223,7 @@ export default function Codex() {
                   <div className="flex justify-between items-center">
                     <CardTitle>
                       {selectedCategory
-                        ? categories.find((c: CodexCategory) => c.id === selectedCategory)?.name || "Terms"
+                        ? categories.find((c: any) => c.id === selectedCategory)?.name || "Terms"
                         : "All Terms"}
                     </CardTitle>
                     <div className="flex gap-2">
@@ -249,7 +249,7 @@ export default function Codex() {
                     </div>
                   ) : viewMode === "grid" ? (
                     <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                      {terms.map((term: CodexTerm) => (
+                      {terms.map((term: any) => (
                         <Card
                           key={term.id}
                           className="cursor-pointer hover:shadow-lg transition-shadow h-full"
@@ -259,16 +259,19 @@ export default function Codex() {
                           <CardContent className="p-3 sm:p-4">
                             <div className="font-semibold text-sm sm:text-base mb-2 break-words">{term.term}</div>
                             <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
-                              {term.definition || term.description}
+                              {term.description || ''}
                             </p>
-                            {term.examples && (
+                            {term.subcategory && (
                               <div className="mt-2 text-xs text-muted-foreground">
-                                Examples: {term.examples.split(',').slice(0, 2).join(', ')}
+                                Subcategory: {term.subcategory}
                               </div>
                             )}
                             <div className="mt-2 flex gap-2">
-                              {term.isOfficial && (
-                                <Badge variant="secondary">Official</Badge>
+                              {term.type === 'aesthetic' && (
+                                <Badge variant="secondary">Aesthetic</Badge>
+                              )}
+                              {term.type === 'prompt_component' && (
+                                <Badge variant="outline">Component</Badge>
                               )}
                             </div>
                           </CardContent>
@@ -277,7 +280,7 @@ export default function Codex() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {terms.map((term: CodexTerm) => (
+                      {terms.map((term: any) => (
                         <div
                           key={term.id}
                           className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/50 cursor-pointer"
@@ -286,7 +289,7 @@ export default function Codex() {
                         >
                           <div className="flex-1">
                             <div className="font-semibold">{term.term}</div>
-                            <p className="text-sm text-muted-foreground">{term.definition || term.description}</p>
+                            <p className="text-sm text-muted-foreground">{term.description || ''}</p>
                           </div>
                           <div className="flex gap-2">
                             {term.isOfficial && (
@@ -382,7 +385,7 @@ export default function Codex() {
                           >
                             <div>
                               <div className="font-semibold">{term.term}</div>
-                              <div className="text-sm text-muted-foreground">{term.definition || term.description}</div>
+                              <div className="text-sm text-muted-foreground">{term.description || ''}</div>
                             </div>
                             <Button
                               variant="ghost"
