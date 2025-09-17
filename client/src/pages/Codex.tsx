@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -55,10 +55,15 @@ export default function Codex() {
   const [categoryView, setCategoryView] = useState<"all" | "organized">("all");
   const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
   const [categoryHeight, setCategoryHeight] = useState(250); // Default mobile height in pixels
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [startHeight, setStartHeight] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Refs for smooth dragging without re-renders
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  const isDraggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(0);
+  const currentHeightRef = useRef(categoryHeight);
+  const rafIdRef = useRef<number | null>(null);
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -73,61 +78,73 @@ export default function Codex() {
   // Handle touch start for resizing
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
-    setIsDragging(true);
-    setStartY(touch.clientY);
-    setStartHeight(categoryHeight);
+    isDraggingRef.current = true;
+    startYRef.current = touch.clientY;
+    startHeightRef.current = categoryHeight;
+    currentHeightRef.current = categoryHeight;
+    
     // Prevent text selection and scrolling while dragging
     document.body.style.userSelect = 'none';
     document.body.style.overflow = 'hidden';
-  };
-
-  // Handle touch move for resizing
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const touch = e.touches[0];
-    const currentY = touch.clientY;
-    const deltaY = startY - currentY; // Dragging up increases height
-    const newHeight = Math.min(Math.max(150, startHeight + deltaY), window.innerHeight * 0.7); // Min 150px, Max 70% of viewport
-    setCategoryHeight(newHeight);
-  };
-
-  // Handle touch end
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    // Restore body styles
-    document.body.style.userSelect = '';
-    document.body.style.overflow = '';
-  };
-
-  // Add global touch handlers when dragging
-  useEffect(() => {
-    const handleGlobalTouchMove = (e: TouchEvent) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      const touch = e.touches[0];
+    e.preventDefault();
+    
+    // Add global handlers
+    const handleGlobalTouchMove = (evt: TouchEvent) => {
+      if (!isDraggingRef.current) return;
+      evt.preventDefault();
+      
+      const touch = evt.touches[0];
       const currentY = touch.clientY;
-      const deltaY = startY - currentY;
-      const newHeight = Math.min(Math.max(150, startHeight + deltaY), window.innerHeight * 0.7);
-      setCategoryHeight(newHeight);
+      // FIXED: Drag down increases height (like textarea)
+      const deltaY = currentY - startYRef.current;
+      const newHeight = Math.min(Math.max(150, startHeightRef.current + deltaY), window.innerHeight * 0.7);
+      
+      // Cancel previous RAF if pending
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      
+      // Use requestAnimationFrame for smooth updates
+      rafIdRef.current = requestAnimationFrame(() => {
+        if (scrollAreaRef.current) {
+          // Update all ScrollArea heights directly in DOM for smooth resizing
+          const scrollAreas = scrollAreaRef.current.querySelectorAll('.resize-target');
+          scrollAreas.forEach((el) => {
+            (el as HTMLElement).style.height = `${newHeight}px`;
+          });
+          currentHeightRef.current = newHeight;
+        }
+        rafIdRef.current = null;
+      });
     };
-
+    
     const handleGlobalTouchEnd = () => {
-      if (isDragging) {
-        setIsDragging(false);
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        
+        // Cancel any pending RAF
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+        
+        // Commit final height to React state
+        setCategoryHeight(currentHeightRef.current);
+        
+        // Restore body styles
         document.body.style.userSelect = '';
         document.body.style.overflow = '';
-      }
-    };
-
-    if (isDragging) {
-      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
-      document.addEventListener('touchend', handleGlobalTouchEnd);
-      return () => {
+        
+        // Remove global listeners
         document.removeEventListener('touchmove', handleGlobalTouchMove);
         document.removeEventListener('touchend', handleGlobalTouchEnd);
-      };
-    }
-  }, [isDragging, startY, startHeight]);
+      }
+    };
+    
+    // Add global listeners
+    document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+    document.addEventListener('touchend', handleGlobalTouchEnd);
+  };
 
   // Color mapping for anatomy groups
   const getAnatomyGroupColor = (group: string) => {
@@ -248,7 +265,7 @@ export default function Codex() {
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
-          <Card className="h-full lg:sticky lg:top-4 relative">
+          <Card className="h-full lg:sticky lg:top-4 relative" ref={scrollAreaRef}>
               <CardContent className="p-0">
                 <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v as "all" | "aesthetics")} className="w-full">
                   <TabsList className="w-full rounded-none">
@@ -275,7 +292,7 @@ export default function Codex() {
 
                       <TabsContent value="all" className="mt-2">
                         <ScrollArea 
-                          className="lg:h-[500px]" 
+                          className="lg:h-[500px] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
                         >
                           <div className="p-2 sm:p-3 space-y-1">
@@ -315,7 +332,7 @@ export default function Codex() {
 
                       <TabsContent value="organized" className="mt-2">
                         <ScrollArea 
-                          className="lg:h-[500px]" 
+                          className="lg:h-[500px] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
                         >
                           <div className="p-2 sm:p-3">
@@ -416,7 +433,7 @@ export default function Codex() {
 
                       <TabsContent value="all" className="mt-2">
                         <ScrollArea 
-                          className="lg:h-[500px]" 
+                          className="lg:h-[500px] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
                         >
                           <div className="p-2 sm:p-3 space-y-1">
@@ -454,7 +471,7 @@ export default function Codex() {
 
                       <TabsContent value="organized" className="mt-2">
                         <ScrollArea 
-                          className="lg:h-[500px]" 
+                          className="lg:h-[500px] resize-target" 
                           style={{ height: isMobile ? `${categoryHeight}px` : undefined }}
                         >
                           <div className="p-2 sm:p-3">
