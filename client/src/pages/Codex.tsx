@@ -129,18 +129,18 @@ export default function Codex() {
   });
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Wordsmith Codex</h1>
-        <p className="text-muted-foreground">
+    <div className="container mx-auto p-3 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Wordsmith Codex</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Browse and assemble AI prompt components from our extensive wildcard database
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Category Sidebar */}
-        <div className="lg:col-span-1">
-          <Card>
+      <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-6">
+        {/* Category Sidebar - Mobile Collapsible */}
+        <div className="lg:col-span-1 order-2 lg:order-1">
+          <Card className="lg:sticky lg:top-4">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4" />
@@ -148,7 +148,7 @@ export default function Codex() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[600px]">
+              <ScrollArea className="h-[200px] lg:h-[600px]">
                 <div className="p-4 space-y-1">
                   <Button
                     variant={!selectedCategory ? "secondary" : "ghost"}
@@ -186,20 +186,20 @@ export default function Codex() {
         </div>
 
         {/* Main Content Area */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 order-1 lg:order-2">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex justify-between items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="browse" data-testid="tab-browse">Browse Terms</TabsTrigger>
-                <TabsTrigger value="assemble" data-testid="tab-assemble">String Assembly</TabsTrigger>
-                <TabsTrigger value="lists" data-testid="tab-lists">Wildcard Lists</TabsTrigger>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
+                <TabsTrigger value="browse" data-testid="tab-browse" className="text-xs sm:text-sm">Browse Terms</TabsTrigger>
+                <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">String Assembly</TabsTrigger>
+                <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
               </TabsList>
-              <div className="flex gap-2">
+              <div className="flex gap-2 self-end sm:self-auto">
                 <Button
                   variant="ghost"
                   size="icon"
+                  className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "grid" ? "bg-secondary" : ""}`}
                   onClick={() => setViewMode("grid")}
-                  className={viewMode === "grid" ? "bg-secondary" : ""}
                   data-testid="button-view-grid"
                 >
                   <Grid className="w-4 h-4" />
@@ -207,8 +207,8 @@ export default function Codex() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  className={`w-8 h-8 sm:w-10 sm:h-10 ${viewMode === "list" ? "bg-secondary" : ""}`}
                   onClick={() => setViewMode("list")}
-                  className={viewMode === "list" ? "bg-secondary" : ""}
                   data-testid="button-view-list"
                 >
                   <List className="w-4 h-4" />
@@ -231,7 +231,7 @@ export default function Codex() {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                         <Input
                           placeholder="Search terms..."
-                          className="pl-10 w-64"
+                          className="pl-10 w-full sm:w-64"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           data-testid="input-search"
@@ -248,18 +248,18 @@ export default function Codex() {
                       No terms found. Try a different search or category.
                     </div>
                   ) : viewMode === "grid" ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                       {terms.map((term: CodexTerm) => (
                         <Card
                           key={term.id}
-                          className="cursor-pointer hover:shadow-lg transition-shadow"
+                          className="cursor-pointer hover:shadow-lg transition-shadow h-full"
                           onClick={() => addToAssembledString(term)}
                           data-testid={`card-term-${term.id}`}
                         >
-                          <CardContent className="p-4">
-                            <div className="font-semibold mb-2">{term.term}</div>
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {term.description}
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="font-semibold text-sm sm:text-base mb-2 break-words">{term.term}</div>
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                              {term.definition || term.description}
                             </p>
                             {term.examples && (
                               <div className="mt-2 text-xs text-muted-foreground">
@@ -286,7 +286,7 @@ export default function Codex() {
                         >
                           <div className="flex-1">
                             <div className="font-semibold">{term.term}</div>
-                            <p className="text-sm text-muted-foreground">{term.description}</p>
+                            <p className="text-sm text-muted-foreground">{term.definition || term.description}</p>
                           </div>
                           <div className="flex gap-2">
                             {term.isOfficial && (
@@ -382,7 +382,7 @@ export default function Codex() {
                           >
                             <div>
                               <div className="font-semibold">{term.term}</div>
-                              <div className="text-sm text-muted-foreground">{term.description}</div>
+                              <div className="text-sm text-muted-foreground">{term.definition || term.description}</div>
                             </div>
                             <Button
                               variant="ghost"
@@ -420,7 +420,7 @@ export default function Codex() {
                         You haven't created any wildcard lists yet
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {userLists.map((list: CodexUserList) => (
                           <Card key={list.id} data-testid={`card-user-list-${list.id}`}>
                             <CardContent className="p-4">
@@ -464,7 +464,7 @@ export default function Codex() {
                         No public lists available in this category
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {publicLists.map((list: CodexUserList) => (
                           <Card key={list.id} data-testid={`card-public-list-${list.id}`}>
                             <CardContent className="p-4">
