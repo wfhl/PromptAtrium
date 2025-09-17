@@ -313,14 +313,7 @@ export default function Codex() {
                             {term.subcategory}
                           </div>
                         )}
-                        <div className="mt-1 flex gap-1">
-                          {term.type === 'aesthetic' && (
-                            <Badge variant="secondary" className="text-xs px-1 py-0 h-4">A</Badge>
-                          )}
-                          {term.type === 'prompt_component' && (
-                            <Badge variant="outline" className="text-xs px-1 py-0 h-4">C</Badge>
-                          )}
-                        </div>
+                        
                       </CardContent>
                     </Card>
                   ))}
@@ -339,9 +332,6 @@ export default function Codex() {
                         <p className="text-xs text-muted-foreground truncate">{term.description || ''}</p>
                       </div>
                       <div className="flex gap-1 sm:gap-2 ml-2">
-                        {term.type === 'aesthetic' && (
-                          <Badge variant="secondary" className="text-xs px-1 py-0 h-4">A</Badge>
-                        )}
                         <Button
                           variant="ghost"
                           size="icon"
