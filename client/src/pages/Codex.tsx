@@ -914,9 +914,6 @@ export default function Codex() {
                       >
                         <CardContent className="p-2 sm:p-3">
                           <div className="font-medium text-xs sm:text-sm mb-1 break-words line-clamp-2">{term.term}</div>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {term.description || ''}
-                          </p>
                           {term.subcategory && (
                             <div className="mt-1 text-xs text-muted-foreground truncate">
                               {term.subcategory}
@@ -940,7 +937,6 @@ export default function Codex() {
                       >
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-xs sm:text-sm truncate">{term.term}</div>
-                          <p className="text-xs text-muted-foreground truncate">{term.description || ''}</p>
                         </div>
                         <div className="flex gap-1 sm:gap-2 ml-2">
                           <Button
