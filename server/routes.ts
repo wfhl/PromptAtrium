@@ -3040,8 +3040,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assembled String endpoints
   app.get('/api/codex/assembled-strings', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = (req.user as any).claims.sub;
       const type = req.query.type as "preset" | "wildcard" | undefined;
-      const strings = await storage.getCodexAssembledStrings(req.user.id, type);
+      const strings = await storage.getCodexAssembledStrings(userId, type);
       res.json(strings);
     } catch (error) {
       console.error('Error fetching assembled strings:', error);
@@ -3051,13 +3052,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/codex/assembled-strings/:id', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = (req.user as any).claims.sub;
       const assembledString = await storage.getCodexAssembledString(req.params.id);
       if (!assembledString) {
         return res.status(404).json({ message: 'Assembled string not found' });
       }
       
       // Only allow viewing if user owns the string
-      if (assembledString.userId !== req.user.id) {
+      if (assembledString.userId !== userId) {
         return res.status(403).json({ message: 'Not authorized to view this assembled string' });
       }
       
@@ -3070,9 +3072,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/codex/assembled-strings', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = (req.user as any).claims.sub;
       const assembledString = await storage.createCodexAssembledString({
         ...req.body,
-        userId: req.user.id,
+        userId: userId,
       });
       res.json(assembledString);
     } catch (error) {
@@ -3083,13 +3086,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/codex/assembled-strings/:id', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = (req.user as any).claims.sub;
       const assembledString = await storage.getCodexAssembledString(req.params.id);
       if (!assembledString) {
         return res.status(404).json({ message: 'Assembled string not found' });
       }
       
       // Only allow editing if user owns the string
-      if (assembledString.userId !== req.user.id) {
+      if (assembledString.userId !== userId) {
         return res.status(403).json({ message: 'Not authorized to edit this assembled string' });
       }
       
@@ -3103,13 +3107,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/codex/assembled-strings/:id', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = (req.user as any).claims.sub;
       const assembledString = await storage.getCodexAssembledString(req.params.id);
       if (!assembledString) {
         return res.status(404).json({ message: 'Assembled string not found' });
       }
       
       // Only allow deletion if user owns the string
-      if (assembledString.userId !== req.user.id) {
+      if (assembledString.userId !== userId) {
         return res.status(403).json({ message: 'Not authorized to delete this assembled string' });
       }
       
