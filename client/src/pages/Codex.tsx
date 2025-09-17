@@ -430,7 +430,8 @@ export default function Codex() {
                   </TabsContent>
                 </Tabs>
               </Card>
-            </Resizable> {/* End Resizable wrapper */}
+            </Resizable> 
+            {/* End Resizable wrapper */}
           </div>
 
           {/* Main Content Area - Shows below categories on mobile, beside on desktop */}
