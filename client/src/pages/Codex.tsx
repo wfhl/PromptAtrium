@@ -137,47 +137,65 @@ export default function Codex() {
         </p>
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {/* Category Section - Shows above terms on mobile, as sidebar on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
           <Card className="lg:sticky lg:top-4">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FolderOpen className="w-4 h-4" />
+            <CardHeader className="p-3 sm:p-4">
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4" />
                 Categories
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[200px] lg:h-[600px]">
-                <div className="p-4 space-y-1">
+              <ScrollArea className="h-[150px] sm:h-[200px] lg:h-[600px]">
+                <div className="p-2 sm:p-3 space-y-2">
+                  {/* All Categories Button */}
                   <Button
                     variant={!selectedCategory ? "secondary" : "ghost"}
-                    className="w-full justify-start"
+                    className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
                     onClick={() => setSelectedCategory(null)}
                     data-testid="button-all-categories"
                   >
                     All Categories
                   </Button>
+                  
+                  {/* Aesthetics as separate category */}
+                  <Button
+                    variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
+                    className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 font-semibold"
+                    onClick={() => setSelectedCategory("aesthetics")}
+                    data-testid="button-category-aesthetics"
+                  >
+                    <Star className="w-3 h-3 mr-1" />
+                    Aesthetics
+                  </Button>
+                  
+                  <Separator className="my-2" />
+                  
+                  {/* Other categories in 2-column grid on mobile */}
                   {categoriesLoading ? (
-                    <div className="text-center py-4 text-muted-foreground">Loading...</div>
+                    <div className="text-center py-2 text-xs sm:text-sm text-muted-foreground">Loading...</div>
                   ) : (
-                    categories.map((category: any) => (
-                      <Button
-                        key={category.id}
-                        variant={selectedCategory === category.id ? "secondary" : "ghost"}
-                        className="w-full justify-start"
-                        onClick={() => setSelectedCategory(category.id)}
-                        data-testid={`button-category-${category.id}`}
-                      >
-                        <ChevronRight className="w-4 h-4 mr-2" />
-                        {category.name}
-                        {category.termCount > 0 && (
-                          <Badge variant="secondary" className="ml-auto">
-                            {category.termCount}
-                          </Badge>
-                        )}
-                      </Button>
-                    ))
+                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
+                      {categories.filter((c: any) => c.id !== "aesthetics").map((category: any) => (
+                        <Button
+                          key={category.id}
+                          variant={selectedCategory === category.id ? "secondary" : "ghost"}
+                          className="justify-start h-7 sm:h-8 lg:h-9 text-xs lg:text-sm px-1 sm:px-2 truncate"
+                          onClick={() => setSelectedCategory(category.id)}
+                          data-testid={`button-category-${category.id}`}
+                        >
+                          <span className="truncate">{category.name}</span>
+                          {category.termCount > 0 && (
+                            <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
+                              {category.termCount}
+                            </Badge>
+                          )}
+                        </Button>
+                      ))
+                    }
+                    </div>
                   )}
                 </div>
               </ScrollArea>
@@ -216,102 +234,100 @@ export default function Codex() {
               </div>
             </div>
 
-            {/* Browse Terms Tab */}
-            <TabsContent value="browse">
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>
-                      {selectedCategory
-                        ? categories.find((c: any) => c.id === selectedCategory)?.name || "Terms"
-                        : "All Terms"}
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          placeholder="Search terms..."
-                          className="pl-10 w-full sm:w-64"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          data-testid="input-search"
-                        />
+            {/* Browse Terms Tab - NO CARD WRAPPER */}
+            <TabsContent value="browse" className="space-y-3">
+              {/* Search and Title Bar */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <h3 className="text-base sm:text-lg font-semibold">
+                  {selectedCategory === "aesthetics" 
+                    ? "Aesthetics"
+                    : selectedCategory
+                      ? categories.find((c: any) => c.id === selectedCategory)?.name || "Terms"
+                      : "All Terms"}
+                </h3>
+                <div className="relative w-full sm:w-auto">
+                  <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3 h-3 sm:w-4 sm:h-4" />
+                  <Input
+                    placeholder="Search..."
+                    className="pl-7 sm:pl-10 h-8 sm:h-10 text-xs sm:text-sm w-full sm:w-64"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    data-testid="input-search"
+                  />
+                </div>
+              </div>
+
+              {/* Terms Content - NO CARD */}
+              {termsLoading ? (
+                <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">Loading terms...</div>
+              ) : terms.length === 0 ? (
+                <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">
+                  No terms found. Try a different search or category.
+                </div>
+              ) : viewMode === "grid" ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                  {terms.map((term: any) => (
+                    <Card
+                      key={term.id}
+                      className="cursor-pointer hover:shadow-md transition-shadow h-full"
+                      onClick={() => addToAssembledString(term)}
+                      data-testid={`card-term-${term.id}`}
+                    >
+                      <CardContent className="p-2 sm:p-3">
+                        <div className="font-medium text-xs sm:text-sm mb-1 break-words line-clamp-2">{term.term}</div>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {term.description || ''}
+                        </p>
+                        {term.subcategory && (
+                          <div className="mt-1 text-xs text-muted-foreground truncate">
+                            {term.subcategory}
+                          </div>
+                        )}
+                        <div className="mt-1 flex gap-1">
+                          {term.type === 'aesthetic' && (
+                            <Badge variant="secondary" className="text-xs px-1 py-0 h-4">A</Badge>
+                          )}
+                          {term.type === 'prompt_component' && (
+                            <Badge variant="outline" className="text-xs px-1 py-0 h-4">C</Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-1 sm:space-y-2">
+                  {terms.map((term: any) => (
+                    <div
+                      key={term.id}
+                      className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer"
+                      onClick={() => addToAssembledString(term)}
+                      data-testid={`row-term-${term.id}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-xs sm:text-sm truncate">{term.term}</div>
+                        <p className="text-xs text-muted-foreground truncate">{term.description || ''}</p>
+                      </div>
+                      <div className="flex gap-1 sm:gap-2 ml-2">
+                        {term.type === 'aesthetic' && (
+                          <Badge variant="secondary" className="text-xs px-1 py-0 h-4">A</Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 sm:h-8 sm:w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToAssembledString(term);
+                          }}
+                        >
+                          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {termsLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">Loading terms...</div>
-                  ) : terms.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No terms found. Try a different search or category.
-                    </div>
-                  ) : viewMode === "grid" ? (
-                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                      {terms.map((term: any) => (
-                        <Card
-                          key={term.id}
-                          className="cursor-pointer hover:shadow-lg transition-shadow h-full"
-                          onClick={() => addToAssembledString(term)}
-                          data-testid={`card-term-${term.id}`}
-                        >
-                          <CardContent className="p-3 sm:p-4">
-                            <div className="font-semibold text-sm sm:text-base mb-2 break-words">{term.term}</div>
-                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
-                              {term.description || ''}
-                            </p>
-                            {term.subcategory && (
-                              <div className="mt-2 text-xs text-muted-foreground">
-                                Subcategory: {term.subcategory}
-                              </div>
-                            )}
-                            <div className="mt-2 flex gap-2">
-                              {term.type === 'aesthetic' && (
-                                <Badge variant="secondary">Aesthetic</Badge>
-                              )}
-                              {term.type === 'prompt_component' && (
-                                <Badge variant="outline">Component</Badge>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {terms.map((term: any) => (
-                        <div
-                          key={term.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/50 cursor-pointer"
-                          onClick={() => addToAssembledString(term)}
-                          data-testid={`row-term-${term.id}`}
-                        >
-                          <div className="flex-1">
-                            <div className="font-semibold">{term.term}</div>
-                            <p className="text-sm text-muted-foreground">{term.description || ''}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            {term.isOfficial && (
-                              <Badge variant="secondary">Official</Badge>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToAssembledString(term);
-                              }}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             {/* String Assembly Tab */}

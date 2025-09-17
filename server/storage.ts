@@ -2061,54 +2061,48 @@ export class DatabaseStorage implements IStorage {
 
   // Wordsmith Codex operations - Using prompt_components and aesthetics tables
   async getWordsmithCategories(): Promise<{ id: string; name: string; termCount: number }[]> {
-    // Get unique categories from prompt_components
-    const promptComponentsCategories = await db
-      .selectDistinct({ category: prompt_components.category })
+    // Use optimized single query with GROUP BY for prompt_components
+    const promptComponentCounts = await db
+      .select({
+        category: prompt_components.category,
+        count: sql<string>`COUNT(*)::int`
+      })
       .from(prompt_components)
-      .where(prompt_components.category !== null);
+      .where(sql`${prompt_components.category} IS NOT NULL`)
+      .groupBy(prompt_components.category);
 
-    // Get unique categories from aesthetics (note: categories is stored as text)
-    const aestheticsCategories = await db
-      .selectDistinct({ categories: aesthetics.categories })
-      .from(aesthetics)
-      .where(aesthetics.categories !== null);
+    // Count all aesthetics once (they all go under "aesthetics" category now)
+    const [aestheticsCount] = await db
+      .select({ count: sql<string>`COUNT(*)::int` })
+      .from(aesthetics);
 
-    // Count terms for each category
-    const categoryMap = new Map<string, number>();
+    // Build category list
+    const categories: { id: string; name: string; termCount: number }[] = [];
     
-    // Count prompt components
-    for (const row of promptComponentsCategories) {
+    // Add Aesthetics as a special category
+    categories.push({
+      id: 'aesthetics',
+      name: 'Aesthetics',
+      termCount: Number(aestheticsCount?.count || 0)
+    });
+    
+    // Add prompt component categories
+    for (const row of promptComponentCounts) {
       if (row.category) {
-        const count = await db
-          .select({ count: sql`COUNT(*)` })
-          .from(prompt_components)
-          .where(eq(prompt_components.category, row.category));
-        categoryMap.set(row.category, (categoryMap.get(row.category) || 0) + Number(count[0].count));
+        categories.push({
+          id: row.category.toLowerCase().replace(/\s+/g, '-'),
+          name: row.category,
+          termCount: Number(row.count)
+        });
       }
     }
-
-    // Count aesthetics (parse categories if comma-separated)
-    for (const row of aestheticsCategories) {
-      if (row.categories) {
-        const categories = row.categories.split(',').map(c => c.trim());
-        for (const category of categories) {
-          if (category) {
-            const count = await db
-              .select({ count: sql`COUNT(*)` })
-              .from(aesthetics)
-              .where(ilike(aesthetics.categories, `%${category}%`));
-            categoryMap.set(category, (categoryMap.get(category) || 0) + Number(count[0].count));
-          }
-        }
-      }
-    }
-
-    // Convert to array format
-    return Array.from(categoryMap.entries()).map(([name, termCount]) => ({
-      id: name.toLowerCase().replace(/\s+/g, '-'),
-      name,
-      termCount
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Sort alphabetically, but keep Aesthetics first
+    return categories.sort((a, b) => {
+      if (a.id === 'aesthetics') return -1;
+      if (b.id === 'aesthetics') return 1;
+      return a.name.localeCompare(b.name);
+    });
   }
 
   async getPromptComponents(options: {
@@ -2212,7 +2206,22 @@ export class DatabaseStorage implements IStorage {
     const limit = options.limit || 100;
     const offset = options.offset || 0;
     
-    // Get both prompt components and aesthetics
+    // If aesthetics category is selected, only return aesthetics
+    if (options.category === 'aesthetics') {
+      return await this.getAesthetics({ 
+        ...options, 
+        category: undefined, // Don't filter by category for aesthetics 
+        limit, 
+        offset 
+      });
+    }
+    
+    // If a specific category is selected, only return prompt components from that category
+    if (options.category) {
+      return await this.getPromptComponents({ ...options, limit, offset });
+    }
+    
+    // If no category selected, get both prompt components and aesthetics
     const [promptComponents, aestheticsData] = await Promise.all([
       this.getPromptComponents({ ...options, limit: limit / 2, offset: offset / 2 }),
       this.getAesthetics({ ...options, limit: limit / 2, offset: offset / 2 })
