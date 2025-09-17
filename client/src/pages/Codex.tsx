@@ -929,7 +929,7 @@ export default function Codex() {
                     {terms.map((term: any) => (
                       <div
                         key={term.id}
-                        className="flex items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all"
+                        className="flex items-center justify-between p-1 sm:p-1 border rounded-lg hover:bg-secondary/50 cursor-pointer transition-all pt-[0px] pb-[0px] mt-[0px] mb-[0px]"
                         onClick={() => toggleTermInAssembly(term)}
                         data-testid={`row-term-${term.id}`}
                       >
@@ -1089,7 +1089,7 @@ export default function Codex() {
                           {savedPresets.map((preset: CodexAssembledString) => (
                             <div
                               key={preset.id}
-                              className="group flex items-start justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                              className="group flex items-start justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors pt-[2px] pb-[2px]"
                               data-testid={`item-preset-${preset.id}`}
                             >
                               <div className="flex-1 min-w-0">
