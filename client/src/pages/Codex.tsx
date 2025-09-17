@@ -565,7 +565,7 @@ export default function Codex() {
       return apiRequest("POST", "/api/codex/assembled-strings", {
         name: data.name,
         type: data.type,
-        content: data.content.join(", "),
+        content: data.type === "wildcard" ? data.content.join("\n") : data.content.join(", "),
         metadata: { termsUsed: selectedTerms.map(t => t.id) },
       });
     },
@@ -1418,7 +1418,7 @@ export default function Codex() {
                                     size="icon"
                                     className="h-7 w-7 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                                     onClick={() => {
-                                      const blob = new Blob([`__${wildcard.name}__\n${wildcard.content}`], { type: 'text/plain' });
+                                      const blob = new Blob([wildcard.content], { type: 'text/plain' });
                                       const url = URL.createObjectURL(blob);
                                       const a = document.createElement('a');
                                       a.href = url;
