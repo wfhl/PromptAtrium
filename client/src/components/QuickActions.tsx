@@ -121,22 +121,22 @@ export function QuickActions({
           </div>
         </Button>
 
-        {/* Wordsmith Codex */}
-        <Link to="/codex">
-          <Button
-            variant="ghost"
-            className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
-            data-testid="button-wordsmith-codex"
-          >
-            <div className="w-8 h-8 md:w-7 md:h-7 bg-rose-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0">
-              <BookOpen className="h-4 w-4 text-rose-500" />
-            </div>
-            <div className="text-center md:text-left">
-              <p className="text-xs md:text-base font-medium text-foreground">Codex</p>
-              <p className="text-xs text-muted-foreground hidden md:block">Browse Wildcards</p>
-            </div>
-          </Button>
-        </Link>
+        {/* Coming Soon: Wordsmith Codex */}
+        <Button
+          variant="ghost"
+          className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 opacity-60 cursor-not-allowed relative"
+          onClick={() => handleComingSoon("Wordsmith Codex")}
+          data-testid="button-wordsmith-codex"
+        >
+          <div className="w-8 h-8 md:w-7 md:h-7 bg-rose-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 relative">
+            <BookOpen className="h-4 w-4 text-rose-500" />
+            <Lock className="h-2.5 w-2.5 text-rose-500 absolute -top-1 -right-1 bg-background rounded-full" />
+          </div>
+          <div className="text-center md:text-left">
+            <p className="text-xs md:text-base font-medium text-foreground">Codex</p>
+            <p className="text-xs text-muted-foreground hidden md:block">Coming soon</p>
+          </div>
+        </Button>
           {/* Coming Soon: Project */}
           <Button
             variant="ghost"
