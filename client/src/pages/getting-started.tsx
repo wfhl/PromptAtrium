@@ -137,7 +137,7 @@ export default function GettingStarted() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1 h-20">
             <TabsTrigger value="library" className="text-xs md:text-sm px-2 md:px-4" data-testid="tab-library">Library & Community</TabsTrigger>
             <TabsTrigger value="codex" className="text-xs md:text-sm px-2 md:px-4" data-testid="tab-codex">Wordsmith Codex</TabsTrigger>
             <TabsTrigger value="tools" className="text-xs md:text-sm px-2 md:px-4" data-testid="tab-tools">Tools</TabsTrigger>
