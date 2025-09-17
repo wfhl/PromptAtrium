@@ -965,15 +965,15 @@ export default function GettingStarted() {
               Join our community of AI artists and prompt engineers. Start creating, sharing, 
               and discovering amazing prompts today!
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-2 justify-center">
               <Link href="/create">
-                <Button size="lg" className="gap-2">
+                <Button size="sm" className="gap-1 h-8 button-gradient-library">
                   <Sparkles className="h-4 w-4" />
                   Create Your First Prompt
                 </Button>
               </Link>
               <Link href="/community">
-                <Button size="lg" variant="outline" className="gap-2">
+                <Button size="sm" className="gap-1 h-8 button-gradient-community">
                   <Users className="h-4 w-4" />
                   Explore Community
                 </Button>
