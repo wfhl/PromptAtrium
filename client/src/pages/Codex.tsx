@@ -544,7 +544,7 @@ export default function Codex() {
   // Delete assembled string mutation  
   const deleteAssembledStringMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/codex/assembled-strings/${id}`, "DELETE");
+      return apiRequest("DELETE", `/api/codex/assembled-strings/${id}`);
     },
     onSuccess: () => {
       toast({
@@ -1311,7 +1311,6 @@ export default function Codex() {
                                   </Button>
                                 </div>
                               </div>
-                            </div>
                           ))}
                         </div>
                       )}
