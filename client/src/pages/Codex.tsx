@@ -1018,7 +1018,7 @@ export default function Codex() {
                             >
                               <Save className="w-4 h-4 mr-2" />
                               Save As
-                              <ChevronDownIcon className="w-4 h-4 ml-1" />
+                              <ChevronDownIcon className="w-4 h-4 ml-0 mr-0" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
