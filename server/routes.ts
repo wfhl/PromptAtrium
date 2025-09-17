@@ -2959,14 +2959,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // app.delete('/api/codex/categories/:id', ...)
 
   // Term endpoints
-  app.get('/api/codex/terms', async (req, res) => {
+  app.get('/api/codex/terms', async (req: any, res) => {
     try {
+      // Get userId from authenticated user if available
+      const userId = req.user?.id;
+      
       const terms = await storage.getWordsmithTerms({
         category: req.query.categoryId as string,
         search: req.query.search as string,
         limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
         offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
         excludeAesthetics: req.query.excludeAesthetics === 'true',
+        userId: userId,
       });
       res.json(terms);
     } catch (error) {
@@ -2975,15 +2979,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/codex/terms/search', async (req, res) => {
+  app.get('/api/codex/terms/search', async (req: any, res) => {
     try {
       const query = req.query.q as string;
       if (!query) {
         return res.status(400).json({ message: 'Search query required' });
       }
+      
+      // Get userId from authenticated user if available
+      const userId = req.user?.id;
+      
       const terms = await storage.getWordsmithTerms({
         search: query,
-        category: req.query.categoryId as string
+        category: req.query.categoryId as string,
+        userId: userId,
       });
       res.json(terms);
     } catch (error) {
@@ -2993,9 +3002,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Terms are read-only from prompt_components and aesthetics
-  app.get('/api/codex/terms/:id', async (req, res) => {
+  app.get('/api/codex/terms/:id', async (req: any, res) => {
     try {
-      const terms = await storage.getWordsmithTerms({});
+      // Get userId from authenticated user if available
+      const userId = req.user?.id;
+      
+      const terms = await storage.getWordsmithTerms({ userId });
       const term = terms.find(t => t.id === req.params.id);
       if (!term) {
         return res.status(404).json({ message: 'Term not found' });

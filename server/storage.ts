@@ -81,7 +81,7 @@ import {
   type InsertCodexAssembledString,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, ilike, inArray } from "drizzle-orm";
+import { eq, desc, and, or, sql, ilike, inArray, isNull } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 // Interface for storage operations
@@ -278,6 +278,7 @@ export interface IStorage {
     search?: string;
     limit?: number;
     offset?: number;
+    userId?: string; // To check user's NSFW preference
   }): Promise<any[]>;
   getAesthetics(options?: {
     category?: string;
@@ -291,6 +292,7 @@ export interface IStorage {
     limit?: number;
     offset?: number;
     excludeAesthetics?: boolean;
+    userId?: string; // To check user's NSFW preference
   }): Promise<any[]>;
 
   // Codex Assembled String operations (keep for string assembly feature)
@@ -2215,8 +2217,21 @@ export class DatabaseStorage implements IStorage {
     search?: string;
     limit?: number;
     offset?: number;
+    userId?: string;
   } = {}): Promise<any[]> {
     const conditions: any[] = [];
+    
+    // Check user's NSFW preference
+    if (options.userId) {
+      const user = await this.getUser(options.userId);
+      // If user has show_nsfw set to false, filter out NSFW content
+      if (user && user.showNsfw === false) {
+        conditions.push(or(eq(prompt_components.is_nsfw, false), isNull(prompt_components.is_nsfw)));
+      }
+    } else {
+      // If no user is provided, default to hiding NSFW content
+      conditions.push(or(eq(prompt_components.is_nsfw, false), isNull(prompt_components.is_nsfw)));
+    }
     
     if (options.category) {
       conditions.push(eq(prompt_components.category, options.category));
@@ -2251,6 +2266,7 @@ export class DatabaseStorage implements IStorage {
       description: item.description,
       category: item.category,
       subcategory: item.subcategory,
+      isNsfw: item.is_nsfw,
       type: 'prompt_component'
     }));
   }
@@ -2308,6 +2324,7 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
     excludeAesthetics?: boolean;
+    userId?: string;
   } = {}): Promise<any[]> {
     const limit = options.limit || 100;
     const offset = options.offset || 0;
@@ -2335,17 +2352,17 @@ export class DatabaseStorage implements IStorage {
     
     // If a specific category is selected, only return prompt components from that category
     if (options.category) {
-      return await this.getPromptComponents({ ...options, limit, offset });
+      return await this.getPromptComponents({ ...options, limit, offset, userId: options.userId });
     }
     
     // If no category selected and excludeAesthetics is true, only return prompt components
     if (options.excludeAesthetics) {
-      return await this.getPromptComponents({ ...options, limit, offset });
+      return await this.getPromptComponents({ ...options, limit, offset, userId: options.userId });
     }
     
     // If no category selected and excludeAesthetics is false/undefined, get both prompt components and aesthetics
     const [promptComponents, aestheticsData] = await Promise.all([
-      this.getPromptComponents({ ...options, limit: limit / 2, offset: offset / 2 }),
+      this.getPromptComponents({ ...options, limit: limit / 2, offset: offset / 2, userId: options.userId }),
       this.getAesthetics({ ...options, limit: limit / 2, offset: offset / 2 })
     ]);
     
