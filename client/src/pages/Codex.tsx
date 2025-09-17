@@ -188,11 +188,11 @@ export default function Codex() {
                 <TabsContent value="all" className="mt-0">
                   <Tabs value={categoryView} onValueChange={(v) => setCategoryView(v as "all" | "organized")} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 h-6">
-                      <TabsTrigger value="all" className="text-xs py-0.5" data-testid="tab-all-view">
+                      <TabsTrigger value="all" className="text-xs py-0.2" data-testid="tab-all-view">
                         <Grid className="w-3 h-3 mr-1" />
                         All
                       </TabsTrigger>
-                      <TabsTrigger value="organized" className="text-xs py-0.5" data-testid="tab-organized-view">
+                      <TabsTrigger value="organized" className="text-xs py-0.2" data-testid="tab-organized-view">
                         <Layers className="w-3 h-3 mr-1" />
                         Organized
                       </TabsTrigger>
@@ -323,11 +323,11 @@ export default function Codex() {
                 <TabsContent value="aesthetics" className="mt-0">
                   <Tabs value={aestheticsView} onValueChange={(v) => setAestheticsView(v as "all" | "organized")} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 h-6">
-                      <TabsTrigger value="all" className="text-xs py-0.5" data-testid="tab-aesthetics-all">
+                      <TabsTrigger value="all" className="text-xs py-0.2" data-testid="tab-aesthetics-all">
                         <Grid className="w-3 h-3 mr-1" />
                         All
                       </TabsTrigger>
-                      <TabsTrigger value="organized" className="text-xs py-0.5" data-testid="tab-aesthetics-organized">
+                      <TabsTrigger value="organized" className="text-xs py-0.2" data-testid="tab-aesthetics-organized">
                         <Layers className="w-3 h-3 mr-1" />
                         Organized
                       </TabsTrigger>
@@ -338,7 +338,7 @@ export default function Codex() {
                         <div className="p-2 sm:p-3 space-y-1">
                           <Button
                             variant={selectedCategory === "aesthetics" ? "secondary" : "ghost"}
-                            className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2"
+                            className="w-full justify-start h-8 text-xs py-0.2"
                             onClick={() => setSelectedCategory("aesthetics")}
                             data-testid="button-all-aesthetics"
                           >
