@@ -53,6 +53,27 @@ import {
   type InsertActivity,
   type UserRole,
   type CommunityRole,
+  codexCategories,
+  codexTerms,
+  codexUserLists,
+  codexUserTerms,
+  codexTermImages,
+  codexContributions,
+  codexAssembledStrings,
+  type CodexCategory,
+  type InsertCodexCategory,
+  type CodexTerm,
+  type InsertCodexTerm,
+  type CodexUserList,
+  type InsertCodexUserList,
+  type CodexUserTerm,
+  type InsertCodexUserTerm,
+  type CodexTermImage,
+  type InsertCodexTermImage,
+  type CodexContribution,
+  type InsertCodexContribution,
+  type CodexAssembledString,
+  type InsertCodexAssembledString,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray } from "drizzle-orm";
@@ -235,6 +256,63 @@ export interface IStorage {
   createRecommendedModel(model: InsertRecommendedModel): Promise<RecommendedModel>;
   updateRecommendedModel(id: string, model: Partial<InsertRecommendedModel>): Promise<RecommendedModel>;
   deleteRecommendedModel(id: string): Promise<void>;
+
+  // Codex Category operations
+  getCodexCategories(): Promise<CodexCategory[]>;
+  getCodexCategory(id: string): Promise<CodexCategory | undefined>;
+  createCodexCategory(category: InsertCodexCategory): Promise<CodexCategory>;
+  updateCodexCategory(id: string, category: Partial<InsertCodexCategory>): Promise<CodexCategory>;
+  deleteCodexCategory(id: string): Promise<void>;
+
+  // Codex Term operations
+  getCodexTerms(options?: {
+    categoryId?: string;
+    search?: string;
+    isOfficial?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<CodexTerm[]>;
+  getCodexTerm(id: string): Promise<CodexTerm | undefined>;
+  getCodexTermsByCategory(categoryId: string): Promise<CodexTerm[]>;
+  searchCodexTerms(query: string, categoryId?: string): Promise<CodexTerm[]>;
+  createCodexTerm(term: InsertCodexTerm): Promise<CodexTerm>;
+  updateCodexTerm(id: string, term: Partial<InsertCodexTerm>): Promise<CodexTerm>;
+  deleteCodexTerm(id: string): Promise<void>;
+
+  // Codex User List operations
+  getCodexUserLists(userId: string): Promise<CodexUserList[]>;
+  getCodexUserList(id: string): Promise<CodexUserList | undefined>;
+  getPublicCodexLists(categoryId?: string): Promise<CodexUserList[]>;
+  createCodexUserList(list: InsertCodexUserList): Promise<CodexUserList>;
+  updateCodexUserList(id: string, list: Partial<InsertCodexUserList>): Promise<CodexUserList>;
+  deleteCodexUserList(id: string): Promise<void>;
+  incrementDownloadCount(listId: string): Promise<void>;
+
+  // Codex User Term operations
+  getCodexUserTerms(userListId: string): Promise<CodexUserTerm[]>;
+  addTermToUserList(userListId: string, term: InsertCodexUserTerm): Promise<CodexUserTerm>;
+  removeTermFromUserList(userTermId: string): Promise<void>;
+  reorderUserListTerms(userListId: string, termIds: string[]): Promise<void>;
+
+  // Codex Contribution operations
+  getCodexContributions(options?: {
+    userId?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<CodexContribution[]>;
+  getCodexContribution(id: string): Promise<CodexContribution | undefined>;
+  createCodexContribution(contribution: InsertCodexContribution): Promise<CodexContribution>;
+  updateCodexContribution(id: string, updates: Partial<CodexContribution>): Promise<CodexContribution>;
+  approveCodexContribution(id: string, reviewerId: string): Promise<CodexTerm>;
+  rejectCodexContribution(id: string, reviewerId: string, reviewNotes: string): Promise<void>;
+
+  // Codex Assembled String operations
+  getCodexAssembledStrings(userId: string): Promise<CodexAssembledString[]>;
+  getCodexAssembledString(id: string): Promise<CodexAssembledString | undefined>;
+  createCodexAssembledString(assembledString: InsertCodexAssembledString): Promise<CodexAssembledString>;
+  updateCodexAssembledString(id: string, updates: Partial<InsertCodexAssembledString>): Promise<CodexAssembledString>;
+  deleteCodexAssembledString(id: string): Promise<void>;
 }
 
 function generatePromptId(): string {
@@ -1911,6 +1989,347 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecommendedModel(id: string): Promise<void> {
     await db.delete(recommendedModels).where(eq(recommendedModels.id, id));
+  }
+
+  // Codex Category operations
+  async getCodexCategories(): Promise<CodexCategory[]> {
+    return await db
+      .select()
+      .from(codexCategories)
+      .where(eq(codexCategories.isActive, true))
+      .orderBy(codexCategories.orderIndex);
+  }
+
+  async getCodexCategory(id: string): Promise<CodexCategory | undefined> {
+    const [category] = await db.select().from(codexCategories).where(eq(codexCategories.id, id));
+    return category;
+  }
+
+  async createCodexCategory(category: InsertCodexCategory): Promise<CodexCategory> {
+    const [newCategory] = await db.insert(codexCategories).values(category).returning();
+    return newCategory;
+  }
+
+  async updateCodexCategory(id: string, category: Partial<InsertCodexCategory>): Promise<CodexCategory> {
+    const [updatedCategory] = await db
+      .update(codexCategories)
+      .set({ ...category, updatedAt: new Date() })
+      .where(eq(codexCategories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+
+  async deleteCodexCategory(id: string): Promise<void> {
+    await db.update(codexCategories).set({ isActive: false }).where(eq(codexCategories.id, id));
+  }
+
+  // Codex Term operations
+  async getCodexTerms(options: {
+    categoryId?: string;
+    search?: string;
+    isOfficial?: boolean;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<CodexTerm[]> {
+    const conditions: any[] = [];
+    
+    if (options.categoryId) {
+      conditions.push(eq(codexTerms.categoryId, options.categoryId));
+    }
+    if (options.isOfficial !== undefined) {
+      conditions.push(eq(codexTerms.isOfficial, options.isOfficial));
+    }
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(codexTerms.term, `%${options.search}%`),
+          ilike(codexTerms.description, `%${options.search}%`)
+        )
+      );
+    }
+    
+    const query = db.select().from(codexTerms);
+    if (conditions.length > 0) {
+      query.where(and(...conditions));
+    }
+    
+    if (options.limit) {
+      query.limit(options.limit);
+    }
+    if (options.offset) {
+      query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+
+  async getCodexTerm(id: string): Promise<CodexTerm | undefined> {
+    const [term] = await db.select().from(codexTerms).where(eq(codexTerms.id, id));
+    return term;
+  }
+
+  async getCodexTermsByCategory(categoryId: string): Promise<CodexTerm[]> {
+    return await db.select().from(codexTerms).where(eq(codexTerms.categoryId, categoryId));
+  }
+
+  async searchCodexTerms(query: string, categoryId?: string): Promise<CodexTerm[]> {
+    const conditions: any[] = [
+      or(
+        ilike(codexTerms.term, `%${query}%`),
+        ilike(codexTerms.description, `%${query}%`),
+        ilike(codexTerms.examples, `%${query}%`)
+      )
+    ];
+    
+    if (categoryId) {
+      conditions.push(eq(codexTerms.categoryId, categoryId));
+    }
+    
+    return await db.select().from(codexTerms).where(and(...conditions)).limit(50);
+  }
+
+  async createCodexTerm(term: InsertCodexTerm): Promise<CodexTerm> {
+    const [newTerm] = await db.insert(codexTerms).values(term).returning();
+    return newTerm;
+  }
+
+  async updateCodexTerm(id: string, term: Partial<InsertCodexTerm>): Promise<CodexTerm> {
+    const [updatedTerm] = await db
+      .update(codexTerms)
+      .set({ ...term, updatedAt: new Date() })
+      .where(eq(codexTerms.id, id))
+      .returning();
+    return updatedTerm;
+  }
+
+  async deleteCodexTerm(id: string): Promise<void> {
+    await db.delete(codexTerms).where(eq(codexTerms.id, id));
+  }
+
+  // Codex User List operations
+  async getCodexUserLists(userId: string): Promise<CodexUserList[]> {
+    return await db
+      .select()
+      .from(codexUserLists)
+      .where(eq(codexUserLists.userId, userId))
+      .orderBy(desc(codexUserLists.createdAt));
+  }
+
+  async getCodexUserList(id: string): Promise<CodexUserList | undefined> {
+    const [list] = await db.select().from(codexUserLists).where(eq(codexUserLists.id, id));
+    return list;
+  }
+
+  async getPublicCodexLists(categoryId?: string): Promise<CodexUserList[]> {
+    const conditions: any[] = [eq(codexUserLists.isPublic, true)];
+    
+    if (categoryId) {
+      conditions.push(eq(codexUserLists.categoryId, categoryId));
+    }
+    
+    return await db
+      .select()
+      .from(codexUserLists)
+      .where(and(...conditions))
+      .orderBy(desc(codexUserLists.downloadCount));
+  }
+
+  async createCodexUserList(list: InsertCodexUserList): Promise<CodexUserList> {
+    const [newList] = await db.insert(codexUserLists).values(list).returning();
+    return newList;
+  }
+
+  async updateCodexUserList(id: string, list: Partial<InsertCodexUserList>): Promise<CodexUserList> {
+    const [updatedList] = await db
+      .update(codexUserLists)
+      .set({ ...list, updatedAt: new Date() })
+      .where(eq(codexUserLists.id, id))
+      .returning();
+    return updatedList;
+  }
+
+  async deleteCodexUserList(id: string): Promise<void> {
+    await db.delete(codexUserLists).where(eq(codexUserLists.id, id));
+  }
+
+  async incrementDownloadCount(listId: string): Promise<void> {
+    await db
+      .update(codexUserLists)
+      .set({ 
+        downloadCount: sql`${codexUserLists.downloadCount} + 1` 
+      })
+      .where(eq(codexUserLists.id, listId));
+  }
+
+  // Codex User Term operations
+  async getCodexUserTerms(userListId: string): Promise<CodexUserTerm[]> {
+    return await db
+      .select()
+      .from(codexUserTerms)
+      .where(eq(codexUserTerms.userListId, userListId))
+      .orderBy(codexUserTerms.orderIndex);
+  }
+
+  async addTermToUserList(userListId: string, term: InsertCodexUserTerm): Promise<CodexUserTerm> {
+    // Get the max order index for this list
+    const [maxOrderResult] = await db
+      .select({ maxOrder: sql`COALESCE(MAX(${codexUserTerms.orderIndex}), 0)` })
+      .from(codexUserTerms)
+      .where(eq(codexUserTerms.userListId, userListId));
+    
+    const nextOrder = (maxOrderResult?.maxOrder as number || 0) + 1;
+    
+    const [newTerm] = await db
+      .insert(codexUserTerms)
+      .values({ ...term, userListId, orderIndex: nextOrder })
+      .returning();
+    return newTerm;
+  }
+
+  async removeTermFromUserList(userTermId: string): Promise<void> {
+    await db.delete(codexUserTerms).where(eq(codexUserTerms.id, userTermId));
+  }
+
+  async reorderUserListTerms(userListId: string, termIds: string[]): Promise<void> {
+    // Update the order index for each term
+    for (let i = 0; i < termIds.length; i++) {
+      await db
+        .update(codexUserTerms)
+        .set({ orderIndex: i })
+        .where(
+          and(
+            eq(codexUserTerms.id, termIds[i]),
+            eq(codexUserTerms.userListId, userListId)
+          )
+        );
+    }
+  }
+
+  // Codex Contribution operations
+  async getCodexContributions(options: {
+    userId?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<CodexContribution[]> {
+    const conditions: any[] = [];
+    
+    if (options.userId) {
+      conditions.push(eq(codexContributions.submittedBy, options.userId));
+    }
+    if (options.status) {
+      conditions.push(eq(codexContributions.status, options.status as any));
+    }
+    
+    const query = db.select().from(codexContributions);
+    if (conditions.length > 0) {
+      query.where(and(...conditions));
+    }
+    
+    query.orderBy(desc(codexContributions.createdAt));
+    
+    if (options.limit) {
+      query.limit(options.limit);
+    }
+    if (options.offset) {
+      query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+
+  async getCodexContribution(id: string): Promise<CodexContribution | undefined> {
+    const [contribution] = await db.select().from(codexContributions).where(eq(codexContributions.id, id));
+    return contribution;
+  }
+
+  async createCodexContribution(contribution: InsertCodexContribution): Promise<CodexContribution> {
+    const [newContribution] = await db.insert(codexContributions).values(contribution).returning();
+    return newContribution;
+  }
+
+  async updateCodexContribution(id: string, updates: Partial<CodexContribution>): Promise<CodexContribution> {
+    const [updatedContribution] = await db
+      .update(codexContributions)
+      .set(updates)
+      .where(eq(codexContributions.id, id))
+      .returning();
+    return updatedContribution;
+  }
+
+  async approveCodexContribution(id: string, reviewerId: string): Promise<CodexTerm> {
+    // Get the contribution
+    const contribution = await this.getCodexContribution(id);
+    if (!contribution) {
+      throw new Error('Contribution not found');
+    }
+    
+    // Create the term
+    const newTerm = await this.createCodexTerm({
+      categoryId: contribution.categoryId,
+      term: contribution.term,
+      description: contribution.description || '',
+      examples: contribution.examples || '',
+      createdBy: contribution.submittedBy,
+      isOfficial: true,
+    });
+    
+    // Update the contribution
+    await db
+      .update(codexContributions)
+      .set({
+        status: 'approved',
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+        approvedTermId: newTerm.id,
+      })
+      .where(eq(codexContributions.id, id));
+    
+    return newTerm;
+  }
+
+  async rejectCodexContribution(id: string, reviewerId: string, reviewNotes: string): Promise<void> {
+    await db
+      .update(codexContributions)
+      .set({
+        status: 'rejected',
+        reviewedBy: reviewerId,
+        reviewNotes,
+        reviewedAt: new Date(),
+      })
+      .where(eq(codexContributions.id, id));
+  }
+
+  // Codex Assembled String operations
+  async getCodexAssembledStrings(userId: string): Promise<CodexAssembledString[]> {
+    return await db
+      .select()
+      .from(codexAssembledStrings)
+      .where(eq(codexAssembledStrings.userId, userId))
+      .orderBy(desc(codexAssembledStrings.createdAt));
+  }
+
+  async getCodexAssembledString(id: string): Promise<CodexAssembledString | undefined> {
+    const [assembledString] = await db.select().from(codexAssembledStrings).where(eq(codexAssembledStrings.id, id));
+    return assembledString;
+  }
+
+  async createCodexAssembledString(assembledString: InsertCodexAssembledString): Promise<CodexAssembledString> {
+    const [newAssembledString] = await db.insert(codexAssembledStrings).values(assembledString).returning();
+    return newAssembledString;
+  }
+
+  async updateCodexAssembledString(id: string, updates: Partial<InsertCodexAssembledString>): Promise<CodexAssembledString> {
+    const [updatedAssembledString] = await db
+      .update(codexAssembledStrings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(codexAssembledStrings.id, id))
+      .returning();
+    return updatedAssembledString;
+  }
+
+  async deleteCodexAssembledString(id: string): Promise<void> {
+    await db.delete(codexAssembledStrings).where(eq(codexAssembledStrings.id, id));
   }
 }
 

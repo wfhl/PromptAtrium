@@ -356,6 +356,100 @@ export const activities = pgTable("activities", {
   index("idx_activities_action_type").on(table.actionType),
 ]);
 
+// Wordsmith Codex Tables
+
+// Categories for organizing terms (e.g., "Styles", "Lighting", "Aesthetics", etc.)
+export const codexCategories = pgTable("codex_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  icon: varchar("icon"), // Icon name for UI display (e.g., "palette", "camera", "sun")
+  color: varchar("color"), // Color for UI display (e.g., "blue", "green", "purple")
+  orderIndex: integer("order_index").default(0),
+  isActive: boolean("is_active").default(true),
+  parentCategoryId: varchar("parent_category_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Individual terms/wildcards within categories
+export const codexTerms = pgTable("codex_terms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoryId: varchar("category_id").notNull().references(() => codexCategories.id),
+  term: varchar("term").notNull(),
+  description: text("description"),
+  examples: text("examples"), // Example usage of the term
+  relatedTerms: jsonb("related_terms").default([]), // Array of related term IDs
+  metadata: jsonb("metadata").default({}), // Additional metadata for the term
+  createdBy: varchar("created_by").references(() => users.id),
+  isOfficial: boolean("is_official").default(false), // Whether this is an official term vs user-contributed
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User-curated wildcard lists
+export const codexUserLists = pgTable("codex_user_lists", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  categoryId: varchar("category_id").references(() => codexCategories.id), // Optional category association
+  isPublic: boolean("is_public").default(false),
+  downloadCount: integer("download_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Terms in user lists (many-to-many relationship)
+export const codexUserTerms = pgTable("codex_user_terms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userListId: varchar("user_list_id").notNull().references(() => codexUserLists.id, { onDelete: 'cascade' }),
+  termId: varchar("term_id").references(() => codexTerms.id), // Can be null for custom terms
+  customTerm: varchar("custom_term"), // User's custom term if not from official list
+  customDescription: text("custom_description"),
+  orderIndex: integer("order_index").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Example images for terms (for future implementation)
+export const codexTermImages = pgTable("codex_term_images", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  termId: varchar("term_id").notNull().references(() => codexTerms.id),
+  imageUrl: varchar("image_url").notNull(),
+  caption: text("caption"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  isApproved: boolean("is_approved").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User contributions for new terms
+export const codexContributions = pgTable("codex_contributions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  term: varchar("term").notNull(),
+  categoryId: varchar("category_id").notNull().references(() => codexCategories.id),
+  description: text("description"),
+  examples: text("examples"),
+  submittedBy: varchar("submitted_by").notNull().references(() => users.id),
+  status: varchar("status", { enum: ["pending", "approved", "rejected"] }).default("pending"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewNotes: text("review_notes"),
+  approvedTermId: varchar("approved_term_id").references(() => codexTerms.id), // If approved, links to created term
+  createdAt: timestamp("created_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+// User's assembled strings
+export const codexAssembledStrings = pgTable("codex_assembled_strings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(),
+  stringContent: text("string_content").notNull(),
+  termsUsed: jsonb("terms_used").default([]), // Array of term IDs used in this string
+  metadata: jsonb("metadata").default({}), // Additional metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   prompts: many(prompts),
@@ -533,6 +627,48 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
   createdAt: true,
 });
 
+// Codex insert schemas
+export const insertCodexCategorySchema = createInsertSchema(codexCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCodexTermSchema = createInsertSchema(codexTerms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCodexUserListSchema = createInsertSchema(codexUserLists).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCodexUserTermSchema = createInsertSchema(codexUserTerms).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCodexTermImageSchema = createInsertSchema(codexTermImages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCodexContributionSchema = createInsertSchema(codexContributions).omit({
+  id: true,
+  createdAt: true,
+  reviewedAt: true,
+  approvedTermId: true,
+});
+
+export const insertCodexAssembledStringSchema = createInsertSchema(codexAssembledStrings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -621,6 +757,22 @@ export type InsertFollow = z.infer<typeof insertFollowSchema>;
 export type Follow = typeof follows.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;
+
+// Codex types
+export type InsertCodexCategory = z.infer<typeof insertCodexCategorySchema>;
+export type CodexCategory = typeof codexCategories.$inferSelect;
+export type InsertCodexTerm = z.infer<typeof insertCodexTermSchema>;
+export type CodexTerm = typeof codexTerms.$inferSelect;
+export type InsertCodexUserList = z.infer<typeof insertCodexUserListSchema>;
+export type CodexUserList = typeof codexUserLists.$inferSelect;
+export type InsertCodexUserTerm = z.infer<typeof insertCodexUserTermSchema>;
+export type CodexUserTerm = typeof codexUserTerms.$inferSelect;
+export type InsertCodexTermImage = z.infer<typeof insertCodexTermImageSchema>;
+export type CodexTermImage = typeof codexTermImages.$inferSelect;
+export type InsertCodexContribution = z.infer<typeof insertCodexContributionSchema>;
+export type CodexContribution = typeof codexContributions.$inferSelect;
+export type InsertCodexAssembledString = z.infer<typeof insertCodexAssembledStringSchema>;
+export type CodexAssembledString = typeof codexAssembledStrings.$inferSelect;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;
