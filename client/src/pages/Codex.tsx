@@ -68,9 +68,9 @@ function AssemblyToastPortal({
 }) {
   return createPortal(
     <div 
-      className={`fixed top-20 ${
+      className={`fixed top-8 ${
         toastMinimized ? 'right-4 w-auto' : 'left-4 right-4 sm:right-4 sm:left-auto sm:w-96'
-      } bg-purple-500/85 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-[100] text-white`}
+      } bg-purple-900/10 backdrop-blur-md border border-purple-500/30 shadow-lg shadow-purple-500/20 rounded-lg transition-all duration-300 z-[100] text-white`}
     >
       {toastMinimized ? (
         <div className="flex items-center gap-2 p-3">
@@ -86,8 +86,8 @@ function AssemblyToastPortal({
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="flex items-center justify-between p-3 border-b border-white/20">
-            <h3 className="font-semibold text-sm text-white">String Assembly</h3>
+          <div className="flex items-center justify-between p-1 border-b border-white/20">
+            <h3 className="font-semibold text-sm text-white">Collected Terms</h3>
             <div className="flex gap-1">
               <Button
                 variant="ghost"
@@ -739,7 +739,7 @@ export default function Codex() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
                   <TabsTrigger value="browse" data-testid="tab-browse" className="text-xs sm:text-sm">Browse Terms</TabsTrigger>
-                  <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">String Assembly</TabsTrigger>
+                  <TabsTrigger value="assemble" data-testid="tab-assemble" className="text-xs sm:text-sm">Collected Terms</TabsTrigger>
                   <TabsTrigger value="lists" data-testid="tab-lists" className="text-xs sm:text-sm">Wildcard Lists</TabsTrigger>
                 </TabsList>
               </div>
@@ -865,7 +865,7 @@ export default function Codex() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>String Assembly</span>
+                      <span>Collected Terms</span>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
