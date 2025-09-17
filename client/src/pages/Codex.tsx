@@ -46,6 +46,9 @@ import {
   List,
   Star,
   Upload,
+  ArrowUpDown,
+  ChevronLeft,
+  SortAsc,
   Edit,
   Trash,
   Check,
@@ -223,6 +226,9 @@ export default function Codex() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "category" | "random">("default");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 24; // Doubled from default to 24
   const [selectedTerms, setSelectedTerms] = useState<CodexTerm[]>([]);
   const [assembledString, setAssembledString] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("browse");
@@ -352,7 +358,7 @@ export default function Codex() {
   });
 
   // Fetch terms based on selected category and search
-  const { data: terms = [], isLoading: termsLoading } = useQuery({
+  const { data: rawTerms = [], isLoading: termsLoading } = useQuery({
     queryKey: ["/api/codex/terms", selectedCategory, searchQuery, categoryTab],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -367,6 +373,54 @@ export default function Codex() {
       return response.json();
     },
   });
+
+  // Apply sorting to terms
+  const sortedTerms = useMemo(() => {
+    if (!rawTerms || rawTerms.length === 0) return [];
+    
+    let sorted = [...rawTerms];
+    
+    switch (sortMode) {
+      case "alphabetical":
+        sorted.sort((a, b) => a.term.localeCompare(b.term));
+        break;
+      case "category":
+        sorted.sort((a, b) => {
+          // First sort by category, then alphabetically within category
+          const categoryCompare = (a.categoryId || '').localeCompare(b.categoryId || '');
+          if (categoryCompare !== 0) return categoryCompare;
+          return a.term.localeCompare(b.term);
+        });
+        break;
+      case "random":
+        // Fisher-Yates shuffle algorithm
+        for (let i = sorted.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+        }
+        break;
+      default:
+        // Keep original order
+        break;
+    }
+    
+    return sorted;
+  }, [rawTerms, sortMode]);
+
+  // Paginate terms
+  const paginatedTerms = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedTerms.slice(startIndex, endIndex);
+  }, [sortedTerms, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(sortedTerms.length / itemsPerPage);
+  const terms = paginatedTerms;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchQuery, categoryTab, sortMode]);
 
   // Fetch user's lists
   const { data: userLists = [] } = useQuery({
@@ -873,6 +927,43 @@ export default function Codex() {
                         data-testid="input-search"
                       />
                     </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 sm:h-10">
+                          <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span className="hidden sm:inline">Sort</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setSortMode("default")}
+                          className={sortMode === "default" ? "bg-accent" : ""}
+                        >
+                          Default Order
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setSortMode("alphabetical")}
+                          className={sortMode === "alphabetical" ? "bg-accent" : ""}
+                        >
+                          <SortAsc className="w-4 h-4 mr-2" />
+                          Alphabetical
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setSortMode("category")}
+                          className={sortMode === "category" ? "bg-accent" : ""}
+                        >
+                          <Layers className="w-4 h-4 mr-2" />
+                          By Category
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setSortMode("random")}
+                          className={sortMode === "random" ? "bg-accent" : ""}
+                        >
+                          <Shuffle className="w-4 h-4 mr-2" />
+                          Randomize
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -955,6 +1046,59 @@ export default function Codex() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+                
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between px-2 py-2 border-t mt-2">
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, sortedTerms.length)} of {sortedTerms.length}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="h-7 w-7 p-0"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      {/* Show page numbers */}
+                      {[...Array(Math.min(5, totalPages))].map((_, index) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = index + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = index + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + index;
+                        } else {
+                          pageNum = currentPage - 2 + index;
+                        }
+                        return (
+                          <Button
+                            key={index}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className="h-7 min-w-[28px] px-1 text-xs"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="h-7 w-7 p-0"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </TabsContent>
