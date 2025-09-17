@@ -1308,8 +1308,8 @@ export function PromptCard({
                   </>
                 )}
                 
-                {/* Show Add Example Images only for other people's public prompts on Community page */}
-                {isCommunityPage && prompt.isPublic && typedUser?.id && String(typedUser.id) !== String(prompt.userId) && (
+                {/* Show Add Example Images for all users on public prompts on Community page */}
+                {isCommunityPage && prompt.isPublic && typedUser?.id && (
                   <Button
                     size="sm"
                     variant="ghost"
