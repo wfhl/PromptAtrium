@@ -866,8 +866,7 @@ export default function Codex() {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span>Collected Terms</span>
-                      <div className="flex flex-col gap-3">
-                        {/* Primary Action - Send to Generator */}
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           variant="default"
                           size="sm"
@@ -878,58 +877,50 @@ export default function Codex() {
                             });
                           }}
                           disabled={assembledString.length === 0}
-                          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
                           data-testid="button-send-to-generator"
                         >
                           <Send className="w-4 h-4 mr-2" />
                           Send to Generator
                         </Button>
-                        
-                        {/* Secondary Actions - Mobile optimized grid */}
-                        <div className="grid grid-cols-3 gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={randomizeOrder}
-                            disabled={assembledString.length === 0}
-                            className="text-xs"
-                            data-testid="button-randomize"
-                          >
-                            <Shuffle className="w-3 h-3 mr-1" />
-                            <span className="hidden sm:inline">Randomize</span>
-                            <span className="sm:hidden">Mix</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={copyToClipboard}
-                            disabled={assembledString.length === 0}
-                            className="text-xs"
-                            data-testid="button-copy"
-                          >
-                            <Copy className="w-3 h-3 mr-1" />
-                            Copy
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const name = prompt("Enter a name for this assembled string:");
-                              if (name) {
-                                saveAssembledStringMutation.mutate({
-                                  name,
-                                  content: assembledString,
-                                });
-                              }
-                            }}
-                            disabled={assembledString.length === 0}
-                            className="text-xs"
-                            data-testid="button-save-assembled"
-                          >
-                            <Save className="w-3 h-3 mr-1" />
-                            Save
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={randomizeOrder}
+                          disabled={assembledString.length === 0}
+                          data-testid="button-randomize"
+                        >
+                          <Shuffle className="w-4 h-4 mr-2" />
+                          Randomize
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyToClipboard}
+                          disabled={assembledString.length === 0}
+                          data-testid="button-copy"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const name = prompt("Enter a name for this assembled string:");
+                            if (name) {
+                              saveAssembledStringMutation.mutate({
+                                name,
+                                content: assembledString,
+                              });
+                            }
+                          }}
+                          disabled={assembledString.length === 0}
+                          data-testid="button-save-assembled"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          Save
+                        </Button>
                       </div>
                     </CardTitle>
                   </CardHeader>
