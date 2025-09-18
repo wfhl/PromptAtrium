@@ -394,9 +394,9 @@ Return a comprehensive JSON object with all available fields:
         break;
     }
 
-    // Use Gemini 1.5 Pro for vision tasks
+    // Use Gemini 1.5 Flash for vision tasks (better quotas)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-pro",
+      model: "gemini-1.5-flash",
       generationConfig: {
         temperature: 0.2,
         maxOutputTokens: 2000,
