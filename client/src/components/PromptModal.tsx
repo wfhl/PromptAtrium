@@ -573,6 +573,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
 
   // Handle auto-fill from prompt content
   const handleAutoFill = (generatedData: any) => {
+    console.log('Auto-fill received data:', generatedData);
     const updates: any = {};
     
     if (generatedData.name) {
@@ -603,7 +604,12 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       updates.isNsfw = generatedData.isNsfw;
     }
     
-    setFormData(prev => ({ ...prev, ...updates }));
+    console.log('Auto-fill updates to apply:', updates);
+    setFormData(prev => {
+      const newData = { ...prev, ...updates };
+      console.log('Auto-fill new form data:', newData);
+      return newData;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
