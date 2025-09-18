@@ -1180,7 +1180,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).claims.sub;
       const promptId = req.params.id;
+      console.log("Like endpoint called - userId:", userId, "promptId:", promptId);
       const isLiked = await storage.toggleLike(userId, promptId);
+      console.log("Like toggle result:", isLiked);
       
       // Create activity for liking (only when liking, not unliking)
       if (isLiked) {

@@ -178,8 +178,12 @@ export function PromptCard({
 
   const likeMutation = useMutation({
     mutationFn: async () => {
+      console.log("Like mutation triggered for prompt:", prompt.id, "by user:", typedUser?.id);
+      console.log("Current isLiked state:", isLiked);
+      console.log("User likes array:", userLikes);
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/like`);
       const data = await response.json();
+      console.log("Like API response:", data);
       return data;
     },
     retry: 1, // Allow one retry for network issues
@@ -217,6 +221,7 @@ export function PromptCard({
       return { previousPromptsData, previousLikesData };
     },
     onSuccess: (data) => {
+      console.log("Like mutation success with data:", data);
       // Invalidate ALL prompt queries and likes - Dashboard, Library, any page  
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -231,6 +236,8 @@ export function PromptCard({
       });
     },
     onError: (error, variables, context) => {
+      console.error("Like mutation error:", error);
+      console.error("Error details:", { promptId: prompt.id, userId: typedUser?.id });
       // Revert optimistic update on error
       if (context?.previousPromptsData) {
         context.previousPromptsData.forEach(([queryKey, data]) => {
@@ -1070,7 +1077,11 @@ export function PromptCard({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => likeMutation.mutate()}
+              onClick={() => {
+                console.log("Like button clicked for prompt:", prompt.id, "isOwn:", prompt.userId === typedUser?.id);
+                console.log("Prompt owner:", prompt.userId, "Current user:", typedUser?.id);
+                likeMutation.mutate();
+              }}
               disabled={likeMutation.isPending}
               className="h-auto px-2 py-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-1.5 transition-all duration-200 transform hover:scale-105 active:scale-95 rounded-full"
               data-testid={`button-like-counter-${prompt.id}`}
