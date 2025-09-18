@@ -135,12 +135,12 @@ router.post('/api/ai/extract-prompt-from-image', async (req, res) => {
   } catch (error) {
     console.error('Image prompt extraction error:', error);
     
-    // Handle OpenAI quota errors with helpful message
+    // Handle API quota errors with helpful message
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('429') || errorMessage.includes('insufficient_quota')) {
+    if (errorMessage.includes('429') || errorMessage.includes('quota')) {
       res.status(429).json({ 
-        error: 'OpenAI API quota exceeded',
-        message: 'API quota error: You may need to (1) Add a payment method to OpenAI, (2) Generate a NEW API key after adding payment, and (3) Update the OPENAI_API_KEY in Replit. Having credits alone is not enough - OpenAI requires an active payment method.',
+        error: 'AI API quota exceeded',
+        message: 'You have exceeded your Gemini API quota. Please wait a moment and try again. The free tier has daily limits.',
         details: errorMessage
       });
     } else {
@@ -182,12 +182,12 @@ router.post('/api/ai/generate-prompt-metadata', async (req, res) => {
   } catch (error) {
     console.error('Metadata generation error:', error);
     
-    // Handle OpenAI quota errors with helpful message
+    // Handle API quota errors with helpful message
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('429') || errorMessage.includes('insufficient_quota')) {
+    if (errorMessage.includes('429') || errorMessage.includes('quota')) {
       res.status(429).json({ 
-        error: 'OpenAI API quota exceeded',
-        message: 'API quota error: You may need to (1) Add a payment method to OpenAI, (2) Generate a NEW API key after adding payment, and (3) Update the OPENAI_API_KEY in Replit. Having credits alone is not enough - OpenAI requires an active payment method.',
+        error: 'AI API quota exceeded',
+        message: 'You have exceeded your Gemini API quota. Please wait a moment and try again. The free tier has daily limits.',
         details: errorMessage
       });
     } else {

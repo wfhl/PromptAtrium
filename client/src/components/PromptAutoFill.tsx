@@ -61,8 +61,8 @@ export function PromptAutoFill({ promptContent, onAutoFill, disabled }: PromptAu
       const errorMessage = error?.message || error?.error || String(error);
       if (errorMessage.includes('quota') || errorMessage.includes('429')) {
         toast({
-          title: "OpenAI API Quota Error",
-          description: "Please: 1) Add payment method to OpenAI, 2) Generate NEW API key after payment, 3) Update key in Replit",
+          title: "AI API Quota Error",
+          description: "You've exceeded your Gemini API quota. Please wait a moment and try again, or check your API limits.",
           variant: "destructive"
         });
       } else {
