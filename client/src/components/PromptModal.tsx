@@ -68,7 +68,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     collectionId: "none",
     license: "CC0 (Public Domain)",
     status: "published",
-    exampleImages: [],
+    exampleImages: [] as string[],
     notes: "",
     author: "",
     sourceUrl: "",
