@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { 
   analyzeFieldsWithAI, 
   verifyFieldMappings, 
@@ -9,6 +10,40 @@ import {
 } from '../aiFieldAnalyzer';
 
 const router = Router();
+
+// Test endpoint to verify Gemini API is working
+router.get('/api/ai/test', async (req, res) => {
+  try {
+    // Check if API key exists
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ 
+        error: 'GEMINI_API_KEY not found in environment variables' 
+      });
+    }
+
+    // Create a simple test request
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const result = await model.generateContent("Say 'API is working!' in exactly 3 words.");
+    const response = await result.response;
+    const text = response.text();
+    
+    res.json({
+      success: true,
+      message: "Gemini API is connected and working!",
+      response: text,
+      apiKeyPresent: true
+    });
+  } catch (error: any) {
+    console.error('Gemini API test failed:', error);
+    res.status(500).json({ 
+      error: 'Gemini API test failed',
+      message: error.message || 'Unknown error',
+      details: error.errorDetails || error.toString()
+    });
+  }
+});
 
 // Analyze CSV/structured data fields
 router.post('/api/ai/analyze-fields', async (req, res) => {

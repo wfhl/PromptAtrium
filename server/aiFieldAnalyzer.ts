@@ -2,7 +2,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize Gemini AI with API key from environment
 // Using gemini-1.5-flash for fast responses and gemini-1.5-pro for complex tasks
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY is not set in environment variables");
+}
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export interface FieldAnalysisResult {
   fieldMappings: {
