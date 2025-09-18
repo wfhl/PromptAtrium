@@ -54,13 +54,24 @@ export function PromptAutoFill({ promptContent, onAutoFill, disabled }: PromptAu
           ? "Name generated successfully!" 
           : "All fields generated successfully!"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Auto-fill failed:', error);
-      toast({
-        title: "Auto-fill failed",
-        description: error.message || "Failed to generate metadata",
-        variant: "destructive"
-      });
+      
+      // Check if it's a quota error and provide helpful message
+      const errorMessage = error?.message || error?.error || String(error);
+      if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+        toast({
+          title: "OpenAI API Quota Error",
+          description: "Please: 1) Add payment method to OpenAI, 2) Generate NEW API key after payment, 3) Update key in Replit",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Auto-fill failed",
+          description: errorMessage || "Failed to generate metadata",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }

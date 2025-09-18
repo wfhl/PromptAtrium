@@ -114,13 +114,24 @@ export function PromptAIExtractor({ open, onOpenChange, onExtracted }: PromptAIE
       setImage(null);
       setImageFile(null);
       setExtractionMode('content');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Extraction failed:', error);
-      toast({
-        title: "Extraction failed",
-        description: error.message || "Failed to extract prompt from image",
-        variant: "destructive"
-      });
+      
+      // Check if it's a quota error and provide helpful message
+      const errorMessage = error?.message || error?.error || String(error);
+      if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+        toast({
+          title: "OpenAI API Quota Error",
+          description: "Please: 1) Add payment method to OpenAI, 2) Generate NEW API key after payment, 3) Update key in Replit",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Extraction failed",
+          description: errorMessage || "Failed to extract prompt from image",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
