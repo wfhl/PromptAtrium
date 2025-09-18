@@ -11,9 +11,11 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus } from "lucide-react";
+import { Plus, ImageIcon } from "lucide-react";
 import type { Prompt, Collection } from "@shared/schema";
 import { PromptImageUploader } from "./PromptImageUploader";
+import { PromptAIExtractor } from "./PromptAIExtractor";
+import { PromptAutoFill } from "./PromptAutoFill";
 
 interface PromptModalProps {
   open: boolean;
@@ -48,6 +50,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   const [customPromptStyles, setCustomPromptStyles] = useState<string[]>([]);
   const [customIntendedGenerators, setCustomIntendedGenerators] = useState<string[]>([]);
   const [customRecommendedModels, setCustomRecommendedModels] = useState<string[]>([]);
+  
+  // AI extraction state
+  const [showAIExtractor, setShowAIExtractor] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -524,6 +529,83 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     });
   };
 
+  // Handle extracted data from AI image analysis
+  const handleAIExtracted = (extractedData: any) => {
+    const updates: any = {};
+    
+    if (extractedData.promptContent) {
+      updates.promptContent = extractedData.promptContent;
+    }
+    if (extractedData.name) {
+      updates.name = extractedData.name;
+    }
+    if (extractedData.description) {
+      updates.description = extractedData.description;
+    }
+    if (extractedData.category) {
+      updates.category = extractedData.category;
+    }
+    if (extractedData.tags && Array.isArray(extractedData.tags)) {
+      updates.tags = extractedData.tags.join(", ");
+    }
+    if (extractedData.promptType) {
+      updates.promptType = extractedData.promptType;
+    }
+    if (extractedData.promptStyle) {
+      updates.promptStyle = extractedData.promptStyle;
+    }
+    if (extractedData.intendedGenerator) {
+      updates.intendedGenerator = extractedData.intendedGenerator;
+    }
+    if (extractedData.recommendedModels && Array.isArray(extractedData.recommendedModels)) {
+      updates.recommendedModels = extractedData.recommendedModels.join(", ");
+    }
+    if (extractedData.technicalParams) {
+      updates.technicalParams = JSON.stringify(extractedData.technicalParams, null, 2);
+    }
+    if (extractedData.isNsfw !== undefined) {
+      updates.isNsfw = extractedData.isNsfw;
+    }
+    
+    setFormData(prev => ({ ...prev, ...updates }));
+    setShowAIExtractor(false);
+  };
+
+  // Handle auto-fill from prompt content
+  const handleAutoFill = (generatedData: any) => {
+    const updates: any = {};
+    
+    if (generatedData.name) {
+      updates.name = generatedData.name;
+    }
+    if (generatedData.description) {
+      updates.description = generatedData.description;
+    }
+    if (generatedData.category) {
+      updates.category = generatedData.category;
+    }
+    if (generatedData.tags && Array.isArray(generatedData.tags)) {
+      updates.tags = generatedData.tags.join(", ");
+    }
+    if (generatedData.promptType) {
+      updates.promptType = generatedData.promptType;
+    }
+    if (generatedData.promptStyle) {
+      updates.promptStyle = generatedData.promptStyle;
+    }
+    if (generatedData.intendedGenerator) {
+      updates.intendedGenerator = generatedData.intendedGenerator;
+    }
+    if (generatedData.recommendedModels && Array.isArray(generatedData.recommendedModels)) {
+      updates.recommendedModels = generatedData.recommendedModels.join(", ");
+    }
+    if (generatedData.isNsfw !== undefined) {
+      updates.isNsfw = generatedData.isNsfw;
+    }
+    
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "create") {
@@ -539,10 +621,17 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] backdrop-blur-md bg-transparent overflow-y-auto" data-testid="modal-prompt">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle data-testid="text-modal-title">
             {mode === "create" ? "Create New Prompt" : "Edit Prompt"}
           </DialogTitle>
+          {formData.promptContent && formData.promptContent.trim().length > 10 && (
+            <PromptAutoFill
+              promptContent={formData.promptContent}
+              onAutoFill={handleAutoFill}
+              disabled={isPending}
+            />
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-1">
@@ -562,7 +651,20 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
 
                           
               <div>
-                <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAIExtractor(true)}
+                    className="text-purple-400 hover:text-purple-300 hover:bg-purple-400/10"
+                    data-testid="button-extract-from-image"
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Extract from image
+                  </Button>
+                </div>
                 <Textarea
                   id="promptContent"
                   value={formData.promptContent}
@@ -1198,6 +1300,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* AI Prompt Extractor Modal */}
+    <PromptAIExtractor
+      open={showAIExtractor}
+      onOpenChange={setShowAIExtractor}
+      onExtracted={handleAIExtracted}
+    />
     </>
   );
 }
