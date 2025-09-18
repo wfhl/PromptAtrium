@@ -3,7 +3,9 @@ import {
   analyzeFieldsWithAI, 
   verifyFieldMappings, 
   analyzeUnstructuredContent,
-  detectContentPattern 
+  detectContentPattern,
+  extractPromptFromImage,
+  generatePromptMetadata
 } from '../aiFieldAnalyzer';
 
 const router = Router();
@@ -98,6 +100,78 @@ router.post('/api/ai/detect-content-type', async (req, res) => {
     console.error('Content type detection error:', error);
     res.status(500).json({ 
       error: 'Failed to detect content type', 
+      details: error.message 
+    });
+  }
+});
+
+// Extract prompt from image
+router.post('/api/ai/extract-prompt-from-image', async (req, res) => {
+  try {
+    const { imageBase64, extractionMode } = req.body;
+
+    if (!imageBase64 || !extractionMode) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: imageBase64, extractionMode' 
+      });
+    }
+
+    // Validate extraction mode
+    if (!['content', 'content_and_name', 'all_fields'].includes(extractionMode)) {
+      return res.status(400).json({
+        error: 'Invalid extractionMode. Must be: content, content_and_name, or all_fields'
+      });
+    }
+
+    const result = await extractPromptFromImage(imageBase64, extractionMode);
+
+    if (!result.success) {
+      return res.status(500).json({
+        error: result.error || 'Failed to extract prompt from image'
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Image prompt extraction error:', error);
+    res.status(500).json({ 
+      error: 'Failed to extract prompt from image', 
+      details: error.message 
+    });
+  }
+});
+
+// Generate prompt metadata
+router.post('/api/ai/generate-prompt-metadata', async (req, res) => {
+  try {
+    const { promptContent, generationMode } = req.body;
+
+    if (!promptContent || !generationMode) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: promptContent, generationMode' 
+      });
+    }
+
+    // Validate generation mode
+    if (!['name_only', 'all_fields'].includes(generationMode)) {
+      return res.status(400).json({
+        error: 'Invalid generationMode. Must be: name_only or all_fields'
+      });
+    }
+
+    const result = await generatePromptMetadata(promptContent, generationMode);
+
+    if (!result.success) {
+      return res.status(500).json({
+        error: result.error || 'Failed to generate metadata'
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Metadata generation error:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate metadata', 
       details: error.message 
     });
   }

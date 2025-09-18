@@ -287,3 +287,259 @@ Respond with JSON:
     };
   }
 }
+
+// Extract prompt content from an image using GPT-4 Vision
+export async function extractPromptFromImage(
+  imageBase64: string,
+  extractionMode: 'content' | 'content_and_name' | 'all_fields'
+): Promise<{
+  success: boolean;
+  promptContent?: string;
+  name?: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+  promptType?: string;
+  promptStyle?: string;
+  intendedGenerator?: string;
+  recommendedModels?: string[];
+  technicalParams?: any;
+  error?: string;
+}> {
+  try {
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    switch (extractionMode) {
+      case 'content':
+        systemPrompt = `You are an expert at extracting AI prompt text from screenshots and images. Your task is to identify and extract ONLY the actual prompt content from the image.`;
+        userPrompt = `Analyze this image and extract the prompt content. Focus on:
+- The main prompt text or instructions
+- Include any negative prompts if present
+- Preserve the exact formatting and wording
+- Ignore UI elements, buttons, metadata, or other non-prompt text
+- If multiple prompts are visible, extract the primary/main one
+
+Return ONLY a JSON object with this structure:
+{
+  "promptContent": "the extracted prompt text",
+  "negativePrompt": "negative prompt if present, or null"
+}`;
+        break;
+
+      case 'content_and_name':
+        systemPrompt = `You are an expert at extracting and analyzing AI prompts from screenshots. Extract the prompt and generate an appropriate name for it.`;
+        userPrompt = `Analyze this image and:
+1. Extract the main prompt content
+2. Generate a concise, descriptive name for the prompt based on its content
+
+Focus on:
+- Extracting the exact prompt text
+- Creating a name that captures the essence of what the prompt does
+- Include negative prompts if present
+
+Return a JSON object with:
+{
+  "promptContent": "the extracted prompt text",
+  "negativePrompt": "negative prompt if present, or null",
+  "name": "a descriptive name for this prompt"
+}`;
+        break;
+
+      case 'all_fields':
+        systemPrompt = `You are an expert at extracting and analyzing AI prompts from screenshots. Extract all available information and intelligently infer metadata.`;
+        userPrompt = `Analyze this image comprehensively and extract/infer:
+
+1. The main prompt content (exact text)
+2. A descriptive name based on the prompt's purpose
+3. A brief description of what the prompt achieves
+4. Appropriate category (e.g., "Character", "Scene", "Style", "Concept Art", etc.)
+5. Relevant tags (keywords that describe the prompt)
+6. Prompt type (e.g., "Text-to-Image", "Image-to-Image", "Inpainting", etc.)
+7. Prompt style (e.g., "Realistic", "Anime", "Abstract", "Photographic", etc.)
+8. Intended generator (if apparent: "Stable Diffusion", "Midjourney", "DALL-E", etc.)
+9. Recommended models (if mentioned or apparent from style)
+10. Technical parameters (if visible: steps, CFG scale, sampler, etc.)
+
+Analyze visual cues, text formatting, and any visible metadata to make intelligent inferences.
+
+Return a comprehensive JSON object with all available fields:
+{
+  "promptContent": "the main prompt text",
+  "negativePrompt": "negative prompt if present, or null",
+  "name": "descriptive name",
+  "description": "brief description of the prompt's purpose",
+  "category": "appropriate category",
+  "tags": ["tag1", "tag2", ...],
+  "promptType": "type of prompt",
+  "promptStyle": "visual style",
+  "intendedGenerator": "target AI system or null",
+  "recommendedModels": ["model1", "model2"] or [],
+  "technicalParams": { 
+    "steps": number or null,
+    "cfg_scale": number or null,
+    "sampler": "string or null",
+    "seed": number or null,
+    "other_params": {}
+  } or null
+}`;
+        break;
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",  // Using GPT-4 Vision model
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: userPrompt
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${imageBase64}`,
+                detail: "high"  // High detail for better text extraction
+              }
+            }
+          ]
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,  // Low temperature for accurate extraction
+      max_tokens: 2000
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    
+    // Merge negative prompt into main prompt content if present
+    if (result.negativePrompt) {
+      result.promptContent = result.promptContent + 
+        (result.promptContent ? "\n\nNegative prompt: " + result.negativePrompt : result.negativePrompt);
+    }
+
+    return {
+      success: true,
+      ...result
+    };
+  } catch (error) {
+    console.error("Image analysis failed:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to analyze image"
+    };
+  }
+}
+
+// Generate prompt metadata from existing prompt content
+export async function generatePromptMetadata(
+  promptContent: string,
+  generationMode: 'name_only' | 'all_fields'
+): Promise<{
+  success: boolean;
+  name?: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+  promptType?: string;
+  promptStyle?: string;
+  intendedGenerator?: string;
+  recommendedModels?: string[];
+  isNsfw?: boolean;
+  error?: string;
+}> {
+  try {
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    switch (generationMode) {
+      case 'name_only':
+        systemPrompt = `You are an expert at analyzing AI prompts and creating concise, descriptive names for them.`;
+        userPrompt = `Analyze this prompt and generate a concise, descriptive name that captures its essence:
+
+Prompt:
+${promptContent}
+
+Create a name that:
+- Is clear and descriptive
+- Captures the main purpose or subject
+- Is between 3-8 words
+- Avoids generic terms like "prompt" or "AI"
+
+Return a JSON object:
+{
+  "name": "the generated name"
+}`;
+        break;
+
+      case 'all_fields':
+        systemPrompt = `You are an expert at analyzing AI prompts and generating comprehensive metadata for prompt management systems.`;
+        userPrompt = `Analyze this prompt and generate comprehensive metadata:
+
+Prompt:
+${promptContent}
+
+Generate:
+1. A descriptive name (3-8 words capturing the essence)
+2. A brief description (1-2 sentences explaining what it creates)
+3. Category (choose the most appropriate: "Character", "Scene", "Style", "Concept Art", "Photography", "Abstract", "Technical", "Creative Writing", "Other")
+4. Tags (5-10 relevant keywords)
+5. Prompt type (e.g., "Text-to-Image", "Image Enhancement", "Style Transfer", "Creative Writing", etc.)
+6. Visual style (e.g., "Realistic", "Anime", "Abstract", "Photographic", "Artistic", "Technical", etc.)
+7. Intended generator (if apparent from syntax/keywords: "Stable Diffusion", "Midjourney", "DALL-E", "Claude", "GPT", etc.)
+8. Recommended models (if specific models are mentioned or style suggests certain models)
+9. NSFW detection (analyze for adult/sensitive content)
+
+Analyze the prompt structure, keywords, and patterns to make intelligent inferences.
+
+Return a JSON object:
+{
+  "name": "descriptive name",
+  "description": "what this prompt creates",
+  "category": "most appropriate category",
+  "tags": ["tag1", "tag2", ...],
+  "promptType": "type of prompt",
+  "promptStyle": "visual or writing style",
+  "intendedGenerator": "target system or null if unclear",
+  "recommendedModels": ["model1", "model2"] or [],
+  "isNsfw": true/false
+}`;
+        break;
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: userPrompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_tokens: 1000
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    
+    return {
+      success: true,
+      ...result
+    };
+  } catch (error) {
+    console.error("Metadata generation failed:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to generate metadata"
+    };
+  }
+}
