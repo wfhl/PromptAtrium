@@ -61,6 +61,13 @@ Preferred communication style: Simple, everyday language.
 - **Bulk Import**: CSV import supports NSFW field for marking content during bulk operations
 - **Default Behavior**: Users see all content by default, must opt-out of NSFW content visibility
 
+### AI-Powered Features
+- **AI Provider**: Google Gemini (migrated from OpenAI for better quotas and vision capabilities)
+- **Models Used**: Gemini 1.5 Pro for complex analysis and vision tasks, Gemini 1.5 Flash for quick metadata generation
+- **Image Extraction**: Extract prompts from uploaded images with three modes (content only, content + name, all fields)
+- **Auto-Fill**: Generate metadata from existing prompt content (name only or comprehensive metadata)
+- **Field Analysis**: Intelligent CSV/JSON field mapping for bulk imports using AI analysis
+
 ## External Dependencies
 
 ### Development Tools
