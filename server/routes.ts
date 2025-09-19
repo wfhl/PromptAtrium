@@ -1822,7 +1822,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type) options.type = type as string;
       if (isActive !== undefined) options.isActive = isActive === 'true';
       
-      const promptStyles = await storage.getPromptStyles(options);
+      let promptStyles = await storage.getPromptStyles(options);
+      
+      // If no global styles exist, seed with default ones
+      if (type === 'global' && promptStyles.length === 0) {
+        const defaultStyles = [
+          { name: "Photography", description: "Professional photography, {character}, {subject}, high quality, detailed", type: "global" as const },
+          { name: "Artistic", description: "Artistic render of {character}, {subject}, creative composition, masterpiece", type: "global" as const },
+          { name: "Cinematic", description: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", type: "global" as const },
+          { name: "Portrait", description: "Portrait photography, {character}, {subject}, professional headshot", type: "global" as const },
+          { name: "Lifestyle", description: "Lifestyle photography, {character}, {subject}, natural setting", type: "global" as const },
+        ];
+        
+        // Create default styles
+        for (const style of defaultStyles) {
+          try {
+            await storage.createPromptStyle(style);
+          } catch (err) {
+            console.log(`Style ${style.name} might already exist`);
+          }
+        }
+        
+        // Fetch again after seeding
+        promptStyles = await storage.getPromptStyles(options);
+      }
+      
       res.json(promptStyles);
     } catch (error) {
       console.error("Error fetching prompt styles:", error);
