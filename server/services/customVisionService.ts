@@ -202,14 +202,106 @@ export async function analyzeImageWithFallback(
   }
   
   // Final fallback to GPT-4o (using OpenAI Vision API)
-  // This requires OpenAI API key to be configured
-  return {
-    caption: "Image analysis temporarily unavailable. Please ensure vision server is running or configure OpenAI API key for GPT-4o fallback.",
-    model: 'fallback',
-    timestamp: new Date().toISOString(),
-    serverOnline: false,
-    metadata: { debugInfo }
-  };
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    console.log('Attempting GPT-4o Vision fallback...');
+    
+    // Import OpenAI dynamically to avoid issues if not installed
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey });
+    
+    // Create appropriate prompt based on caption style
+    let systemPrompt = "You are an expert at analyzing images for AI image generation.";
+    let userPrompt = "Analyze this image and provide a detailed description suitable for recreating it with AI.";
+    
+    switch (captionStyle) {
+      case 'Descriptive':
+        userPrompt = "Provide a detailed, comprehensive description of this image including subjects, environment, lighting, mood, and artistic style.";
+        break;
+      case 'Short':
+        userPrompt = "Provide a concise description of the key elements in this image.";
+        break;
+      case 'Keywords':
+        userPrompt = "List the most important keywords and tags that describe this image, separated by commas.";
+        break;
+      case 'Technical':
+        userPrompt = "Describe this image with technical photography details including composition, lighting setup, camera settings, and post-processing style.";
+        break;
+    }
+    
+    if (customPrompt) {
+      userPrompt = customPrompt;
+    }
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userPrompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: image,
+                detail: "high"
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: captionLength === 'long' ? 500 : captionLength === 'short' ? 150 : 300
+    });
+    
+    const caption = response.choices[0]?.message?.content || "Failed to generate caption";
+    
+    debugInfo.push({
+      stage: 'Vision Analysis',
+      model: 'GPT-4o Vision',
+      timestamp: new Date().toISOString(),
+      serverStatus: 'online',
+      captionLength: caption.length,
+      success: true
+    });
+    
+    return {
+      caption: caption.trim(),
+      model: 'gpt-4o-vision',
+      timestamp: new Date().toISOString(),
+      serverOnline: true,
+      metadata: { 
+        debugInfo,
+        fallbackUsed: true,
+        provider: 'openai'
+      }
+    };
+  } catch (gpt4Error: any) {
+    console.error('GPT-4o Vision fallback failed:', gpt4Error.message);
+    debugInfo.push({
+      stage: 'Vision Analysis',
+      model: 'GPT-4o Vision',
+      timestamp: new Date().toISOString(),
+      serverStatus: 'failed',
+      error: gpt4Error.message,
+      success: false
+    });
+    
+    // Final fallback message if all services fail
+    return {
+      caption: "Image analysis failed. All vision services are currently unavailable. Please try again later or check API configurations.",
+      model: 'fallback',
+      timestamp: new Date().toISOString(),
+      serverOnline: false,
+      metadata: { 
+        debugInfo,
+        error: 'All vision services failed'
+      }
+    };
+  }
 }
 
 /**

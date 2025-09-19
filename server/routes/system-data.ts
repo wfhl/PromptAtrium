@@ -19,7 +19,7 @@ router.get('/character-presets', async (req, res) => {
       .select()
       .from(characterPresetsTable)
       .where(isNotNull(characterPresetsTable.name))
-      .orderBy(desc(characterPresetsTable.is_favorite), characterPresetsTable.name);
+      .orderBy(desc(characterPresetsTable.isFavorite), characterPresetsTable.name);
 
     // If no presets exist, return default ones
     if (presets.length === 0) {
@@ -252,7 +252,7 @@ router.post('/character-presets', async (req, res) => {
         gender: gender || 'Any',
         role: role || 'Character',
         description: description || '',
-        is_favorite: is_favorite || false,
+        isFavorite: is_favorite || false,
         user_id: userId
       })
       .returning();
@@ -285,8 +285,8 @@ router.delete('/character-presets/:id', async (req, res) => {
         .delete(characterPresetsTable)
         .where(
           and(
-            eq(characterPresetsTable.id, parseInt(id)),
-            eq(characterPresetsTable.user_id, userId)
+            eq(characterPresetsTable.id, id),
+            eq(characterPresetsTable.userId, userId)
           )
         );
     } else {
