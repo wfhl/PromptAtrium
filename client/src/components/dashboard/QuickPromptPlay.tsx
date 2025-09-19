@@ -76,7 +76,7 @@ function QuickPromptPlayContent() {
   
   // Get categories from jsonprompthelper.json
   const promptCategories = Object.keys(promptHelperData);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   
   // Mock character presets for now
   const characterPresets: CharacterPreset[] = [
@@ -88,14 +88,38 @@ function QuickPromptPlayContent() {
   ];
 
   // Mock rule templates
-  // Updated naming: promptstyle_ruletemplates instead of prompt_templates
-  const promptstyle_ruletemplates: PromptStyleRuleTemplate[] = [
-    { id: 1, name: "Photography", template: "Professional photography, {character}, {subject}, high quality, detailed", icon: Camera, category: "photography" },
-    { id: 2, name: "Artistic", template: "Artistic render of {character}, {subject}, creative composition, masterpiece", icon: Palette, category: "artistic" },
-    { id: 3, name: "Cinematic", template: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", icon: Film, category: "cinematic" },
-    { id: 4, name: "Portrait", template: "Portrait photography, {character}, {subject}, professional headshot", icon: UserCircle, category: "portrait" },
-    { id: 5, name: "Lifestyle", template: "Lifestyle photography, {character}, {subject}, natural setting", icon: Crown, category: "lifestyle" },
-  ];
+  // Fetch prompt styles from database to use as rule templates
+  const { data: promptStyles = [], isLoading: isLoadingStyles } = useQuery<any[]>({
+    queryKey: ['/api/prompt-styles', { type: 'global', isActive: true }],
+    queryFn: async () => {
+      const response = await fetch('/api/prompt-styles?type=global&isActive=true');
+      if (!response.ok) throw new Error('Failed to fetch prompt styles');
+      return response.json();
+    },
+  });
+
+  // Map prompt styles to rule templates format, fallback to hardcoded templates if empty
+  const promptstyle_ruletemplates: PromptStyleRuleTemplate[] = promptStyles.length > 0 
+    ? promptStyles.map((style, index) => ({
+        id: index + 1,
+        name: style.name,
+        template: style.description || `${style.name} style, {character}, {subject}`,
+        icon: 
+          style.name.toLowerCase().includes('photo') ? Camera :
+          style.name.toLowerCase().includes('art') ? Palette :
+          style.name.toLowerCase().includes('cine') || style.name.toLowerCase().includes('film') ? Film :
+          style.name.toLowerCase().includes('portrait') ? UserCircle :
+          style.name.toLowerCase().includes('life') ? Crown :
+          FileText,
+        category: style.name.toLowerCase()
+      }))
+    : [
+        { id: 1, name: "Photography", template: "Professional photography, {character}, {subject}, high quality, detailed", icon: Camera, category: "photography" },
+        { id: 2, name: "Artistic", template: "Artistic render of {character}, {subject}, creative composition, masterpiece", icon: Palette, category: "artistic" },
+        { id: 3, name: "Cinematic", template: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", icon: Film, category: "cinematic" },
+        { id: 4, name: "Portrait", template: "Portrait photography, {character}, {subject}, professional headshot", icon: UserCircle, category: "portrait" },
+        { id: 5, name: "Lifestyle", template: "Lifestyle photography, {character}, {subject}, natural setting", icon: Crown, category: "lifestyle" },
+      ];
 
   const handleGenerate = () => {
     if (!subject && !character && !template) {
@@ -150,7 +174,7 @@ function QuickPromptPlayContent() {
 
   const handleRandomPrompt = () => {
     // Determine which category to use
-    const categoryToUse = selectedCategory || 
+    const categoryToUse = (selectedCategory && selectedCategory !== 'all') ? selectedCategory : 
       promptCategories[Math.floor(Math.random() * promptCategories.length)];
     
     const categoryPrompts = (promptHelperData as any)[categoryToUse];
@@ -359,7 +383,7 @@ function QuickPromptPlayContent() {
                     <SelectValue placeholder="All Categories (Random)" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-900 border-gray-800">
-                    <SelectItem value="">All Categories (Random)</SelectItem>
+                    <SelectItem value="all">All Categories (Random)</SelectItem>
                     {promptCategories.map((category) => (
                       <SelectItem key={category} value={category}>
                         {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
@@ -506,8 +530,9 @@ function QuickPromptPlayContent() {
             id="template"
             className="bg-gray-900/50 border-gray-800 text-gray-200"
             data-testid="select-template"
+            disabled={isLoadingStyles}
           >
-            <SelectValue placeholder="Pipeline" />
+            <SelectValue placeholder={isLoadingStyles ? "Loading styles..." : "Select a style"} />
           </SelectTrigger>
           <SelectContent className="bg-gray-900 border-gray-800">
             {promptstyle_ruletemplates.map((tmpl) => {
@@ -660,8 +685,8 @@ function QuickPromptPlayContent() {
           
           {isAdminMode && (
             <div className="mt-3 p-3 bg-gray-800/50 rounded text-xs text-gray-400">
-              <p className="mb-1">Selected Category: {selectedCategory || 'All'}</p>
-              <p className="mb-1">Template Count: {promptstyle_ruletemplates.length}</p>
+              <p className="mb-1">Selected Category: {selectedCategory === 'all' ? 'All' : selectedCategory}</p>
+              <p className="mb-1">Template Count: {promptstyle_ruletemplates.length} {promptStyles.length > 0 ? '(from DB)' : '(default)'}</p>
               <p className="mb-1">Character Presets: {characterPresets.length}</p>
               <p>Total Categories: {promptCategories.length}</p>
             </div>
