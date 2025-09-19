@@ -223,17 +223,62 @@ router.post('/', async (req, res) => {
 
       // Enhance with selected LLM
       let enhancedPrompt: string;
+      let llmCallDetails: any = {};
 
       if (llmProvider === 'openai') {
+        // Capture full request details
+        llmCallDetails.request = {
+          provider: 'openai',
+          model: llmModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 2000,
+          temperature: 0.7,
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1
+        };
+        
+        const startTime = Date.now();
         enhancedPrompt = await enhanceWithOpenAI(prompt, systemPrompt, llmModel);
+        llmCallDetails.responseTime = Date.now() - startTime;
+        llmCallDetails.response = {
+          enhancedPrompt,
+          model: llmModel,
+          provider: 'openai'
+        };
+        
         diagnostics.modelUsed = llmModel;
+        diagnostics.llmCallDetails = llmCallDetails;
       } else if (llmProvider === 'google') {
+        // Capture full request details for Gemini
+        llmCallDetails.request = {
+          provider: 'google',
+          model: llmModel,
+          prompt: `${systemPrompt}\n\nOriginal prompt:\n${prompt}\n\nEnhanced prompt:`
+        };
+        
+        const startTime = Date.now();
         enhancedPrompt = await enhanceWithGemini(prompt, systemPrompt, llmModel);
+        llmCallDetails.responseTime = Date.now() - startTime;
+        llmCallDetails.response = {
+          enhancedPrompt,
+          model: llmModel,
+          provider: 'google'
+        };
+        
         diagnostics.modelUsed = llmModel;
+        diagnostics.llmCallDetails = llmCallDetails;
       } else {
         // Fallback to basic enhancement
         enhancedPrompt = `${prompt}, professional photography, dramatic lighting, high resolution, detailed composition`;
         diagnostics.modelUsed = 'fallback';
+        diagnostics.llmCallDetails = {
+          request: { provider: 'fallback', prompt },
+          response: { enhancedPrompt },
+          responseTime: 0
+        };
       }
 
       // Apply happy talk if requested

@@ -134,6 +134,25 @@ export async function analyzeImageWithCustomVision(
           serverUrl: VISION_SERVER_URL,
           processingTime: response.headers['x-processing-time'],
           ...response.data
+        },
+        debugInfo: {
+          request: {
+            url: `${VISION_SERVER_URL}/analyze`,
+            method: 'POST',
+            payload: {
+              ...payload,
+              image: payload.image ? `[base64 image data - ${payload.image.length} chars]` : undefined
+            },
+            headers: {
+              'Content-Type': 'application/json',
+              'User-Agent': 'Mozilla/5.0...'
+            }
+          },
+          response: {
+            status: response.status,
+            data: response.data,
+            headers: response.headers
+          }
         }
       };
     } else {

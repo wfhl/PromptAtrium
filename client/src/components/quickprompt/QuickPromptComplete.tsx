@@ -50,6 +50,11 @@ interface DebugReportEntry {
   error?: string;
   processingTime?: number;
   success?: boolean;
+  llmCallDetails?: {
+    request: any;
+    response: any;
+    responseTime?: number;
+  };
 }
 
 export default function QuickPromptComplete() {
@@ -317,7 +322,8 @@ export default function QuickPromptComplete() {
             captionLength: captionData.caption.length,
             serverStatus: captionData.metadata?.serverOnline ? 'online' : 'offline',
             processingTime: Date.now() - visionStart,
-            success: true
+            success: true,
+            llmCallDetails: captionData.metadata?.debugInfo || captionData.debugInfo
           });
           
           // Add debug report from vision service
@@ -376,11 +382,12 @@ export default function QuickPromptComplete() {
             model: enhanceData.diagnostics?.modelUsed || selectedTemplate.llm_model,
             timestamp: new Date().toISOString(),
             processingTime: Date.now() - enhanceStart,
-            success: true
+            success: true,
+            llmCallDetails: enhanceData.diagnostics?.llmCallDetails
           });
           
           // Add diagnostics to debug report
-          if (enhanceData.diagnostics) {
+          if (enhanceData.diagnostics && !enhanceData.diagnostics.llmCallDetails) {
             debugEntries.push({
               stage: 'Enhancement Details',
               timestamp: new Date().toISOString(),
@@ -887,6 +894,32 @@ export default function QuickPromptComplete() {
                         <div className="text-xs text-red-400 mt-1">
                           Error: {entry.error}
                         </div>
+                      )}
+                      {entry.llmCallDetails && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-blue-400 cursor-pointer hover:text-blue-300">
+                            View LLM Call Details
+                          </summary>
+                          <div className="mt-2 space-y-2">
+                            <div className="bg-gray-900/50 rounded p-2">
+                              <div className="text-xs font-semibold text-gray-300 mb-1">Request:</div>
+                              <pre className="text-xs text-gray-400 overflow-x-auto whitespace-pre-wrap">
+                                {JSON.stringify(entry.llmCallDetails.request, null, 2)}
+                              </pre>
+                            </div>
+                            <div className="bg-gray-900/50 rounded p-2">
+                              <div className="text-xs font-semibold text-gray-300 mb-1">Response:</div>
+                              <pre className="text-xs text-gray-400 overflow-x-auto whitespace-pre-wrap">
+                                {JSON.stringify(entry.llmCallDetails.response, null, 2)}
+                              </pre>
+                            </div>
+                            {entry.llmCallDetails.responseTime && (
+                              <div className="text-xs text-gray-400">
+                                Response Time: {entry.llmCallDetails.responseTime}ms
+                              </div>
+                            )}
+                          </div>
+                        </details>
                       )}
                     </div>
                   ))}
