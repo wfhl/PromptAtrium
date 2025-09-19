@@ -62,12 +62,12 @@ export default function QuickPromptPlay() {
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [showSocialCaption, setShowSocialCaption] = useState(false);
 
-  // Collapsible sections
+  // Collapsible sections - all open by default for better UX
   const [sectionsOpen, setSectionsOpen] = useState({
     template: true,
     character: true,
     subject: true,
-    image: false,
+    image: true,
   });
   
   const { isAuthenticated, user } = useAuth();
@@ -312,288 +312,218 @@ export default function QuickPromptPlay() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Template Selection */}
-      <Collapsible 
-        open={sectionsOpen.template} 
-        onOpenChange={(open) => setSectionsOpen(prev => ({...prev, template: open}))}
-      >
-        <Card>
-          <CollapsibleTrigger className="w-full">
-            <CardHeader className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Template Selection
-                </CardTitle>
-                {sectionsOpen.template ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+    <div className="space-y-4">
+      {/* Subject Field */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="subject" className="text-gray-400 text-sm">Subject</Label>
+          <Sparkles className="h-4 w-4 text-pink-400" />
+        </div>
+        <div className="relative">
+          <Textarea
+            id="subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Try clicking on the pink sparkles for random inspiration?"
+            className="min-h-[80px] bg-gray-900/50 border-gray-800 text-gray-200 placeholder:text-gray-600 focus:border-purple-500/50 resize-none"
+            data-testid="textarea-subject"
+          />
+          <Popover open={sparklePopoverOpen} onOpenChange={setSparklePopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="absolute right-2 top-2 hover:bg-purple-500/10"
+                data-testid="button-random-prompt"
+              >
+                <Sparkles className="h-5 w-5 text-pink-400" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 bg-gray-900 border-gray-800">
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-200">Random Prompt Generator</h4>
+                <p className="text-sm text-gray-400">
+                  Click to add a random scenario to your prompt
+                </p>
+                <Button 
+                  onClick={handleRandomPrompt} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white" 
+                  data-testid="button-apply-random"
+                >
+                  <Dices className="h-4 w-4 mr-2" />
+                  Generate Random Scenario
+                </Button>
               </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                {ruleTemplates.map((tmpl) => {
-                  const Icon = tmpl.icon || FileText;
-                  return (
-                    <Button
-                      key={tmpl.id}
-                      variant={template === tmpl.template ? "default" : "outline"}
-                      className="flex flex-col items-center justify-center h-24 p-2"
-                      onClick={() => handleTemplateSelect(tmpl)}
-                      data-testid={`button-template-${tmpl.id}`}
-                    >
-                      <Icon className="h-6 w-6 mb-1" />
-                      <span className="text-xs text-center">{tmpl.name}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-              {template && (
-                <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Selected Template:</strong> {template}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* Image Upload (Optional) */}
+      <div className="space-y-2">
+        <Label className="text-gray-400 text-sm">Image (Optional)</Label>
+        <div className="space-y-3">
+          <Input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+          {!uploadedImage ? (
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full bg-purple-600/20 border-purple-600/50 hover:bg-purple-600/30 text-purple-300"
+              data-testid="button-upload-image"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Upload Image
+            </Button>
+          ) : (
+            <div className="relative">
+              <img
+                src={imagePreview}
+                alt="Uploaded"
+                className="w-full max-h-48 object-contain rounded-lg border border-gray-800"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 bg-gray-900/80 hover:bg-gray-900"
+                onClick={() => {
+                  setUploadedImage(null);
+                  setImagePreview(null);
+                  setImageAnalysisResponse("");
+                  setShowImageAnalysis(false);
+                }}
+                data-testid="button-remove-image"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleImageAnalysis}
+                disabled={progressVisible}
+                className="mt-2 bg-purple-600 hover:bg-purple-700"
+                data-testid="button-analyze-image"
+              >
+                Analyze Image
+              </Button>
+            </div>
+          )}
+          {progressVisible && (
+            <div className="p-3 bg-gray-900/50 rounded-lg">
+              <p className="text-sm text-gray-400">{processingStage}</p>
+            </div>
+          )}
+          {showImageAnalysis && imageAnalysisResponse && (
+            <div className="p-3 bg-gray-900/50 rounded-lg">
+              <p className="text-sm text-gray-300">
+                <strong className="text-purple-400">Analysis Result:</strong> {imageAnalysisResponse}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Character Selection */}
-      <Collapsible 
-        open={sectionsOpen.character} 
-        onOpenChange={(open) => setSectionsOpen(prev => ({...prev, character: open}))}
-      >
-        <Card>
-          <CollapsibleTrigger className="w-full">
-            <CardHeader className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <UserCircle className="h-5 w-5" />
-                  Character/Subject
-                </CardTitle>
-                {sectionsOpen.character ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Select Preset or Enter Custom</Label>
-                <Select value={character} onValueChange={(value) => handleCharacterSelect(value === "custom" ? "custom" : characterPresets.find(p => p.name === value) || "")}>
-                  <SelectTrigger data-testid="select-character">
-                    <SelectValue placeholder="Choose a character preset..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="custom">✏️ Custom Character</SelectItem>
-                    {characterPresets.map((preset) => (
-                      <SelectItem key={preset.id} value={preset.name}>
-                        {preset.isFavorite && "⭐ "}{preset.name} - {preset.description}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="character" className="text-gray-400 text-sm">Character</Label>
+          <UserCircle className="h-4 w-4 text-pink-400" />
+        </div>
+        <Select value={character} onValueChange={(value) => handleCharacterSelect(value === "custom" ? "custom" : characterPresets.find(p => p.name === value) || "")}>
+          <SelectTrigger 
+            id="character"
+            className="bg-gray-900/50 border-gray-800 text-gray-200"
+            data-testid="select-character"
+          >
+            <SelectValue placeholder="Select a character" />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-900 border-gray-800">
+            <SelectItem value="custom">✏️ Custom Character</SelectItem>
+            {characterPresets.map((preset) => (
+              <SelectItem key={preset.id} value={preset.name}>
+                {preset.isFavorite && "⭐ "}{preset.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {showCustomCharacterInput && (
+          <div className="flex gap-2">
+            <Input
+              value={customCharacterInput}
+              onChange={(e) => setCustomCharacterInput(e.target.value)}
+              placeholder="E.g., Young professional woman, blonde hair..."
+              className="bg-gray-900/50 border-gray-800 text-gray-200 placeholder:text-gray-600"
+              data-testid="input-custom-character"
+            />
+            <Button 
+              onClick={handleCustomCharacterApply} 
+              className="bg-purple-600 hover:bg-purple-700"
+              data-testid="button-apply-character"
+            >
+              Apply
+            </Button>
+          </div>
+        )}
+      </div>
 
-              {showCustomCharacterInput && (
-                <div className="space-y-2">
-                  <Label>Custom Character Description</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={customCharacterInput}
-                      onChange={(e) => setCustomCharacterInput(e.target.value)}
-                      placeholder="E.g., Young professional woman, blonde hair..."
-                      data-testid="input-custom-character"
-                    />
-                    <Button onClick={handleCustomCharacterApply} data-testid="button-apply-character">
-                      Apply
-                    </Button>
+      {/* Rule Template */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="template" className="text-gray-400 text-sm">Rule Template</Label>
+          <FileText className="h-4 w-4 text-pink-400" />
+        </div>
+        <Select value={template} onValueChange={(value) => {
+          const selectedTemplate = ruleTemplates.find(t => t.template === value);
+          if (selectedTemplate) handleTemplateSelect(selectedTemplate);
+        }}>
+          <SelectTrigger 
+            id="template"
+            className="bg-gray-900/50 border-gray-800 text-gray-200"
+            data-testid="select-template"
+          >
+            <SelectValue placeholder="Pipeline" />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-900 border-gray-800">
+            {ruleTemplates.map((tmpl) => {
+              const Icon = tmpl.icon || FileText;
+              return (
+                <SelectItem key={tmpl.id} value={tmpl.template}>
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4" />
+                    <span>{tmpl.name}</span>
                   </div>
-                </div>
-              )}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
 
-              {character && !showCustomCharacterInput && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Selected Character:</strong> {character}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
 
-      {/* Subject/Action */}
-      <Collapsible 
-        open={sectionsOpen.subject} 
-        onOpenChange={(open) => setSectionsOpen(prev => ({...prev, subject: open}))}
-      >
-        <Card>
-          <CollapsibleTrigger className="w-full">
-            <CardHeader className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Subject/Action/Scene
-                </CardTitle>
-                {sectionsOpen.subject ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Describe the scene or action</Label>
-                  <Popover open={sparklePopoverOpen} onOpenChange={setSparklePopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" data-testid="button-random-prompt">
-                        <Sparkles className="h-4 w-4 mr-1" />
-                        Random
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <div className="space-y-3">
-                        <h4 className="font-medium">Random Prompt Generator</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Click to add a random scenario to your prompt
-                        </p>
-                        <Button onClick={handleRandomPrompt} className="w-full" data-testid="button-apply-random">
-                          <Dices className="h-4 w-4 mr-2" />
-                          Generate Random Scenario
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <Textarea
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="E.g., walking through a sunlit garden, sitting at a coffee shop, presenting in a boardroom..."
-                  className="min-h-[100px]"
-                  data-testid="textarea-subject"
-                />
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
 
-      {/* Image Analysis (Optional) */}
-      <Collapsible 
-        open={sectionsOpen.image} 
-        onOpenChange={(open) => setSectionsOpen(prev => ({...prev, image: open}))}
-      >
-        <Card>
-          <CollapsibleTrigger className="w-full">
-            <CardHeader className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  Image Analysis (Optional)
-                </CardTitle>
-                {sectionsOpen.image ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Upload an image to analyze</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      data-testid="button-upload-image"
-                    >
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Choose Image
-                    </Button>
-                    {uploadedImage && (
-                      <Button
-                        variant="default"
-                        onClick={handleImageAnalysis}
-                        disabled={progressVisible}
-                        data-testid="button-analyze-image"
-                      >
-                        Analyze
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {imagePreview && (
-                  <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Uploaded"
-                      className="w-full max-h-64 object-contain rounded-lg border"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        setUploadedImage(null);
-                        setImagePreview(null);
-                        setImageAnalysisResponse("");
-                        setShowImageAnalysis(false);
-                      }}
-                      data-testid="button-remove-image"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-
-                {progressVisible && (
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">{processingStage}</p>
-                  </div>
-                )}
-
-                {showImageAnalysis && imageAnalysisResponse && (
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Analysis Result:</strong> {imageAnalysisResponse}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
 
       {/* Generate Button */}
-      <div className="flex justify-center">
+      <div className="pt-4">
         <Button
           size="lg"
           onClick={handleGenerate}
           disabled={isGenerating || (!subject && !character && !template)}
-          className="min-w-[200px]"
+          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-6 text-lg"
           data-testid="button-generate"
         >
           {isGenerating ? (
             <>
               <Sparkles className="h-5 w-5 mr-2 animate-spin" />
-              Generating...
+              Generating Enhanced Prompt...
             </>
           ) : (
             <>
               <Sparkles className="h-5 w-5 mr-2" />
-              Generate Prompt
+              Generate Enhanced Prompt
             </>
           )}
         </Button>
@@ -601,34 +531,60 @@ export default function QuickPromptPlay() {
 
       {/* Generated Prompt Output */}
       {showGeneratedSection && (
-        <Card className="border-primary/20">
+        <Card className="bg-gray-900/50 border-purple-600/30">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Generated Prompt
+              <Sparkles className="h-5 w-5 text-purple-400" />
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Generated Prompt</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium whitespace-pre-wrap" data-testid="text-generated-prompt">
+            <div className="p-4 bg-gray-900/70 rounded-lg border border-gray-800">
+              <p className="text-sm font-medium whitespace-pre-wrap text-gray-200" data-testid="text-generated-prompt">
                 {generatedPrompt}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopyPrompt} data-testid="button-copy">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleCopyPrompt} 
+                className="border-purple-600/50 hover:bg-purple-600/20 text-purple-300"
+                data-testid="button-copy"
+              >
                 <Copy className="h-4 w-4 mr-1" />
                 Copy
               </Button>
-              <Button variant="outline" size="sm" onClick={handleEnhancePrompt} disabled={isGenerating} data-testid="button-enhance">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleEnhancePrompt} 
+                disabled={isGenerating} 
+                className="border-purple-600/50 hover:bg-purple-600/20 text-purple-300"
+                data-testid="button-enhance"
+              >
                 <Sparkles className="h-4 w-4 mr-1" />
                 Enhance
               </Button>
-              <Button variant="outline" size="sm" onClick={handleSavePrompt} data-testid="button-save">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSavePrompt} 
+                className="border-purple-600/50 hover:bg-purple-600/20 text-purple-300"
+                data-testid="button-save"
+              >
                 <Save className="h-4 w-4 mr-1" />
                 Save to Library
               </Button>
-              <Button variant="outline" size="sm" onClick={handleGenerateSocialCaption} disabled={isGeneratingCaption} data-testid="button-social">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGenerateSocialCaption} 
+                disabled={isGeneratingCaption} 
+                className="border-purple-600/50 hover:bg-purple-600/20 text-purple-300"
+                data-testid="button-social"
+              >
                 <Share2 className="h-4 w-4 mr-1" />
                 Social Caption
               </Button>
@@ -636,9 +592,9 @@ export default function QuickPromptPlay() {
 
             {/* Social Media Caption */}
             {showSocialCaption && socialMediaCaption && (
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <p className="text-sm font-medium">Social Media Caption:</p>
-                <p className="text-sm whitespace-pre-wrap">{socialMediaCaption}</p>
+              <div className="p-4 bg-gray-900/70 rounded-lg border border-gray-800 space-y-2">
+                <p className="text-sm font-medium text-purple-400">Social Media Caption:</p>
+                <p className="text-sm whitespace-pre-wrap text-gray-300">{socialMediaCaption}</p>
                 <Button
                   variant="outline"
                   size="sm"
@@ -649,6 +605,7 @@ export default function QuickPromptPlay() {
                       description: "Caption copied to clipboard",
                     });
                   }}
+                  className="border-purple-600/50 hover:bg-purple-600/20 text-purple-300"
                   data-testid="button-copy-caption"
                 >
                   <Copy className="h-4 w-4 mr-1" />
