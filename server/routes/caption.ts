@@ -100,14 +100,14 @@ router.post('/generate', async (req, res) => {
     const debugReport: any[] = [];
     const startTime = Date.now();
 
-    // Skip aggressive pre-check to avoid premature fallback
-    // The vision service will be tested when actually needed
+    // Test vision server status
+    const serverStatus = await testCustomVisionServer();
     debugReport.push({
       stage: 'Server Check',
       model: 'Custom Vision',
       timestamp: new Date().toISOString(),
-      serverStatus: 'skipped',
-      details: 'Pre-check disabled to avoid premature fallback'
+      serverStatus: serverStatus.isOnline ? 'online' : 'offline',
+      details: serverStatus.details || serverStatus.error
     });
 
     // Extract base64 from data URL if needed

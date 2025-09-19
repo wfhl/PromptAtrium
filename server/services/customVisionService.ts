@@ -1,38 +1,36 @@
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 
-// Custom Vision Server configuration
-const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL || "https://elitevision.loca.lt";
-
-// Custom Vision interfaces
-export interface CustomVisionOptions {
+interface CustomVisionOptions {
   prompt?: string;
-  customPrompt?: string;
   captionStyle?: string;
   captionLength?: string;
 }
 
-export interface CustomVisionResult {
+interface CustomVisionResult {
   caption: string;
   model: string;
   timestamp: string;
+  metadata?: any;
   confidence?: number;
   serverOnline?: boolean;
-  metadata?: any;
 }
 
+// Custom Vision Server configuration - Using stable LocalTunnel URL
+const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL || "https://elitevision.loca.lt";
+
 /**
- * Test if the custom vision server is online
+ * Test if the custom vision server is reachable
  */
 export async function testCustomVisionServer(): Promise<{ isOnline: boolean; details?: any; error?: string }> {
   try {
     const response = await axios.get(`${VISION_SERVER_URL}/test`, {
       timeout: 5000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json',
+        'User-Agent': 'Elite-Vision-Client/1.0',
+        'ngrok-skip-browser-warning': 'true',
         'Origin': 'https://elitedashboard.replit.app',
         'Referer': 'https://elitedashboard.replit.app/'
       }
@@ -59,46 +57,52 @@ export async function analyzeImageWithCustomVision(
   imageData: string | Buffer,
   options: CustomVisionOptions = {}
 ): Promise<CustomVisionResult> {
-  // Handle both file path and base64 data
-  let imageBase64: string;
-  
-  if (typeof imageData === 'string') {
-    // Check if it's a file path or base64 data
-    if (imageData.startsWith('data:image')) {
-      // Extract base64 from data URL
-      imageBase64 = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
-    } else if (fs.existsSync(imageData)) {
-      // Read file and convert to base64
-      const imageBuffer = fs.readFileSync(imageData);
-      imageBase64 = imageBuffer.toString('base64');
-    } else {
-      // Assume it's already base64
-      imageBase64 = imageData;
-    }
-  } else {
-    // Buffer provided
-    imageBase64 = imageData.toString('base64');
-  }
-  
-  // Prepare request payload
-  const payload: any = {
-    image: imageBase64
-  };
-  
-  if (options.prompt || options.customPrompt) {
-    payload.prompt = options.prompt || options.customPrompt;
-  }
-  
-  console.log('🔍 Sending request to Custom Vision server...');
-  
   try {
-    // Send request to custom vision server with headers that LocalTunnel expects
+    // First check if server is online
+    const serverStatus = await testCustomVisionServer();
+    if (!serverStatus.isOnline) {
+      throw new Error(`Custom Vision server is offline: ${serverStatus.error}`);
+    }
+    
+    // Handle both file path and base64 data
+    let imageBase64: string;
+    
+    if (typeof imageData === 'string') {
+      // Check if it's a file path or base64 data
+      if (imageData.startsWith('data:image')) {
+        // Extract base64 from data URL
+        imageBase64 = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+      } else if (fs.existsSync(imageData)) {
+        // Read file and convert to base64
+        const imageBuffer = fs.readFileSync(imageData);
+        imageBase64 = imageBuffer.toString('base64');
+      } else {
+        // Assume it's already base64
+        imageBase64 = imageData;
+      }
+    } else {
+      // Buffer provided
+      imageBase64 = imageData.toString('base64');
+    }
+    
+    // Prepare request payload - matching the working implementation exactly
+    const payload: any = {
+      image: imageBase64
+    };
+    
+    if (options.prompt) {
+      payload.prompt = options.prompt;
+    }
+    
+    console.log('🔍 Sending request to Custom Vision server...');
+    
+    // Send request to custom vision server
     const response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
-      timeout: 30000,
+      timeout: 30000, // 30 second timeout for processing
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json',
+        'User-Agent': 'Elite-Vision-Client/1.0',
+        'ngrok-skip-browser-warning': 'true',
         'Origin': 'https://elitedashboard.replit.app',
         'Referer': 'https://elitedashboard.replit.app/'
       }
@@ -126,14 +130,6 @@ export async function analyzeImageWithCustomVision(
     
   } catch (error: any) {
     console.error('Custom Vision server error:', error.message);
-    
-    // Check if it's a LocalTunnel 503 error
-    if (error.response?.status === 503) {
-      const isTunnelDown = error.response?.headers?.['x-localtunnel-status'] === 'Tunnel Unavailable';
-      if (isTunnelDown) {
-        throw new Error('Florence-2 vision server is temporarily unavailable (LocalTunnel down).');
-      }
-    }
     
     // Provide detailed error information
     if (error.code === 'ECONNABORTED') {
@@ -170,7 +166,7 @@ export async function analyzeImageWithFallback(
     });
     return { ...result, debugInfo };
   } catch (error: any) {
-    console.log('Custom Vision failed:', error.message);
+    console.log('Custom Vision failed, trying fallback...', error.message);
     debugInfo.push({
       stage: 'Vision Analysis',
       model: 'Florence-2',
@@ -179,45 +175,33 @@ export async function analyzeImageWithFallback(
       error: error.message,
       success: false
     });
-    
-    // Check if it's a LocalTunnel unavailable error
-    if (error.message.includes('LocalTunnel down') || error.message.includes('temporarily unavailable')) {
-      // Return error without fallback for LocalTunnel issues
-      return {
-        caption: `Vision service temporarily unavailable. The Florence-2 server connection is interrupted. Please try again in a moment or check server status.`,
-        model: 'error',
-        timestamp: new Date().toISOString(),
-        serverOnline: false,
-        metadata: { 
-          debugInfo,
-          error: 'LocalTunnel unavailable',
-          suggestion: 'The vision server is temporarily down. This is often a transient issue that resolves quickly.'
-        }
-      };
-    }
   }
   
-  // Check if GPT-4o fallback is explicitly disabled or not configured
-  const allowGPTFallback = process.env.ALLOW_GPT_FALLBACK !== 'false';
-  
-  if (!allowGPTFallback) {
-    console.log('GPT-4o fallback is disabled per configuration');
-    return {
-      caption: 'Vision analysis unavailable. Florence-2 server is not responding and GPT-4o fallback is disabled.',
-      model: 'none',
+  // Fallback to JoyCaption (placeholder - needs actual implementation)
+  try {
+    console.log('Attempting JoyCaption fallback...');
+    // This would be the actual JoyCaption API call
+    // For now, return a fallback message
+    debugInfo.push({
+      stage: 'Vision Analysis',
+      model: 'JoyCaption',
       timestamp: new Date().toISOString(),
-      serverOnline: false,
-      metadata: { 
-        debugInfo,
-        error: 'All vision services unavailable',
-        note: 'GPT-4o fallback is disabled to avoid censorship'
-      }
-    };
+      serverStatus: 'attempting',
+      success: false
+    });
+  } catch (error: any) {
+    console.log('JoyCaption failed, trying GPT-4o...', error.message);
+    debugInfo.push({
+      stage: 'Vision Analysis', 
+      model: 'JoyCaption',
+      timestamp: new Date().toISOString(),
+      serverStatus: 'offline',
+      error: error.message,
+      success: false
+    });
   }
   
-  // Only use GPT-4o as absolute last resort for non-LocalTunnel errors
-  console.log('Warning: Using GPT-4o Vision as fallback (may have content restrictions)...');
-  
+  // Final fallback to GPT-4o (using OpenAI Vision API)
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -238,16 +222,16 @@ export async function analyzeImageWithFallback(
     
     switch (captionStyle) {
       case 'Descriptive':
-        userPrompt = "Describe this image in detail, including all visual elements, colors, composition, and mood.";
+        userPrompt = "Provide a detailed, comprehensive description of this image including subjects, environment, lighting, mood, and artistic style.";
+        break;
+      case 'Short':
+        userPrompt = "Provide a concise description of the key elements in this image.";
+        break;
+      case 'Keywords':
+        userPrompt = "List the most important keywords and tags that describe this image, separated by commas.";
         break;
       case 'Technical':
-        userPrompt = "Provide a technical analysis of this image including camera settings, lighting, composition techniques, and production details.";
-        break;
-      case 'Artistic':
-        userPrompt = "Describe this image with focus on artistic style, emotional impact, symbolism, and creative techniques.";
-        break;
-      case 'Minimal':
-        userPrompt = "Provide a concise, essential description of the main subject and key elements.";
+        userPrompt = "Describe this image with technical photography details including composition, lighting setup, camera settings, and post-processing style.";
         break;
     }
     
@@ -255,19 +239,19 @@ export async function analyzeImageWithFallback(
       userPrompt = customPrompt;
     }
     
-    // Convert image to format OpenAI expects
+    // Process the image data for OpenAI
     let imageUrl: string;
     if (typeof imageData === 'string') {
       if (imageData.startsWith('data:image')) {
         // Already a data URL
         imageUrl = imageData;
       } else if (fs.existsSync(imageData)) {
-        // File path - read and convert
+        // File path - read and convert to data URL
         const imageBuffer = fs.readFileSync(imageData);
         const base64 = imageBuffer.toString('base64');
         imageUrl = `data:image/jpeg;base64,${base64}`;
       } else {
-        // Assume base64
+        // Assume it's base64
         imageUrl = `data:image/jpeg;base64,${imageData}`;
       }
     } else {

@@ -15,7 +15,6 @@ import {
   Camera, FileText, Loader2, AlertCircle, CheckCircle, 
   Bug, MessageSquare, Settings, Dices
 } from "lucide-react";
-import { analyzeImageDirect, testVisionServerDirect } from "@/services/visionService";
 
 interface CharacterPreset {
   id: string | number;
@@ -292,91 +291,38 @@ export default function QuickPromptComplete() {
         setProcessingStage('🔍 Analyzing image with vision model...');
         
         const visionStart = Date.now();
-        let visionSuccess = false;
+        const captionResponse = await fetch('/api/caption/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: imagePreview,
+            model: 'custom-vision',
+            captionStyle: 'Descriptive',
+            captionLength: 'medium',
+            customPrompt: 'Analyze this image in detail for AI generation'
+          })
+        });
         
-        // Try server-side first
-        try {
-          const captionResponse = await fetch('/api/caption/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              image: imagePreview,
-              model: 'custom-vision',
-              captionStyle: 'Descriptive',
-              captionLength: 'medium',
-              customPrompt: 'Analyze this image in detail for AI generation'
-            })
+        const captionData = await captionResponse.json();
+        
+        if (captionData.success) {
+          setImageAnalysisResponse(captionData.caption);
+          setShowImageAnalysis(true);
+          effectiveSubject = captionData.caption;
+          
+          debugEntries.push({
+            stage: 'Vision Analysis',
+            model: captionData.metadata?.model || 'Unknown',
+            timestamp: new Date().toISOString(),
+            captionLength: captionData.caption.length,
+            serverStatus: captionData.metadata?.serverOnline ? 'online' : 'offline',
+            processingTime: Date.now() - visionStart,
+            success: true
           });
           
-          const captionData = await captionResponse.json();
-          
-          if (captionData.success && !captionData.caption.includes('temporarily unavailable')) {
-            setImageAnalysisResponse(captionData.caption);
-            setShowImageAnalysis(true);
-            effectiveSubject = captionData.caption;
-            visionSuccess = true;
-            
-            debugEntries.push({
-              stage: 'Vision Analysis (Server)',
-              model: captionData.metadata?.model || 'Unknown',
-              timestamp: new Date().toISOString(),
-              captionLength: captionData.caption.length,
-              serverStatus: captionData.metadata?.serverOnline ? 'online' : 'offline',
-              processingTime: Date.now() - visionStart,
-              success: true
-            });
-            
-            if (captionData.debugReport) {
-              debugEntries.push(...captionData.debugReport);
-            }
-          }
-        } catch (serverError) {
-          console.log('Server-side vision failed, trying client-side...');
-        }
-        
-        // If server-side failed, try client-side direct connection
-        if (!visionSuccess) {
-          try {
-            setProcessingStage('🔍 Connecting directly to Florence-2...');
-            
-            const directResult = await analyzeImageDirect(imagePreview, {
-              prompt: 'Analyze this image in detail for AI generation',
-              captionStyle: 'Descriptive',
-              captionLength: 'medium'
-            });
-            
-            setImageAnalysisResponse(directResult.caption);
-            setShowImageAnalysis(true);
-            effectiveSubject = directResult.caption;
-            
-            debugEntries.push({
-              stage: 'Vision Analysis (Direct)',
-              model: directResult.model,
-              timestamp: directResult.timestamp,
-              captionLength: directResult.caption.length,
-              serverStatus: 'online',
-              processingTime: Date.now() - visionStart,
-              success: true,
-              note: 'Used direct browser connection'
-            } as DebugReportEntry);
-            
-            toast({
-              title: "✅ Connected directly to Florence-2",
-              description: "Using browser-based connection"
-            });
-          } catch (directError: any) {
-            console.error('Direct vision failed:', directError);
-            
-            debugEntries.push({
-              stage: 'Vision Analysis Failed',
-              timestamp: new Date().toISOString(),
-              error: directError.message,
-              success: false,
-              note: 'Both server and direct methods failed'
-            } as DebugReportEntry);
-            
-            // Use subject as fallback
-            effectiveSubject = subject || "Image analysis unavailable";
+          // Add debug report from vision service
+          if (captionData.debugReport) {
+            debugEntries.push(...captionData.debugReport);
           }
         }
       }
