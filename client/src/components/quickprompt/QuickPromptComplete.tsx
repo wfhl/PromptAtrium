@@ -538,9 +538,9 @@ export default function QuickPromptComplete() {
         </Button>
       </div>
       
-      {/* Main Input Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left Column - Inputs */}
+      {/* Main Single Column Layout */}
+      <div className="space-y-6 max-w-3xl mx-auto">
+        {/* Input Section */}
         <div className="space-y-4">
           {/* Subject Input */}
           <div className="space-y-2">
@@ -711,7 +711,7 @@ export default function QuickPromptComplete() {
           </Button>
         </div>
         
-        {/* Right Column - Results */}
+        {/* Results Section */}
         <div className="space-y-4">
           {/* Progress Indicator */}
           {progressVisible && (
