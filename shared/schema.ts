@@ -164,17 +164,38 @@ export const promptTypes = pgTable("prompt_types", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Prompt style rule templates table (renamed from prompt_styles)
-export const promptStyleRuleTemplates = pgTable("prompt_stylerule_templates", {
+// Prompt styles table
+export const promptStyles = pgTable("prompt_styles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name").notNull().unique(),
   description: text("description"),
-  systemPrompt: text("system_prompt"), // Added system_prompt column (renamed from master_prompt)
   userId: varchar("user_id").references(() => users.id),
   type: varchar("type", { enum: ["user", "global"] }).notNull().default("user"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Prompt style rule templates table (renamed from prompt_templates)
+export const promptStyleRuleTemplates = pgTable("prompt_stylerule_templates", {
+  id: varchar("id").primaryKey(),
+  templateId: varchar("template_id"),
+  name: varchar("name"),
+  template: text("template"),
+  description: text("description"),
+  category: varchar("category"),
+  isCustom: boolean("is_custom"),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at"),
+  templateType: varchar("template_type"),
+  isDefault: boolean("is_default"),
+  userId: varchar("user_id").references(() => users.id),
+  systemPrompt: text("system_prompt"), // Renamed from master_prompt
+  llmProvider: varchar("llm_provider"),
+  llmModel: varchar("llm_model"),
+  useHappyTalk: boolean("use_happy_talk"),
+  compressPrompt: boolean("compress_prompt"),
+  compressionLevel: integer("compression_level"),
 });
 
 // Intended generators table
@@ -607,10 +628,15 @@ export const insertPromptTypeSchema = createInsertSchema(promptTypes).omit({
   updatedAt: true,
 });
 
-export const insertPromptStyleRuleTemplateSchema = createInsertSchema(promptStyleRuleTemplates).omit({
+export const insertPromptStyleSchema = createInsertSchema(promptStyles).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertPromptStyleRuleTemplateSchema = createInsertSchema(promptStyleRuleTemplates).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertIntendedGeneratorSchema = createInsertSchema(intendedGenerators).omit({
@@ -783,6 +809,8 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
 export type InsertPromptType = z.infer<typeof insertPromptTypeSchema>;
 export type PromptType = typeof promptTypes.$inferSelect;
+export type InsertPromptStyle = z.infer<typeof insertPromptStyleSchema>;
+export type PromptStyle = typeof promptStyles.$inferSelect;
 export type InsertPromptStyleRuleTemplate = z.infer<typeof insertPromptStyleRuleTemplateSchema>;
 export type PromptStyleRuleTemplate = typeof promptStyleRuleTemplates.$inferSelect;
 export type InsertIntendedGenerator = z.infer<typeof insertIntendedGeneratorSchema>;

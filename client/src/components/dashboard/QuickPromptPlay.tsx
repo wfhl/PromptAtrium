@@ -88,37 +88,38 @@ function QuickPromptPlayContent() {
   ];
 
   // Mock rule templates
-  // Fetch prompt styles from database to use as rule templates
-  const { data: promptStyles = [], isLoading: isLoadingStyles } = useQuery<any[]>({
-    queryKey: ['/api/prompt-styles', { type: 'global', isActive: true }],
+  // Fetch prompt style rule templates from database
+  const { data: promptTemplates = [], isLoading: isLoadingStyles } = useQuery<any[]>({
+    queryKey: ['/api/prompt-stylerule-templates'],
     queryFn: async () => {
-      const response = await fetch('/api/prompt-styles?type=global&isActive=true');
-      if (!response.ok) throw new Error('Failed to fetch prompt styles');
+      const response = await fetch('/api/prompt-stylerule-templates');
+      if (!response.ok) throw new Error('Failed to fetch prompt style rule templates');
       return response.json();
     },
   });
 
-  // Map prompt styles to rule templates format, fallback to hardcoded templates if empty
-  const promptstyle_ruletemplates: PromptStyleRuleTemplate[] = promptStyles.length > 0 
-    ? promptStyles.map((style, index) => ({
-        id: index + 1,
-        name: style.name,
-        template: style.description || `${style.name} style, {character}, {subject}`,
+  // Map prompt templates to UI format
+  const promptstyle_ruletemplates: PromptStyleRuleTemplate[] = promptTemplates.length > 0 
+    ? promptTemplates.map((tmpl) => ({
+        id: tmpl.id,
+        name: tmpl.name || tmpl.template_id || 'Template',
+        template: tmpl.template || tmpl.description || 'Template',
+        systemPrompt: tmpl.systemPrompt,
         icon: 
-          style.name.toLowerCase().includes('photo') ? Camera :
-          style.name.toLowerCase().includes('art') ? Palette :
-          style.name.toLowerCase().includes('cine') || style.name.toLowerCase().includes('film') ? Film :
-          style.name.toLowerCase().includes('portrait') ? UserCircle :
-          style.name.toLowerCase().includes('life') ? Crown :
+          (tmpl.category || '').toLowerCase().includes('photo') ? Camera :
+          (tmpl.category || '').toLowerCase().includes('art') ? Palette :
+          (tmpl.category || '').toLowerCase().includes('cine') || (tmpl.category || '').toLowerCase().includes('film') ? Film :
+          (tmpl.category || '').toLowerCase().includes('portrait') ? UserCircle :
+          (tmpl.category || '').toLowerCase().includes('life') ? Crown :
           FileText,
-        category: style.name.toLowerCase()
+        category: tmpl.category || 'general'
       }))
     : [
-        { id: 1, name: "Photography", template: "Professional photography, {character}, {subject}, high quality, detailed", icon: Camera, category: "photography" },
-        { id: 2, name: "Artistic", template: "Artistic render of {character}, {subject}, creative composition, masterpiece", icon: Palette, category: "artistic" },
-        { id: 3, name: "Cinematic", template: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", icon: Film, category: "cinematic" },
-        { id: 4, name: "Portrait", template: "Portrait photography, {character}, {subject}, professional headshot", icon: UserCircle, category: "portrait" },
-        { id: 5, name: "Lifestyle", template: "Lifestyle photography, {character}, {subject}, natural setting", icon: Crown, category: "lifestyle" },
+        { id: '1', name: "Photography", template: "Professional photography, {character}, {subject}, high quality, detailed", systemPrompt: "You are a professional photography expert. Enhance the prompt for high-quality photography.", icon: Camera, category: "photography" },
+        { id: '2', name: "Artistic", template: "Artistic render of {character}, {subject}, creative composition, masterpiece", systemPrompt: "You are an art director. Create stunning artistic descriptions.", icon: Palette, category: "artistic" },
+        { id: '3', name: "Cinematic", template: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", systemPrompt: "You are a cinematography expert. Create cinematic masterpiece descriptions.", icon: Film, category: "cinematic" },
+        { id: '4', name: "Portrait", template: "Portrait photography, {character}, {subject}, professional headshot", systemPrompt: "You are a portrait photography specialist. Enhance for professional portraits.", icon: UserCircle, category: "portrait" },
+        { id: '5', name: "Lifestyle", template: "Lifestyle photography, {character}, {subject}, natural setting", systemPrompt: "You are a lifestyle photography expert. Create engaging lifestyle imagery.", icon: Crown, category: "lifestyle" },
       ];
 
   const handleGenerate = () => {
@@ -686,7 +687,7 @@ function QuickPromptPlayContent() {
           {isAdminMode && (
             <div className="mt-3 p-3 bg-gray-800/50 rounded text-xs text-gray-400">
               <p className="mb-1">Selected Category: {selectedCategory === 'all' ? 'All' : selectedCategory}</p>
-              <p className="mb-1">Template Count: {promptstyle_ruletemplates.length} {promptStyles.length > 0 ? '(from DB)' : '(default)'}</p>
+              <p className="mb-1">Template Count: {promptstyle_ruletemplates.length} {promptTemplates.length > 0 ? '(from DB)' : '(default)'}</p>
               <p className="mb-1">Character Presets: {characterPresets.length}</p>
               <p>Total Categories: {promptCategories.length}</p>
             </div>

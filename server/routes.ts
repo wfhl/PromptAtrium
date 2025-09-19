@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema } from "@shared/schema";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient, parseObjectPath } from "./objectStorage";
 import { ObjectPermission, getObjectAclPolicy } from "./objectAcl";
@@ -30,45 +30,20 @@ function resolvePublicImageUrl(url: string | null | undefined): string | null | 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Seed default prompt styles on startup if none exist
   try {
-    const existingGlobalStyles = await storage.getPromptStyleRuleTemplates({ type: 'global' });
+    const existingGlobalStyles = await storage.getPromptStyles({ type: 'global' });
     if (existingGlobalStyles.length === 0) {
       console.log("Seeding default prompt styles...");
       const defaultStyles = [
-        { 
-          name: "Photography", 
-          description: "Professional photography, {character}, {subject}, high quality, detailed", 
-          systemPrompt: "You are a professional photography prompt expert. Enhance the given prompt to create a high-quality, professional photography description. Focus on: camera settings, lighting conditions, composition techniques, image quality descriptors, and professional photography terminology. Keep the character and subject details intact while adding photographic excellence.",
-          type: "global" as const 
-        },
-        { 
-          name: "Artistic", 
-          description: "Artistic render of {character}, {subject}, creative composition, masterpiece", 
-          systemPrompt: "You are an art director specializing in creative artistic compositions. Enhance the given prompt to create a stunning artistic masterpiece description. Focus on: artistic techniques, creative composition, color theory, artistic styles, medium specifications, and visual impact. Preserve character and subject while elevating to fine art quality.",
-          type: "global" as const 
-        },
-        { 
-          name: "Cinematic", 
-          description: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", 
-          systemPrompt: "You are a cinematography expert specializing in dramatic film-quality imagery. Enhance the given prompt to create a cinematic masterpiece description. Focus on: camera angles, dramatic lighting, film techniques, mood and atmosphere, cinematic composition, and movie-quality visual elements. Maintain character and subject integrity while adding Hollywood-level production value.",
-          type: "global" as const 
-        },
-        { 
-          name: "Portrait", 
-          description: "Portrait photography, {character}, {subject}, professional headshot", 
-          systemPrompt: "You are a portrait photography specialist focused on capturing compelling human subjects. Enhance the given prompt for professional portrait photography. Focus on: facial lighting, expression guidance, background selection, pose direction, portrait composition, and professional headshot quality. Keep character details precise while optimizing for portrait excellence.",
-          type: "global" as const 
-        },
-        { 
-          name: "Lifestyle", 
-          description: "Lifestyle photography, {character}, {subject}, natural setting", 
-          systemPrompt: "You are a lifestyle photography expert capturing authentic, natural moments. Enhance the given prompt for engaging lifestyle photography. Focus on: natural settings, authentic expressions, environmental storytelling, candid moments, lifestyle aesthetics, and relatable scenarios. Preserve character authenticity while creating aspirational lifestyle imagery.",
-          type: "global" as const 
-        },
+        { name: "Photography", description: "Professional photography, {character}, {subject}, high quality, detailed", type: "global" as const },
+        { name: "Artistic", description: "Artistic render of {character}, {subject}, creative composition, masterpiece", type: "global" as const },
+        { name: "Cinematic", description: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", type: "global" as const },
+        { name: "Portrait", description: "Portrait photography, {character}, {subject}, professional headshot", type: "global" as const },
+        { name: "Lifestyle", description: "Lifestyle photography, {character}, {subject}, natural setting", type: "global" as const },
       ];
       
       for (const style of defaultStyles) {
         try {
-          await storage.createPromptStyleRuleTemplate(style);
+          await storage.createPromptStyle(style);
         } catch (err) {
           console.log(`Failed to create style ${style.name}:`, err);
         }
@@ -1865,6 +1840,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prompt style rule template routes (actual prompt templates from prompt_templates table)
+  app.get('/api/prompt-stylerule-templates', async (req, res) => {
+    try {
+      const { userId, category, isDefault } = req.query;
+      const options: any = {};
+      
+      if (userId) options.userId = userId as string;
+      if (category) options.category = category as string;
+      if (isDefault !== undefined) options.isDefault = isDefault === 'true';
+      
+      const templates = await storage.getPromptStyleRuleTemplates(options);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching prompt style rule templates:", error);
+      res.status(500).json({ message: "Failed to fetch prompt style rule templates" });
+    }
+  });
+
+  app.post('/api/prompt-stylerule-templates', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const templateData = insertPromptStyleRuleTemplateSchema.parse({ ...req.body, userId });
+      const template = await storage.createPromptStyleRuleTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid template data", errors: error.errors });
+      }
+      console.error("Error creating prompt style rule template:", error);
+      res.status(500).json({ message: "Failed to create prompt style rule template" });
+    }
+  });
+
   // Prompt style routes
   app.get('/api/prompt-styles', async (req, res) => {
     try {
@@ -1875,8 +1883,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type) options.type = type as string;
       if (isActive !== undefined) options.isActive = isActive === 'true';
       
-      const promptStyleRuleTemplates = await storage.getPromptStyleRuleTemplates(options);
-      res.json(promptStyleRuleTemplates);
+      const promptStyles = await storage.getPromptStyles(options);
+      res.json(promptStyles);
     } catch (error) {
       console.error("Error fetching prompt styles:", error);
       res.status(500).json({ message: "Failed to fetch prompt styles" });
@@ -1886,9 +1894,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/prompt-styles', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const promptStyleRuleTemplateData = insertPromptStyleRuleTemplateSchema.parse({ ...req.body, userId, type: 'user' });
-      const promptStyleRuleTemplate = await storage.createPromptStyleRuleTemplate(promptStyleRuleTemplateData);
-      res.status(201).json(promptStyleRuleTemplate);
+      const promptStyleData = insertPromptStyleSchema.parse({ ...req.body, userId, type: 'user' });
+      const promptStyle = await storage.createPromptStyle(promptStyleData);
+      res.status(201).json(promptStyle);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid prompt style data", errors: error.errors });
