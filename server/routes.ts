@@ -34,11 +34,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (existingGlobalStyles.length === 0) {
       console.log("Seeding default prompt styles...");
       const defaultStyles = [
-        { name: "Photography", description: "Professional photography, {character}, {subject}, high quality, detailed", type: "global" as const },
-        { name: "Artistic", description: "Artistic render of {character}, {subject}, creative composition, masterpiece", type: "global" as const },
-        { name: "Cinematic", description: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", type: "global" as const },
-        { name: "Portrait", description: "Portrait photography, {character}, {subject}, professional headshot", type: "global" as const },
-        { name: "Lifestyle", description: "Lifestyle photography, {character}, {subject}, natural setting", type: "global" as const },
+        { 
+          name: "Photography", 
+          description: "Professional photography, {character}, {subject}, high quality, detailed", 
+          systemPrompt: "You are a professional photography prompt expert. Enhance the given prompt to create a high-quality, professional photography description. Focus on: camera settings, lighting conditions, composition techniques, image quality descriptors, and professional photography terminology. Keep the character and subject details intact while adding photographic excellence.",
+          type: "global" as const 
+        },
+        { 
+          name: "Artistic", 
+          description: "Artistic render of {character}, {subject}, creative composition, masterpiece", 
+          systemPrompt: "You are an art director specializing in creative artistic compositions. Enhance the given prompt to create a stunning artistic masterpiece description. Focus on: artistic techniques, creative composition, color theory, artistic styles, medium specifications, and visual impact. Preserve character and subject while elevating to fine art quality.",
+          type: "global" as const 
+        },
+        { 
+          name: "Cinematic", 
+          description: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", 
+          systemPrompt: "You are a cinematography expert specializing in dramatic film-quality imagery. Enhance the given prompt to create a cinematic masterpiece description. Focus on: camera angles, dramatic lighting, film techniques, mood and atmosphere, cinematic composition, and movie-quality visual elements. Maintain character and subject integrity while adding Hollywood-level production value.",
+          type: "global" as const 
+        },
+        { 
+          name: "Portrait", 
+          description: "Portrait photography, {character}, {subject}, professional headshot", 
+          systemPrompt: "You are a portrait photography specialist focused on capturing compelling human subjects. Enhance the given prompt for professional portrait photography. Focus on: facial lighting, expression guidance, background selection, pose direction, portrait composition, and professional headshot quality. Keep character details precise while optimizing for portrait excellence.",
+          type: "global" as const 
+        },
+        { 
+          name: "Lifestyle", 
+          description: "Lifestyle photography, {character}, {subject}, natural setting", 
+          systemPrompt: "You are a lifestyle photography expert capturing authentic, natural moments. Enhance the given prompt for engaging lifestyle photography. Focus on: natural settings, authentic expressions, environmental storytelling, candid moments, lifestyle aesthetics, and relatable scenarios. Preserve character authenticity while creating aspirational lifestyle imagery.",
+          type: "global" as const 
+        },
       ];
       
       for (const style of defaultStyles) {
