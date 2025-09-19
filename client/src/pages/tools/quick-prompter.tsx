@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-// Using our adapted version with proper imports
-import QuickPromptPlay from "@/components/dashboard/QuickPromptPlay";
+// Using our comprehensive Quick Prompt component
+import QuickPromptComplete from "@/components/quickprompt/QuickPromptComplete";
 
 export default function QuickPrompterPage() {
   // Force dark theme for this page to match the QUICKPROMPT design
@@ -20,8 +20,8 @@ export default function QuickPrompterPage() {
           </p>
         </div>
         
-        {/* Using the adapted QuickPromptPlay component from QUICKPROMPT package */}
-        <QuickPromptPlay />
+        {/* Using the comprehensive QuickPrompt component with all features */}
+        <QuickPromptComplete />
       </div>
     </div>
   );
