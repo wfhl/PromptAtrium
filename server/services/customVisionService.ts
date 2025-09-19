@@ -217,6 +217,10 @@ export async function analyzeImageWithFallback(
     let systemPrompt = "You are an expert at analyzing images for AI image generation.";
     let userPrompt = "Analyze this image and provide a detailed description suitable for recreating it with AI.";
     
+    const captionStyle = options.captionStyle;
+    const customPrompt = options.customPrompt;
+    const captionLength = options.captionLength;
+    
     switch (captionStyle) {
       case 'Descriptive':
         userPrompt = "Provide a detailed, comprehensive description of this image including subjects, environment, lighting, mood, and artistic style.";
@@ -236,6 +240,27 @@ export async function analyzeImageWithFallback(
       userPrompt = customPrompt;
     }
     
+    // Process the image data for OpenAI
+    let imageUrl: string;
+    if (typeof imageData === 'string') {
+      if (imageData.startsWith('data:image')) {
+        // Already a data URL
+        imageUrl = imageData;
+      } else if (fs.existsSync(imageData)) {
+        // File path - read and convert to data URL
+        const imageBuffer = fs.readFileSync(imageData);
+        const base64 = imageBuffer.toString('base64');
+        imageUrl = `data:image/jpeg;base64,${base64}`;
+      } else {
+        // Assume it's base64
+        imageUrl = `data:image/jpeg;base64,${imageData}`;
+      }
+    } else {
+      // Buffer - convert to data URL
+      const base64 = imageData.toString('base64');
+      imageUrl = `data:image/jpeg;base64,${base64}`;
+    }
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -246,7 +271,7 @@ export async function analyzeImageWithFallback(
             {
               type: "image_url",
               image_url: {
-                url: image,
+                url: imageUrl,
                 detail: "high"
               }
             }
