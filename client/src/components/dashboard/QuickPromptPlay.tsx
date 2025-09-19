@@ -16,7 +16,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import jsonPromptData from "./jsonprompthelper.json";
+import { AdminModeProvider, useAdminMode } from "@/components/quickprompt/AdminModeContext";
+import promptHelperData from "@/data/jsonprompthelper.json";
 
 // Import types
 type CharacterPreset = {
@@ -27,15 +28,15 @@ type CharacterPreset = {
   isCustom?: boolean;
 };
 
-type RuleTemplate = {
-  id: string;
+type PromptStyleRuleTemplate = {
+  id: number;
   name: string;
   template: string;
   icon?: any;
   category?: string;
 };
 
-export default function QuickPromptPlay() {
+function QuickPromptPlayContent() {
   const { toast } = useToast();
   const [subject, setSubject] = useState("");
   const [character, setCharacter] = useState("");
@@ -71,6 +72,11 @@ export default function QuickPromptPlay() {
   });
   
   const { isAuthenticated, user } = useAuth();
+  const { isAdminMode, toggleAdminMode, canAccessAdmin } = useAdminMode();
+  
+  // Get categories from jsonprompthelper.json
+  const promptCategories = Object.keys(promptHelperData);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   
   // Mock character presets for now
   const characterPresets: CharacterPreset[] = [
@@ -82,12 +88,13 @@ export default function QuickPromptPlay() {
   ];
 
   // Mock rule templates
-  const ruleTemplates: RuleTemplate[] = [
-    { id: "1", name: "Photography", template: "Professional photography, {character}, {subject}, high quality, detailed", icon: Camera, category: "photography" },
-    { id: "2", name: "Artistic", template: "Artistic render of {character}, {subject}, creative composition, masterpiece", icon: Palette, category: "artistic" },
-    { id: "3", name: "Cinematic", template: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", icon: Film, category: "cinematic" },
-    { id: "4", name: "Portrait", template: "Portrait photography, {character}, {subject}, professional headshot", icon: UserCircle, category: "portrait" },
-    { id: "5", name: "Lifestyle", template: "Lifestyle photography, {character}, {subject}, natural setting", icon: Crown, category: "lifestyle" },
+  // Updated naming: promptstyle_ruletemplates instead of prompt_templates
+  const promptstyle_ruletemplates: PromptStyleRuleTemplate[] = [
+    { id: 1, name: "Photography", template: "Professional photography, {character}, {subject}, high quality, detailed", icon: Camera, category: "photography" },
+    { id: 2, name: "Artistic", template: "Artistic render of {character}, {subject}, creative composition, masterpiece", icon: Palette, category: "artistic" },
+    { id: 3, name: "Cinematic", template: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", icon: Film, category: "cinematic" },
+    { id: 4, name: "Portrait", template: "Portrait photography, {character}, {subject}, professional headshot", icon: UserCircle, category: "portrait" },
+    { id: 5, name: "Lifestyle", template: "Lifestyle photography, {character}, {subject}, natural setting", icon: Crown, category: "lifestyle" },
   ];
 
   const handleGenerate = () => {
@@ -142,21 +149,23 @@ export default function QuickPromptPlay() {
   };
 
   const handleRandomPrompt = () => {
-    const categories = Object.keys(jsonPromptData);
-    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-    const prompts = (jsonPromptData as any)[randomCategory];
-    if (prompts && prompts.length > 0) {
-      const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+    // Determine which category to use
+    const categoryToUse = selectedCategory || 
+      promptCategories[Math.floor(Math.random() * promptCategories.length)];
+    
+    const categoryPrompts = (promptHelperData as any)[categoryToUse];
+    if (categoryPrompts && categoryPrompts.length > 0) {
+      const randomPrompt = categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
       setSubject(randomPrompt);
       setSparklePopoverOpen(false);
       toast({
-        title: "Random Prompt Added",
-        description: "A random scenario has been added to the subject field",
+        title: "Random prompt added!",
+        description: `Selected from ${categoryToUse.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()} category`,
       });
     }
   };
 
-  const handleTemplateSelect = (selectedTemplate: RuleTemplate) => {
+  const handleTemplateSelect = (selectedTemplate: PromptStyleRuleTemplate) => {
     setTemplate(selectedTemplate.template);
   };
 
@@ -343,8 +352,21 @@ export default function QuickPromptPlay() {
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-200">Random Prompt Generator</h4>
                 <p className="text-sm text-gray-400">
-                  Click to add a random scenario to your prompt
+                  Select a category or choose random from all
                 </p>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-200">
+                    <SelectValue placeholder="All Categories (Random)" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-900 border-gray-800">
+                    <SelectItem value="">All Categories (Random)</SelectItem>
+                    {promptCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button 
                   onClick={handleRandomPrompt} 
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white" 
@@ -477,7 +499,7 @@ export default function QuickPromptPlay() {
           <FileText className="h-4 w-4 text-pink-400" />
         </div>
         <Select value={template} onValueChange={(value) => {
-          const selectedTemplate = ruleTemplates.find(t => t.template === value);
+          const selectedTemplate = promptstyle_ruletemplates.find(t => t.template === value);
           if (selectedTemplate) handleTemplateSelect(selectedTemplate);
         }}>
           <SelectTrigger 
@@ -488,7 +510,7 @@ export default function QuickPromptPlay() {
             <SelectValue placeholder="Pipeline" />
           </SelectTrigger>
           <SelectContent className="bg-gray-900 border-gray-800">
-            {ruleTemplates.map((tmpl) => {
+            {promptstyle_ruletemplates.map((tmpl) => {
               const Icon = tmpl.icon || FileText;
               return (
                 <SelectItem key={tmpl.id} value={tmpl.template}>
@@ -616,6 +638,44 @@ export default function QuickPromptPlay() {
           </CardContent>
         </Card>
       )}
+      
+      {/* Developer Mode Toggle - Only for users with developer role */}
+      {canAccessAdmin && (
+        <div className="p-4 bg-gray-900/70 rounded-lg border border-purple-600/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-400">Developer Mode</p>
+              <p className="text-xs text-gray-400">Access advanced features and debug info</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleAdminMode}
+              className={`border-purple-600/50 ${isAdminMode ? 'bg-purple-600/20 text-purple-300' : 'hover:bg-purple-600/20 text-gray-400'}`}
+              data-testid="button-toggle-developer"
+            >
+              {isAdminMode ? 'Enabled' : 'Disabled'}
+            </Button>
+          </div>
+          
+          {isAdminMode && (
+            <div className="mt-3 p-3 bg-gray-800/50 rounded text-xs text-gray-400">
+              <p className="mb-1">Selected Category: {selectedCategory || 'All'}</p>
+              <p className="mb-1">Template Count: {promptstyle_ruletemplates.length}</p>
+              <p className="mb-1">Character Presets: {characterPresets.length}</p>
+              <p>Total Categories: {promptCategories.length}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function QuickPromptPlay() {
+  return (
+    <AdminModeProvider>
+      <QuickPromptPlayContent />
+    </AdminModeProvider>
   );
 }

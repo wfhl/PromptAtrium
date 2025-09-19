@@ -1178,7 +1178,7 @@ export default function QuickPromptPlay() {
             
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label htmlFor="template" className="text-sm text-gray-400">Rule Template</Label>
+                <Label htmlFor="template" className="text-sm text-gray-400">Prompt Style Template</Label>
                 <Button
                   variant="ghost"
                   size="sm"
