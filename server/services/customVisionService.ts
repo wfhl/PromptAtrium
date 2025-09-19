@@ -20,6 +20,7 @@ interface CustomVisionResult {
 
 // Custom Vision Server configuration - Using stable LocalTunnel URL
 const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL || "https://elitevision.loca.lt";
+const USE_PROXY = process.env.USE_VISION_PROXY === 'true';
 
 /**
  * Test if the custom vision server is reachable
@@ -57,12 +58,13 @@ export async function analyzeImageWithCustomVision(
   imageData: string | Buffer,
   options: CustomVisionOptions = {}
 ): Promise<CustomVisionResult> {
-  try {
-    // First check if server is online
-    const serverStatus = await testCustomVisionServer();
-    if (!serverStatus.isOnline) {
-      throw new Error(`Custom Vision server is offline: ${serverStatus.error}`);
-    }
+  const maxRetries = 3;
+  const baseDelay = 250; // Start with 250ms delay
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Skip the pre-check to avoid premature failures
+      console.log(`🔄 Attempt ${attempt}/${maxRetries} for Custom Vision...`);
     
     // Handle both file path and base64 data
     let imageBase64: string;
@@ -94,54 +96,110 @@ export async function analyzeImageWithCustomVision(
       payload.prompt = options.prompt;
     }
     
-    console.log('🔍 Sending request to Custom Vision server...');
-    
-    // Send request to custom vision server
-    const response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
-      timeout: 30000, // 30 second timeout for processing
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Elite-Vision-Client/1.0',
-        'ngrok-skip-browser-warning': 'true',
-        'Origin': 'https://elitedashboard.replit.app',
-        'Referer': 'https://elitedashboard.replit.app/'
-      }
-    });
-    
-    if (response.status === 200 && response.data.caption) {
-      console.log('✅ Custom Vision response received');
+      console.log('🔍 Sending request to Custom Vision server...');
       
-      return {
-        caption: response.data.caption,
-        model: response.data.model || 'Florence-2',
-        timestamp: new Date().toISOString(),
-        confidence: response.data.confidence || 0.95,
-        serverOnline: true,
-        metadata: {
-          customVisionServer: true,
-          serverUrl: VISION_SERVER_URL,
-          processingTime: response.headers['x-processing-time'],
-          ...response.data
+      // Try local proxy first if configured
+      let response;
+      if (USE_PROXY && attempt === 1) {
+        try {
+          console.log('🔄 Trying local proxy route...');
+          const proxyUrl = process.env.NODE_ENV === 'production' 
+            ? '/api/vision-proxy/analyze'
+            : 'http://localhost:5000/api/vision-proxy/analyze';
+          
+          response = await axios.post(proxyUrl, payload, {
+            timeout: 30000,
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          if (response.data.success && response.data.caption) {
+            // Convert proxy response to expected format
+            response = {
+              status: 200,
+              data: {
+                caption: response.data.caption,
+                model: response.data.model,
+                ...response.data.metadata
+              },
+              headers: {}
+            };
+          }
+        } catch (proxyError: any) {
+          console.log('Proxy failed, trying direct connection...');
         }
-      };
-    } else {
-      throw new Error(`Invalid response from server: ${JSON.stringify(response.data)}`);
-    }
+      }
+      
+      // If proxy failed or not used, try direct connection
+      if (!response) {
+        response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
+          timeout: 30000, // 30 second timeout for processing
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Elite-Vision-Client/1.0',
+            'ngrok-skip-browser-warning': 'true',
+            'Origin': 'https://elitedashboard.replit.app',
+            'Referer': 'https://elitedashboard.replit.app/'
+          }
+        });
+      }
     
-  } catch (error: any) {
-    console.error('Custom Vision server error:', error.message);
-    
-    // Provide detailed error information
-    if (error.code === 'ECONNABORTED') {
-      throw new Error('Custom Vision server timeout - processing took too long');
-    } else if (error.code === 'ENOTFOUND') {
-      throw new Error('Custom Vision server URL not found - check LocalTunnel connection');
-    } else if (error.response) {
-      throw new Error(`Custom Vision server error: ${error.response.status} - ${error.response.data || error.response.statusText}`);
-    } else {
-      throw error;
+      if (response.status === 200 && response.data.caption) {
+        console.log('✅ Custom Vision response received');
+        
+        return {
+          caption: response.data.caption,
+          model: response.data.model || 'Florence-2',
+          timestamp: new Date().toISOString(),
+          confidence: response.data.confidence || 0.95,
+          serverOnline: true,
+          metadata: {
+            customVisionServer: true,
+            serverUrl: VISION_SERVER_URL,
+            processingTime: response.headers['x-processing-time'],
+            attemptNumber: attempt,
+            ...response.data
+          }
+        };
+      } else {
+        throw new Error(`Invalid response from server: ${JSON.stringify(response.data)}`);
+      }
+      
+    } catch (error: any) {
+      console.error(`Custom Vision attempt ${attempt} failed:`, error.message);
+      
+      // Check if it's a LocalTunnel 503 error
+      const is503 = error.response?.status === 503;
+      const isTunnelUnavailable = error.response?.headers?.['x-localtunnel-status'] === 'Tunnel Unavailable';
+      
+      if (is503 || isTunnelUnavailable) {
+        console.log('🔄 LocalTunnel unavailable, will retry...');
+        
+        if (attempt < maxRetries) {
+          // Calculate exponential backoff delay
+          const delay = baseDelay * Math.pow(2, attempt - 1);
+          console.log(`⏳ Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue; // Try next attempt
+        } else {
+          throw new Error('Florence-2 vision server is temporarily unavailable (LocalTunnel down). Please try again or use fallback option.');
+        }
+      }
+      
+      // For non-503 errors, throw immediately
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Custom Vision server timeout - processing took too long');
+      } else if (error.code === 'ENOTFOUND') {
+        throw new Error('Custom Vision server URL not found - check LocalTunnel connection');
+      } else if (error.response) {
+        throw new Error(`Custom Vision server error: ${error.response.status} - ${error.response.data || error.response.statusText}`);
+      } else {
+        throw error;
+      }
     }
   }
+  
+  // Should not reach here, but just in case
+  throw new Error('Failed to connect to Custom Vision server after all retries');
 }
 
 /**
@@ -166,7 +224,7 @@ export async function analyzeImageWithFallback(
     });
     return { ...result, debugInfo };
   } catch (error: any) {
-    console.log('Custom Vision failed, trying fallback...', error.message);
+    console.log('Custom Vision failed:', error.message);
     debugInfo.push({
       stage: 'Vision Analysis',
       model: 'Florence-2',
@@ -175,33 +233,45 @@ export async function analyzeImageWithFallback(
       error: error.message,
       success: false
     });
+    
+    // Check if it's a LocalTunnel unavailable error
+    if (error.message.includes('LocalTunnel down') || error.message.includes('temporarily unavailable')) {
+      // Return error without fallback for LocalTunnel issues
+      return {
+        caption: `Vision service temporarily unavailable. The Florence-2 server connection is interrupted. Please try again in a moment or check server status.`,
+        model: 'error',
+        timestamp: new Date().toISOString(),
+        serverOnline: false,
+        metadata: { 
+          debugInfo,
+          error: 'LocalTunnel unavailable',
+          suggestion: 'The vision server is temporarily down. This is often a transient issue that resolves quickly.'
+        }
+      };
+    }
   }
   
-  // Fallback to JoyCaption (placeholder - needs actual implementation)
-  try {
-    console.log('Attempting JoyCaption fallback...');
-    // This would be the actual JoyCaption API call
-    // For now, return a fallback message
-    debugInfo.push({
-      stage: 'Vision Analysis',
-      model: 'JoyCaption',
+  // Check if GPT-4o fallback is explicitly disabled or not configured
+  const allowGPTFallback = process.env.ALLOW_GPT_FALLBACK !== 'false';
+  
+  if (!allowGPTFallback) {
+    console.log('GPT-4o fallback is disabled per configuration');
+    return {
+      caption: 'Vision analysis unavailable. Florence-2 server is not responding and GPT-4o fallback is disabled.',
+      model: 'none',
       timestamp: new Date().toISOString(),
-      serverStatus: 'attempting',
-      success: false
-    });
-  } catch (error: any) {
-    console.log('JoyCaption failed, trying GPT-4o...', error.message);
-    debugInfo.push({
-      stage: 'Vision Analysis', 
-      model: 'JoyCaption',
-      timestamp: new Date().toISOString(),
-      serverStatus: 'offline',
-      error: error.message,
-      success: false
-    });
+      serverOnline: false,
+      metadata: { 
+        debugInfo,
+        error: 'All vision services unavailable',
+        note: 'GPT-4o fallback is disabled to avoid censorship'
+      }
+    };
   }
   
-  // Final fallback to GPT-4o (using OpenAI Vision API)
+  // Only use GPT-4o as absolute last resort for non-LocalTunnel errors
+  console.log('Warning: Using GPT-4o Vision as fallback (may have content restrictions)...');
+  
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
