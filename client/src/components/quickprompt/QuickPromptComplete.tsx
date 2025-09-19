@@ -398,6 +398,7 @@ export default function QuickPromptComplete() {
       
       // Update debug report
       setDebugReport(debugEntries);
+      setShowDebugReport(true); // Show the debug report after generation
       
       // Show results
       setShowGeneratedSection(true);
@@ -419,6 +420,7 @@ export default function QuickPromptComplete() {
       });
       
       setDebugReport(debugEntries);
+      setShowDebugReport(true); // Show debug report even on error
       
       toast({
         title: "Generation failed",
