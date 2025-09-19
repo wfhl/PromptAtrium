@@ -21,6 +21,7 @@ interface CustomVisionResult {
 // Custom Vision Server configuration - Using stable LocalTunnel URL
 const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL || "https://elitevision.loca.lt";
 const USE_PROXY = process.env.USE_VISION_PROXY === 'true';
+const DASHBOARD_PROXY_URL = "https://elitedashboard.replit.app/api/vision-proxy";
 
 /**
  * Test if the custom vision server is reachable
@@ -98,41 +99,53 @@ export async function analyzeImageWithCustomVision(
     
       console.log('🔍 Sending request to Custom Vision server...');
       
-      // Try local proxy first if configured
+      // Try different connection strategies based on attempt
       let response;
-      if (USE_PROXY && attempt === 1) {
+      
+      // Attempt 1: Try dashboard proxy if available
+      if (attempt === 1 && process.env.USE_DASHBOARD_PROXY !== 'false') {
         try {
-          console.log('🔄 Trying local proxy route...');
-          const proxyUrl = process.env.NODE_ENV === 'production' 
-            ? '/api/vision-proxy/analyze'
-            : 'http://localhost:5000/api/vision-proxy/analyze';
-          
-          response = await axios.post(proxyUrl, payload, {
+          console.log('📡 Trying dashboard proxy route...');
+          const dashboardResponse = await axios.post(`${DASHBOARD_PROXY_URL}/analyze`, payload, {
             timeout: 30000,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Request-Source': 'promptatrium'
+            }
           });
           
-          if (response.data.success && response.data.caption) {
-            // Convert proxy response to expected format
+          if (dashboardResponse.data && dashboardResponse.data.caption) {
             response = {
               status: 200,
-              data: {
-                caption: response.data.caption,
-                model: response.data.model,
-                ...response.data.metadata
-              },
+              data: dashboardResponse.data,
               headers: {}
             };
+            console.log('✅ Dashboard proxy successful');
           }
         } catch (proxyError: any) {
-          console.log('Proxy failed, trying direct connection...');
+          console.log('Dashboard proxy failed:', proxyError.message);
         }
       }
       
-      // If proxy failed or not used, try direct connection
+      // Attempt 2: Try with minimal headers
+      if (!response && attempt === 2) {
+        try {
+          console.log('🔄 Trying with minimal headers...');
+          response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
+            timeout: 30000,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (error: any) {
+          console.log('Minimal headers failed:', error.message);
+        }
+      }
+      
+      // Attempt 3: Try with full headers as original
       if (!response) {
         response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
-          timeout: 30000, // 30 second timeout for processing
+          timeout: 30000,
           headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'Elite-Vision-Client/1.0',
