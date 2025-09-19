@@ -15,7 +15,14 @@ A comprehensive platform for managing, sharing, and generating AI prompts. Featu
   - Prompt enhancement with professional details
   - Social media caption generation
   - Copy to clipboard functionality
-  - Save to library (for authenticated users)
+  - Save to library with auto-populated metadata
+
+### Quick Prompt Save Enhancements
+- **Auto-fill AI Metadata**: Save button now automatically triggers AI-powered name generation
+- **Template Information Storage**: Template data is saved with prompts in the promptStyle field
+- **Seamless Save Flow**: ShareToLibraryModal automatically generates metadata when opened from quick prompt
+- **Fixed API Endpoints**: Corrected API endpoints from /api/saved-prompts to /api/prompts
+- **Metadata Generation Endpoint**: Added `/api/generate-prompt-metadata` endpoint for AI-powered metadata generation
 
 ## Project Structure
 
