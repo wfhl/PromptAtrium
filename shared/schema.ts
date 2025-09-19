@@ -198,6 +198,40 @@ export const promptStyleRuleTemplates = pgTable("prompt_stylerule_templates", {
   compressionLevel: integer("compression_level"),
 });
 
+// Character presets table for Quick Prompt
+export const characterPresets = pgTable("character_presets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  gender: varchar("gender"),
+  role: varchar("role"),
+  description: text("description"),
+  isFavorite: boolean("is_favorite").default(false),
+  userId: varchar("user_id").references(() => users.id),
+  isGlobal: boolean("is_global").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Prompt templates table for Quick Prompt
+export const promptTemplates = pgTable("prompt_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  templateId: varchar("template_id"),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  template: text("template"),
+  templateType: varchar("template_type"),
+  masterPrompt: text("master_prompt"),
+  llmProvider: varchar("llm_provider").default("openai"),
+  llmModel: varchar("llm_model").default("gpt-4o"),
+  useHappyTalk: boolean("use_happy_talk").default(false),
+  compressPrompt: boolean("compress_prompt").default(false),
+  compressionLevel: varchar("compression_level").default("medium"),
+  userId: varchar("user_id").references(() => users.id),
+  isGlobal: boolean("is_global").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Intended generators table
 export const intendedGenerators = pgTable("intended_generators", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
