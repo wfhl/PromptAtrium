@@ -1,6 +1,7 @@
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import OpenAI from 'openai';
 
 interface CustomVisionOptions {
   prompt?: string;
@@ -210,8 +211,6 @@ export async function analyzeImageWithFallback(
 
     console.log('Attempting GPT-4o Vision fallback...');
     
-    // Import OpenAI dynamically to avoid issues if not installed
-    const OpenAI = require('openai');
     const openai = new OpenAI({ apiKey });
     
     // Create appropriate prompt based on caption style
