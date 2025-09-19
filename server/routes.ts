@@ -12,6 +12,9 @@ import { z } from "zod";
 import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
 import { devStorage } from "./devStorage";
 import aiAnalyzerRouter from "./routes/aiAnalyzer";
+import captionRouter from "./routes/caption";
+import enhancePromptRouter from "./routes/enhance-prompt";
+import systemDataRouter from "./routes/system-data";
 
 // Helper function to resolve public image URLs for development
 // ONLY affects development mode - production URLs pass through unchanged
@@ -3206,6 +3209,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register AI analyzer routes
   app.use(aiAnalyzerRouter);
+
+  // Register Quick Prompt API routes
+  app.use('/api/caption', captionRouter);
+  app.use('/api/enhance-prompt', enhancePromptRouter);
+  app.use('/api/system-data', systemDataRouter);
 
   const httpServer = createServer(app);
   return httpServer;
