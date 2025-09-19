@@ -3214,6 +3214,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/caption', captionRouter);
   app.use('/api/enhance-prompt', enhancePromptRouter);
   app.use('/api/system-data', systemDataRouter);
+  
+  // Generate prompt metadata endpoint for ShareToLibraryModal
+  app.post('/api/generate-prompt-metadata', async (req, res) => {
+    try {
+      const { prompt, characterPreset, templateName } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ error: 'Prompt is required' });
+      }
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: 'OpenAI API key not configured' });
+      }
+
+      const openai = new (await import('openai')).default({ apiKey });
+      
+      // Build context for the AI
+      let contextInfo = '';
+      if (templateName && templateName !== 'custom') {
+        contextInfo += ` The prompt was created using the "${templateName}" style template.`;
+      }
+      if (characterPreset && characterPreset !== 'no-character') {
+        contextInfo += ` It features a character: "${characterPreset}".`;
+      }
+
+      const systemPrompt = `You are a helpful assistant that generates metadata for AI prompts. 
+        Analyze the given prompt and generate:
+        1. A concise, descriptive title (max 50 characters)
+        2. A brief description explaining what the prompt creates (max 200 characters)
+        3. Relevant tags (3-5 tags)
+        4. A suggested category based on the prompt content
+        
+        ${contextInfo}
+        
+        Return the response in JSON format with keys: title, description, tags (array), category`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Generate metadata for this prompt: "${prompt}"` }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 500
+      });
+
+      const response = completion.choices[0].message.content;
+      const metadata = JSON.parse(response || '{}');
+      
+      // Ensure all required fields are present
+      const result = {
+        title: metadata.title || 'AI Generated Prompt',
+        description: metadata.description || 'An AI-enhanced prompt for image generation',
+        tags: Array.isArray(metadata.tags) ? metadata.tags : [],
+        category: metadata.category || 'General'
+      };
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error generating prompt metadata:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate metadata',
+        // Fallback metadata
+        title: 'Quick Prompt',
+        description: 'Generated with Quick Prompt tool',
+        tags: [],
+        category: 'General'
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

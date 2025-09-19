@@ -442,9 +442,9 @@ export default function QuickPromptPlay() {
 
   // Mutation for saving prompt to user library
   const saveToUserLibraryMutation = useMutation({
-    mutationFn: (promptData: any) => apiRequest('/api/saved-prompts', 'POST', promptData),
+    mutationFn: (promptData: any) => apiRequest('/api/prompts', 'POST', promptData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/saved-prompts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/prompts'] });
       toast({
         title: "Prompt saved",
         description: "Added to your personal library",
@@ -461,9 +461,9 @@ export default function QuickPromptPlay() {
 
   // Enhanced mutation for saving to user library with navigation toast
   const enhancedSaveToUserLibraryMutation = useMutation({
-    mutationFn: (promptData: any) => apiRequest('/api/saved-prompts', 'POST', promptData),
+    mutationFn: (promptData: any) => apiRequest('/api/prompts', 'POST', promptData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/saved-prompts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/prompts'] });
       setShareModalOpen(false);
       toast({
         title: "Prompt saved to your library!",
@@ -472,7 +472,7 @@ export default function QuickPromptPlay() {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => window.location.href = '/prompt-library'}
+            onClick={() => window.location.href = '/library'}
             className="ml-2"
           >
             View in Library
@@ -1333,14 +1333,27 @@ export default function QuickPromptPlay() {
             character_preset: character === 'no-character' ? null : character
           }}
           onShare={(shareData) => {
+            // Get the template data for saving
+            const selectedTemplate = dbRuleTemplates.find(t => t.id.toString() === template);
+            
             enhancedSaveToUserLibraryMutation.mutate({
               name: shareData.title,
-              positive_prompt: generatedPrompt,
-              negative_prompt: '',
+              promptContent: generatedPrompt,
+              negativePrompt: '',
               description: shareData.description,
               tags: shareData.tags,
-              category_id: shareData.category_id,
-              user_id: "1"
+              promptStyle: selectedTemplate?.name || 'Custom', // Save the template name as prompt style
+              category: shareData.category_id ? promptCategories.find(c => c.id === shareData.category_id)?.name : undefined,
+              status: 'published',
+              isPublic: false,
+              userId: "1",
+              // Store template metadata in technicalParams
+              technicalParams: selectedTemplate ? {
+                templateId: selectedTemplate.id,
+                templateName: selectedTemplate.name,
+                templateType: selectedTemplate.template_type,
+                templateDescription: selectedTemplate.description
+              } : null
             });
           }}
           categories={promptCategories}

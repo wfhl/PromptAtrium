@@ -167,6 +167,15 @@ export function ShareToLibraryModal({
         initialTags.push(promptData.character_preset);
       }
       setTags(Array.from(new Set(initialTags)));
+      
+      // Automatically trigger auto-fill if the prompt was generated (starts with "Quick Prompt")
+      // and hasn't been auto-filled yet
+      if (!hasAutoFilled && promptData.name && promptData.name.startsWith("Quick Prompt")) {
+        // Small delay to ensure modal is fully rendered
+        setTimeout(() => {
+          autoFillMetadata();
+        }, 100);
+      }
     }
   }, [open, promptData]);
 
