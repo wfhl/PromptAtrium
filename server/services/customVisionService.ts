@@ -27,12 +27,18 @@ const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL || "https://elitevision.
 export async function testCustomVisionServer(): Promise<{ isOnline: boolean; details?: any; error?: string }> {
   try {
     const response = await axios.get(`${VISION_SERVER_URL}/test`, {
-      timeout: 5000,
+      timeout: 10000,
       headers: {
-        'User-Agent': 'Elite-Vision-Client/1.0',
-        'ngrok-skip-browser-warning': 'true',
-        'Origin': 'https://elitedashboard.replit.app',
-        'Referer': 'https://elitedashboard.replit.app/'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0'
       }
     });
     
@@ -101,10 +107,16 @@ export async function analyzeImageWithCustomVision(
       timeout: 30000, // 30 second timeout for processing
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Elite-Vision-Client/1.0',
-        'ngrok-skip-browser-warning': 'true',
-        'Origin': 'https://elitedashboard.replit.app',
-        'Referer': 'https://elitedashboard.replit.app/'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'cross-site',
+        'Cache-Control': 'no-cache'
       }
     });
     

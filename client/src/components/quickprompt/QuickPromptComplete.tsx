@@ -135,10 +135,9 @@ export default function QuickPromptComplete() {
   }, []);
   
   // Fetch character presets
-  const { data: characterPresets = [], isLoading: isLoadingCharacters, error: charactersError } = useQuery<CharacterPreset[]>({
+  const { data: characterPresets = [] } = useQuery<CharacterPreset[]>({
     queryKey: ['/api/system-data/character-presets'],
     select: (data: any[]) => {
-      console.log("Character presets data received:", data);
       return data.map(preset => ({
         id: preset.id?.toString(),
         name: preset.name,
@@ -152,10 +151,9 @@ export default function QuickPromptComplete() {
   });
   
   // Fetch template options
-  const { data: dbRuleTemplates = [], isLoading: isLoadingTemplates, error: templatesError } = useQuery<PromptTemplate[]>({
+  const { data: dbRuleTemplates = [] } = useQuery<PromptTemplate[]>({
     queryKey: ['/api/system-data/prompt-templates'],
     select: (data: any[]) => {
-      console.log("Prompt templates data received:", data);
       return data.map(template => ({
         id: template.id,
         template_id: template.template_id,
@@ -171,14 +169,6 @@ export default function QuickPromptComplete() {
       }));
     }
   });
-  
-  // Log any errors
-  useEffect(() => {
-    if (charactersError) console.error("Error loading characters:", charactersError);
-    if (templatesError) console.error("Error loading templates:", templatesError);
-    console.log("Characters loading:", isLoadingCharacters);
-    console.log("Templates loading:", isLoadingTemplates);
-  }, [charactersError, templatesError, isLoadingCharacters, isLoadingTemplates]);
   
   // Restore template from localStorage
   useEffect(() => {
@@ -273,14 +263,6 @@ export default function QuickPromptComplete() {
   
   // Main generation handler
   const handleGeneratePrompt = async () => {
-    console.log("Generate Prompt clicked");
-    console.log("Subject:", subject);
-    console.log("Uploaded Image:", uploadedImage);
-    console.log("Character:", character);
-    console.log("Template:", template);
-    console.log("Character Presets:", characterPresets);
-    console.log("DB Rule Templates:", dbRuleTemplates);
-    
     // Validation
     if (!subject && !uploadedImage) {
       toast({
