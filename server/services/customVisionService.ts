@@ -1,38 +1,38 @@
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 
-interface CustomVisionOptions {
+// Custom Vision Server configuration
+const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL || "https://elitevision.loca.lt";
+
+// Custom Vision interfaces
+export interface CustomVisionOptions {
   prompt?: string;
+  customPrompt?: string;
   captionStyle?: string;
   captionLength?: string;
 }
 
-interface CustomVisionResult {
+export interface CustomVisionResult {
   caption: string;
   model: string;
   timestamp: string;
-  metadata?: any;
   confidence?: number;
   serverOnline?: boolean;
+  metadata?: any;
 }
 
-// Custom Vision Server configuration - Using stable LocalTunnel URL
-const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL || "https://elitevision.loca.lt";
-const USE_PROXY = process.env.USE_VISION_PROXY === 'true';
-const DASHBOARD_PROXY_URL = "https://elitedashboard.replit.app/api/vision-proxy";
-
 /**
- * Test if the custom vision server is reachable
+ * Test if the custom vision server is online
  */
 export async function testCustomVisionServer(): Promise<{ isOnline: boolean; details?: any; error?: string }> {
   try {
     const response = await axios.get(`${VISION_SERVER_URL}/test`, {
       timeout: 5000,
       headers: {
-        'User-Agent': 'Elite-Vision-Client/1.0',
-        'ngrok-skip-browser-warning': 'true',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Accept': 'application/json',
         'Origin': 'https://elitedashboard.replit.app',
         'Referer': 'https://elitedashboard.replit.app/'
       }
@@ -59,160 +59,93 @@ export async function analyzeImageWithCustomVision(
   imageData: string | Buffer,
   options: CustomVisionOptions = {}
 ): Promise<CustomVisionResult> {
-  const maxRetries = 3;
-  const baseDelay = 250; // Start with 250ms delay
+  // Handle both file path and base64 data
+  let imageBase64: string;
   
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      // Skip the pre-check to avoid premature failures
-      console.log(`🔄 Attempt ${attempt}/${maxRetries} for Custom Vision...`);
-    
-    // Handle both file path and base64 data
-    let imageBase64: string;
-    
-    if (typeof imageData === 'string') {
-      // Check if it's a file path or base64 data
-      if (imageData.startsWith('data:image')) {
-        // Extract base64 from data URL
-        imageBase64 = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
-      } else if (fs.existsSync(imageData)) {
-        // Read file and convert to base64
-        const imageBuffer = fs.readFileSync(imageData);
-        imageBase64 = imageBuffer.toString('base64');
-      } else {
-        // Assume it's already base64
-        imageBase64 = imageData;
-      }
+  if (typeof imageData === 'string') {
+    // Check if it's a file path or base64 data
+    if (imageData.startsWith('data:image')) {
+      // Extract base64 from data URL
+      imageBase64 = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+    } else if (fs.existsSync(imageData)) {
+      // Read file and convert to base64
+      const imageBuffer = fs.readFileSync(imageData);
+      imageBase64 = imageBuffer.toString('base64');
     } else {
-      // Buffer provided
-      imageBase64 = imageData.toString('base64');
+      // Assume it's already base64
+      imageBase64 = imageData;
     }
-    
-    // Prepare request payload - matching the working implementation exactly
-    const payload: any = {
-      image: imageBase64
-    };
-    
-    if (options.prompt) {
-      payload.prompt = options.prompt;
-    }
-    
-      console.log('🔍 Sending request to Custom Vision server...');
-      
-      // Try different connection strategies based on attempt
-      let response;
-      
-      // Attempt 1: Try dashboard proxy if available
-      if (attempt === 1 && process.env.USE_DASHBOARD_PROXY !== 'false') {
-        try {
-          console.log('📡 Trying dashboard proxy route...');
-          const dashboardResponse = await axios.post(`${DASHBOARD_PROXY_URL}/analyze`, payload, {
-            timeout: 30000,
-            headers: { 
-              'Content-Type': 'application/json',
-              'X-Request-Source': 'promptatrium'
-            }
-          });
-          
-          if (dashboardResponse.data && dashboardResponse.data.caption) {
-            response = {
-              status: 200,
-              data: dashboardResponse.data,
-              headers: {}
-            };
-            console.log('✅ Dashboard proxy successful');
-          }
-        } catch (proxyError: any) {
-          console.log('Dashboard proxy failed:', proxyError.message);
-        }
-      }
-      
-      // Attempt 2: Try with minimal headers
-      if (!response && attempt === 2) {
-        try {
-          console.log('🔄 Trying with minimal headers...');
-          response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
-            timeout: 30000,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-        } catch (error: any) {
-          console.log('Minimal headers failed:', error.message);
-        }
-      }
-      
-      // Attempt 3: Try with full headers as original
-      if (!response) {
-        response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
-          timeout: 30000,
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Elite-Vision-Client/1.0',
-            'ngrok-skip-browser-warning': 'true',
-            'Origin': 'https://elitedashboard.replit.app',
-            'Referer': 'https://elitedashboard.replit.app/'
-          }
-        });
-      }
-    
-      if (response.status === 200 && response.data.caption) {
-        console.log('✅ Custom Vision response received');
-        
-        return {
-          caption: response.data.caption,
-          model: response.data.model || 'Florence-2',
-          timestamp: new Date().toISOString(),
-          confidence: response.data.confidence || 0.95,
-          serverOnline: true,
-          metadata: {
-            customVisionServer: true,
-            serverUrl: VISION_SERVER_URL,
-            processingTime: response.headers['x-processing-time'],
-            attemptNumber: attempt,
-            ...response.data
-          }
-        };
-      } else {
-        throw new Error(`Invalid response from server: ${JSON.stringify(response.data)}`);
-      }
-      
-    } catch (error: any) {
-      console.error(`Custom Vision attempt ${attempt} failed:`, error.message);
-      
-      // Check if it's a LocalTunnel 503 error
-      const is503 = error.response?.status === 503;
-      const isTunnelUnavailable = error.response?.headers?.['x-localtunnel-status'] === 'Tunnel Unavailable';
-      
-      if (is503 || isTunnelUnavailable) {
-        console.log('🔄 LocalTunnel unavailable, will retry...');
-        
-        if (attempt < maxRetries) {
-          // Calculate exponential backoff delay
-          const delay = baseDelay * Math.pow(2, attempt - 1);
-          console.log(`⏳ Waiting ${delay}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue; // Try next attempt
-        } else {
-          throw new Error('Florence-2 vision server is temporarily unavailable (LocalTunnel down). Please try again or use fallback option.');
-        }
-      }
-      
-      // For non-503 errors, throw immediately
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Custom Vision server timeout - processing took too long');
-      } else if (error.code === 'ENOTFOUND') {
-        throw new Error('Custom Vision server URL not found - check LocalTunnel connection');
-      } else if (error.response) {
-        throw new Error(`Custom Vision server error: ${error.response.status} - ${error.response.data || error.response.statusText}`);
-      } else {
-        throw error;
-      }
-    }
+  } else {
+    // Buffer provided
+    imageBase64 = imageData.toString('base64');
   }
   
-  // Should not reach here, but just in case
-  throw new Error('Failed to connect to Custom Vision server after all retries');
+  // Prepare request payload
+  const payload: any = {
+    image: imageBase64
+  };
+  
+  if (options.prompt || options.customPrompt) {
+    payload.prompt = options.prompt || options.customPrompt;
+  }
+  
+  console.log('🔍 Sending request to Custom Vision server...');
+  
+  try {
+    // Send request to custom vision server with headers that LocalTunnel expects
+    const response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Origin': 'https://elitedashboard.replit.app',
+        'Referer': 'https://elitedashboard.replit.app/'
+      }
+    });
+    
+    if (response.status === 200 && response.data.caption) {
+      console.log('✅ Custom Vision response received');
+      
+      return {
+        caption: response.data.caption,
+        model: response.data.model || 'Florence-2',
+        timestamp: new Date().toISOString(),
+        confidence: response.data.confidence || 0.95,
+        serverOnline: true,
+        metadata: {
+          customVisionServer: true,
+          serverUrl: VISION_SERVER_URL,
+          processingTime: response.headers['x-processing-time'],
+          ...response.data
+        }
+      };
+    } else {
+      throw new Error(`Invalid response from server: ${JSON.stringify(response.data)}`);
+    }
+    
+  } catch (error: any) {
+    console.error('Custom Vision server error:', error.message);
+    
+    // Check if it's a LocalTunnel 503 error
+    if (error.response?.status === 503) {
+      const isTunnelDown = error.response?.headers?.['x-localtunnel-status'] === 'Tunnel Unavailable';
+      if (isTunnelDown) {
+        throw new Error('Florence-2 vision server is temporarily unavailable (LocalTunnel down).');
+      }
+    }
+    
+    // Provide detailed error information
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('Custom Vision server timeout - processing took too long');
+    } else if (error.code === 'ENOTFOUND') {
+      throw new Error('Custom Vision server URL not found - check LocalTunnel connection');
+    } else if (error.response) {
+      throw new Error(`Custom Vision server error: ${error.response.status} - ${error.response.data || error.response.statusText}`);
+    } else {
+      throw error;
+    }
+  }
 }
 
 /**
@@ -305,16 +238,16 @@ export async function analyzeImageWithFallback(
     
     switch (captionStyle) {
       case 'Descriptive':
-        userPrompt = "Provide a detailed, comprehensive description of this image including subjects, environment, lighting, mood, and artistic style.";
-        break;
-      case 'Short':
-        userPrompt = "Provide a concise description of the key elements in this image.";
-        break;
-      case 'Keywords':
-        userPrompt = "List the most important keywords and tags that describe this image, separated by commas.";
+        userPrompt = "Describe this image in detail, including all visual elements, colors, composition, and mood.";
         break;
       case 'Technical':
-        userPrompt = "Describe this image with technical photography details including composition, lighting setup, camera settings, and post-processing style.";
+        userPrompt = "Provide a technical analysis of this image including camera settings, lighting, composition techniques, and production details.";
+        break;
+      case 'Artistic':
+        userPrompt = "Describe this image with focus on artistic style, emotional impact, symbolism, and creative techniques.";
+        break;
+      case 'Minimal':
+        userPrompt = "Provide a concise, essential description of the main subject and key elements.";
         break;
     }
     
@@ -322,19 +255,19 @@ export async function analyzeImageWithFallback(
       userPrompt = customPrompt;
     }
     
-    // Process the image data for OpenAI
+    // Convert image to format OpenAI expects
     let imageUrl: string;
     if (typeof imageData === 'string') {
       if (imageData.startsWith('data:image')) {
         // Already a data URL
         imageUrl = imageData;
       } else if (fs.existsSync(imageData)) {
-        // File path - read and convert to data URL
+        // File path - read and convert
         const imageBuffer = fs.readFileSync(imageData);
         const base64 = imageBuffer.toString('base64');
         imageUrl = `data:image/jpeg;base64,${base64}`;
       } else {
-        // Assume it's base64
+        // Assume base64
         imageUrl = `data:image/jpeg;base64,${imageData}`;
       }
     } else {

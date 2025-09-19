@@ -15,7 +15,6 @@ import aiAnalyzerRouter from "./routes/aiAnalyzer";
 import captionRouter from "./routes/caption";
 import enhancePromptRouter from "./routes/enhance-prompt";
 import systemDataRouter from "./routes/system-data";
-import visionProxyRouter from "./routes/vision-proxy";
 
 // Helper function to resolve public image URLs for development
 // ONLY affects development mode - production URLs pass through unchanged
@@ -3215,7 +3214,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/caption', captionRouter);
   app.use('/api/enhance-prompt', enhancePromptRouter);
   app.use('/api/system-data', systemDataRouter);
-  app.use('/api/vision-proxy', visionProxyRouter);
 
   const httpServer = createServer(app);
   return httpServer;
