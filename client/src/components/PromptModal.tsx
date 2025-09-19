@@ -668,7 +668,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                     data-testid="button-extract-from-image"
                   >
                     <ImageIcon className="h-4 w-4 mr-2" />
-                    Extract from image
+                    Extract text from screenshot
                   </Button>
                 </div>
                 <Textarea
