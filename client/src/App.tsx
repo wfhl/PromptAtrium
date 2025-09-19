@@ -22,6 +22,7 @@ import LikedPrompts from "@/pages/LikedPrompts";
 import ForkedPrompts from "@/pages/ForkedPrompts";
 import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
+import QuickPrompterPage from "@/pages/tools/quick-prompter";
 import InstallGuide from "@/pages/install-guide";
 import PromptDetail from "@/pages/prompt-detail";
 import PromptingGuides from "@/pages/prompting-guides";
@@ -91,6 +92,9 @@ function Router() {
         </Route>
         <Route path="/tools/metadata-analyzer">
           {() => isAuthenticated ? <Layout><MetadataAnalyzerPage /></Layout> : <MetadataAnalyzerPage />}
+        </Route>
+        <Route path="/tools/quick-prompter">
+          {() => isAuthenticated ? <Layout><QuickPrompterPage /></Layout> : <QuickPrompterPage />}
         </Route>
         <Route path="/prompting-guides">
           {() => isAuthenticated ? <Layout><PromptingGuides /></Layout> : <PromptingGuides />}
