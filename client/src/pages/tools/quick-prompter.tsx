@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+// Using our adapted version with proper imports
 import QuickPromptPlay from "@/components/dashboard/QuickPromptPlay";
 
 export default function QuickPrompterPage() {
@@ -14,6 +15,7 @@ export default function QuickPrompterPage() {
           </p>
         </div>
         
+        {/* Using the adapted QuickPromptPlay component from QUICKPROMPT package */}
         <QuickPromptPlay />
       </div>
     </div>

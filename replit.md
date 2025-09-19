@@ -1,97 +1,154 @@
-# PromptAtrium
+# PromptAtrium - AI Prompt Management Platform
 
 ## Overview
+A comprehensive platform for managing, sharing, and generating AI prompts. Features include a prompt library, community sharing, collections management, and advanced prompt generation tools.
 
-PromptAtrium is a multi-user web application that serves as a central hub for managing, sharing, and refining AI prompts. It combines the structure of a library with the communal energy of a creative platform, allowing users to store, discover, rate, and collaborate on AI prompts. The application supports personal and shared prompt libraries, advanced metadata management, community features like ratings and favorites, project/collection organization, and comprehensive NSFW content management.
+## Recent Updates (September 19, 2025)
+
+### Quick Prompt Generator Integration
+- Added Quick Prompt Generator tool at `/tools/quick-prompter`
+- Integrated components from the QUICKPROMPT package
+- Features include:
+  - Template-based prompt generation (Photography, Artistic, Cinematic, etc.)
+  - Character preset selection with custom input
+  - Random scenario generation
+  - Prompt enhancement with professional details
+  - Social media caption generation
+  - Copy to clipboard functionality
+  - Save to library (for authenticated users)
+
+## Project Structure
+
+### Frontend (`client/`)
+- **Framework**: React with TypeScript
+- **Routing**: Wouter
+- **State Management**: TanStack Query v5
+- **UI Components**: Shadcn/ui + Tailwind CSS
+- **Authentication**: Replit Auth with OIDC
+
+### Backend (`server/`)
+- **Framework**: Express.js
+- **Database**: PostgreSQL with Drizzle ORM
+- **Storage**: Google Cloud Storage for images
+- **Authentication**: Passport with OIDC strategy
+
+### Key Features
+
+#### 1. Prompt Management
+- Create, edit, and organize prompts
+- Rich metadata (categories, tags, models)
+- Version history and forking
+- Public/private visibility controls
+
+#### 2. Community Features
+- Public prompt sharing
+- Like and favorite system
+- User profiles with statistics
+- Activity feed
+
+#### 3. Collections
+- Organize prompts into collections
+- Public/private collections
+- Collaborative collections
+
+#### 4. Tools
+- **Aspect Ratio Calculator**: Calculate and convert aspect ratios
+- **Metadata Analyzer**: Analyze image metadata
+- **Quick Prompt Generator**: Advanced prompt generation with templates
+
+#### 5. Admin Features
+- User management
+- Community management
+- System statistics
+- Developer tools
 
 ## User Preferences
+- Dark mode preferred for UI
+- Emphasis on visual design with card-based layouts
+- Toast notifications for user feedback
+- Mobile-responsive design
 
-Preferred communication style: Simple, everyday language.
+## Technical Decisions
 
-## System Architecture
+### Database Schema
+- Users table with profile information
+- Prompts table with rich metadata
+- Collections for organization
+- Activity tracking for engagement
+- Communities for group collaboration
 
-### Frontend Architecture
-- **Framework**: React with TypeScript using Vite as the build tool
-- **UI Components**: Comprehensive shadcn/ui component library with Radix UI primitives
-- **Styling**: Tailwind CSS with custom design tokens and CSS variables for theming
-- **State Management**: TanStack Query (React Query) for server state management
-- **Routing**: Wouter for lightweight client-side routing
-- **Form Handling**: React Hook Form with Zod validation through @hookform/resolvers
+### API Structure
+- RESTful endpoints under `/api`
+- Authentication required for user-specific operations
+- Public endpoints for community content
+- Rate limiting and security measures
 
-### Backend Architecture
-- **Runtime**: Node.js with Express.js web framework
-- **Language**: TypeScript with ES modules
-- **API Pattern**: RESTful API with role-based access control
-- **Authentication**: Replit Auth integration using OpenID Connect with Passport.js
-- **Session Management**: Express sessions with PostgreSQL storage using connect-pg-simple
-- **Development**: Hot module replacement with Vite in development mode
+### File Storage
+- Images stored in Google Cloud Storage
+- Public/private bucket separation
+- Direct serving with access control
 
-### Database Architecture
-- **Database**: PostgreSQL (Neon) managed by Replit
-- **ORM**: Drizzle ORM with type-safe schema definitions
-- **Schema**: Centralized schema in `/shared/schema.ts` with relations for users, prompts, projects, collections, ratings, and favorites
-- **Migrations**: Drizzle Kit for schema migrations with PostgreSQL dialect
-- **Connection**: Neon serverless driver with WebSocket support for development
+## Development Guidelines
 
-### Project Structure
-- **Monorepo**: Single repository with separate client, server, and shared directories
-- **Client**: React application in `/client` with component-based architecture
-- **Server**: Express API server in `/server` with modular route handling
-- **Shared**: Common types, schemas, and utilities in `/shared` for type safety across frontend and backend
-- **Build**: Separate build processes for client (Vite) and server (esbuild)
+### Code Style
+- TypeScript for type safety
+- Functional components with hooks
+- Async/await for asynchronous operations
+- Comprehensive error handling
 
-### Authentication & Authorization
-- **Provider**: Replit Auth (built-in) with OpenID Connect discovery
-- **Strategy**: Passport.js OpenID Client strategy for authentication flow
-- **Session**: Secure HTTP-only cookies with PostgreSQL session store
-- **Authorization**: Role-based access control with user, moderator, and admin roles
-- **Security**: CSRF protection, secure cookie settings, and environment-based configuration
+### Testing
+- End-to-end testing with Playwright
+- Component testing for critical features
+- API endpoint testing
 
-### API Design
-- **Structure**: RESTful endpoints with consistent error handling
-- **Routes**: Organized by resource type (auth, prompts, projects, collections)
-- **Validation**: Zod schemas for request/response validation
-- **Error Handling**: Centralized error middleware with structured error responses
-- **Logging**: Request/response logging with timing and JSON response capture
+### Security
+- Input validation with Zod
+- SQL injection prevention with Drizzle ORM
+- XSS protection
+- CORS configuration
+- Rate limiting
 
-### NSFW Content Management
-- **Database Schema**: Prompts have `is_nsfw` boolean field (default false), Users have `show_nsfw` preference (default true)
-- **Content Filtering**: Backend automatically filters NSFW prompts based on user preferences across all endpoints
-- **User Controls**: Toggle in profile settings to show/hide NSFW content, checkbox in prompt creation/edit forms
-- **Bulk Import**: CSV import supports NSFW field for marking content during bulk operations
-- **Default Behavior**: Users see all content by default, must opt-out of NSFW content visibility
+## Deployment
 
-### AI-Powered Features
-- **AI Provider**: Google Gemini (migrated from OpenAI for better quotas and vision capabilities)
-- **Models Used**: Gemini 1.5 Pro for complex analysis and vision tasks, Gemini 1.5 Flash for quick metadata generation
-- **Image Extraction**: Extract prompts from uploaded images with three modes (content only, content + name, all fields)
-- **Auto-Fill**: Generate metadata from existing prompt content (name only or comprehensive metadata)
-- **Field Analysis**: Intelligent CSV/JSON field mapping for bulk imports using AI analysis
+The application is configured for deployment on Replit with:
+- Automatic HTTPS
+- Environment variable management
+- PostgreSQL database
+- Object storage integration
+- Custom domain support
 
-## External Dependencies
+## Environment Variables
 
-### Development Tools
-- **Replit Integration**: Vite plugins for Replit development environment and error overlays
-- **TypeScript**: Full TypeScript support with strict configuration
-- **Build Tools**: Vite for frontend, esbuild for backend production builds
-- **Development Server**: Integrated Vite dev server with Express middleware
+Required environment variables:
+- `DATABASE_URL`: PostgreSQL connection string
+- `REPL_ID`: Replit instance identifier
+- `REPLIT_DB_URL`: Replit database URL
+- Object storage credentials (auto-configured)
 
-### UI Framework
-- **shadcn/ui**: Complete component library with Radix UI primitives
-- **Tailwind CSS**: Utility-first CSS framework with custom configuration
-- **Lucide React**: Icon library for consistent iconography
-- **Class Variance Authority**: Type-safe variant styling utilities
+## Quick Start
 
-### Backend Services
-- **Neon Database**: Serverless PostgreSQL with WebSocket support
-- **Replit Auth**: Integrated authentication service with OpenID Connect
-- **Session Storage**: PostgreSQL-backed session management
-- **WebSocket**: ws library for Neon database connections
+1. The application runs on port 5000
+2. Access at `https://[your-repl-name].replit.app`
+3. Login with Replit Auth
+4. Start creating and sharing prompts!
 
-### Runtime Dependencies
-- **Express.js**: Web application framework with middleware support
-- **Passport.js**: Authentication middleware with OpenID Connect strategy
-- **Drizzle ORM**: Type-safe database operations with PostgreSQL support
-- **TanStack Query**: Client-side data fetching and caching
-- **React Hook Form**: Form state management with validation
-- **Zod**: Schema validation for TypeScript
+## Recent Changes
+
+- **September 19, 2025**: Integrated Quick Prompt Generator from QUICKPROMPT package
+- Added comprehensive prompt generation tools
+- Mock data implementation for templates and character presets
+- Full test coverage for Quick Prompter functionality
+
+## Known Issues
+
+- Toast notifications occasionally have timing issues in tests (visual confirmation works)
+- Some object storage URLs show fallback warnings in development (non-critical)
+
+## Future Enhancements
+
+- Real-time collaboration on prompts
+- AI-powered prompt suggestions
+- Advanced search and filtering
+- Export/import functionality
+- API access for developers
+- Mobile app companion
