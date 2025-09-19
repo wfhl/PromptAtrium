@@ -516,10 +516,10 @@ function QuickPromptPlayContent() {
         )}
       </div>
 
-      {/* Rule Template */}
+      {/* Prompt Style */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Label htmlFor="template" className="text-gray-400 text-sm">Rule Template</Label>
+          <Label htmlFor="template" className="text-gray-400 text-sm">Prompt Style</Label>
           <FileText className="h-4 w-4 text-pink-400" />
         </div>
         <Select value={template} onValueChange={(value) => {

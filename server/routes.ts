@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema } from "@shared/schema";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient, parseObjectPath } from "./objectStorage";
 import { ObjectPermission, getObjectAclPolicy } from "./objectAcl";
@@ -30,7 +30,7 @@ function resolvePublicImageUrl(url: string | null | undefined): string | null | 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Seed default prompt styles on startup if none exist
   try {
-    const existingGlobalStyles = await storage.getPromptStyles({ type: 'global' });
+    const existingGlobalStyles = await storage.getPromptStyleRuleTemplates({ type: 'global' });
     if (existingGlobalStyles.length === 0) {
       console.log("Seeding default prompt styles...");
       const defaultStyles = [
@@ -43,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const style of defaultStyles) {
         try {
-          await storage.createPromptStyle(style);
+          await storage.createPromptStyleRuleTemplate(style);
         } catch (err) {
           console.log(`Failed to create style ${style.name}:`, err);
         }
@@ -1850,8 +1850,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type) options.type = type as string;
       if (isActive !== undefined) options.isActive = isActive === 'true';
       
-      const promptStyles = await storage.getPromptStyles(options);
-      res.json(promptStyles);
+      const promptStyleRuleTemplates = await storage.getPromptStyleRuleTemplates(options);
+      res.json(promptStyleRuleTemplates);
     } catch (error) {
       console.error("Error fetching prompt styles:", error);
       res.status(500).json({ message: "Failed to fetch prompt styles" });
@@ -1861,9 +1861,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/prompt-styles', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const promptStyleData = insertPromptStyleSchema.parse({ ...req.body, userId, type: 'user' });
-      const promptStyle = await storage.createPromptStyle(promptStyleData);
-      res.status(201).json(promptStyle);
+      const promptStyleRuleTemplateData = insertPromptStyleRuleTemplateSchema.parse({ ...req.body, userId, type: 'user' });
+      const promptStyleRuleTemplate = await storage.createPromptStyleRuleTemplate(promptStyleRuleTemplateData);
+      res.status(201).json(promptStyleRuleTemplate);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid prompt style data", errors: error.errors });

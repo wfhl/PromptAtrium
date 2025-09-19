@@ -5,7 +5,7 @@ import {
   collections,
   categories,
   promptTypes,
-  promptStyles,
+  promptStyleRuleTemplates,
   intendedGenerators,
   recommendedModels,
   communities,
@@ -32,8 +32,8 @@ import {
   type InsertCategory,
   type PromptType,
   type InsertPromptType,
-  type PromptStyle,
-  type InsertPromptStyle,
+  type PromptStyleRuleTemplate,
+  type InsertPromptStyleRuleTemplate,
   type IntendedGenerator,
   type InsertIntendedGenerator,
   type RecommendedModel,
@@ -249,12 +249,12 @@ export interface IStorage {
   deletePromptType(id: string): Promise<void>;
 
   // Prompt style operations
-  getPromptStyles(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<PromptStyle[]>;
-  getPromptStyle(id: string): Promise<PromptStyle | undefined>;
-  getPromptStyleByName(name: string): Promise<PromptStyle | undefined>;
-  createPromptStyle(promptStyle: InsertPromptStyle): Promise<PromptStyle>;
-  updatePromptStyle(id: string, promptStyle: Partial<InsertPromptStyle>): Promise<PromptStyle>;
-  deletePromptStyle(id: string): Promise<void>;
+  getPromptStyleRuleTemplates(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<PromptStyleRuleTemplate[]>;
+  getPromptStyleRuleTemplate(id: string): Promise<PromptStyleRuleTemplate | undefined>;
+  getPromptStyleRuleTemplateByName(name: string): Promise<PromptStyleRuleTemplate | undefined>;
+  createPromptStyleRuleTemplate(promptStyleRuleTemplate: InsertPromptStyleRuleTemplate): Promise<PromptStyleRuleTemplate>;
+  updatePromptStyleRuleTemplate(id: string, promptStyleRuleTemplate: Partial<InsertPromptStyleRuleTemplate>): Promise<PromptStyleRuleTemplate>;
+  deletePromptStyleRuleTemplate(id: string): Promise<void>;
 
   // Intended generator operations
   getIntendedGenerators(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<IntendedGenerator[]>;
@@ -2011,56 +2011,56 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Prompt style operations
-  async getPromptStyles(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<PromptStyle[]> {
-    let query = db.select().from(promptStyles).$dynamic();
+  async getPromptStyleRuleTemplates(options: { userId?: string; type?: string; isActive?: boolean } = {}): Promise<PromptStyleRuleTemplate[]> {
+    let query = db.select().from(promptStyleRuleTemplates).$dynamic();
     
     const conditions = [];
     
     if (options.userId) {
-      conditions.push(eq(promptStyles.userId, options.userId));
+      conditions.push(eq(promptStyleRuleTemplates.userId, options.userId));
     }
     
     if (options.type) {
-      conditions.push(eq(promptStyles.type, options.type as any));
+      conditions.push(eq(promptStyleRuleTemplates.type, options.type as any));
     }
     
     if (options.isActive !== undefined) {
-      conditions.push(eq(promptStyles.isActive, options.isActive));
+      conditions.push(eq(promptStyleRuleTemplates.isActive, options.isActive));
     }
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
     
-    return await query.orderBy(promptStyles.name);
+    return await query.orderBy(promptStyleRuleTemplates.name);
   }
 
-  async getPromptStyle(id: string): Promise<PromptStyle | undefined> {
-    const [promptStyle] = await db.select().from(promptStyles).where(eq(promptStyles.id, id));
-    return promptStyle;
+  async getPromptStyleRuleTemplate(id: string): Promise<PromptStyleRuleTemplate | undefined> {
+    const [promptStyleRuleTemplate] = await db.select().from(promptStyleRuleTemplates).where(eq(promptStyleRuleTemplates.id, id));
+    return promptStyleRuleTemplate;
   }
 
-  async getPromptStyleByName(name: string): Promise<PromptStyle | undefined> {
-    const [promptStyle] = await db.select().from(promptStyles).where(eq(promptStyles.name, name));
-    return promptStyle;
+  async getPromptStyleRuleTemplateByName(name: string): Promise<PromptStyleRuleTemplate | undefined> {
+    const [promptStyleRuleTemplate] = await db.select().from(promptStyleRuleTemplates).where(eq(promptStyleRuleTemplates.name, name));
+    return promptStyleRuleTemplate;
   }
 
-  async createPromptStyle(promptStyle: InsertPromptStyle): Promise<PromptStyle> {
-    const [newPromptStyle] = await db.insert(promptStyles).values(promptStyle).returning();
-    return newPromptStyle;
+  async createPromptStyleRuleTemplate(promptStyleRuleTemplate: InsertPromptStyleRuleTemplate): Promise<PromptStyleRuleTemplate> {
+    const [newPromptStyleRuleTemplate] = await db.insert(promptStyleRuleTemplates).values(promptStyleRuleTemplate).returning();
+    return newPromptStyleRuleTemplate;
   }
 
-  async updatePromptStyle(id: string, promptStyle: Partial<InsertPromptStyle>): Promise<PromptStyle> {
-    const [updatedPromptStyle] = await db
-      .update(promptStyles)
-      .set({ ...promptStyle, updatedAt: new Date() })
-      .where(eq(promptStyles.id, id))
+  async updatePromptStyleRuleTemplate(id: string, promptStyleRuleTemplate: Partial<InsertPromptStyleRuleTemplate>): Promise<PromptStyleRuleTemplate> {
+    const [updatedPromptStyleRuleTemplate] = await db
+      .update(promptStyleRuleTemplates)
+      .set({ ...promptStyleRuleTemplate, updatedAt: new Date() })
+      .where(eq(promptStyleRuleTemplates.id, id))
       .returning();
-    return updatedPromptStyle;
+    return updatedPromptStyleRuleTemplate;
   }
 
-  async deletePromptStyle(id: string): Promise<void> {
-    await db.delete(promptStyles).where(eq(promptStyles.id, id));
+  async deletePromptStyleRuleTemplate(id: string): Promise<void> {
+    await db.delete(promptStyleRuleTemplates).where(eq(promptStyleRuleTemplates.id, id));
   }
 
   // Intended generator operations

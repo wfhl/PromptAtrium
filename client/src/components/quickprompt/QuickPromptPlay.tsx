@@ -727,25 +727,25 @@ export default function QuickPromptPlay() {
           useHappyTalk: selectedTemplate.use_happy_talk,
           compressPrompt: selectedTemplate.compress_prompt,
           compressionLevel: selectedTemplate.compression_level,
-          customBasePrompt: selectedTemplate.master_prompt,
+          customBasePrompt: selectedTemplate.systemPrompt,
           templateId: selectedTemplate.id.toString(), // Send template ID for proper template handling
           debugReport: debugReport, // Pass the debug report from vision analysis
           subject: subject, // Pass subject for replacement instructions
           character: characterData // Pass complete character data for replacement instructions
         };
 
-        // Debug logging to verify master prompt is correct
+        // Debug logging to verify system prompt is correct
         console.log('🔍 Frontend Debug - Template Selection:');
         console.log('Selected Template ID:', selectedTemplate.id);
         console.log('Selected Template Name:', selectedTemplate.name);
-        console.log('Master Prompt Length:', selectedTemplate.master_prompt?.length || 0);
-        console.log('Master Prompt Preview:', selectedTemplate.master_prompt?.substring(0, 100) + '...');
-        console.log('Full Master Prompt:', selectedTemplate.master_prompt);
+        console.log('System Prompt Length:', selectedTemplate.systemPrompt?.length || 0);
+        console.log('System Prompt Preview:', selectedTemplate.systemPrompt?.substring(0, 100) + '...');
+        console.log('Full System Prompt:', selectedTemplate.systemPrompt);
 
         // No need to handle image separately here - we already processed it above
 
         // Show progress for Stage 2
-        const templateName = selectedTemplate.name || 'Rule Template';
+        const templateName = selectedTemplate.name || 'Prompt Style';
         setProcessingStage(`🎨 Applying ${templateName} formatting...`);
         
         const response = await fetch('/api/enhance-prompt', {
