@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Sparkles, Copy, Share2, Save, Plus, ImageIcon, X, ChevronUp, 
   Camera, FileText, Loader2, AlertCircle, CheckCircle, 
-  Bug, MessageSquare, Settings
+  Bug, MessageSquare, Settings, Dices
 } from "lucide-react";
 
 interface CharacterPreset {
@@ -88,8 +88,9 @@ export default function QuickPromptComplete() {
   const [showDebugReport, setShowDebugReport] = useState(false);
   const [isDeveloperMode, setIsDeveloperMode] = useState(false);
   
-  // JSON prompt data
+  // JSON prompt data and random scenario state
   const [jsonPromptData, setJsonPromptData] = useState<{[key: string]: string[]} | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   
   // Load JSON prompt helper data
   useEffect(() => {
@@ -97,10 +98,38 @@ export default function QuickPromptComplete() {
       .then(response => response.json())
       .then(data => setJsonPromptData(data))
       .catch(() => {
-        // Fallback data
+        // Fallback data with more categories
         setJsonPromptData({
-          nature_scenes: ["misty forest with ancient trees"],
-          portraits: ["professional portrait with dramatic lighting"]
+          nature_scenes: [
+            "misty forest with ancient trees",
+            "sunset over mountain peaks",
+            "serene lake with autumn reflections",
+            "desert landscape under starry sky"
+          ],
+          portraits: [
+            "professional portrait with dramatic lighting",
+            "candid street photography portrait",
+            "moody black and white headshot",
+            "environmental portrait in workspace"
+          ],
+          cinematic: [
+            "epic battle scene with dramatic composition",
+            "film noir detective in rainy alleyway",
+            "space station interior with lens flares",
+            "post-apocalyptic city landscape"
+          ],
+          fantasy: [
+            "magical forest with glowing mushrooms",
+            "dragon perched on castle tower",
+            "wizard casting colorful spell",
+            "enchanted library with floating books"
+          ],
+          scifi: [
+            "cyberpunk city with neon signs",
+            "robot repair shop in space station",
+            "alien marketplace on distant planet",
+            "futuristic vehicle in chrome city"
+          ]
         });
       });
   }, []);
@@ -210,19 +239,26 @@ export default function QuickPromptComplete() {
     localStorage.setItem('quickPrompt-selectedTemplate', value);
   };
   
-  // Handle random prompt selection
-  const handleJsonPromptSelection = (category: string) => {
-    if (!jsonPromptData || !jsonPromptData[category]) return;
+  // Handle random prompt generation
+  const handleRandomScenario = () => {
+    if (!jsonPromptData) return;
     
-    const prompts = jsonPromptData[category];
-    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-    setSubject(randomPrompt);
-    setSparklePopoverOpen(false);
+    // Determine which category to use
+    const categories = Object.keys(jsonPromptData);
+    const categoryToUse = (selectedCategory && selectedCategory !== 'all') ? 
+      selectedCategory : 
+      categories[Math.floor(Math.random() * categories.length)];
     
-    toast({
-      title: "Subject filled",
-      description: `Random prompt from "${category.replace(/_/g, ' ')}" category`
-    });
+    const categoryPrompts = jsonPromptData[categoryToUse];
+    if (categoryPrompts && categoryPrompts.length > 0) {
+      const randomPrompt = categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
+      setSubject(randomPrompt);
+      setSparklePopoverOpen(false);
+      toast({
+        title: "Random scenario generated!",
+        description: `Selected from ${categoryToUse.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()} category`
+      });
+    }
   };
   
   // Main generation handler
@@ -520,24 +556,33 @@ export default function QuickPromptComplete() {
                       <Sparkles className="h-4 w-4 text-pink-400" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-64 p-2 bg-gray-900 border-gray-800">
-                    <div className="space-y-2">
-                      <p className="text-xs text-gray-400 mb-2">Select category for random prompt:</p>
-                      {Object.keys(jsonPromptData).map((category) => (
-                        <Button
-                          key={category}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleJsonPromptSelection(category)}
-                          className="w-full justify-start text-left hover:bg-gray-800"
-                          data-testid={`button-category-${category}`}
-                        >
-                          <span className="flex-1">{category.replace(/_/g, ' ')}</span>
-                          <span className="text-xs text-gray-500">
-                            {jsonPromptData[category]?.length || 0}
-                          </span>
-                        </Button>
-                      ))}
+                  <PopoverContent className="w-80 bg-gray-900 border-gray-800">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-200">Random Prompt Generator</h4>
+                      <p className="text-sm text-gray-400">
+                        Select a category or choose random from all
+                      </p>
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-200">
+                          <SelectValue placeholder="All Categories (Random)" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-800">
+                          <SelectItem value="all">All Categories (Random)</SelectItem>
+                          {Object.keys(jsonPromptData).map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={handleRandomScenario} 
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white" 
+                        data-testid="button-generate-random"
+                      >
+                        <Dices className="h-4 w-4 mr-2" />
+                        Generate Random Scenario
+                      </Button>
                     </div>
                   </PopoverContent>
                 </Popover>
