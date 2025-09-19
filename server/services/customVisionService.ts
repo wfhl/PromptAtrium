@@ -82,26 +82,19 @@ export async function analyzeImageWithCustomVision(
       imageBase64 = imageData.toString('base64');
     }
     
-    // Prepare request payload
+    // Prepare request payload - matching the working implementation exactly
     const payload: any = {
-      image: imageBase64,
-      model: 'florence-2'
+      image: imageBase64
     };
     
     if (options.prompt) {
       payload.prompt = options.prompt;
     }
-    if (options.captionStyle) {
-      payload.caption_style = options.captionStyle;
-    }
-    if (options.captionLength) {
-      payload.caption_length = options.captionLength;
-    }
     
     console.log('🔍 Sending request to Custom Vision server...');
     
     // Send request to custom vision server
-    const response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
+    const response = await axios.post(`${VISION_SERVER_URL}/caption`, payload, {
       timeout: 30000, // 30 second timeout for processing
       headers: {
         'Content-Type': 'application/json',
