@@ -28,6 +28,34 @@ function resolvePublicImageUrl(url: string | null | undefined): string | null | 
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Seed default prompt styles on startup if none exist
+  try {
+    const existingGlobalStyles = await storage.getPromptStyles({ type: 'global' });
+    if (existingGlobalStyles.length === 0) {
+      console.log("Seeding default prompt styles...");
+      const defaultStyles = [
+        { name: "Photography", description: "Professional photography, {character}, {subject}, high quality, detailed", type: "global" as const },
+        { name: "Artistic", description: "Artistic render of {character}, {subject}, creative composition, masterpiece", type: "global" as const },
+        { name: "Cinematic", description: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", type: "global" as const },
+        { name: "Portrait", description: "Portrait photography, {character}, {subject}, professional headshot", type: "global" as const },
+        { name: "Lifestyle", description: "Lifestyle photography, {character}, {subject}, natural setting", type: "global" as const },
+      ];
+      
+      for (const style of defaultStyles) {
+        try {
+          await storage.createPromptStyle(style);
+        } catch (err) {
+          console.log(`Failed to create style ${style.name}:`, err);
+        }
+      }
+      console.log(`Seeded ${defaultStyles.length} default prompt styles`);
+    } else {
+      console.log(`Found ${existingGlobalStyles.length} existing global prompt styles`);
+    }
+  } catch (error) {
+    console.error("Error checking/seeding prompt styles:", error);
+  }
+  
   // Auth middleware
   await setupAuth(app);
 
@@ -1822,31 +1850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type) options.type = type as string;
       if (isActive !== undefined) options.isActive = isActive === 'true';
       
-      let promptStyles = await storage.getPromptStyles(options);
-      
-      // If no global styles exist, seed with default ones
-      if (type === 'global' && promptStyles.length === 0) {
-        const defaultStyles = [
-          { name: "Photography", description: "Professional photography, {character}, {subject}, high quality, detailed", type: "global" as const },
-          { name: "Artistic", description: "Artistic render of {character}, {subject}, creative composition, masterpiece", type: "global" as const },
-          { name: "Cinematic", description: "Cinematic shot, {character}, {subject}, dramatic lighting, movie quality", type: "global" as const },
-          { name: "Portrait", description: "Portrait photography, {character}, {subject}, professional headshot", type: "global" as const },
-          { name: "Lifestyle", description: "Lifestyle photography, {character}, {subject}, natural setting", type: "global" as const },
-        ];
-        
-        // Create default styles
-        for (const style of defaultStyles) {
-          try {
-            await storage.createPromptStyle(style);
-          } catch (err) {
-            console.log(`Style ${style.name} might already exist`);
-          }
-        }
-        
-        // Fetch again after seeding
-        promptStyles = await storage.getPromptStyles(options);
-      }
-      
+      const promptStyles = await storage.getPromptStyles(options);
       res.json(promptStyles);
     } catch (error) {
       console.error("Error fetching prompt styles:", error);
