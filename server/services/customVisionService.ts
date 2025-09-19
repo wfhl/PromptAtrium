@@ -29,7 +29,10 @@ export async function testCustomVisionServer(): Promise<{ isOnline: boolean; det
     const response = await axios.get(`${VISION_SERVER_URL}/test`, {
       timeout: 5000,
       headers: {
-        'User-Agent': 'Elite-Vision-Client/1.0'
+        'User-Agent': 'Elite-Vision-Client/1.0',
+        'ngrok-skip-browser-warning': 'true',
+        'Origin': 'https://elitedashboard.replit.app',
+        'Referer': 'https://elitedashboard.replit.app/'
       }
     });
     
@@ -94,11 +97,14 @@ export async function analyzeImageWithCustomVision(
     console.log('🔍 Sending request to Custom Vision server...');
     
     // Send request to custom vision server
-    const response = await axios.post(`${VISION_SERVER_URL}/caption`, payload, {
+    const response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
       timeout: 30000, // 30 second timeout for processing
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Elite-Vision-Client/1.0'
+        'User-Agent': 'Elite-Vision-Client/1.0',
+        'ngrok-skip-browser-warning': 'true',
+        'Origin': 'https://elitedashboard.replit.app',
+        'Referer': 'https://elitedashboard.replit.app/'
       }
     });
     
