@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { PromptModal } from "@/components/PromptModal";
 import { 
   Sparkles, Copy, Share2, Save, Plus, ImageIcon, X, ChevronUp, 
   Camera, FileText, Loader2, AlertCircle, CheckCircle, 
@@ -98,6 +99,10 @@ export default function QuickPromptComplete() {
   // JSON prompt data and random scenario state
   const [jsonPromptData, setJsonPromptData] = useState<{[key: string]: string[]} | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Modal state
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [prepopulatedPrompt, setPrepopulatedPrompt] = useState<any>(null);
   
   // Load JSON prompt helper data
   useEffect(() => {
@@ -550,42 +555,38 @@ export default function QuickPromptComplete() {
     });
   };
   
-  // Save to library
-  const handleSaveToLibrary = async () => {
-    if (!generatedPrompt) return;
-    
-    try {
-      const response = await apiRequest('/api/prompts', 'POST', {
-        name: `Enhanced prompt - ${new Date().toLocaleDateString()}`,
-        promptContent: generatedPrompt,
-        description: subject || 'AI-generated prompt',
-        tags: ['ai-generated', 'quick-prompt'],
-        category: template || 'general',
-        isPublic: false,
-        status: 'published',
-        promptStyle: template,
-        metadata: {
-          character: character,
-          subject: subject,
-          template: template,
-          hasImage: !!uploadedImage
-        }
-      });
-      
-      await queryClient.invalidateQueries({ queryKey: ['/api/prompts'] });
-      
+  // Save to library - opens modal with prepopulated data
+  const handleSaveToLibrary = () => {
+    if (!generatedPrompt) {
       toast({
-        title: "Saved!",
-        description: "Prompt saved to your library"
-      });
-    } catch (error) {
-      console.error('Save error:', error);
-      toast({
-        title: "Failed to save",
-        description: "Could not save prompt to library",
+        title: "No prompt to save",
+        description: "Please generate a prompt first",
         variant: "destructive"
       });
+      return;
     }
+    
+    // Prepare prepopulated data for the modal
+    const tags = ['ai-generated', 'quick-prompt'];
+    if (template) tags.push(template.toLowerCase().replace(/\s+/g, '-'));
+    if (character) tags.push('character-' + character.toLowerCase().replace(/\s+/g, '-'));
+    
+    setPrepopulatedPrompt({
+      name: subject ? `${subject.slice(0, 50)}${subject.length > 50 ? '...' : ''}` : `Enhanced prompt - ${new Date().toLocaleDateString()}`,
+      promptContent: generatedPrompt,
+      description: subject || 'AI-generated prompt using Quick Prompt Generator',
+      tags: tags,
+      category: template || 'general',
+      isPublic: false,
+      status: 'published',
+      promptStyle: template === 'Social Media Post Caption' ? 'social' : template || '',
+      promptType: imagePreview ? 'image-to-text' : 'text-to-image',
+      intendedGenerator: 'midjourney',
+      notes: `Generated with Quick Prompt tool${character ? `, character: ${character}` : ''}${template ? `, template: ${template}` : ''}`,
+    });
+    
+    // Open the modal
+    setShowPromptModal(true);
   };
   
   return (
@@ -1057,6 +1058,22 @@ export default function QuickPromptComplete() {
           )}
         </div>
       </div>
+      
+      {/* Prompt Save Modal */}
+      <PromptModal
+        open={showPromptModal}
+        onOpenChange={setShowPromptModal}
+        mode="create"
+        prompt={prepopulatedPrompt}
+        onSuccess={(savedPrompt) => {
+          toast({
+            title: "Prompt saved!",
+            description: "Your prompt has been saved to your library"
+          });
+          setShowPromptModal(false);
+          setPrepopulatedPrompt(null);
+        }}
+      />
     </div>
   );
 }
