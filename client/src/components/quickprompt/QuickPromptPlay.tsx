@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Sparkles, Copy, Link, ExternalLink, FileText, Camera, Film, Brush, Crown, UserCircle, Share, Palette, Share2, Dices, Save, Plus, ImageIcon, X, ChevronRight, ChevronDown } from "lucide-react";
+import { Sparkles, Copy, Link, ExternalLink, FileText, Camera, Film, Brush, Crown, UserCircle, Share, Palette, Share2, Dices, Save, Plus, ImageIcon, X, ChevronRight, ChevronDown, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Link as WouterLink } from "wouter";
@@ -43,6 +43,7 @@ export default function QuickPromptPlay() {
   const [debugReport, setDebugReport] = useState<any[]>([]);
   const [showDebugReport, setShowDebugReport] = useState(false);
   const [imageAnalysisResponse, setImageAnalysisResponse] = useState<string>('');
+  const [selectedSocialTone, setSelectedSocialTone] = useState<string>('casual');
   const [showImageAnalysis, setShowImageAnalysis] = useState(false);
   
   // Social media caption states
@@ -217,8 +218,7 @@ export default function QuickPromptPlay() {
     if (file && file.type.startsWith('image/')) {
       setUploadedImage(file);
       
-      // Clear previous image analysis
-      setImageAnalysisResponse('');
+      // Don't clear the image analysis, just collapse it
       setShowImageAnalysis(false);
       
       // Create preview
@@ -513,6 +513,98 @@ export default function QuickPromptPlay() {
   });
 
   const handleGeneratePrompt = async () => {
+    // Special handling for vision-only template
+    if (template === 'vision-only') {
+      if (!uploadedImage) {
+        toast({
+          title: "Image required",
+          description: "Please upload an image for vision analysis",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setIsGenerating(true);
+      setProgressVisible(true);
+      setProcessingStage('🔍 Analyzing image...');
+      
+      try {
+        const visionResponse = await fetch('/api/caption/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: imagePreview,
+            model: selectedVisionModel,
+            captionStyle: 'Descriptive',
+            customPrompt: 'Analyze this image and provide a detailed description. Include: subject, setting, lighting, composition, style, mood, colors, and any notable details.'
+          }),
+        });
+        
+        if (visionResponse.ok) {
+          const visionData = await visionResponse.json();
+          const analysis = visionData.caption || visionData.analysis || '';
+          const cleanedAnalysis = analysis.replace(/<\/s><s>/g, '').replace(/<s>/g, '').replace(/<\/s>/g, '');
+          setImageAnalysisResponse(cleanedAnalysis);
+          setShowImageAnalysis(true);
+          setGeneratedPrompt(''); // Clear any previous prompt
+          setShowGeneratedSection(false); // Hide the generated section
+          toast({
+            title: "Image analysis complete",
+            description: "View the analysis results below",
+          });
+        } else {
+          throw new Error('Failed to analyze image');
+        }
+      } catch (error) {
+        console.error('Vision analysis error:', error);
+        toast({
+          title: "Analysis failed",
+          description: "Could not analyze the image",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGenerating(false);
+        setProgressVisible(false);
+        setProcessingStage('');
+      }
+      return;
+    }
+    
+    // Special handling for social-caption template
+    if (template === 'social-caption') {
+      if (!uploadedImage) {
+        toast({
+          title: "Image required",
+          description: "Please upload an image to generate a social media caption",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setIsGenerating(true);
+      setProgressVisible(true);
+      setProcessingStage('✍️ Generating social media caption...');
+      
+      try {
+        await handleGenerateSocialCaption(selectedSocialTone);
+        setShowGeneratedSection(false); // Hide the normal generated section
+        setShowSocialCaption(true); // Show social caption section
+      } catch (error) {
+        console.error('Social caption error:', error);
+        toast({
+          title: "Caption generation failed",
+          description: "Could not generate social media caption",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGenerating(false);
+        setProgressVisible(false);
+        setProcessingStage('');
+      }
+      return;
+    }
+    
+    // Normal template handling
     if (!subject && !uploadedImage) {
       toast({
         title: "Input required",
@@ -680,7 +772,7 @@ export default function QuickPromptPlay() {
       }
     }
 
-    // Find selected template
+    // Find selected template (skip for special templates)
     const selectedTemplate = dbRuleTemplates.find(t => t.id.toString() === template);
     
     if (!selectedTemplate) {
@@ -1196,6 +1288,21 @@ export default function QuickPromptPlay() {
                   <SelectValue placeholder="Select a template" />
                 </SelectTrigger>
                 <SelectContent className="bg-gradient-to-br from-purple-900/30 to-blue-900/10 border-gray-700">
+                  {/* Special Options */}
+                  <SelectItem value="vision-only">
+                    <div className="flex items-center space-x-2">
+                      <Eye className="h-4 w-4" />
+                      <span>Image Vision Analysis Only</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="social-caption">
+                    <div className="flex items-center space-x-2">
+                      <Camera className="h-4 w-4" />
+                      <span>Social Media Post Caption</span>
+                    </div>
+                  </SelectItem>
+                  <div className="my-1 border-t border-gray-700" />
+                  {/* Regular Templates */}
                   {dbRuleTemplates.map((template) => {
                     const IconComponent = template.icon;
                     return (
@@ -1210,6 +1317,28 @@ export default function QuickPromptPlay() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Tone selector for Social Media Caption template */}
+            {template === 'social-caption' && (
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-400">Tone</Label>
+                <Select value={selectedSocialTone} onValueChange={setSelectedSocialTone}>
+                  <SelectTrigger className="bg-gradient-to-br from-purple-600/10 to-blue-600/10 border-gray-700">
+                    <SelectValue placeholder="Select tone" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gradient-to-br from-purple-900/30 to-blue-900/10 border-gray-700">
+                    <SelectItem value="professional">Professional</SelectItem>
+                    <SelectItem value="casual">Casual</SelectItem>
+                    <SelectItem value="funny">Funny</SelectItem>
+                    <SelectItem value="inspirational">Inspirational</SelectItem>
+                    <SelectItem value="trendy">Trendy & Gen Z</SelectItem>
+                    <SelectItem value="storytelling">Storytelling</SelectItem>
+                    <SelectItem value="engaging">Engaging & Questions</SelectItem>
+                    <SelectItem value="direct">Direct & Action</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             <Button 
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold" 
