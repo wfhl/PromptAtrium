@@ -555,11 +555,15 @@ export default function QuickPromptComplete() {
     if (!generatedPrompt) return;
     
     try {
-      await apiRequest('/api/prompts', 'POST', {
-        prompt: generatedPrompt,
-        title: `Enhanced prompt - ${new Date().toLocaleDateString()}`,
+      const response = await apiRequest('/api/prompts', 'POST', {
+        name: `Enhanced prompt - ${new Date().toLocaleDateString()}`,
+        promptContent: generatedPrompt,
+        description: subject || 'AI-generated prompt',
         tags: ['ai-generated', 'quick-prompt'],
-        category_id: template || 'general',
+        category: template || 'general',
+        isPublic: false,
+        status: 'published',
+        promptStyle: template,
         metadata: {
           character: character,
           subject: subject,
@@ -568,13 +572,14 @@ export default function QuickPromptComplete() {
         }
       });
       
-      await queryClient.invalidateQueries({ queryKey: ['/api/saved-prompts'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/prompts'] });
       
       toast({
         title: "Saved!",
         description: "Prompt saved to your library"
       });
     } catch (error) {
+      console.error('Save error:', error);
       toast({
         title: "Failed to save",
         description: "Could not save prompt to library",
