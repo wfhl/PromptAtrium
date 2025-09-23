@@ -82,11 +82,13 @@ export default function QuickPromptComplete() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageAnalysisResponse, setImageAnalysisResponse] = useState("");
   const [showImageAnalysis, setShowImageAnalysis] = useState(false);
+  const [isImageAnalysisCollapsed, setIsImageAnalysisCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Social media state
   const [socialMediaCaption, setSocialMediaCaption] = useState("");
   const [showSocialCaption, setShowSocialCaption] = useState(false);
+  const [selectedSocialTone, setSelectedSocialTone] = useState("professional");
   
   // Debug state
   const [debugReport, setDebugReport] = useState<DebugReportEntry[]>([]);
@@ -501,7 +503,7 @@ export default function QuickPromptComplete() {
     if (!generatedPrompt) return;
     
     try {
-      await apiRequest('/api/saved-prompts', 'POST', {
+      await apiRequest('/api/prompts', 'POST', {
         prompt: generatedPrompt,
         title: `Enhanced prompt - ${new Date().toLocaleDateString()}`,
         tags: ['ai-generated', 'quick-prompt'],
@@ -554,17 +556,31 @@ export default function QuickPromptComplete() {
             <div className="flex items-center gap-2">
               <Label htmlFor="subject" className="text-sm text-gray-400">Subject</Label>
               {jsonPromptData && (
-                <Popover open={sparklePopoverOpen} onOpenChange={setSparklePopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 hover:bg-gray-800/50"
-                      data-testid="button-sparkle"
-                    >
-                      <Sparkles className="h-4 w-4 text-pink-400" />
-                    </Button>
-                  </PopoverTrigger>
+                <>
+                  {/* Direct Random Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-gray-800/50"
+                    onClick={handleRandomScenario}
+                    data-testid="button-random-direct"
+                    title="Generate random prompt"
+                  >
+                    <Dices className="h-4 w-4 text-pink-400" />
+                  </Button>
+                  {/* Advanced Random with Popover */}
+                  <Popover open={sparklePopoverOpen} onOpenChange={setSparklePopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-gray-800/50"
+                        data-testid="button-sparkle"
+                        title="Advanced random options"
+                      >
+                        <Sparkles className="h-4 w-4 text-purple-400" />
+                      </Button>
+                    </PopoverTrigger>
                   <PopoverContent className="w-80 bg-gray-900 border-gray-800">
                     <div className="space-y-3">
                       <h4 className="font-medium text-gray-200">Random Prompt Generator</h4>
@@ -595,6 +611,7 @@ export default function QuickPromptComplete() {
                     </div>
                   </PopoverContent>
                 </Popover>
+                </>
               )}
             </div>
             <Input
@@ -693,6 +710,17 @@ export default function QuickPromptComplete() {
                 <SelectValue placeholder="Select template" />
               </SelectTrigger>
               <SelectContent>
+                {/* Special Options */}
+                <SelectItem value="Custom 1">Custom 1</SelectItem>
+                <SelectItem value="Custom 2">Custom 2</SelectItem>
+                <SelectItem value="Custom 3">Custom 3</SelectItem>
+                <SelectItem value="Flux Prompt Pro">Flux Prompt Pro</SelectItem>
+                <SelectItem value="Longform">Longform</SelectItem>
+                <SelectItem value="Pipeline">Pipeline</SelectItem>
+                <SelectItem value="Image Vision Analysis Only">Image Vision Analysis Only</SelectItem>
+                <SelectItem value="Social Media Post Caption">Social Media Post Caption</SelectItem>
+                {dbRuleTemplates.length > 0 && <div className="my-1 border-t border-gray-700" />}
+                {/* Database Templates */}
                 {dbRuleTemplates.map((tmpl) => (
                   <SelectItem key={tmpl.id} value={tmpl.id.toString()}>
                     {tmpl.name}
@@ -788,40 +816,42 @@ export default function QuickPromptComplete() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowImageAnalysis(false)}
+                    onClick={() => setIsImageAnalysisCollapsed(!isImageAnalysisCollapsed)}
                     className="h-6 w-6 p-0"
-                    data-testid="button-hide-analysis"
+                    data-testid="button-toggle-analysis"
                   >
-                    <ChevronUp className="h-4 w-4" />
+                    <ChevronUp className={`h-4 w-4 transition-transform ${isImageAnalysisCollapsed ? 'rotate-180' : ''}`} />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="bg-gray-800/50 rounded p-3">
-                  <p className="text-sm text-gray-300 leading-relaxed">
-                    {imageAnalysisResponse}
-                  </p>
-                </div>
-                
-                {/* Social Media Caption Options */}
-                <div className="mt-3 space-y-2">
-                  <Label className="text-xs text-gray-400">Generate Social Caption:</Label>
-                  <div className="flex gap-2">
-                    {['professional', 'casual', 'creative', 'funny'].map((tone) => (
-                      <Button
-                        key={tone}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleGenerateSocialCaption(tone)}
-                        className="text-xs"
-                        data-testid={`button-tone-${tone}`}
-                      >
-                        {tone}
-                      </Button>
-                    ))}
+              {!isImageAnalysisCollapsed && (
+                <CardContent className="pt-0">
+                  <div className="bg-gray-800/50 rounded p-3">
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      {imageAnalysisResponse}
+                    </p>
                   </div>
-                </div>
-              </CardContent>
+                  
+                  {/* Social Media Caption Options */}
+                  <div className="mt-3 space-y-2">
+                    <Label className="text-xs text-gray-400">Generate Social Caption:</Label>
+                    <div className="flex gap-2">
+                      {['professional', 'casual', 'creative', 'funny'].map((tone) => (
+                        <Button
+                          key={tone}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateSocialCaption(tone)}
+                          className="text-xs"
+                          data-testid={`button-tone-${tone}`}
+                        >
+                          {tone}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              )}
             </Card>
           )}
           
