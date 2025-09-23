@@ -270,7 +270,49 @@ export default function QuickPromptComplete() {
   
   // Main generation handler
   const handleGeneratePrompt = async () => {
-    // Validation
+    // Handle Social Media Post Caption generation
+    if (template === "Social Media Post Caption") {
+      if (!uploadedImage) {
+        toast({
+          title: "Image Required",
+          description: "Please upload an image for caption generation",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Use the social media caption handler directly
+      setIsGenerating(true);
+      setProgressVisible(true);
+      setProcessingStage('Generating caption...');
+      
+      // First analyze the image if not done
+      if (!imageAnalysisResponse && imagePreview) {
+        setProcessingStage('🔍 Analyzing image...');
+        const captionResponse = await fetch('/api/caption/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: imagePreview,
+            model: 'custom-vision',
+            captionStyle: 'Descriptive',
+            captionLength: 'medium',
+            customPrompt: 'Analyze this image in detail'
+          })
+        });
+        
+        if (captionResponse.ok) {
+          const data = await captionResponse.json();
+          setImageAnalysisResponse(data.caption);
+        }
+      }
+      
+      // Generate the social media caption
+      await handleGenerateSocialCaption(selectedSocialTone);
+      return;
+    }
+    
+    // Validation for regular prompt generation
     if (!subject && !uploadedImage) {
       toast({
         title: "Input required",
@@ -456,10 +498,13 @@ export default function QuickPromptComplete() {
         description: "Please analyze an image first",
         variant: "destructive"
       });
+      setIsGenerating(false);
+      setProgressVisible(false);
       return;
     }
     
     try {
+      setProcessingStage('✨ Generating caption...');
       const response = await fetch('/api/caption/social', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -472,12 +517,15 @@ export default function QuickPromptComplete() {
       const data = await response.json();
       
       if (data.success) {
+        // Set the caption as the generated prompt for Social Media Post Caption template
+        setGeneratedPrompt(data.caption);
+        setShowGeneratedSection(true);
         setSocialMediaCaption(data.caption);
-        setShowSocialCaption(true);
+        setShowSocialCaption(false); // Don't show separate social caption section
         
         toast({
-          title: "Caption generated",
-          description: `${tone} social media caption ready`
+          title: "Caption generated!",
+          description: `${tone.charAt(0).toUpperCase() + tone.slice(1)} social media caption is ready`
         });
       }
     } catch (error) {
@@ -485,6 +533,10 @@ export default function QuickPromptComplete() {
         title: "Failed to generate caption",
         variant: "destructive"
       });
+    } finally {
+      setIsGenerating(false);
+      setProgressVisible(false);
+      setProcessingStage('');
     }
   };
   
@@ -737,6 +789,38 @@ export default function QuickPromptComplete() {
             </Select>
           </div>
           
+          {/* Tone Selection for Social Media Post Caption */}
+          {template === "Social Media Post Caption" && (
+            <div className="space-y-2">
+              <Label className="text-sm text-gray-400">Select Tone</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { value: "professional", label: "Professional" },
+                  { value: "casual", label: "Casual" },
+                  { value: "funny", label: "Funny" },
+                  { value: "inspirational", label: "Inspirational" },
+                  { value: "trendy", label: "Trendy" },
+                  { value: "storytelling", label: "Storytelling" },
+                  { value: "engaging", label: "Engaging" },
+                  { value: "direct", label: "Direct" }
+                ].map((tone) => (
+                  <Button
+                    key={tone.value}
+                    variant={selectedSocialTone === tone.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedSocialTone(tone.value)}
+                    className={selectedSocialTone === tone.value 
+                      ? "bg-purple-600 hover:bg-purple-700" 
+                      : "bg-gray-800/50 border-gray-700 hover:bg-gray-700"}
+                    data-testid={`button-tone-${tone.value}`}
+                  >
+                    {tone.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {/* Generate Button */}
           <Button
             onClick={handleGeneratePrompt}
@@ -747,6 +831,8 @@ export default function QuickPromptComplete() {
           >
             {isGenerating ? (
               <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Generating...</>
+            ) : template === "Social Media Post Caption" ? (
+              <><Camera className="h-5 w-5 mr-2" /> Generate Caption</>
             ) : (
               <><Sparkles className="h-5 w-5 mr-2" /> Generate Prompt</>
             )}
