@@ -723,13 +723,7 @@ export default function QuickPromptComplete() {
                 <SelectValue placeholder="Select template" />
               </SelectTrigger>
               <SelectContent>
-                {/* Special Options */}
-                <SelectItem value="Custom 1">Custom 1</SelectItem>
-                <SelectItem value="Custom 2">Custom 2</SelectItem>
-                <SelectItem value="Custom 3">Custom 3</SelectItem>
-                <SelectItem value="Flux Prompt Pro">Flux Prompt Pro</SelectItem>
-                <SelectItem value="Longform">Longform</SelectItem>
-                <SelectItem value="Pipeline">Pipeline</SelectItem>
+                {/* Special Options (not in database) */}
                 <SelectItem value="Image Vision Analysis Only">Image Vision Analysis Only</SelectItem>
                 <SelectItem value="Social Media Post Caption">Social Media Post Caption</SelectItem>
                 {dbRuleTemplates.length > 0 && <div className="my-1 border-t border-gray-700" />}
