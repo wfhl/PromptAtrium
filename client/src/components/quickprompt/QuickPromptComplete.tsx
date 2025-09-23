@@ -556,62 +556,75 @@ export default function QuickPromptComplete() {
             <div className="flex items-center gap-2">
               <Label htmlFor="subject" className="text-sm text-gray-400">Subject</Label>
               {jsonPromptData && (
-                <>
-                  {/* Direct Random Button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 hover:bg-gray-800/50"
-                    onClick={handleRandomScenario}
-                    data-testid="button-random-direct"
-                    title="Generate random prompt"
-                  >
-                    <Dices className="h-4 w-4 text-pink-400" />
-                  </Button>
-                  {/* Advanced Random with Popover */}
-                  <Popover open={sparklePopoverOpen} onOpenChange={setSparklePopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 hover:bg-gray-800/50"
-                        data-testid="button-sparkle"
-                        title="Advanced random options"
-                      >
-                        <Sparkles className="h-4 w-4 text-purple-400" />
-                      </Button>
-                    </PopoverTrigger>
-                  <PopoverContent className="w-80 bg-gray-900 border-gray-800">
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-200">Random Prompt Generator</h4>
-                      <p className="text-sm text-gray-400">
-                        Select a category or choose random from all
-                      </p>
-                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-200">
-                          <SelectValue placeholder="All Categories (Random)" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-900 border-gray-800">
-                          <SelectItem value="all">All Categories (Random)</SelectItem>
-                          {Object.keys(jsonPromptData).map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button 
-                        onClick={handleRandomScenario} 
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white" 
-                        data-testid="button-generate-random"
-                      >
-                        <Dices className="h-4 w-4 mr-2" />
-                        Generate Random Scenario
-                      </Button>
+                <Popover open={sparklePopoverOpen} onOpenChange={setSparklePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 hover:bg-gray-800/50"
+                      data-testid="button-random-prompt"
+                      title="Generate random prompt"
+                    >
+                      <Sparkles className="h-4 w-4 text-pink-400" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 bg-gray-900 border-gray-800">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-gray-200 text-sm">Random Prompt</h4>
+                      <div className="space-y-1">
+                        {/* All Categories option at the top */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start hover:bg-gray-800 text-gray-300"
+                          onClick={() => {
+                            const categories = Object.keys(jsonPromptData);
+                            const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+                            const categoryPrompts = jsonPromptData[randomCategory];
+                            if (categoryPrompts && categoryPrompts.length > 0) {
+                              const randomPrompt = categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
+                              setSubject(randomPrompt);
+                              setSparklePopoverOpen(false);
+                              toast({
+                                title: "Random prompt generated!",
+                                description: `From ${randomCategory.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}`
+                              });
+                            }
+                          }}
+                          data-testid="button-all-categories"
+                        >
+                          <Dices className="h-4 w-4 mr-2 text-pink-400" />
+                          All Categories
+                        </Button>
+                        <div className="border-t border-gray-800 my-1" />
+                        {/* Individual category options */}
+                        {Object.keys(jsonPromptData).sort().map((category) => (
+                          <Button
+                            key={category}
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-gray-800 text-gray-300"
+                            onClick={() => {
+                              const categoryPrompts = jsonPromptData[category];
+                              if (categoryPrompts && categoryPrompts.length > 0) {
+                                const randomPrompt = categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
+                                setSubject(randomPrompt);
+                                setSparklePopoverOpen(false);
+                                toast({
+                                  title: "Random prompt generated!",
+                                  description: `From ${category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}`
+                                });
+                              }
+                            }}
+                            data-testid={`button-category-${category}`}
+                          >
+                            {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
                   </PopoverContent>
                 </Popover>
-                </>
               )}
             </div>
             <Input
