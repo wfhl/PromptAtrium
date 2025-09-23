@@ -3,6 +3,16 @@
 ## Overview
 A comprehensive platform for managing, sharing, and generating AI prompts. Features include a prompt library, community sharing, collections management, and advanced prompt generation tools.
 
+## Recent Updates (September 23, 2025)
+
+### Quick Prompt Component Enhancements
+- **Image Analysis Improvements**: Fixed image analysis section to collapse/expand properly without clearing data
+- **New Template Options**: Added two special template options to the Enhanced Template dropdown:
+  - "Image Vision Analysis Only" - Returns only the image vision analysis results
+  - "Social Media Post Caption" - Generates social media captions with tone selection
+- **Tone Selector**: When "Social Media Post Caption" is selected, a tone dropdown appears with options like Professional, Casual, Funny, Inspirational, etc.
+- **Improved UX**: Image analysis now persists when uploading new images, only collapsing the view rather than clearing the data
+
 ## Recent Updates (September 19, 2025)
 
 ### Quick Prompt Generator Integration
