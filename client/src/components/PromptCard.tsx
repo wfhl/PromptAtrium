@@ -206,6 +206,10 @@ export function PromptCard({
         }
       });
       
+      // Optimistically update likes cache
+      const currentLikes = queryClient.getQueryData(["/api/user/likes"]) as any[] || [];
+      const isCurrentlyLiked = currentLikes.some((like: any) => like.id === prompt.id);
+      
       // Optimistically update likes count on prompts
       queryClient.setQueriesData({ 
         predicate: (query) => {
@@ -216,14 +220,10 @@ export function PromptCard({
         if (!old) return old;
         return old.map((p: any) => 
           p.id === prompt.id 
-            ? { ...p, likes: (p.likes || 0) + (isLiked ? -1 : 1) }
+            ? { ...p, likes: (p.likes || 0) + (isCurrentlyLiked ? -1 : 1) }
             : p
         );
       });
-      
-      // Optimistically update likes cache
-      const currentLikes = queryClient.getQueryData(["/api/user/likes"]) as any[] || [];
-      const isCurrentlyLiked = currentLikes.some((like: any) => like.id === prompt.id);
       
       if (isCurrentlyLiked) {
         // Remove from likes
