@@ -178,26 +178,41 @@ export function PromptCard({
 
   const likeMutation = useMutation({
     mutationFn: async () => {
-      console.log("Like mutation triggered for prompt:", prompt.id, "by user:", typedUser?.id);
-      console.log("Current isLiked state:", isLiked);
-      console.log("User likes array:", userLikes);
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/like`);
       const data = await response.json();
-      console.log("Like API response:", data);
       return data;
     },
     retry: 1, // Allow one retry for network issues
     onMutate: async () => {
       // Cancel all prompt queries and likes queries to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
-      await queryClient.cancelQueries({ queryKey: ["/api/user/likes"], exact: false });
+      await queryClient.cancelQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/likes");
+        }
+      });
       
       // Get all existing data
-      const previousPromptsData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
-      const previousLikesData = queryClient.getQueriesData({ queryKey: ["/api/user/likes"], exact: false });
+      const previousPromptsData = queryClient.getQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      });
+      const previousLikesData = queryClient.getQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/user/likes");
+        }
+      });
       
       // Optimistically update likes count on prompts
-      queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
+      queryClient.setQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      }, (old: any) => {
         if (!old) return old;
         return old.map((p: any) => 
           p.id === prompt.id 
@@ -221,7 +236,6 @@ export function PromptCard({
       return { previousPromptsData, previousLikesData };
     },
     onSuccess: (data) => {
-      console.log("Like mutation success with data:", data);
       // Invalidate ALL prompt queries and likes - Dashboard, Library, any page  
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -236,8 +250,6 @@ export function PromptCard({
       });
     },
     onError: (error, variables, context) => {
-      console.error("Like mutation error:", error);
-      console.error("Error details:", { promptId: prompt.id, userId: typedUser?.id });
       // Revert optimistic update on error
       if (context?.previousPromptsData) {
         context.previousPromptsData.forEach(([queryKey, data]) => {
@@ -283,12 +295,26 @@ export function PromptCard({
     },
     onMutate: async () => {
       // Cancel all prompt queries and favorites queries to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
-      await queryClient.cancelQueries({ queryKey: ["/api/user/favorites"], exact: false });
+      await queryClient.cancelQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/favorites");
+        }
+      });
       
       // Get all existing data
-      const previousPromptsData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
-      const previousFavoritesData = queryClient.getQueriesData({ queryKey: ["/api/user/favorites"], exact: false });
+      const previousPromptsData = queryClient.getQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      });
+      const previousFavoritesData = queryClient.getQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/user/favorites");
+        }
+      });
       
       // Optimistically update favorites cache
       const currentFavorites = queryClient.getQueryData(["/api/user/favorites"]) as any[] || [];
@@ -445,13 +471,28 @@ export function PromptCard({
     },
     onMutate: async () => {
       // Cancel all prompt queries to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
+      await queryClient.cancelQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      });
       
       // Get all existing prompt queries 
-      const previousData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      const previousData = queryClient.getQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      });
       
       // Remove prompt from all caches immediately
-      queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
+      queryClient.setQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      }, (old: any) => {
         if (!old) return old;
         return old.filter((p: any) => p.id !== prompt.id);
       });
@@ -520,13 +561,28 @@ export function PromptCard({
     },
     onMutate: async () => {
       // Cancel all prompt queries to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: ["/api/prompts"], exact: false });
+      await queryClient.cancelQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      });
       
       // Get all existing prompt queries 
-      const previousData = queryClient.getQueriesData({ queryKey: ["/api/prompts"], exact: false });
+      const previousData = queryClient.getQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      });
       
       // Optimistically remove from current view (will be invalidated anyway)
-      queryClient.setQueriesData({ queryKey: ["/api/prompts"], exact: false }, (old: any) => {
+      queryClient.setQueriesData({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey?.includes("/api/prompts");
+        }
+      }, (old: any) => {
         if (!old) return old;
         return old.filter((p: any) => p.id !== prompt.id);
       });
