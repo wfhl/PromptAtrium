@@ -577,7 +577,9 @@ export default function QuickPromptComplete() {
     
     setPrepopulatedPrompt(prepopulatedData);
     // Delay opening modal to ensure state is updated
-    setTimeout(() => setShowPromptModal(true), 0);
+    setTimeout(() => {
+      setShowPromptModal(true);
+    }, 100);
   };
   
   return (

@@ -118,7 +118,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           negativePrompt: prompt.negativePrompt || "",
           promptType: prompt.promptType || "",
           promptStyle: prompt.promptStyle || "",
-          tags: prompt.tags?.join(", ") || "",
+          tags: Array.isArray(prompt.tags) ? prompt.tags.join(", ") : (prompt.tags || ""),
           isPublic: prompt.isPublic ?? false,
           isNsfw: prompt.isNsfw ?? false,
           collectionId: prompt.collectionId || defaultCollectionId || "none",
@@ -129,7 +129,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           author: prompt.author || "",
           sourceUrl: prompt.sourceUrl || "",
           intendedGenerator: prompt.intendedGenerator || "",
-          recommendedModels: prompt.recommendedModels?.join(", ") || "",
+          recommendedModels: Array.isArray(prompt.recommendedModels) ? prompt.recommendedModels.join(", ") : (prompt.recommendedModels || ""),
           technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
           variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
         });
