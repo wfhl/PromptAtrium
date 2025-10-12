@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,66 +54,46 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   // AI extraction state
   const [showAIExtractor, setShowAIExtractor] = useState(false);
   
-  // Initialize form with data if provided in create mode
-  const getInitialFormData = () => {
-    if (mode === "create" && prompt) {
-      return {
-        name: prompt.name || "",
-        description: "",
-        category: "",
-        promptContent: prompt.promptContent || "",
-        negativePrompt: "",
-        promptType: "",
-        promptStyle: prompt.promptStyle || "",
-        tags: "",
-        isPublic: false,
-        isNsfw: false,
-        collectionId: defaultCollectionId || "none",
-        license: "CC0 (Public Domain)",
-        status: "published",
-        exampleImages: [] as string[],
-        notes: "",
-        author: "",
-        sourceUrl: "",
-        intendedGenerator: "",
-        recommendedModels: "",
-        technicalParams: "",
-        variables: "",
-      };
-    }
-    return {
-      name: "",
-      description: "",
-      category: "",
-      promptContent: "",
-      negativePrompt: "",
-      promptType: "",
-      promptStyle: "",
-      tags: "",
-      isPublic: false,
-      isNsfw: false,
-      collectionId: defaultCollectionId || "none",
-      license: "CC0 (Public Domain)",
-      status: "published",
-      exampleImages: [] as string[],
-      notes: "",
-      author: "",
-      sourceUrl: "",
-      intendedGenerator: "",
-      recommendedModels: "",
-      technicalParams: "",
-      variables: "",
-    };
-  };
-
-  const [formData, setFormData] = useState(getInitialFormData());
+  // Simple initial state
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    category: "",
+    promptContent: "",
+    negativePrompt: "",
+    promptType: "",
+    promptStyle: "",
+    tags: "",
+    isPublic: false,
+    isNsfw: false,
+    collectionId: defaultCollectionId || "none",
+    license: "CC0 (Public Domain)",
+    status: "published",
+    exampleImages: [] as string[],
+    notes: "",
+    author: "",
+    sourceUrl: "",
+    intendedGenerator: "",
+    recommendedModels: "",
+    technicalParams: "",
+    variables: "",
+  });
   
-  // Update form data when in edit mode
+  // Use ref to track if we've populated the form for the current prompt
+  const hasPopulatedRef = useRef(false);
+  const lastPromptRef = useRef(prompt);
+  
+  // Update form data based on mode and prompt
   useEffect(() => {
-    if (!open) return;
+    // Reset tracking when modal closes
+    if (!open) {
+      hasPopulatedRef.current = false;
+      lastPromptRef.current = null;
+      return;
+    }
     
     if (mode === "edit" && prompt) {
-      // Populate form with existing prompt data for editing
+      // Always populate form with existing prompt data for editing
       setFormData({
         name: prompt.name || "",
         description: prompt.description || "",
@@ -137,8 +117,60 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
         variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
       });
+    } else if (mode === "create" && prompt && (!hasPopulatedRef.current || prompt !== lastPromptRef.current)) {
+      // Populate form with prepopulated data for creating (only once per prompt)
+      setFormData({
+        name: prompt.name || "",
+        description: "",
+        category: "",
+        promptContent: prompt.promptContent || "",
+        negativePrompt: "",
+        promptType: "",
+        promptStyle: prompt.promptStyle || "",
+        tags: "",
+        isPublic: false,
+        isNsfw: false,
+        collectionId: defaultCollectionId || "none",
+        license: "CC0 (Public Domain)",
+        status: "published",
+        exampleImages: [],
+        notes: "",
+        author: "",
+        sourceUrl: "",
+        intendedGenerator: "",
+        recommendedModels: "",
+        technicalParams: "",
+        variables: "",
+      });
+      hasPopulatedRef.current = true;
+      lastPromptRef.current = prompt;
+    } else if (mode === "create" && !prompt) {
+      // Reset form for creating new prompt without prepopulated data
+      setFormData({
+        name: "",
+        description: "",
+        category: "",
+        promptContent: "",
+        negativePrompt: "",
+        promptType: "",
+        promptStyle: "",
+        tags: "",
+        isPublic: false,
+        isNsfw: false,
+        collectionId: defaultCollectionId || "none",
+        license: "CC0 (Public Domain)",
+        status: "published",
+        exampleImages: [],
+        notes: "",
+        author: "",
+        sourceUrl: "",
+        intendedGenerator: "",
+        recommendedModels: "",
+        technicalParams: "",
+        variables: "",
+      });
     }
-  }, [prompt, mode, open]);
+  }, [prompt, mode, open, defaultCollectionId]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
