@@ -1027,7 +1027,7 @@ export function PromptCard({
   }
 
   return (
-    <Card className={`border-gray-800 bg-gray-900/30 hover:bg-gray-900/50 transition-colors cursor-pointer break-inside-avoid w-full max-w-full ${
+    <Card className={`border-gray-800 bg-gray-400/10 hover:bg-gray-400/20 transition-colors cursor-pointer break-inside-avoid w-full max-w-full ${
       isSelected ? "border-primary bg-muted/30" : ""
     } ${isSelectable ? 'cursor-pointer' : ''}`} 
     data-testid={`card-prompt-${prompt.id}`}
