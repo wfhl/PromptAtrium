@@ -108,7 +108,6 @@ export default function QuickPromptComplete() {
   // Open modal when prepopulated data is ready
   useEffect(() => {
     if (pendingModalOpen && prepopulatedPrompt) {
-      console.log('Opening modal with prepopulated data:', prepopulatedPrompt);
       setShowPromptModal(true);
       setPendingModalOpen(false);
     }
@@ -565,27 +564,14 @@ export default function QuickPromptComplete() {
       }
     };
     
-    // Prepare prepopulated data for the modal
-    const tags = ['ai-generated', 'quick-prompt'];
-    if (template) tags.push(template.toLowerCase().replace(/\s+/g, '-'));
-    if (character) tags.push('character-' + character.toLowerCase().replace(/\s+/g, '-'));
-    
+    // Prepare minimal prepopulated data for the modal (only the three fields you want)
     const prepopulatedData = {
       name: generateName(),
       promptContent: generatedPrompt,
-      description: subject || 'AI-generated prompt using Quick Prompt Generator',
-      tags: tags,
-      category: template || 'general',
-      isPublic: false,
-      status: 'published',
-      promptStyle: template === 'Social Media Post Caption' ? 'social' : template || '',
-      promptType: imagePreview ? 'image-to-text' : 'text-to-image',
-      intendedGenerator: 'midjourney',
-      notes: `Generated with Quick Prompt tool${character ? `, character: ${character}` : ''}${template ? `, template: ${template}` : ''}`,
+      promptStyle: template || '',
       isFromGenerator: true, // Add flag to indicate this is from generator
     };
     
-    console.log('Setting prepopulated data:', prepopulatedData);
     setPrepopulatedPrompt(prepopulatedData);
     setPendingModalOpen(true);
   };

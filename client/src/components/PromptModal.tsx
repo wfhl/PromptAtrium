@@ -89,7 +89,6 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       return;
     }
     
-    console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt, 'hasPopulatedForm:', hasPopulatedForm);
     
     if (mode === "edit" && prompt) {
       // Populate form with existing prompt data for editing
@@ -119,30 +118,30 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     } else if (mode === "create") {
       // If we have prefilled data (e.g., from metadata analyzer), use it
       if (prompt && !hasPopulatedForm) {
+        // Only update the specific fields provided, keep defaults for others
         const newFormData = {
           name: prompt.name || "",
-          description: prompt.description || "",
-          category: prompt.category || "",
+          description: "",
+          category: "",
           promptContent: prompt.promptContent || "",
-          negativePrompt: prompt.negativePrompt || "",
-          promptType: prompt.promptType || "",
+          negativePrompt: "",
+          promptType: "",
           promptStyle: prompt.promptStyle || "",
-          tags: Array.isArray(prompt.tags) ? prompt.tags.join(", ") : (prompt.tags || ""),
-          isPublic: prompt.isPublic ?? false,
-          isNsfw: prompt.isNsfw ?? false,
-          collectionId: prompt.collectionId || defaultCollectionId || "none",
-          license: prompt.license || "CC0 (Public Domain)",
-          status: prompt.status || "published",
-          exampleImages: prompt.exampleImagesUrl || [],
-          notes: prompt.notes || "",
-          author: prompt.author || "",
-          sourceUrl: prompt.sourceUrl || "",
-          intendedGenerator: prompt.intendedGenerator || "",
-          recommendedModels: Array.isArray(prompt.recommendedModels) ? prompt.recommendedModels.join(", ") : (prompt.recommendedModels || ""),
-          technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
-          variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
+          tags: "",
+          isPublic: false,
+          isNsfw: false,
+          collectionId: defaultCollectionId || "none",
+          license: "CC0 (Public Domain)",
+          status: "published",
+          exampleImages: [],
+          notes: "",
+          author: "",
+          sourceUrl: "",
+          intendedGenerator: "",
+          recommendedModels: "",
+          technicalParams: "",
+          variables: "",
         };
-        console.log('Setting form data in create mode:', newFormData);
         setFormData(newFormData);
         setHasPopulatedForm(true);
       } else if (!prompt && !hasPopulatedForm) {
@@ -172,7 +171,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         });
       }
     }
-  }, [prompt, mode, defaultCollectionId, open]);
+  }, [prompt, mode, open]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
