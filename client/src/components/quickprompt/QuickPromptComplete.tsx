@@ -119,6 +119,13 @@ export default function QuickPromptComplete() {
       });
   }, []);
   
+  // Save to prompt history mutation
+  const saveToHistoryMutation = useMutation({
+    mutationFn: async (historyData: any) => {
+      return apiRequest('/api/prompt-history', 'POST', historyData);
+    }
+  });
+  
   // Fetch character presets
   const { data: characterPresets = [] } = useQuery<CharacterPreset[]>({
     queryKey: ['/api/system-data/character-presets'],
@@ -433,6 +440,27 @@ export default function QuickPromptComplete() {
       setShowGeneratedSection(true);
       setProcessingStage('');
       
+      // Save to prompt history
+      if (generatedPrompt || basePrompt) {
+        const promptToSave = generatedPrompt || basePrompt;
+        const templateUsed = selectedTemplate?.name || template || "None";
+        
+        saveToHistoryMutation.mutate({
+          promptText: promptToSave,
+          templateUsed: templateUsed,
+          settings: {
+            tone: selectedSocialTone,
+            imageAnalysis: imageAnalysisResponse ? true : false,
+          },
+          metadata: {
+            subject: subject,
+            character: character === 'custom-character' ? customCharacterInput : 
+                      characterPresets.find(p => p.id?.toString() === character)?.name || character,
+            hasImage: uploadedImage ? true : false,
+          }
+        });
+      }
+      
       toast({
         title: "✨ Prompt generated!",
         description: "Your enhanced prompt is ready"
@@ -500,6 +528,23 @@ export default function QuickPromptComplete() {
         setShowGeneratedSection(true);
         setSocialMediaCaption(data.caption);
         setShowSocialCaption(false); // Don't show separate social caption section
+        
+        // Save social media caption to history
+        saveToHistoryMutation.mutate({
+          promptText: data.caption,
+          templateUsed: "Social Media Post Caption",
+          settings: {
+            tone: tone,
+            imageAnalysis: imageAnalysisResponse ? true : false,
+          },
+          metadata: {
+            subject: subject,
+            character: character === 'custom-character' ? customCharacterInput : 
+                      characterPresets.find(p => p.id?.toString() === character)?.name || character,
+            hasImage: true,
+            socialMediaTone: tone
+          }
+        });
         
         toast({
           title: "Caption generated!",
