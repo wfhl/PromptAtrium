@@ -112,13 +112,19 @@ async function upsertData() {
     const countResult = await client.query('SELECT COUNT(*) FROM aesthetics');
     console.log(`Current aesthetics count: ${countResult.rows[0].count}\n`);
 
-    // Ask for confirmation
-    console.log(`⚠️  WARNING: This will update/insert data in your ${dbType} database.`);
-    console.log('   - Existing records will be UPDATED based on original_id');
-    console.log('   - New records will be INSERTED');
-    console.log('   - No duplicates will be created\n');
-    console.log('Press Ctrl+C to cancel, or wait 5 seconds to continue...\n');
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Ask for confirmation unless --force flag is used
+    const forceFlag = process.argv.includes('--force');
+    if (!forceFlag) {
+      console.log(`⚠️  WARNING: This will update/insert data in your ${dbType} database.`);
+      console.log('   - Existing records will be UPDATED based on original_id');
+      console.log('   - New records will be INSERTED');
+      console.log('   - No duplicates will be created\n');
+      console.log('Press Ctrl+C to cancel, or wait 5 seconds to continue...');
+      console.log('(Or use --force flag to skip this confirmation)\n');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    } else {
+      console.log('🚀 Running with --force flag, skipping confirmation...\n');
+    }
 
     // Read and parse CSV
     console.log('📖 Reading CSV file...');
