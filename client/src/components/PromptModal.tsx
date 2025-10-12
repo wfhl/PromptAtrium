@@ -118,7 +118,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       });
     } else if (mode === "create") {
       // If we have prefilled data (e.g., from metadata analyzer), use it
+      console.log('Create mode - checking if should populate:', 'prompt:', !!prompt, 'hasPopulatedForm:', hasPopulatedForm);
       if (prompt && !hasPopulatedForm) {
+        console.log('Populating form with prompt data');
         // Only update the specific fields provided, keep defaults for others
         const newFormData = {
           name: prompt.name || "",
@@ -143,9 +145,12 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           technicalParams: "",
           variables: "",
         };
+        console.log('Setting form data to:', newFormData);
         setFormData(newFormData);
         setHasPopulatedForm(true);
+        console.log('Form data should now be set');
       } else if (!prompt && !hasPopulatedForm) {
+        console.log('No prompt data, resetting form');
         // Reset form for creating new prompt without prefilled data
         setFormData({
           name: "",
@@ -704,7 +709,30 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               </div>
             </CardContent>
           </Card>
-          
+          <Card className="mb-6 pt-3 bg-gradient-to-br from-cyan-400/20 to-purple-400/20">
+            <CardContent>
+               <Label htmlFor="exampleImages" className="text-pink-400">Example Images</Label>
+              <PromptImageUploader
+              currentImages={formData.exampleImages}
+              onImagesUpdate={(imageUrls) => setFormData(prevFormData => ({ ...prevFormData, exampleImages: imageUrls }))}
+              maxImages={10}
+              className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Upload up to 10 example images to showcase your prompt results</p>
+            </CardContent>
+          </Card>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="nsfw"
+              checked={formData.isNsfw}
+              onCheckedChange={(checked) => setFormData({ ...formData, isNsfw: !!checked })}
+              className="border-pink-400"
+              data-testid="checkbox-nsfw"
+            />
+            <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Mark as NSFW (Not Safe For Work)
+            </Label>
+          </div>
           <div>
             <Label htmlFor="collection" className="text-orange-400">Collection</Label>
             <Select value={formData.collectionId} onValueChange={(value) => {
@@ -824,30 +852,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             </div>
           </div>
             </div>
-          <Card className="mb-6 pt-3 bg-gradient-to-br from-cyan-400/20 to-purple-400/20">
-            <CardContent>
-               <Label htmlFor="exampleImages" className="text-pink-400">Example Images</Label>
-              <PromptImageUploader
-              currentImages={formData.exampleImages}
-              onImagesUpdate={(imageUrls) => setFormData(prevFormData => ({ ...prevFormData, exampleImages: imageUrls }))}
-              maxImages={10}
-              className="mt-2"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Upload up to 10 example images to showcase your prompt results</p>
-            </CardContent>
-          </Card>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="nsfw"
-              checked={formData.isNsfw}
-              onCheckedChange={(checked) => setFormData({ ...formData, isNsfw: !!checked })}
-              className="border-pink-400"
-              data-testid="checkbox-nsfw"
-            />
-            <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Mark as NSFW (Not Safe For Work)
-            </Label>
-          </div>
+         
 
           <div>
             <Label htmlFor="negativePrompt" className="text-red-400">Negative Prompt (Optional)</Label>
