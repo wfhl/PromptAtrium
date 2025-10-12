@@ -11,10 +11,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PromptModal } from "@/components/PromptModal";
+import { PromptHistory } from "@/components/PromptHistory";
 import { 
   Sparkles, Copy, Share2, Save, Plus, ImageIcon, X, ChevronUp, 
   Camera, FileText, Loader2, AlertCircle, CheckCircle, 
-  Bug, MessageSquare, Settings, Dices
+  Bug, MessageSquare, Settings, Dices, Clock
 } from "lucide-react";
 
 interface CharacterPreset {
@@ -103,6 +104,7 @@ export default function QuickPromptComplete() {
   // Modal state
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [prepopulatedPrompt, setPrepopulatedPrompt] = useState<any>(null);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   
   // Load JSON prompt helper data
   useEffect(() => {
@@ -253,6 +255,26 @@ export default function QuickPromptComplete() {
     }
   };
   
+  // Load prompt from history
+  const handleLoadFromHistory = (promptText: string, metadata?: any) => {
+    setGeneratedPrompt(promptText);
+    setShowGeneratedSection(true);
+    if (metadata) {
+      if (metadata.subject) setSubject(metadata.subject);
+      if (metadata.character) {
+        // Try to match with existing character preset
+        const preset = characterPresets.find(p => p.name === metadata.character);
+        if (preset) {
+          setCharacter(preset.id?.toString() || '');
+        } else {
+          setCharacter('custom-character');
+          setCustomCharacterInput(metadata.character);
+          setShowCustomCharacterInput(true);
+        }
+      }
+    }
+  };
+
   // Main generation handler
   const handleGeneratePrompt = async () => {
     // Handle Social Media Post Caption generation
@@ -614,8 +636,19 @@ export default function QuickPromptComplete() {
   
   return (
     <div className="space-y-6">
-      {/* Developer Mode Toggle */}
-      <div className="flex justify-end">
+      {/* Top Controls */}
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowHistoryDialog(true)}
+          className="text-gray-400 hover:text-gray-200"
+          data-testid="button-show-history"
+        >
+          <Clock className="h-4 w-4 mr-1" />
+          History
+        </Button>
+        
         <Button
           variant="ghost"
           size="sm"
@@ -1102,6 +1135,13 @@ export default function QuickPromptComplete() {
           setShowPromptModal(false);
           setPrepopulatedPrompt(null);
         }}
+      />
+      
+      {/* Prompt History Dialog */}
+      <PromptHistory
+        open={showHistoryDialog}
+        onOpenChange={setShowHistoryDialog}
+        onLoadPrompt={handleLoadFromHistory}
       />
     </div>
   );
