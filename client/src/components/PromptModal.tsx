@@ -54,42 +54,63 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   // AI extraction state
   const [showAIExtractor, setShowAIExtractor] = useState(false);
   
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    category: "",
-    promptContent: "",
-    negativePrompt: "",
-    promptType: "",
-    promptStyle: "",
-    tags: "",
-    isPublic: false,
-    isNsfw: false,
-    collectionId: "none",
-    license: "CC0 (Public Domain)",
-    status: "published",
-    exampleImages: [] as string[],
-    notes: "",
-    author: "",
-    sourceUrl: "",
-    intendedGenerator: "",
-    recommendedModels: "",
-    technicalParams: "",
-    variables: "",
-  });
-  
-  // Track whether we've already populated the form from props to avoid re-setting
-  const [hasPopulatedForm, setHasPopulatedForm] = useState(false);
-
-  // Update form data when prompt or mode changes or modal opens
-  useEffect(() => {
-    if (!open) {
-      // Reset the flag when modal closes
-      setHasPopulatedForm(false);
-      return;
+  // Initialize form with data if provided in create mode
+  const getInitialFormData = () => {
+    if (mode === "create" && prompt) {
+      return {
+        name: prompt.name || "",
+        description: "",
+        category: "",
+        promptContent: prompt.promptContent || "",
+        negativePrompt: "",
+        promptType: "",
+        promptStyle: prompt.promptStyle || "",
+        tags: "",
+        isPublic: false,
+        isNsfw: false,
+        collectionId: defaultCollectionId || "none",
+        license: "CC0 (Public Domain)",
+        status: "published",
+        exampleImages: [] as string[],
+        notes: "",
+        author: "",
+        sourceUrl: "",
+        intendedGenerator: "",
+        recommendedModels: "",
+        technicalParams: "",
+        variables: "",
+      };
     }
-    
-    console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt, 'hasPopulatedForm:', hasPopulatedForm);
+    return {
+      name: "",
+      description: "",
+      category: "",
+      promptContent: "",
+      negativePrompt: "",
+      promptType: "",
+      promptStyle: "",
+      tags: "",
+      isPublic: false,
+      isNsfw: false,
+      collectionId: defaultCollectionId || "none",
+      license: "CC0 (Public Domain)",
+      status: "published",
+      exampleImages: [] as string[],
+      notes: "",
+      author: "",
+      sourceUrl: "",
+      intendedGenerator: "",
+      recommendedModels: "",
+      technicalParams: "",
+      variables: "",
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData());
+  
+  // Update form data when in edit mode
+  useEffect(() => {
+    if (!open) return;
     
     if (mode === "edit" && prompt) {
       // Populate form with existing prompt data for editing
@@ -116,70 +137,6 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
         variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
       });
-    } else if (mode === "create") {
-      // If we have prefilled data (e.g., from metadata analyzer), use it
-      console.log('Create mode - checking if should populate:', 'prompt:', !!prompt, 'hasPopulatedForm:', hasPopulatedForm);
-      if (prompt && !hasPopulatedForm) {
-        console.log('Populating form with prompt data');
-        // Only update the specific fields provided, keep defaults for others
-        const newFormData = {
-          name: prompt.name || "",
-          description: "",
-          category: "",
-          promptContent: prompt.promptContent || "",
-          negativePrompt: "",
-          promptType: "",
-          promptStyle: prompt.promptStyle || "",
-          tags: "",
-          isPublic: false,
-          isNsfw: false,
-          collectionId: defaultCollectionId || "none",
-          license: "CC0 (Public Domain)",
-          status: "published",
-          exampleImages: [],
-          notes: "",
-          author: "",
-          sourceUrl: "",
-          intendedGenerator: "",
-          recommendedModels: "",
-          technicalParams: "",
-          variables: "",
-        };
-        console.log('Setting form data to:', newFormData);
-        setFormData(prev => {
-          console.log('Previous form data:', prev);
-          console.log('New form data being set:', newFormData);
-          return newFormData;
-        });
-        setHasPopulatedForm(true);
-        console.log('Form data should now be set');
-      } else if (!prompt && !hasPopulatedForm) {
-        console.log('No prompt data, resetting form');
-        // Reset form for creating new prompt without prefilled data
-        setFormData({
-          name: "",
-          description: "",
-          category: "",
-          promptContent: "",
-          negativePrompt: "",
-          promptType: "",
-          promptStyle: "",
-          tags: "",
-          isPublic: false,
-          isNsfw: false,
-          collectionId: defaultCollectionId || "none",
-          license: "CC0 (Public Domain)",
-          status: "published",
-          exampleImages: [],
-          notes: "",
-          author: "",
-          sourceUrl: "",
-          intendedGenerator: "",
-          recommendedModels: "",
-          technicalParams: "",
-          variables: "",
-        });
-      }
     }
   }, [prompt, mode, open]);
 
@@ -739,16 +696,6 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           </div>
           <Card className="mb-6 pt-3 bg-gradient-to-br from-cyan-400/20 to-purple-400/20">
             <CardContent>
-               <Label htmlFor="exampleImages" className="text-pink-400">Example Images</Label>
-              <PromptImageUploader
-              currentImages={formData.exampleImages}
-              onImagesUpdate={(imageUrls) => setFormData(prevFormData => ({ ...prevFormData, exampleImages: imageUrls }))}
-              maxImages={10}
-              className="mt-2"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Upload up to 10 example images to showcase your prompt results</p>
-            </CardContent>
-          </Card>
           <div>
             <Label htmlFor="collection" className="text-orange-400">Collection</Label>
             <Select value={formData.collectionId} onValueChange={(value) => {
@@ -868,7 +815,8 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             </div>
           </div>
             </div>
-         
+              </CardContent>
+                </Card>
 
           <div>
             <Label htmlFor="negativePrompt" className="text-red-400">Negative Prompt (Optional)</Label>
@@ -916,7 +864,11 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               </Select>
             </div>
           </div>
-
+       
+          
+          
+          <Card className="mb-6 pt-3 bg-gradient-to-br from-teal-400/20 to-purple-400/20">
+            <CardContent>
           <div>
             <Label htmlFor="tags">Tags</Label>
             <Input
@@ -940,7 +892,16 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               data-testid="textarea-description"
             />
           </div>
+              </CardContent>
+                </Card>
+          
 
+
+
+
+          
+          <Card className="mb-6 bg-gradient-to-br from-blue-400/20 to-purple-400/20">
+             <CardContent className="space-y-3 pt-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="author">Author</Label>
@@ -1020,10 +981,14 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               </Select>
             </div>
           </div>
+               </CardContent>
+                 </Card>
 
-        
 
-        
+          
+
+          <Card className="mb-6 bg-gradient-to-br from-yellow-400/20 to-purple-400/20">
+            <CardContent className="space-y-3 pt-3">
           <div>
             <Label htmlFor="notes" className="text-yellow-400">Notes</Label>
             <Textarea
@@ -1083,6 +1048,8 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               {isPending ? "Saving..." : mode === "create" ? "Create Prompt" : "Update Prompt"}
             </Button>
           </div>
+          </CardContent>
+            </Card>
         </form>
       </DialogContent>
     </Dialog>

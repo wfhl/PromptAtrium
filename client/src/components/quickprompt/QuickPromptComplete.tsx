@@ -563,13 +563,8 @@ export default function QuickPromptComplete() {
       isFromGenerator: true, // Add flag to indicate this is from generator
     };
     
-    console.log('Setting prepopulated data:', prepopulatedData);
     setPrepopulatedPrompt(prepopulatedData);
-    // Use a small delay to ensure state update completes before opening modal
-    setTimeout(() => {
-      console.log('Opening modal, prepopulatedPrompt should be:', prepopulatedData);
-      setShowPromptModal(true);
-    }, 50);
+    setShowPromptModal(true);
   };
   
   return (
