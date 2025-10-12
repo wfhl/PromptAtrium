@@ -737,6 +737,18 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               Mark as NSFW (Not Safe For Work)
             </Label>
           </div>
+          <Card className="mb-6 pt-3 bg-gradient-to-br from-cyan-400/20 to-purple-400/20">
+            <CardContent>
+               <Label htmlFor="exampleImages" className="text-pink-400">Example Images</Label>
+              <PromptImageUploader
+              currentImages={formData.exampleImages}
+              onImagesUpdate={(imageUrls) => setFormData(prevFormData => ({ ...prevFormData, exampleImages: imageUrls }))}
+              maxImages={10}
+              className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Upload up to 10 example images to showcase your prompt results</p>
+            </CardContent>
+          </Card>
           <div>
             <Label htmlFor="collection" className="text-orange-400">Collection</Label>
             <Select value={formData.collectionId} onValueChange={(value) => {
