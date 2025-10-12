@@ -146,7 +146,11 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           variables: "",
         };
         console.log('Setting form data to:', newFormData);
-        setFormData(newFormData);
+        setFormData(prev => {
+          console.log('Previous form data:', prev);
+          console.log('New form data being set:', newFormData);
+          return newFormData;
+        });
         setHasPopulatedForm(true);
         console.log('Form data should now be set');
       } else if (!prompt && !hasPopulatedForm) {
