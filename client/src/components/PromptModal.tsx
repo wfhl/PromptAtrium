@@ -82,6 +82,8 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   useEffect(() => {
     if (!open) return; // Don't update if modal is closed
     
+    console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt);
+    
     if (mode === "edit" && prompt) {
       // Populate form with existing prompt data for editing
       setFormData({
@@ -505,6 +507,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       promptStyle: "",
       tags: "",
       isPublic: true,
+      isNsfw: false,
       collectionId: "none",
       license: "CC0 (Public Domain)",
       status: "published",

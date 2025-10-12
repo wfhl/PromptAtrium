@@ -103,6 +103,16 @@ export default function QuickPromptComplete() {
   // Modal state
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [prepopulatedPrompt, setPrepopulatedPrompt] = useState<any>(null);
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  
+  // Open modal when prepopulated data is ready
+  useEffect(() => {
+    if (pendingModalOpen && prepopulatedPrompt) {
+      console.log('Opening modal with prepopulated data:', prepopulatedPrompt);
+      setShowPromptModal(true);
+      setPendingModalOpen(false);
+    }
+  }, [pendingModalOpen, prepopulatedPrompt]);
   
   // Load JSON prompt helper data
   useEffect(() => {
@@ -575,11 +585,9 @@ export default function QuickPromptComplete() {
       isFromGenerator: true, // Add flag to indicate this is from generator
     };
     
+    console.log('Setting prepopulated data:', prepopulatedData);
     setPrepopulatedPrompt(prepopulatedData);
-    // Delay opening modal to ensure state is updated
-    setTimeout(() => {
-      setShowPromptModal(true);
-    }, 100);
+    setPendingModalOpen(true);
   };
   
   return (
