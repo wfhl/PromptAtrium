@@ -89,6 +89,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       return;
     }
     
+    console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt, 'hasPopulatedForm:', hasPopulatedForm);
     
     if (mode === "edit" && prompt) {
       // Populate form with existing prompt data for editing
