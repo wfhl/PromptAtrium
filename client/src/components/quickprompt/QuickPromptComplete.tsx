@@ -539,13 +539,29 @@ export default function QuickPromptComplete() {
       return;
     }
     
+    // Generate a better name based on the prompt content
+    const generateName = () => {
+      // Extract key elements from the prompt for a better name
+      const promptWords = generatedPrompt.split(' ').slice(0, 10).join(' ');
+      if (subject) {
+        // Use subject as base for name
+        return subject.slice(0, 60) + (subject.length > 60 ? '...' : '');
+      } else if (promptWords.length > 20) {
+        // Use first part of generated prompt
+        return promptWords.slice(0, 50) + '...';
+      } else {
+        // Fallback with template name
+        return `${template || 'Enhanced'} prompt - ${new Date().toLocaleDateString()}`;
+      }
+    };
+    
     // Prepare prepopulated data for the modal
     const tags = ['ai-generated', 'quick-prompt'];
     if (template) tags.push(template.toLowerCase().replace(/\s+/g, '-'));
     if (character) tags.push('character-' + character.toLowerCase().replace(/\s+/g, '-'));
     
-    setPrepopulatedPrompt({
-      name: subject ? `${subject.slice(0, 50)}${subject.length > 50 ? '...' : ''}` : `Enhanced prompt - ${new Date().toLocaleDateString()}`,
+    const prepopulatedData = {
+      name: generateName(),
       promptContent: generatedPrompt,
       description: subject || 'AI-generated prompt using Quick Prompt Generator',
       tags: tags,
@@ -556,10 +572,12 @@ export default function QuickPromptComplete() {
       promptType: imagePreview ? 'image-to-text' : 'text-to-image',
       intendedGenerator: 'midjourney',
       notes: `Generated with Quick Prompt tool${character ? `, character: ${character}` : ''}${template ? `, template: ${template}` : ''}`,
-    });
+      isFromGenerator: true, // Add flag to indicate this is from generator
+    };
     
-    // Open the modal
-    setShowPromptModal(true);
+    setPrepopulatedPrompt(prepopulatedData);
+    // Delay opening modal to ensure state is updated
+    setTimeout(() => setShowPromptModal(true), 0);
   };
   
   return (

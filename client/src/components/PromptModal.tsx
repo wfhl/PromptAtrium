@@ -659,17 +659,20 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAIExtractor(true)}
-                    className="text-purple-400 hover:text-purple-300 hover:bg-purple-400/10"
-                    data-testid="button-extract-from-image"
-                  >
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Extract text from screenshot
-                  </Button>
+                  {/* Only show extract button when not from generator and in create mode */}
+                  {mode === 'create' && !prompt?.isFromGenerator && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAIExtractor(true)}
+                      className="text-purple-400 hover:text-purple-300 hover:bg-purple-400/10"
+                      data-testid="button-extract-from-image"
+                    >
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      Extract text from screenshot
+                    </Button>
+                  )}
                 </div>
                 <Textarea
                   id="promptContent"
