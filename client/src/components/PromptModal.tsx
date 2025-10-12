@@ -77,12 +77,19 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     technicalParams: "",
     variables: "",
   });
+  
+  // Track whether we've already populated the form from props to avoid re-setting
+  const [hasPopulatedForm, setHasPopulatedForm] = useState(false);
 
   // Update form data when prompt or mode changes or modal opens
   useEffect(() => {
-    if (!open) return; // Don't update if modal is closed
+    if (!open) {
+      // Reset the flag when modal closes
+      setHasPopulatedForm(false);
+      return;
+    }
     
-    console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt);
+    console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt, 'hasPopulatedForm:', hasPopulatedForm);
     
     if (mode === "edit" && prompt) {
       // Populate form with existing prompt data for editing
@@ -111,8 +118,8 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       });
     } else if (mode === "create") {
       // If we have prefilled data (e.g., from metadata analyzer), use it
-      if (prompt) {
-        setFormData({
+      if (prompt && !hasPopulatedForm) {
+        const newFormData = {
           name: prompt.name || "",
           description: prompt.description || "",
           category: prompt.category || "",
@@ -134,8 +141,11 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           recommendedModels: Array.isArray(prompt.recommendedModels) ? prompt.recommendedModels.join(", ") : (prompt.recommendedModels || ""),
           technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
           variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
-        });
-      } else {
+        };
+        console.log('Setting form data in create mode:', newFormData);
+        setFormData(newFormData);
+        setHasPopulatedForm(true);
+      } else if (!prompt && !hasPopulatedForm) {
         // Reset form for creating new prompt without prefilled data
         setFormData({
           name: "",
