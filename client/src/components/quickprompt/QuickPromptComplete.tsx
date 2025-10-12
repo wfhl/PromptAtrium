@@ -403,6 +403,8 @@ export default function QuickPromptComplete() {
       
       const selectedTemplate = dbRuleTemplates.find(t => t.id?.toString() === template);
       
+      let finalPrompt = basePrompt; // Store the final prompt to save
+      
       if (selectedTemplate) {
         const enhanceStart = Date.now();
         const enhanceResponse = await fetch('/api/enhance-prompt', {
@@ -426,7 +428,8 @@ export default function QuickPromptComplete() {
         const enhanceData = await enhanceResponse.json();
         
         if (enhanceData.success) {
-          setGeneratedPrompt(enhanceData.enhancedPrompt);
+          finalPrompt = enhanceData.enhancedPrompt;
+          setGeneratedPrompt(finalPrompt);
           
           debugEntries.push({
             stage: 'LLM Enhancement',
@@ -463,25 +466,22 @@ export default function QuickPromptComplete() {
       setProcessingStage('');
       
       // Save to prompt history
-      if (generatedPrompt || basePrompt) {
-        const promptToSave = generatedPrompt || basePrompt;
-        const templateUsed = selectedTemplate?.name || template || "None";
-        
-        saveToHistoryMutation.mutate({
-          promptText: promptToSave,
-          templateUsed: templateUsed,
-          settings: {
-            tone: selectedSocialTone,
-            imageAnalysis: imageAnalysisResponse ? true : false,
-          },
-          metadata: {
-            subject: subject,
-            character: character === 'custom-character' ? customCharacterInput : 
-                      characterPresets.find(p => p.id?.toString() === character)?.name || character,
-            hasImage: uploadedImage ? true : false,
-          }
-        });
-      }
+      const templateUsed = selectedTemplate?.name || template || "None";
+      
+      saveToHistoryMutation.mutate({
+        promptText: finalPrompt,
+        templateUsed: templateUsed,
+        settings: {
+          tone: selectedSocialTone,
+          imageAnalysis: imageAnalysisResponse ? true : false,
+        },
+        metadata: {
+          subject: subject,
+          character: character === 'custom-character' ? customCharacterInput : 
+                    characterPresets.find(p => p.id?.toString() === character)?.name || character,
+          hasImage: uploadedImage ? true : false,
+        }
+      });
       
       toast({
         title: "✨ Prompt generated!",
