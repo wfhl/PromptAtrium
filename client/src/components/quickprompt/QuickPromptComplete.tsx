@@ -124,7 +124,14 @@ export default function QuickPromptComplete() {
   // Save to prompt history mutation
   const saveToHistoryMutation = useMutation({
     mutationFn: async (historyData: any) => {
+      console.log('Saving to history:', historyData);
       return apiRequest('/api/prompt-history', 'POST', historyData);
+    },
+    onSuccess: () => {
+      console.log('History saved successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to save history:', error);
     }
   });
   
@@ -467,6 +474,13 @@ export default function QuickPromptComplete() {
       
       // Save to prompt history
       const templateUsed = selectedTemplate?.name || template || "None";
+      
+      console.log('About to save to history with:', {
+        promptText: finalPrompt,
+        templateUsed: templateUsed,
+        subject: subject,
+        character: character
+      });
       
       saveToHistoryMutation.mutate({
         promptText: finalPrompt,
