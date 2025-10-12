@@ -104,6 +104,18 @@ export const userCommunities = pgTable("user_communities", {
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 
+// Prompt history table - tracks all generated prompts by users
+export const promptHistory = pgTable("prompt_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  promptText: text("prompt_text").notNull(),
+  templateUsed: varchar("template_used"),
+  settings: jsonb("settings").default({}), // Stores tone, style, and other generator settings
+  metadata: jsonb("metadata").default({}), // Stores character presets, scenarios, etc.
+  isSaved: boolean("is_saved").default(false), // Track if already saved to library
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Community admins table - tracks which users are admins of which communities
 export const communityAdmins = pgTable("community_admins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -696,6 +708,11 @@ export const insertUserCommunitySchema = createInsertSchema(userCommunities).omi
   joinedAt: true,
 });
 
+export const insertPromptHistorySchema = createInsertSchema(promptHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertCommunityAdminSchema = createInsertSchema(communityAdmins).omit({
   id: true,
   assignedAt: true,
@@ -855,6 +872,8 @@ export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
 export type Community = typeof communities.$inferSelect;
 export type InsertUserCommunity = z.infer<typeof insertUserCommunitySchema>;
 export type UserCommunity = typeof userCommunities.$inferSelect;
+export type InsertPromptHistory = z.infer<typeof insertPromptHistorySchema>;
+export type PromptHistory = typeof promptHistory.$inferSelect;
 export type InsertCommunityAdmin = z.infer<typeof insertCommunityAdminSchema>;
 export type CommunityAdmin = typeof communityAdmins.$inferSelect;
 export type InsertCommunityInvite = z.infer<typeof insertCommunityInviteSchema>;
