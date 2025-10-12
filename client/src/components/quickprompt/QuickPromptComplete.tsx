@@ -599,10 +599,10 @@ export default function QuickPromptComplete() {
                       <Sparkles className="h-4 w-4 text-pink-400" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-64 bg-gray-900 border-gray-800">
+                  <PopoverContent className="w-72 bg-gray-900 border-gray-800">
                     <div className="space-y-2">
-                      <h4 className="font-medium text-gray-200 text-sm">Random Prompt</h4>
-                      <div className="space-y-1">
+                      <h4 className="font-medium text-gray-200 text-sm px-2">Random Prompt</h4>
+                      <div className="max-h-96 overflow-y-auto space-y-1">
                         {/* All Categories option at the top */}
                         <Button
                           variant="ghost"
@@ -634,7 +634,7 @@ export default function QuickPromptComplete() {
                             key={category}
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start hover:bg-gray-800 text-gray-300 h-auto py-2"
+                            className="w-full justify-between hover:bg-gray-800 text-gray-300 py-2 px-2"
                             onClick={() => {
                               const categoryPrompts = jsonPromptData[category];
                               if (categoryPrompts && categoryPrompts.length > 0) {
@@ -649,14 +649,12 @@ export default function QuickPromptComplete() {
                             }}
                             data-testid={`button-category-${category}`}
                           >
-                            <div className="flex flex-col items-start">
-                              <span className="text-sm font-medium">
-                                {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                {jsonPromptData[category]?.length || 0} prompts
-                              </span>
-                            </div>
+                            <span className="text-sm font-medium">
+                              {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {jsonPromptData[category]?.length || 0}
+                            </span>
                           </Button>
                         ))}
                       </div>
