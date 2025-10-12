@@ -106,43 +106,16 @@ export default function QuickPromptComplete() {
   
   // Load JSON prompt helper data
   useEffect(() => {
-    fetch('/api/system-data/json-prompt-helper')
+    fetch('/data/jsonprompthelper.json')
       .then(response => response.json())
       .then(data => setJsonPromptData(data))
-      .catch(() => {
-        // Fallback data with more categories
-        setJsonPromptData({
-          nature_scenes: [
-            "misty forest with ancient trees",
-            "sunset over mountain peaks",
-            "serene lake with autumn reflections",
-            "desert landscape under starry sky"
-          ],
-          portraits: [
-            "professional portrait with dramatic lighting",
-            "candid street photography portrait",
-            "moody black and white headshot",
-            "environmental portrait in workspace"
-          ],
-          cinematic: [
-            "epic battle scene with dramatic composition",
-            "film noir detective in rainy alleyway",
-            "space station interior with lens flares",
-            "post-apocalyptic city landscape"
-          ],
-          fantasy: [
-            "magical forest with glowing mushrooms",
-            "dragon perched on castle tower",
-            "wizard casting colorful spell",
-            "enchanted library with floating books"
-          ],
-          scifi: [
-            "cyberpunk city with neon signs",
-            "robot repair shop in space station",
-            "alien marketplace on distant planet",
-            "futuristic vehicle in chrome city"
-          ]
-        });
+      .catch((error) => {
+        console.error('Failed to load JSON prompt data:', error);
+        // Still try to load from API if static file fails
+        fetch('/api/system-data/json-prompt-helper')
+          .then(response => response.json())
+          .then(data => setJsonPromptData(data))
+          .catch(() => console.error('Failed to load prompt data from any source'));
       });
   }, []);
   

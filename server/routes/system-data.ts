@@ -315,59 +315,31 @@ router.delete('/character-presets/:id', async (req, res) => {
  */
 router.get('/json-prompt-helper', async (req, res) => {
   try {
-    // Return categorized prompt suggestions
-    const promptData = {
-      nature_scenes: [
-        "misty forest with ancient trees and golden sunlight",
-        "dramatic mountain peaks at sunset with clouds",
-        "serene lake reflecting autumn colors",
-        "wild ocean waves crashing against cliffs",
-        "desert dunes under starry night sky"
-      ],
-      urban_landscapes: [
-        "cyberpunk city street with neon lights",
-        "abandoned industrial complex at dawn",
-        "bustling market square in old European town",
-        "modern skyline reflected in glass buildings",
-        "rain-soaked alleyway with atmospheric lighting"
-      ],
-      fantasy_scenes: [
-        "floating islands with waterfalls in the sky",
-        "ancient magical library with glowing books",
-        "dragon's lair filled with treasure",
-        "enchanted forest with bioluminescent plants",
-        "crystal cave with rainbow light reflections"
-      ],
-      portraits: [
-        "wise elder with weathered features telling stories",
-        "young adventurer ready for journey",
-        "mysterious figure in shadows",
-        "royal portrait with elaborate costume",
-        "candid street portrait with natural light"
-      ],
-      abstract_concepts: [
-        "visualization of time and space",
-        "emotions transformed into colors",
-        "sound waves becoming visible art",
-        "dreams merging with reality",
-        "consciousness expanding into cosmos"
-      ],
-      sci_fi_themes: [
-        "space station orbiting alien planet",
-        "robot discovering human emotions",
-        "time portal opening in laboratory",
-        "alien marketplace on distant world",
-        "terraforming project on Mars"
-      ]
-    };
-
-    res.json(promptData);
+    // Try to load from the JSON file first
+    const fs = await import('fs');
+    const path = await import('path');
+    const jsonPath = path.join(process.cwd(), 'client/src/data/jsonprompthelper.json');
+    
+    try {
+      const fileContent = fs.readFileSync(jsonPath, 'utf-8');
+      const promptData = JSON.parse(fileContent);
+      res.json(promptData);
+    } catch (fileError) {
+      // If file doesn't exist or can't be read, return basic structure
+      console.error('Could not read jsonprompthelper.json:', fileError);
+      res.json({
+        abstract_concepts: ["visualization of thoughts and ideas"],
+        fantasy_scenes: ["magical realm with mystical creatures"],
+        nature_scenes: ["serene landscape with natural beauty"],
+        portraits: ["expressive human portrait"],
+        sci_fi_themes: ["futuristic technology and space"],
+        urban_landscapes: ["city architecture and street scenes"],
+        general: ["creative and artistic compositions"]
+      });
+    }
   } catch (error: any) {
-    console.error('Error fetching prompt helper data:', error);
-    res.json({
-      nature_scenes: ["landscape with mountains"],
-      portraits: ["person portrait"]
-    });
+    console.error('Error in json-prompt-helper endpoint:', error);
+    res.status(500).json({ error: 'Failed to load prompt data' });
   }
 });
 
