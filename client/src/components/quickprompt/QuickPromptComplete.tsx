@@ -1044,6 +1044,7 @@ export default function QuickPromptComplete() {
       
       {/* Prompt Save Modal */}
       <PromptModal
+        key={prepopulatedPrompt ? JSON.stringify(prepopulatedPrompt) : 'empty'}
         open={showPromptModal}
         onOpenChange={setShowPromptModal}
         mode="create"
