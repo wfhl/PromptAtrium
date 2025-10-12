@@ -634,7 +634,7 @@ export default function QuickPromptComplete() {
                             key={category}
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start hover:bg-gray-800 text-gray-300"
+                            className="w-full justify-start hover:bg-gray-800 text-gray-300 h-auto py-2"
                             onClick={() => {
                               const categoryPrompts = jsonPromptData[category];
                               if (categoryPrompts && categoryPrompts.length > 0) {
@@ -649,7 +649,14 @@ export default function QuickPromptComplete() {
                             }}
                             data-testid={`button-category-${category}`}
                           >
-                            {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                            <div className="flex flex-col items-start">
+                              <span className="text-sm font-medium">
+                                {category.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {jsonPromptData[category]?.length || 0} prompts
+                              </span>
+                            </div>
                           </Button>
                         ))}
                       </div>
