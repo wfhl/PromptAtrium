@@ -55,49 +55,39 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   const [showAIExtractor, setShowAIExtractor] = useState(false);
   
   // Simple initial state
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    category: "",
-    promptContent: "",
-    negativePrompt: "",
-    promptType: "",
-    promptStyle: "",
-    tags: "",
-    isPublic: false,
-    isNsfw: false,
-    collectionId: defaultCollectionId || "none",
-    license: "CC0 (Public Domain)",
-    status: "published",
-    exampleImages: [] as string[],
-    notes: "",
-    author: "",
-    sourceUrl: "",
-    intendedGenerator: "",
-    recommendedModels: "",
-    technicalParams: "",
-    variables: "",
-  });
-  
-  // Use ref to track if we've populated the form for the current prompt
-  const hasPopulatedRef = useRef(false);
-  const lastPromptRef = useRef(prompt);
-  
-  // Update form data based on mode and prompt
-  useEffect(() => {
-    console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt);
-    
-    // Reset tracking when modal closes
-    if (!open) {
-      hasPopulatedRef.current = false;
-      lastPromptRef.current = null;
-      return;
+  const getInitialFormData = () => {
+    // If we have prepopulated data in create mode, use it
+    if (mode === "create" && prompt) {
+      console.log('Initializing form with prepopulated data:', prompt);
+      return {
+        name: prompt.name || "",
+        description: "",
+        category: "",
+        promptContent: prompt.promptContent || "",
+        negativePrompt: "",
+        promptType: "",
+        promptStyle: prompt.promptStyle || "",
+        tags: "",
+        isPublic: false,
+        isNsfw: false,
+        collectionId: defaultCollectionId || "none",
+        license: "CC0 (Public Domain)",
+        status: "published",
+        exampleImages: [] as string[],
+        notes: "",
+        author: "",
+        sourceUrl: "",
+        intendedGenerator: "",
+        recommendedModels: "",
+        technicalParams: "",
+        variables: "",
+      };
     }
     
+    // If we're editing, use the existing prompt data
     if (mode === "edit" && prompt) {
-      console.log('Edit mode - populating form with existing prompt data');
-      // Always populate form with existing prompt data for editing
-      setFormData({
+      console.log('Initializing form with existing prompt data:', prompt);
+      return {
         name: prompt.name || "",
         description: prompt.description || "",
         category: prompt.category || "",
@@ -119,64 +109,111 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         recommendedModels: prompt.recommendedModels?.join(", ") || "",
         technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
         variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
-      });
-    } else if (mode === "create" && prompt && (!hasPopulatedRef.current || prompt !== lastPromptRef.current)) {
-      console.log('Create mode - populating form with prepopulated data');
-      console.log('hasPopulatedRef.current:', hasPopulatedRef.current);
-      console.log('Prepopulated prompt data:', prompt);
-      // Populate form with prepopulated data for creating (only once per prompt)
-      const newFormData = {
-        name: prompt.name || "",
-        description: "",
-        category: "",
-        promptContent: prompt.promptContent || "",
-        negativePrompt: "",
-        promptType: "",
-        promptStyle: prompt.promptStyle || "",
-        tags: "",
-        isPublic: false,
-        isNsfw: false,
-        collectionId: defaultCollectionId || "none",
-        license: "CC0 (Public Domain)",
-        status: "published",
-        exampleImages: [],
-        notes: "",
-        author: "",
-        sourceUrl: "",
-        intendedGenerator: "",
-        recommendedModels: "",
-        technicalParams: "",
-        variables: "",
       };
-      console.log('Setting form data to:', newFormData);
-      setFormData(newFormData);
+    }
+    
+    // Default empty form
+    return {
+      name: "",
+      description: "",
+      category: "",
+      promptContent: "",
+      negativePrompt: "",
+      promptType: "",
+      promptStyle: "",
+      tags: "",
+      isPublic: false,
+      isNsfw: false,
+      collectionId: defaultCollectionId || "none",
+      license: "CC0 (Public Domain)",
+      status: "published",
+      exampleImages: [] as string[],
+      notes: "",
+      author: "",
+      sourceUrl: "",
+      intendedGenerator: "",
+      recommendedModels: "",
+      technicalParams: "",
+      variables: "",
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
+  
+  // Use ref to track if we've populated the form for the current prompt
+  const hasPopulatedRef = useRef(false);
+  const lastPromptRef = useRef(prompt);
+  
+  // Update form data when prop changes
+  useEffect(() => {
+    console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt);
+    
+    // Reset tracking when modal closes
+    if (!open) {
+      hasPopulatedRef.current = false;
+      lastPromptRef.current = null;
+      return;
+    }
+    
+    // When modal opens or prompt changes, update the form data
+    if (open && prompt && prompt !== lastPromptRef.current) {
+      console.log('Updating form with new prompt data');
+      
+      if (mode === "edit") {
+        console.log('Edit mode - populating form with existing prompt data');
+        setFormData({
+          name: prompt.name || "",
+          description: prompt.description || "",
+          category: prompt.category || "",
+          promptContent: prompt.promptContent || "",
+          negativePrompt: prompt.negativePrompt || "",
+          promptType: prompt.promptType || "",
+          promptStyle: prompt.promptStyle || "",
+          tags: prompt.tags?.join(", ") || "",
+          isPublic: prompt.isPublic ?? true,
+          isNsfw: prompt.isNsfw ?? false,
+          collectionId: prompt.collectionId || "none",
+          license: prompt.license || "CC0 (Public Domain)",
+          status: prompt.status || "published",
+          exampleImages: prompt.exampleImagesUrl || [],
+          notes: prompt.notes || "",
+          author: prompt.author || "",
+          sourceUrl: prompt.sourceUrl || "",
+          intendedGenerator: prompt.intendedGenerator || "",
+          recommendedModels: prompt.recommendedModels?.join(", ") || "",
+          technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
+          variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
+        });
+      } else if (mode === "create") {
+        console.log('Create mode - populating form with prepopulated data');
+        console.log('Prepopulated prompt data:', prompt);
+        setFormData({
+          name: prompt.name || "",
+          description: "",
+          category: "",
+          promptContent: prompt.promptContent || "",
+          negativePrompt: "",
+          promptType: "",
+          promptStyle: prompt.promptStyle || "",
+          tags: "",
+          isPublic: false,
+          isNsfw: false,
+          collectionId: defaultCollectionId || "none",
+          license: "CC0 (Public Domain)",
+          status: "published",
+          exampleImages: [],
+          notes: "",
+          author: "",
+          sourceUrl: "",
+          intendedGenerator: "",
+          recommendedModels: "",
+          technicalParams: "",
+          variables: "",
+        });
+      }
+      
       hasPopulatedRef.current = true;
       lastPromptRef.current = prompt;
-    } else if (mode === "create" && !prompt) {
-      // Reset form for creating new prompt without prepopulated data
-      setFormData({
-        name: "",
-        description: "",
-        category: "",
-        promptContent: "",
-        negativePrompt: "",
-        promptType: "",
-        promptStyle: "",
-        tags: "",
-        isPublic: false,
-        isNsfw: false,
-        collectionId: defaultCollectionId || "none",
-        license: "CC0 (Public Domain)",
-        status: "published",
-        exampleImages: [],
-        notes: "",
-        author: "",
-        sourceUrl: "",
-        intendedGenerator: "",
-        recommendedModels: "",
-        technicalParams: "",
-        variables: "",
-      });
     }
   }, [prompt, mode, open, defaultCollectionId]);
 
