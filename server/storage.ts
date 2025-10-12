@@ -21,6 +21,7 @@ import {
   notifications,
   prompt_components,
   aesthetics,
+  promptHistory,
   type User,
   type UpsertUser,
   type Prompt,
@@ -59,6 +60,8 @@ import {
   type InsertActivity,
   type Notification,
   type InsertNotification,
+  type PromptHistory,
+  type InsertPromptHistory,
   type UserRole,
   type CommunityRole,
   codexCategories,
@@ -281,6 +284,14 @@ export interface IStorage {
   createRecommendedModel(model: InsertRecommendedModel): Promise<RecommendedModel>;
   updateRecommendedModel(id: string, model: Partial<InsertRecommendedModel>): Promise<RecommendedModel>;
   deleteRecommendedModel(id: string): Promise<void>;
+
+  // Prompt history operations
+  savePromptToHistory(history: InsertPromptHistory): Promise<PromptHistory>;
+  getPromptHistory(userId: string, options?: { limit?: number; offset?: number }): Promise<PromptHistory[]>;
+  getRecentPromptHistory(userId: string, limit?: number): Promise<PromptHistory[]>;
+  deletePromptHistory(id: string, userId: string): Promise<void>;
+  clearPromptHistory(userId: string): Promise<void>;
+  markPromptAsSaved(historyId: string, userId: string): Promise<void>;
 
   // Wordsmith Codex operations - Using prompt_components and aesthetics tables
   getWordsmithCategories(): Promise<{ id: string; name: string; termCount: number; anatomyGroup?: string; subcategories?: string[] }[]>;
@@ -2229,6 +2240,59 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecommendedModel(id: string): Promise<void> {
     await db.delete(recommendedModels).where(eq(recommendedModels.id, id));
+  }
+
+  // Prompt history operations
+  async savePromptToHistory(history: InsertPromptHistory): Promise<PromptHistory> {
+    const [saved] = await db.insert(promptHistory).values(history).returning();
+    return saved;
+  }
+
+  async getPromptHistory(userId: string, options?: { limit?: number; offset?: number }): Promise<PromptHistory[]> {
+    const limit = options?.limit || 100;
+    const offset = options?.offset || 0;
+    
+    return await db
+      .select()
+      .from(promptHistory)
+      .where(eq(promptHistory.userId, userId))
+      .orderBy(sql`${promptHistory.createdAt} DESC`)
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getRecentPromptHistory(userId: string, limit: number = 10): Promise<PromptHistory[]> {
+    return await db
+      .select()
+      .from(promptHistory)
+      .where(eq(promptHistory.userId, userId))
+      .orderBy(sql`${promptHistory.createdAt} DESC`)
+      .limit(limit);
+  }
+
+  async deletePromptHistory(id: string, userId: string): Promise<void> {
+    await db
+      .delete(promptHistory)
+      .where(and(
+        eq(promptHistory.id, id),
+        eq(promptHistory.userId, userId)
+      ));
+  }
+
+  async clearPromptHistory(userId: string): Promise<void> {
+    await db
+      .delete(promptHistory)
+      .where(eq(promptHistory.userId, userId));
+  }
+
+  async markPromptAsSaved(historyId: string, userId: string): Promise<void> {
+    await db
+      .update(promptHistory)
+      .set({ isSaved: true })
+      .where(and(
+        eq(promptHistory.id, historyId),
+        eq(promptHistory.userId, userId)
+      ));
   }
 
   // Wordsmith Codex operations - Using prompt_components and aesthetics tables
