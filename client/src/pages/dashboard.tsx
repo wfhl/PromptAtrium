@@ -269,7 +269,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
+      <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 md:pb-8">
         {/* Dashboard Header */}
         <div className="mb-2 md:mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 md:mb-6">
@@ -399,22 +399,6 @@ export default function Dashboard() {
 
         {/* Quick Actions for Mobile - Show at top on mobile */}
         <div className="block md:hidden mb-3">
-          {/* Navigation Buttons */}
-          <div className="flex gap-2 mb-3">
-            <Link href="/library" className="flex-1">
-              <Button className="w-full button-gradient-library" data-testid="button-my-prompts">
-                <FileText className="h-4 w-4 mr-2" />
-                My Prompts
-              </Button>
-            </Link>
-            <Link href="/community" className="flex-1">
-              <Button className="w-full button-gradient-community" data-testid="button-community-prompts">
-                <Users className="h-4 w-4 mr-2" />
-                Community Prompts
-              </Button>
-            </Link>
-          </div>
-          
           <QuickActions
             onCreatePrompt={handleCreatePrompt}
             onCreateCollection={handleCreateCollection}
@@ -713,6 +697,24 @@ export default function Dashboard() {
           </Form>
         </DialogContent>
       </Dialog>
+      
+      {/* Floating Navigation Buttons for Mobile */}
+      <div className="block md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-safe">
+        <div className="flex gap-2 max-w-screen-xl mx-auto">
+          <Link href="/library" className="flex-1">
+            <Button className="w-full button-gradient-library" data-testid="button-my-prompts">
+              <FileText className="h-4 w-4 mr-2" />
+              My Prompts
+            </Button>
+          </Link>
+          <Link href="/community" className="flex-1">
+            <Button className="w-full button-gradient-community" data-testid="button-community-prompts">
+              <Users className="h-4 w-4 mr-2" />
+              Community Prompts
+            </Button>
+          </Link>
+        </div>
+      </div>
     </>
   );
 }
