@@ -62,8 +62,12 @@ interface DebugReportEntry {
 export default function QuickPromptComplete() {
   const { toast } = useToast();
   
+  // Get URL parameters for pre-population
+  const searchParams = new URLSearchParams(window.location.search);
+  const initialSubject = searchParams.get('subject') || "";
+  
   // Core state
-  const [subject, setSubject] = useState("");
+  const [subject, setSubject] = useState(initialSubject);
   const [character, setCharacter] = useState("");
   const [template, setTemplate] = useState("");
   const [generatedPrompt, setGeneratedPrompt] = useState("");
@@ -171,13 +175,21 @@ export default function QuickPromptComplete() {
     }
   });
   
-  // Restore template from localStorage
+  // Restore template from localStorage and show toast if subject was pre-populated
   useEffect(() => {
     const savedTemplate = localStorage.getItem('quickPrompt-selectedTemplate');
     if (savedTemplate) {
       setTemplate(savedTemplate);
     }
-  }, []);
+    
+    // Show toast if subject was pre-populated from Codex
+    if (initialSubject) {
+      toast({
+        title: "Terms Imported",
+        description: "Your selected terms from the Codex have been added to the subject field.",
+      });
+    }
+  }, [initialSubject, toast]);
   
   // Handle image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -203,10 +203,9 @@ function AssemblyToastPortal({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    toast({
-                      title: "Coming Soon",
-                      description: "Send to Generator feature will be implemented later",
-                    });
+                    const termsToSend = assembledString.join(', ');
+                    const params = new URLSearchParams({ subject: termsToSend });
+                    setLocation(`/tools/quick-prompter?${params.toString()}`);
                   }}
                   disabled={assembledString.length === 0}
                   className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white disabled:opacity-50 text-xs"
@@ -225,6 +224,7 @@ function AssemblyToastPortal({
 }
 
 export default function Codex() {
+  const [, setLocation] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -1083,10 +1083,9 @@ export default function Codex() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            toast({
-                              title: "Coming Soon",
-                              description: "Send to Generator feature will be implemented soon",
-                            });
+                            const termsToSend = assembledString.join(', ');
+                            const params = new URLSearchParams({ subject: termsToSend });
+                            setLocation(`/tools/quick-prompter?${params.toString()}`);
                           }}
                           disabled={assembledString.length === 0}
 
