@@ -504,7 +504,16 @@ export function PromptCard({
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("DELETE", `/api/prompts/${prompt.id}`);
+      const response = await apiRequest("DELETE", `/api/prompts/${prompt.id}`);
+      // For 204 No Content responses, no need to parse JSON
+      if (response.status === 204) {
+        return;
+      }
+      // For other responses, check if there's an error
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete prompt');
+      }
     },
     onMutate: async () => {
       // Cancel all prompt queries to prevent race conditions
@@ -572,9 +581,13 @@ export function PromptCard({
         }, 500);
         return;
       }
+      
+      console.error("Delete prompt error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete prompt";
+      
       toast({
         title: "Error",
-        description: "Failed to delete prompt",
+        description: errorMessage,
         variant: "destructive",
       });
     },
