@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
+import { pool } from "./db";
 
 // User agents for social media crawlers
 const CRAWLER_USER_AGENTS = [
@@ -35,7 +36,16 @@ function isCrawler(userAgent: string | undefined): boolean {
 }
 
 // Helper to get the correct base URL
-function getBaseUrl(): string {
+function getBaseUrl(req?: Request): string {
+  // Try to get from request headers first (most reliable in production)
+  if (req) {
+    const host = req.headers.host || req.hostname;
+    if (host && host.includes('promptatrium')) {
+      const protocol = req.protocol || 'https';
+      return `${protocol}://${host}`;
+    }
+  }
+  
   // For production deployments on Replit
   if (process.env.REPLIT_DEPLOYMENT_ID || process.env.NODE_ENV === 'production') {
     // Check if we have REPLIT_DOMAINS environment variable (set by Replit deployment)
@@ -63,12 +73,12 @@ function getBaseUrl(): string {
 }
 
 // Generate Open Graph HTML for a prompt
-function generateOpenGraphHTML(prompt: any): string {
+function generateOpenGraphHTML(prompt: any, req?: Request): string {
   const title = prompt?.name || 'AI Prompt';
   const description = prompt?.description || 'Discover and share AI prompts';
   
   // Get the base URL for the application
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrl(req);
   
   // Handle image URL - ensure it's absolute
   let imageUrl = `${baseUrl}/atrium-square-icon.png`; // Default app icon with full URL
@@ -206,29 +216,109 @@ export function setupOpenGraph(app: Express) {
       return next();
     }
     
+    const promptId = req.params.id;
+    console.log(`[Open Graph] Crawler detected for prompt ${promptId}, user-agent: ${userAgent}`);
+    
     try {
-      const promptId = req.params.id;
-      
-      // Fetch prompt with user information
-      const prompt = await storage.getPromptWithUser(promptId);
-      
-      if (!prompt) {
-        // If prompt not found, still serve basic Open Graph tags
-        const html = generateOpenGraphHTML({
-          name: 'Prompt Not Found',
-          description: 'The requested prompt could not be found.',
-          id: promptId
-        });
-        return res.status(404).send(html);
+      // Check database connection first
+      let dbAvailable = false;
+      try {
+        // Quick connection test with short timeout
+        const testQuery = pool.query('SELECT 1', [], { queryTimeout: 1000 });
+        await Promise.race([
+          testQuery,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('DB test timeout')), 1500))
+        ]);
+        dbAvailable = true;
+        console.log('[Open Graph] Database connection successful');
+      } catch (dbErr) {
+        console.error('[Open Graph] Database connection failed:', dbErr.message);
       }
       
+      if (!dbAvailable) {
+        console.log('[Open Graph] Skipping database fetch due to connection issue');
+        throw new Error('Database unavailable');
+      }
+      
+      // Add timeout to prevent hanging in production
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database timeout')), 5000)
+      );
+      
+      // Try to fetch prompt with timeout
+      const prompt = await Promise.race([
+        storage.getPromptWithUser(promptId),
+        timeoutPromise
+      ]).catch(err => {
+        console.error('[Open Graph] Database error:', err.message);
+        return null;
+      });
+      
+      if (!prompt) {
+        console.log(`[Open Graph] Prompt ${promptId} not found or database unavailable`);
+        // Serve fallback Open Graph tags with app icon
+        const baseUrl = getBaseUrl(req);
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Primary Meta Tags -->
+  <title>AI Prompt | PromptAtrium</title>
+  <meta name="title" content="AI Prompt | PromptAtrium">
+  <meta name="description" content="Discover and share AI prompts for various generators. Join our community of AI enthusiasts.">
+  
+  <!-- Essential Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="${baseUrl}/prompt/${promptId}">
+  <meta property="og:title" content="AI Prompt">
+  <meta property="og:description" content="Discover and share AI prompts for various generators. Join our community of AI enthusiasts.">
+  <meta property="og:image" content="${baseUrl}/atrium-square-icon.png">
+  <meta property="og:image:secure_url" content="${baseUrl}/atrium-square-icon.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="PromptAtrium">
+  <meta property="og:site_name" content="PromptAtrium">
+  
+  <!-- Twitter Card tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="${baseUrl}/prompt/${promptId}">
+  <meta name="twitter:title" content="AI Prompt">
+  <meta name="twitter:description" content="Discover and share AI prompts for various generators.">
+  <meta name="twitter:image" content="${baseUrl}/atrium-square-icon.png">
+</head>
+<body>
+  <h1>PromptAtrium</h1>
+  <p>Loading prompt...</p>
+</body>
+</html>`;
+        return res.send(html);
+      }
+      
+      console.log(`[Open Graph] Successfully fetched prompt ${promptId}: ${prompt.name}`);
       // Generate and send Open Graph HTML
-      const html = generateOpenGraphHTML(prompt);
+      const html = generateOpenGraphHTML(prompt, req);
       res.send(html);
     } catch (error) {
-      console.error('Error generating Open Graph tags:', error);
-      // Fallback to regular app on error
-      next();
+      console.error('[Open Graph] Unexpected error:', error);
+      // Serve minimal fallback instead of passing to next()
+      const baseUrl = getBaseUrl(req);
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta property="og:title" content="PromptAtrium">
+  <meta property="og:description" content="AI Prompt Discovery Platform">
+  <meta property="og:image" content="${baseUrl}/atrium-square-icon.png">
+  <meta property="og:url" content="${baseUrl}/prompt/${promptId}">
+</head>
+<body>
+  <h1>PromptAtrium</h1>
+</body>
+</html>`;
+      res.send(html);
     }
   });
   
@@ -241,7 +331,8 @@ export function setupOpenGraph(app: Express) {
     }
     
     // Get the base URL using the helper function
-    const baseUrl = getBaseUrl();
+    const baseUrl = getBaseUrl(req);
+    console.log('[Open Graph] Homepage crawler detected, user-agent:', userAgent);
     console.log('[Open Graph] Homepage - Base URL:', baseUrl);
     
     // Generate homepage Open Graph tags
