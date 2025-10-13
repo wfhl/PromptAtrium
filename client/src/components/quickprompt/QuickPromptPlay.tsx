@@ -459,6 +459,17 @@ export default function QuickPromptPlay() {
     }
   });
 
+  // Mutation for saving prompt to history
+  const saveToHistoryMutation = useMutation({
+    mutationFn: async (historyData: any) => {
+      return apiRequest('/api/prompt-history', 'POST', historyData);
+    },
+    onError: (error) => {
+      console.error('Failed to save to prompt history:', error);
+      // Silent failure - we don't want to interrupt the user experience
+    }
+  });
+
   // Enhanced mutation for saving to user library with navigation toast
   const enhancedSaveToUserLibraryMutation = useMutation({
     mutationFn: (promptData: any) => apiRequest('/api/prompts', 'POST', promptData),
@@ -777,6 +788,24 @@ export default function QuickPromptPlay() {
     
     if (!selectedTemplate) {
       setGeneratedPrompt(basePrompt);
+      
+      // Save to prompt history
+      saveToHistoryMutation.mutate({
+        promptText: basePrompt,
+        templateUsed: 'No Template',
+        settings: {
+          subject: subject,
+          character: character,
+        },
+        metadata: {
+          subject: subject,
+          character: character,
+          hasImage: !!imagePreview,
+          socialMediaTone: selectedSocialTone,
+        },
+        isSaved: false
+      });
+      
       toast({
         title: "Prompt generated",
         description: "Basic prompt has been generated",
@@ -819,7 +848,7 @@ export default function QuickPromptPlay() {
           useHappyTalk: selectedTemplate.use_happy_talk,
           compressPrompt: selectedTemplate.compress_prompt,
           compressionLevel: selectedTemplate.compression_level,
-          customBasePrompt: selectedTemplate.systemPrompt,
+          customBasePrompt: selectedTemplate.master_prompt,
           templateId: selectedTemplate.id.toString(), // Send template ID for proper template handling
           debugReport: debugReport, // Pass the debug report from vision analysis
           subject: subject, // Pass subject for replacement instructions
@@ -830,9 +859,9 @@ export default function QuickPromptPlay() {
         console.log('🔍 Frontend Debug - Template Selection:');
         console.log('Selected Template ID:', selectedTemplate.id);
         console.log('Selected Template Name:', selectedTemplate.name);
-        console.log('System Prompt Length:', selectedTemplate.systemPrompt?.length || 0);
-        console.log('System Prompt Preview:', selectedTemplate.systemPrompt?.substring(0, 100) + '...');
-        console.log('Full System Prompt:', selectedTemplate.systemPrompt);
+        console.log('Master Prompt Length:', selectedTemplate.master_prompt?.length || 0);
+        console.log('Master Prompt Preview:', selectedTemplate.master_prompt?.substring(0, 100) + '...');
+        console.log('Full Master Prompt:', selectedTemplate.master_prompt);
 
         // No need to handle image separately here - we already processed it above
 
@@ -852,6 +881,27 @@ export default function QuickPromptPlay() {
           const result = await response.json();
           setGeneratedPrompt(result.enhancedPrompt);
           
+          // Save to prompt history
+          const selectedTemplateData = dbRuleTemplates.find(t => t.id.toString() === template);
+          saveToHistoryMutation.mutate({
+            promptText: result.enhancedPrompt,
+            templateUsed: selectedTemplateData?.name || 'Unknown Template',
+            settings: {
+              llmProvider: selectedTemplate.llm_provider,
+              llmModel: selectedTemplate.llm_model,
+              subject: subject,
+              character: character,
+            },
+            metadata: {
+              subject: subject,
+              character: character,
+              hasImage: !!imagePreview,
+              socialMediaTone: selectedSocialTone,
+              templateId: template,
+            },
+            isSaved: false
+          });
+          
           // Combine debug reports from both stages
           if (result.debugReport) {
             // Merge vision analysis debug report with template processing debug report
@@ -868,11 +918,51 @@ export default function QuickPromptPlay() {
       } catch (enhancementError) {
         console.error('Error enhancing prompt:', enhancementError);
         setGeneratedPrompt(basePrompt);
+        
+        // Save fallback prompt to history
+        saveToHistoryMutation.mutate({
+          promptText: basePrompt,
+          templateUsed: selectedTemplate.name || 'Unknown Template',
+          settings: {
+            subject: subject,
+            character: character,
+            llmProvider: selectedTemplate.llm_provider,
+            llmModel: selectedTemplate.llm_model,
+          },
+          metadata: {
+            subject: subject,
+            character: character,
+            hasImage: !!imagePreview,
+            socialMediaTone: selectedSocialTone,
+            templateId: template,
+            fallback: true
+          },
+          isSaved: false
+        });
         // Error handled gracefully, no need to show error toast
       }
     } else {
       // Use basic template processing for legacy templates
       setGeneratedPrompt(basePrompt);
+      
+      // Save legacy template prompt to history
+      saveToHistoryMutation.mutate({
+        promptText: basePrompt,
+        templateUsed: selectedTemplate.name || 'Legacy Template',
+        settings: {
+          subject: subject,
+          character: character,
+        },
+        metadata: {
+          subject: subject,
+          character: character,
+          hasImage: !!imagePreview,
+          socialMediaTone: selectedSocialTone,
+          templateId: template,
+          legacy: true
+        },
+        isSaved: false
+      });
     }
     } catch (globalError) {
       console.error('Error in handleGeneratePrompt:', globalError);
