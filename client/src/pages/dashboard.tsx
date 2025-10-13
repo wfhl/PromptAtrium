@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { SearchWithFilters } from "@/components/SearchWithFilters";
+import { MultiSelectFilters } from "@/components/MultiSelectFilters";
+import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } from "@/components/MultiSelectFilters";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -50,6 +52,26 @@ export default function Dashboard() {
   const [searchResults, setSearchResults] = useState<Prompt[]>([]);
   const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
   const [communityTab, setCommunityTab] = useState("featured");
+  
+  // Multi-select filters state
+  const [multiSelectFilters, setMultiSelectFilters] = useState<MultiSelectFiltersType>({
+    category: [],
+    type: [],
+    style: [],
+    intendedGenerator: [],
+    recommendedModel: [],
+    collection: [],
+  });
+  
+  // Enabled filters state
+  const [enabledFilters, setEnabledFilters] = useState<EnabledFilters>({
+    category: false,
+    type: false,
+    style: false,
+    intendedGenerator: false,
+    recommendedModel: false,
+    collection: false,
+  });
 
   // Initialize collapsible state from localStorage for the specific user
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);

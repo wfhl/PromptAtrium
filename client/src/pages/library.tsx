@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Lightbulb, Plus, Search, Filter, FolderPlus, Folder, Edit, Trash2, Globe, Lock, MoreHorizontal, SortAsc, SortDesc, Activity, BookOpen, Share2, Heart, Star, UserPlus, Users } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
+import { MultiSelectFilters } from "@/components/MultiSelectFilters";
+import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } from "@/components/MultiSelectFilters";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkEditToolbar } from "@/components/BulkEditToolbar";
 import { BulkEditModal } from "@/components/BulkEditModal";
@@ -43,7 +45,27 @@ export default function Library() {
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  
+  // Multi-select filters state
+  const [multiSelectFilters, setMultiSelectFilters] = useState<MultiSelectFiltersType>({
+    category: [],
+    type: [],
+    style: [],
+    intendedGenerator: [],
+    recommendedModel: [],
+    collection: [],
+  });
+  
+  // Enabled filters state
+  const [enabledFilters, setEnabledFilters] = useState<EnabledFilters>({
+    category: false,
+    type: false,
+    style: false,
+    intendedGenerator: false,
+    recommendedModel: false,
+    collection: false,
+  });
+  
   const [statusFilter, setStatusFilter] = useState("");
   
   // Parse query parameters to get the tab
@@ -153,7 +175,26 @@ export default function Library() {
     const params = new URLSearchParams();
     if ((user as any)?.id) params.append("userId", (user as any).id);
     if (searchQuery) params.append("search", searchQuery);
-    if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
+    
+    // Handle multi-select filters
+    if (multiSelectFilters.category.length > 0) {
+      params.append("category", multiSelectFilters.category.join(","));
+    }
+    if (multiSelectFilters.type.length > 0) {
+      params.append("type", multiSelectFilters.type.join(","));
+    }
+    if (multiSelectFilters.style.length > 0) {
+      params.append("style", multiSelectFilters.style.join(","));
+    }
+    if (multiSelectFilters.intendedGenerator.length > 0) {
+      params.append("generator", multiSelectFilters.intendedGenerator.join(","));
+    }
+    if (multiSelectFilters.recommendedModel.length > 0) {
+      params.append("model", multiSelectFilters.recommendedModel.join(","));
+    }
+    if (multiSelectFilters.collection.length > 0) {
+      params.append("collection", multiSelectFilters.collection.join(","));
+    }
     
     // Handle status filtering based on active tab
     if (activeTab === "archive") {
@@ -180,6 +221,13 @@ export default function Library() {
     enabled: isAuthenticated && !!user && (activeTab === "prompts" || activeTab === "archive"),
     retry: false,
   });
+  
+  // Refetch prompts when filters change
+  useEffect(() => {
+    if ((activeTab === "prompts" || activeTab === "archive") && isAuthenticated) {
+      refetch();
+    }
+  }, [multiSelectFilters, activeTab, isAuthenticated]);
 
   // Fetch user's favorite prompts (bookmarked)
   const { data: favoritePrompts = [] } = useQuery<Prompt[]>({
@@ -714,7 +762,7 @@ export default function Library() {
 
           {/* Prompts Tab */}
           <TabsContent value="prompts" className="space-y-4">
-            {/* Search Bar with Filter Dropdown */}
+            {/* Search Bar with Multi-Select Filters */}
             <div className="flex gap-2 mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -731,59 +779,32 @@ export default function Library() {
                 />
               </div>
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" data-testid="button-filter">
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  
-                  {/* Category Filter */}
-                  <div className="px-2 py-2">
-                    <label className="text-sm font-medium mb-2 block">Category</label>
-                    <Select value={categoryFilter} onValueChange={(value) => {
-                      setCategoryFilter(value);
-                      refetch();
-                    }}>
-                      <SelectTrigger className="w-full" data-testid="select-category">
-                        <SelectValue placeholder="All Categories" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="Art & Design">Art & Design</SelectItem>
-                        <SelectItem value="Photography">Photography</SelectItem>
-                        <SelectItem value="Character Design">Character Design</SelectItem>
-                        <SelectItem value="Landscape">Landscape</SelectItem>
-                        <SelectItem value="Logo & Branding">Logo & Branding</SelectItem>
-                        <SelectItem value="Abstract">Abstract</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Status Filter */}
-                  <div className="px-2 py-2">
-                    <label className="text-sm font-medium mb-2 block">Status</label>
-                    <Select value={statusFilter} onValueChange={(value) => {
-                      setStatusFilter(value);
-                      refetch();
-                    }}>
-                      <SelectTrigger className="w-full" data-testid="select-status">
-                        <SelectValue placeholder="All Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="published">Published</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Filter Options Button */}
+              <MultiSelectFilters
+                onFiltersChange={(filters) => {
+                  setMultiSelectFilters(filters);
+                }}
+                onEnabledFiltersChange={setEnabledFilters}
+                enabledFilters={enabledFilters}
+                selectedFilters={multiSelectFilters}
+                sortBy=""
+                showButton={true}
+                showTabs={false}
+              />
             </div>
+            
+            {/* Multi-Select Filter Tabs - Show below search */}
+            <MultiSelectFilters
+              onFiltersChange={(filters) => {
+                setMultiSelectFilters(filters);
+              }}
+              onEnabledFiltersChange={setEnabledFilters}
+              enabledFilters={enabledFilters}
+              selectedFilters={multiSelectFilters}
+              sortBy=""
+              showButton={false}
+              showTabs={true}
+            />
 
             {/* Bulk Edit Toolbar */}
           <BulkEditToolbar
@@ -819,7 +840,7 @@ export default function Library() {
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">No prompts found</h3>
                   <p className="text-muted-foreground mb-6">
-                    {searchQuery || categoryFilter || statusFilter
+                    {searchQuery || Object.values(multiSelectFilters).some(f => f.length > 0) || statusFilter
                       ? "Try adjusting your filters to see more results."
                       : "You haven't created any prompts yet. Create your first prompt to get started."}
                   </p>
@@ -1163,13 +1184,13 @@ export default function Library() {
           </TabsContent>
 
           <TabsContent value="archive" className="space-y-4">
-            {/* Search Bar for archive */}
+            {/* Search Bar with Multi-Select Filters for archive */}
             <div className="flex gap-2 mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   type="text"
-                  placeholder="Search prompts..."
+                  placeholder="Search archived prompts..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -1179,7 +1200,33 @@ export default function Library() {
                   data-testid="input-search"
                 />
               </div>
+              
+              {/* Filter Options Button */}
+              <MultiSelectFilters
+                onFiltersChange={(filters) => {
+                  setMultiSelectFilters(filters);
+                }}
+                onEnabledFiltersChange={setEnabledFilters}
+                enabledFilters={enabledFilters}
+                selectedFilters={multiSelectFilters}
+                sortBy=""
+                showButton={true}
+                showTabs={false}
+              />
             </div>
+            
+            {/* Multi-Select Filter Tabs - Show below search */}
+            <MultiSelectFilters
+              onFiltersChange={(filters) => {
+                setMultiSelectFilters(filters);
+              }}
+              onEnabledFiltersChange={setEnabledFilters}
+              enabledFilters={enabledFilters}
+              selectedFilters={multiSelectFilters}
+              sortBy=""
+              showButton={false}
+              showTabs={true}
+            />
 
             {/* Bulk Edit Toolbar */}
             <BulkEditToolbar
@@ -1214,7 +1261,7 @@ export default function Library() {
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">No archived prompts</h3>
                   <p className="text-muted-foreground mb-6">
-                    {searchQuery || categoryFilter
+                    {searchQuery || Object.values(multiSelectFilters).some(f => f.length > 0)
                       ? "Try adjusting your filters to see more results."
                       : "You haven't archived any prompts yet. Use the archive button on any prompt to move it here."}
                   </p>
