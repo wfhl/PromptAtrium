@@ -36,17 +36,30 @@ function isCrawler(userAgent: string | undefined): boolean {
 
 // Helper to get the correct base URL
 function getBaseUrl(): string {
-  // Check for Replit deployment domain first (most reliable)
+  // For production deployments on Replit
+  if (process.env.REPLIT_DEPLOYMENT_ID || process.env.NODE_ENV === 'production') {
+    // Check if we have REPLIT_DOMAINS environment variable (set by Replit deployment)
+    if (process.env.REPLIT_DOMAINS) {
+      const domains = process.env.REPLIT_DOMAINS.split(',');
+      // Return the custom domain if it includes promptatrium
+      const customDomain = domains.find(d => d.includes('promptatrium'));
+      if (customDomain) {
+        return `https://${customDomain}`;
+      }
+      // Otherwise use the first domain
+      return `https://${domains[0]}`;
+    }
+    // If no REPLIT_DOMAINS, return the known production URL
+    return 'https://promptatrium.replit.app';
+  }
+  
+  // For development environment (Replit dev domain)
   if (process.env.REPLIT_DEV_DOMAIN) {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
-  // Fallback to REPL_SLUG construction
-  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    // Use the correct Replit app URL format
-    return `https://${process.env.REPL_SLUG}-${process.env.REPL_OWNER}.replit.app`;
-  }
-  // Production fallback
-  return 'https://promptatrium.com';
+  
+  // Default fallback to production URL
+  return 'https://promptatrium.replit.app';
 }
 
 // Generate Open Graph HTML for a prompt
@@ -133,24 +146,32 @@ function generateOpenGraphHTML(prompt: any): string {
   <meta name="title" content="${escapeHtml(title)} | PromptAtrium">
   <meta name="description" content="${escapeHtml(description)}">
   
-  <!-- Open Graph / Facebook -->
+  <!-- Essential Open Graph / Facebook -->
   <meta property="og:type" content="article">
   <meta property="og:url" content="${baseUrl}/prompt/${prompt?.id}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image" content="${imageUrl}">
+  <meta property="og:image:secure_url" content="${imageUrl}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${escapeHtml(title)}">
   <meta property="og:site_name" content="PromptAtrium">
+  <meta property="og:locale" content="en_US">
   <meta property="article:author" content="${escapeHtml(author)}">
   ${prompt?.createdAt ? `<meta property="article:published_time" content="${prompt.createdAt}">` : ''}
   ${prompt?.updatedAt ? `<meta property="article:modified_time" content="${prompt.updatedAt}">` : ''}
   ${prompt?.tags && prompt.tags.length > 0 ? prompt.tags.map((tag: string) => `<meta property="article:tag" content="${escapeHtml(tag)}">`).join('\n  ') : ''}
   
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="${baseUrl}/prompt/${prompt?.id}">
-  <meta property="twitter:title" content="${escapeHtml(title)}">
-  <meta property="twitter:description" content="${escapeHtml(description)}">
-  <meta property="twitter:image" content="${imageUrl}">
+  <!-- Twitter Card tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@promptatrium">
+  <meta name="twitter:url" content="${baseUrl}/prompt/${prompt?.id}">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${imageUrl}">
+  <meta name="twitter:image:alt" content="${escapeHtml(title)}">
   
   <!-- Additional SEO -->
   <link rel="canonical" href="${baseUrl}/prompt/${prompt?.id}">
