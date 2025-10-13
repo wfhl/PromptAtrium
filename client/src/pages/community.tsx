@@ -11,9 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  Lightbulb, Search, Filter, Star, TrendingUp, Clock, Eye, 
-  Users, UserPlus, UserMinus, Hash, Heart, GitBranch, 
+import {
+  Lightbulb, Search, Filter, Star, TrendingUp, Clock, Eye,
+  Users, UserPlus, UserMinus, Hash, Heart, GitBranch,
   Share2, BookOpen, Folder, ChevronRight
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
@@ -32,7 +32,7 @@ export default function Community() {
   const [searchQuery, setSearchQuery] = useState("");
   const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
-  
+
   // Multi-select filters state
   const [multiSelectFilters, setMultiSelectFilters] = useState<MultiSelectFiltersType>({
     category: [],
@@ -52,7 +52,7 @@ export default function Community() {
     recommendedModel: false,
     collection: false,
   });
-  
+
   // State for dynamic filter options
   const [filterOptions, setFilterOptions] = useState<{
     categories: string[];
@@ -95,7 +95,7 @@ export default function Community() {
     const params = new URLSearchParams();
     params.append("isPublic", "true");
     if (searchQuery) params.append("search", searchQuery);
-    
+
     // Handle multi-select filters
     if (multiSelectFilters.category.length > 0) {
       params.append("category", multiSelectFilters.category.join(","));
@@ -115,7 +115,7 @@ export default function Community() {
     if (multiSelectFilters.collection.length > 0) {
       params.append("collection", multiSelectFilters.collection.join(","));
     }
-    
+
     // Use promptsSubTab instead of sortBy for filtering
     if (promptsSubTab === "featured") {
       params.append("isFeatured", "true");
@@ -127,7 +127,7 @@ export default function Community() {
     } else if (promptsSubTab === "recent") {
       params.append("sortBy", "recent");
     }
-    
+
     if (sortBy === "hidden") params.append("isHidden", "true");
     params.append("limit", "20");
     return params.toString();
@@ -146,14 +146,14 @@ export default function Community() {
       refetch();
     }
   }, [promptsSubTab, activeTab, isAuthenticated, multiSelectFilters]);
-  
+
   // Fetch public collections
   const { data: publicCollections = [] } = useQuery<(Collection & { promptCount?: number; user?: User })[]>({
     queryKey: [`/api/collections?isPublic=true&search=${collectionSearchQuery}&limit=50`],
     enabled: isAuthenticated && activeTab === "collections",
     retry: false,
   });
-  
+
   // Fetch filter options from API
   useEffect(() => {
     if (isAuthenticated) {
@@ -221,7 +221,7 @@ export default function Community() {
     mutationFn: async ({ userId, isFollowing }: { userId: string; isFollowing: boolean }) => {
       const method = isFollowing ? "DELETE" : "POST";
       const response = await apiRequest(method, `/api/users/${userId}/follow`);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         const error = Object.assign(
@@ -230,7 +230,7 @@ export default function Community() {
         );
         throw error;
       }
-      
+
       return await response.json();
     },
     retry: (failureCount, error: any) => {
@@ -252,7 +252,7 @@ export default function Community() {
       ]);
       // Force refetch of following data immediately
       queryClient.refetchQueries({ queryKey: [`/api/users/${currentUserId}/following`] });
-      
+
       toast({
         title: isFollowing ? "Unfollowed" : "Following",
         description: isFollowing ? "User unfollowed successfully" : "You are now following this user",
@@ -268,13 +268,13 @@ export default function Community() {
         });
         return;
       }
-      
+
       if (error?.error === 'ALREADY_FOLLOWING') {
         // Silently update the state
         console.log("User is already being followed");
         return;
       }
-      
+
       // Generic error
       toast({
         title: "Could not update follow status",
@@ -306,7 +306,7 @@ export default function Community() {
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
+
     if (minutes < 1) return "just now";
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
@@ -335,9 +335,9 @@ export default function Community() {
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 lg:pb-8">
       {/* Mobile Navigation */}
       <MobilePageNav />
-      
+
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-1 md:space-y-2">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
             <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
@@ -374,7 +374,7 @@ export default function Community() {
                 data-testid="input-search"
               />
             </div>
-            
+
             {/* Filter Options Button */}
             <MultiSelectFilters
               onFiltersChange={(filters) => {
@@ -497,13 +497,13 @@ export default function Community() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {collection.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-3" data-testid={`text-collection-desc-${collection.id}`}>
                           {collection.description}
                         </p>
                       )}
-                      
+
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1 text-muted-foreground">
@@ -564,7 +564,7 @@ export default function Community() {
               />
             </div>
           </div>
-          
+
           {/* Search Results - Display above People You Follow */}
           {userSearchQuery && (
             <div className="mb-6">
@@ -603,7 +603,7 @@ export default function Community() {
               )}
             </div>
           )}
-          
+
           {/* Following Users - Collapsible */}
           {followingData && followingData.following.length > 0 && (
             <Collapsible open={!followingCollapsed} onOpenChange={(open) => setFollowingCollapsed(!open)}>
