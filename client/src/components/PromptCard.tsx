@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -179,45 +179,56 @@ export function PromptCard({
   const likeMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/prompts/${prompt.id}/like`);
-      const data = await response.json();
-      return data;
+      if (!response.ok) {
+        const errorData = await response.json();
+        // Preserve all error properties, not just the message
+        const error = Object.assign(
+          new Error(errorData.message || 'Failed to like prompt'),
+          errorData
+        );
+        throw error;
+      }
+      return await response.json();
     },
-    retry: 1, // Allow one retry for network issues
+    retry: (failureCount, error: any) => {
+      // Only retry if the error indicates it's retryable
+      const retryableErrors = ['CONCURRENT_UPDATE', 'LIKE_CONFLICT', 'SERVICE_UNAVAILABLE'];
+      // Check both error.error (our custom field) and error.retryable flag
+      if ((error?.error && retryableErrors.includes(error.error)) || error?.retryable === true) {
+        console.log(`Retrying like operation (attempt ${failureCount + 1})...`);
+        return failureCount < 2; // Max 2 retries
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000), // Exponential backoff
     onMutate: async () => {
-      // Cancel all prompt queries and likes queries to prevent race conditions
+      // More targeted query cancellation - only cancel the specific prompt query
       await queryClient.cancelQueries({ 
-        predicate: (query) => {
-          const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/likes");
-        }
+        queryKey: ["/api/prompts", prompt.id]
       });
       
-      // Get all existing data
-      const previousPromptsData = queryClient.getQueriesData({ 
-        predicate: (query) => {
-          const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/prompts");
-        }
-      });
-      const previousLikesData = queryClient.getQueriesData({ 
-        predicate: (query) => {
-          const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/user/likes");
-        }
+      // Store previous values for rollback
+      const previousPrompt = queryClient.getQueryData(["/api/prompts", prompt.id]);
+      const previousLikes = queryClient.getQueryData(["/api/user/likes"]) as any[] || [];
+      const isCurrentlyLiked = previousLikes.some((like: any) => like.id === prompt.id);
+      
+      // Optimistically update the specific prompt
+      queryClient.setQueryData(["/api/prompts", prompt.id], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          likes: (old.likes || 0) + (isCurrentlyLiked ? -1 : 1)
+        };
       });
       
-      // Optimistically update likes cache
-      const currentLikes = queryClient.getQueryData(["/api/user/likes"]) as any[] || [];
-      const isCurrentlyLiked = currentLikes.some((like: any) => like.id === prompt.id);
-      
-      // Optimistically update likes count on prompts
+      // Update all prompt lists that contain this prompt
       queryClient.setQueriesData({ 
         predicate: (query) => {
           const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/prompts");
+          return queryKey?.includes("/api/prompts") && !query.queryKey.includes(prompt.id);
         }
       }, (old: any) => {
-        if (!old) return old;
+        if (!old || !Array.isArray(old)) return old;
         return old.map((p: any) => 
           p.id === prompt.id 
             ? { ...p, likes: (p.likes || 0) + (isCurrentlyLiked ? -1 : 1) }
@@ -225,64 +236,87 @@ export function PromptCard({
         );
       });
       
+      // Update user likes
       if (isCurrentlyLiked) {
-        // Remove from likes
-        queryClient.setQueryData(["/api/user/likes"], currentLikes.filter((like: any) => like.id !== prompt.id));
+        queryClient.setQueryData(["/api/user/likes"], 
+          previousLikes.filter((like: any) => like.id !== prompt.id)
+        );
       } else {
-        // Add to likes
-        queryClient.setQueryData(["/api/user/likes"], [...currentLikes, prompt]);
+        queryClient.setQueryData(["/api/user/likes"], 
+          [...previousLikes, { ...prompt, likes: (prompt.likes || 0) + 1 }]
+        );
       }
       
-      return { previousPromptsData, previousLikesData };
+      return { 
+        previousPrompt, 
+        previousLikes, 
+        isCurrentlyLiked 
+      };
     },
     onSuccess: (data) => {
-      // Invalidate ALL prompt queries and likes - Dashboard, Library, any page  
+      // Only invalidate specific queries, not all
       queryClient.invalidateQueries({ 
+        queryKey: ["/api/prompts", prompt.id]
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/user/likes"]
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/user/stats"]
+      });
+      
+      // Subtle feedback - no toast for likes to reduce notification fatigue
+      console.log(data.liked ? "Prompt liked" : "Prompt unliked");
+    },
+    onError: (error: any, variables, context) => {
+      // Revert optimistic updates
+      if (context?.previousPrompt) {
+        queryClient.setQueryData(["/api/prompts", prompt.id], context.previousPrompt);
+      }
+      if (context?.previousLikes) {
+        queryClient.setQueryData(["/api/user/likes"], context.previousLikes);
+      }
+      
+      // Revert all prompt lists
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey[0] as string;
-          return queryKey?.includes("/api/prompts") || queryKey?.includes("/api/user/likes");
+          return queryKey?.includes("/api/prompts");
         }
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
-      toast({
-        title: "Success",
-        description: data.liked ? "Prompt liked!" : "Prompt unliked!",
-      });
-    },
-    onError: (error, variables, context) => {
-      // Revert optimistic update on error
-      if (context?.previousPromptsData) {
-        context.previousPromptsData.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
-      if (context?.previousLikesData) {
-        context.previousLikesData.forEach(([queryKey, data]: [any, any]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
       
       if (isUnauthorizedError(error)) {
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          title: "Please log in",
+          description: "You need to be logged in to like prompts",
           variant: "destructive",
         });
         setTimeout(() => {
           window.location.href = "/api/login";
-        }, 500);
+        }, 1000);
         return;
       }
       
-      // Check if it's a network error
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      const isNetworkError = errorMessage.includes("Failed to fetch") || errorMessage.includes("NetworkError");
+      // Handle specific error types
+      if (error?.error === 'PROMPT_NOT_FOUND') {
+        toast({
+          title: "Prompt not found",
+          description: "This prompt may have been deleted",
+          variant: "destructive",
+        });
+        return;
+      }
       
+      if (error?.error === 'CONCURRENT_UPDATE' || error?.error === 'LIKE_CONFLICT') {
+        // Silently retry or show subtle message
+        console.error("Like conflict, retrying...");
+        return;
+      }
+      
+      // Generic error with better messaging
       toast({
-        title: "Error",
-        description: isNetworkError 
-          ? "Network error. Please check your connection and try again." 
-          : "Failed to update like. Please try again.",
+        title: "Could not update like",
+        description: "Please try again in a moment",
         variant: "destructive",
       });
     },
@@ -1134,6 +1168,14 @@ export function PromptCard({
               size="sm"
               variant="ghost"
               onClick={() => {
+                // Debounce rapid clicks - prevent clicking more than once per 500ms
+                const now = Date.now();
+                if (likeMutation.isPending || (now - (window as any).lastLikeClick < 500)) {
+                  console.log("Like button click ignored - too fast or already pending");
+                  return;
+                }
+                (window as any).lastLikeClick = now;
+                
                 console.log("Like button clicked for prompt:", prompt.id, "isOwn:", prompt.userId === typedUser?.id);
                 console.log("Prompt owner:", prompt.userId, "Current user:", typedUser?.id);
                 likeMutation.mutate();

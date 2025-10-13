@@ -1042,47 +1042,105 @@ export class DatabaseStorage implements IStorage {
 
   // Social operations
   async toggleLike(userId: string, promptId: string): Promise<boolean> {
+    // Input validation
+    if (!userId || !promptId) {
+      throw new Error("User ID and Prompt ID are required");
+    }
+
     // Use a transaction to ensure data consistency
     return await db.transaction(async (tx) => {
-      // Find existing likes for this user and prompt
+      // First, verify the prompt exists
+      const [promptExists] = await tx
+        .select({ id: prompts.id })
+        .from(prompts)
+        .where(eq(prompts.id, promptId));
+      
+      if (!promptExists) {
+        throw new Error("Prompt not found");
+      }
+
+      // Check for existing like
       const existingLikes = await tx
         .select()
         .from(promptLikes)
         .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
 
+      let isLiked: boolean;
+
       if (existingLikes.length > 0) {
-        // User has already liked this prompt - remove the like(s)
-        // If there are duplicates, remove all of them
+        // Unlike: Remove ALL duplicate likes (in case there are any)
         await tx.delete(promptLikes)
           .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
         
-        // Recalculate the actual like count from the database
-        const [likeCount] = await tx
-          .select({ count: sql<number>`count(*)` })
-          .from(promptLikes)
-          .where(eq(promptLikes.promptId, promptId));
-        
-        // Update the prompt with the correct count
-        await tx.update(prompts)
-          .set({ likes: likeCount.count })
-          .where(eq(prompts.id, promptId));
-        
-        return false; // Successfully unliked
+        isLiked = false;
       } else {
-        // User hasn't liked this prompt - add a like
-        await tx.insert(promptLikes).values({ userId, promptId });
-        
-        // Increment the like count
-        await tx.update(prompts)
-          .set({ likes: sql`${prompts.likes} + 1` })
-          .where(eq(prompts.id, promptId));
-        
-        return true; // Successfully liked
+        // Like: Add a new like (the unique constraint will prevent duplicates)
+        try {
+          await tx.insert(promptLikes).values({ 
+            userId, 
+            promptId,
+            createdAt: new Date()
+          });
+          isLiked = true;
+        } catch (error: any) {
+          // If we get a unique constraint violation, the like already exists
+          // This can happen in a race condition - treat it as already liked
+          if (error.code === '23505' || error.constraint === 'prompt_likes_user_id_prompt_id_key') { 
+            // PostgreSQL unique violation
+            console.log(`Like already exists for user ${userId} on prompt ${promptId} - removing it instead`);
+            // Try to remove the like since it exists
+            await tx.delete(promptLikes)
+              .where(and(eq(promptLikes.userId, userId), eq(promptLikes.promptId, promptId)));
+            isLiked = false;
+          } else {
+            throw error;
+          }
+        }
       }
-    }).catch((error) => {
-      console.error("Error toggling like:", error);
-      // Re-throw the error so the API can handle it properly
-      throw new Error("Failed to toggle like");
+      
+      // Always recalculate the actual count from source of truth
+      const [actualCount] = await tx
+        .select({ count: sql<number>`count(*)` })
+        .from(promptLikes)
+        .where(eq(promptLikes.promptId, promptId));
+      
+      // Update the prompt with the correct count (single source of truth)
+      await tx.update(prompts)
+        .set({ 
+          likes: actualCount.count || 0,
+          updatedAt: new Date()
+        })
+        .where(eq(prompts.id, promptId));
+      
+      return isLiked;
+    }).catch((error: any) => {
+      console.error("Error toggling like - Full error:", error);
+      
+      // Provide more specific error messages
+      if (error.message === "Prompt not found") {
+        throw error;
+      }
+      
+      if (error.code === '40001' || error.code === '40P01') {
+        // Serialization failure - suggest retry
+        throw new Error("Operation failed due to concurrent update. Please try again.");
+      }
+      
+      if (error.code === '23505' || error.constraint?.includes('unique')) {
+        // Unique constraint violation
+        throw new Error("Like operation conflict. Please refresh and try again.");
+      }
+      
+      // Log the actual error for debugging
+      console.error("Unexpected error in toggleLike:", {
+        code: error.code,
+        message: error.message,
+        constraint: error.constraint,
+        detail: error.detail
+      });
+      
+      // Generic error for unexpected issues
+      throw new Error(`Failed to toggle like: ${error.message || 'Unknown error'}`);
     });
   }
 

@@ -1286,47 +1286,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Community routes
   app.post('/api/prompts/:id/like', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).id;
       const promptId = req.params.id;
+      
+      // Validate input
+      if (!userId) {
+        return res.status(401).json({ 
+          error: "UNAUTHORIZED",
+          message: "Authentication required" 
+        });
+      }
+      
+      if (!promptId || promptId.length !== 10) {
+        return res.status(400).json({ 
+          error: "INVALID_PROMPT_ID",
+          message: "Invalid prompt ID format" 
+        });
+      }
+      
       console.log("Like endpoint called - userId:", userId, "promptId:", promptId);
+      
+      // Toggle the like
       const isLiked = await storage.toggleLike(userId, promptId);
       console.log("Like toggle result:", isLiked);
       
       // Create activity for liking (only when liking, not unliking)
+      // Do this asynchronously to not block the response
       if (isLiked) {
-        const prompt = await storage.getPrompt(promptId);
-        if (prompt && prompt.isPublic) {
-          await storage.createActivity({
-            userId,
-            actionType: "liked_prompt",
-            targetId: promptId,
-            targetType: "prompt",
-            metadata: { promptName: prompt.name }
-          });
-          
-          // Create notification for prompt owner (if not liking own prompt)
-          if (prompt.userId !== userId) {
-            const liker = await storage.getUser(userId);
-            if (liker) {
-              await storage.createNotification({
-                userId: prompt.userId,
-                type: "like",
-                message: `${liker.username || liker.firstName || 'Someone'} liked your prompt "${prompt.name}"`,
-                relatedUserId: userId,
-                relatedPromptId: promptId,
-                relatedListId: null,
-                isRead: false,
+        // Run activity/notification creation in background
+        (async () => {
+          try {
+            const prompt = await storage.getPrompt(promptId);
+            if (prompt && prompt.isPublic) {
+              await storage.createActivity({
+                userId,
+                actionType: "liked_prompt",
+                targetId: promptId,
+                targetType: "prompt",
                 metadata: { promptName: prompt.name }
               });
+              
+              // Create notification for prompt owner (if not liking own prompt)
+              if (prompt.userId !== userId) {
+                const liker = await storage.getUser(userId);
+                if (liker) {
+                  await storage.createNotification({
+                    userId: prompt.userId,
+                    type: "like",
+                    message: `${liker.username || liker.firstName || 'Someone'} liked your prompt "${prompt.name}"`,
+                    relatedUserId: userId,
+                    relatedPromptId: promptId,
+                    relatedListId: null,
+                    isRead: false,
+                    metadata: { promptName: prompt.name }
+                  });
+                }
+              }
             }
+          } catch (activityError) {
+            // Log but don't fail the like operation
+            console.error("Error creating activity/notification:", activityError);
           }
-        }
+        })();
       }
       
-      res.json({ liked: isLiked });
-    } catch (error) {
-      console.error("Error toggling like:", error);
-      res.status(500).json({ message: "Failed to toggle like" });
+      // Return success immediately
+      res.json({ 
+        liked: isLiked,
+        promptId: promptId 
+      });
+      
+    } catch (error: any) {
+      console.error("Error in like endpoint:", error);
+      
+      // Handle specific error cases
+      if (error.message === "Prompt not found") {
+        return res.status(404).json({ 
+          error: "PROMPT_NOT_FOUND",
+          message: "The prompt you're trying to like doesn't exist" 
+        });
+      }
+      
+      if (error.message?.includes("concurrent update")) {
+        return res.status(409).json({ 
+          error: "CONCURRENT_UPDATE",
+          message: "Another operation is in progress. Please try again.",
+          retryable: true 
+        });
+      }
+      
+      if (error.message?.includes("conflict")) {
+        return res.status(409).json({ 
+          error: "LIKE_CONFLICT",
+          message: "Like operation conflict. Please refresh and try again.",
+          retryable: true 
+        });
+      }
+      
+      // Database connection errors
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        return res.status(503).json({ 
+          error: "SERVICE_UNAVAILABLE",
+          message: "Database temporarily unavailable. Please try again later.",
+          retryable: true 
+        });
+      }
+      
+      // Generic server error
+      res.status(500).json({ 
+        error: "INTERNAL_ERROR",
+        message: "Failed to process like operation. Please try again.",
+        retryable: true,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
 
