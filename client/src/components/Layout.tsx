@@ -250,8 +250,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
       </div>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-gray-900/70 backdrop-blur-lg border-b border-cyan-500/30 z-50 transition-all duration-300">
-        <div className="container mx-auto px-2 sm:px-4 md:px-6 py-3 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 bg-gray-900/70 backdrop-blur-sm boder-transparent border-cyan-500/30 z-50 transition-all duration-300 boder-transparent">
+        <div className="container mx-auto px-1 sm:px-1 md:px-1 py-1 flex items-center justify-between">
           <div className="flex items-center space-x-4 md:space-x-8">
             <Link href="/" className="flex items-center space-x-2 md:space-x-3 hover:opacity-80 transition-opacity">
               {/* Futuristic Logo */}

@@ -688,7 +688,7 @@ export default function Library() {
 
   return (
     <>
-      <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8">
+      <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 md:pb-8">
         {/* Mobile Navigation */}
         <MobilePageNav />
         
