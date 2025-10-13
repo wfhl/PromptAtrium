@@ -68,6 +68,9 @@ export function PromptCard({
   // Collapse/expand state
   const [isCollapsed, setIsCollapsed] = useState(true);
   
+  // Like animation state
+  const [isAnimatingLike, setIsAnimatingLike] = useState(false);
+  
   // Delete confirmation dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteRelatedData, setDeleteRelatedData] = useState<{
@@ -1176,6 +1179,10 @@ export function PromptCard({
                 }
                 (window as any).lastLikeClick = now;
                 
+                // Trigger animation immediately (optimistically)
+                setIsAnimatingLike(true);
+                setTimeout(() => setIsAnimatingLike(false), 600);
+                
                 console.log("Like button clicked for prompt:", prompt.id, "isOwn:", prompt.userId === typedUser?.id);
                 console.log("Prompt owner:", prompt.userId, "Current user:", typedUser?.id);
                 likeMutation.mutate();
@@ -1185,9 +1192,17 @@ export function PromptCard({
               data-testid={`button-like-counter-${prompt.id}`}
               title={isLiked ? "Unlike this prompt" : "Like this prompt"}
             >
-              <Heart 
-                className={`h-4 w-4 transition-all duration-200 ${isLiked ? 'fill-red-600' : 'hover:fill-red-200'}`} 
-              />
+              <motion.div
+                animate={isAnimatingLike ? {
+                  scale: [1, 1.3, 0.9, 1.1, 1],
+                  rotate: [0, -10, 10, -5, 0]
+                } : {}}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+              >
+                <Heart 
+                  className={`h-4 w-4 transition-all duration-200 ${isLiked ? 'fill-red-600' : 'hover:fill-red-200'}`} 
+                />
+              </motion.div>
               <span className={`text-sm font-medium transition-colors duration-200 ${isLiked ? 'text-red-600' : 'text-muted-foreground'}`}>
                 {prompt.likes || 0}
               </span>
