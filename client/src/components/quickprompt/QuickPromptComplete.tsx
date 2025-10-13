@@ -15,7 +15,7 @@ import { PromptHistory } from "@/components/PromptHistory";
 import { 
   Sparkles, Copy, Share2, Save, Plus, ImageIcon, X, ChevronUp, 
   Camera, FileText, Loader2, AlertCircle, CheckCircle, 
-  Bug, MessageSquare, Settings, Dices, Clock
+  Bug, MessageSquare, Settings, Dices, Clock, Trash2
 } from "lucide-react";
 
 interface CharacterPreset {
@@ -82,6 +82,7 @@ export default function QuickPromptComplete() {
   // Character state
   const [showCustomCharacterInput, setShowCustomCharacterInput] = useState(false);
   const [customCharacterInput, setCustomCharacterInput] = useState("");
+  const [savedCustomCharacters, setSavedCustomCharacters] = useState<CharacterPreset[]>([]);
   
   // Image state
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
@@ -182,6 +183,17 @@ export default function QuickPromptComplete() {
       setTemplate(savedTemplate);
     }
     
+    // Load saved custom characters from localStorage
+    const savedCharacters = localStorage.getItem('quickPrompt-savedCharacters');
+    if (savedCharacters) {
+      try {
+        const parsedCharacters = JSON.parse(savedCharacters);
+        setSavedCustomCharacters(parsedCharacters);
+      } catch (error) {
+        console.error('Error loading saved characters:', error);
+      }
+    }
+    
     // Show toast if subject was pre-populated from Codex
     if (initialSubject) {
       toast({
@@ -244,6 +256,61 @@ export default function QuickPromptComplete() {
       setShowCustomCharacterInput(false);
       setCustomCharacterInput('');
     }
+  };
+
+  // Handle saving custom character
+  const handleSaveCustomCharacter = () => {
+    if (!customCharacterInput.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a character description before saving.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newCharacter: CharacterPreset = {
+      id: `custom-${Date.now()}`,
+      name: customCharacterInput.slice(0, 50), // Limit name length
+      description: customCharacterInput,
+      is_favorite: false,
+      user_id: 'local'
+    };
+
+    const updatedCharacters = [...savedCustomCharacters, newCharacter];
+    setSavedCustomCharacters(updatedCharacters);
+    
+    // Save to localStorage
+    localStorage.setItem('quickPrompt-savedCharacters', JSON.stringify(updatedCharacters));
+    
+    toast({
+      title: "Character Saved",
+      description: "Your custom character has been saved successfully.",
+    });
+
+    // Optionally clear the input after saving
+    setCustomCharacterInput('');
+    setShowCustomCharacterInput(false);
+    setCharacter(newCharacter.id.toString());
+  };
+
+  // Handle deleting saved custom character
+  const handleDeleteCustomCharacter = (characterId: string) => {
+    const updatedCharacters = savedCustomCharacters.filter(c => c.id !== characterId);
+    setSavedCustomCharacters(updatedCharacters);
+    
+    // Save to localStorage
+    localStorage.setItem('quickPrompt-savedCharacters', JSON.stringify(updatedCharacters));
+    
+    // If the deleted character was selected, reset to no character
+    if (character === characterId) {
+      setCharacter('');
+    }
+    
+    toast({
+      title: "Character Deleted",
+      description: "The saved character has been removed.",
+    });
   };
   
   // Handle template change
@@ -410,9 +477,16 @@ export default function QuickPromptComplete() {
         if (character === 'custom-character' && customCharacterInput) {
           basePrompt = `${customCharacterInput}, ${basePrompt}`;
         } else {
-          const selectedCharacter = characterPresets.find(p => p.id?.toString() === character);
-          if (selectedCharacter) {
-            basePrompt = `${selectedCharacter.name}, ${basePrompt}`;
+          // First check saved custom characters
+          const savedCharacter = savedCustomCharacters.find(p => p.id?.toString() === character);
+          if (savedCharacter) {
+            basePrompt = `${savedCharacter.description}, ${basePrompt}`;
+          } else {
+            // Then check system presets
+            const selectedCharacter = characterPresets.find(p => p.id?.toString() === character);
+            if (selectedCharacter) {
+              basePrompt = `${selectedCharacter.name}, ${basePrompt}`;
+            }
           }
         }
       }
@@ -837,11 +911,28 @@ export default function QuickPromptComplete() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="no-character">No Character</SelectItem>
+                
+                {/* System Character Presets */}
                 {characterPresets.map((preset) => (
                   <SelectItem key={preset.id} value={preset.id.toString()}>
                     {preset.is_favorite && "⭐ "}{preset.name}
                   </SelectItem>
                 ))}
+                
+                {/* Saved Custom Characters */}
+                {savedCustomCharacters.length > 0 && (
+                  <>
+                    <div className="my-1 border-t border-gray-700" />
+                    <div className="px-2 py-1 text-xs text-gray-500">Saved Characters</div>
+                    {savedCustomCharacters.map((preset) => (
+                      <SelectItem key={preset.id} value={preset.id.toString()}>
+                        💾 {preset.name}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+                
+                <div className="my-1 border-t border-gray-700" />
                 <SelectItem value="custom-character">
                   <Plus className="h-4 w-4 inline mr-2" />
                   Custom Character
@@ -850,13 +941,25 @@ export default function QuickPromptComplete() {
             </Select>
             
             {showCustomCharacterInput && (
-              <Input
-                placeholder="Describe your custom character..."
-                value={customCharacterInput}
-                onChange={(e) => setCustomCharacterInput(e.target.value)}
-                className="bg-gray-800/50 border-gray-700"
-                data-testid="input-custom-character"
-              />
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="Describe your custom character..."
+                  value={customCharacterInput}
+                  onChange={(e) => setCustomCharacterInput(e.target.value)}
+                  className="bg-gray-800/50 border-gray-700 flex-1"
+                  data-testid="input-custom-character"
+                />
+                <Button
+                  onClick={handleSaveCustomCharacter}
+                  size="icon"
+                  variant="ghost"
+                  className="h-10 w-10 hover:bg-gray-700"
+                  title="Save custom character"
+                  data-testid="button-save-character"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+              </div>
             )}
           </div>
           
