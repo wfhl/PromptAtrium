@@ -11,6 +11,9 @@ export function MobilePageNav() {
     <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-safe">
       <div className="flex gap-2 max-w-screen-xl mx-auto">
         <Link href="/library" className="flex-1">
+         
+          
+          
           <Button 
             variant="outline"
             className={`w-full relative group ${isLibraryPage ? 'button-gradient-library hover:color-white' : 'hover:bg-transparent'}`}
@@ -24,6 +27,10 @@ export function MobilePageNav() {
           </Button>
         </Link>
         <Link href="/community" className="flex-1">
+       
+          
+          
+          
           <Button 
             variant="outline"
             className={`w-full relative group ${isCommunityPage ? 'button-gradient-community hover:color-white' : 'hover:bg-transparent'}`}
