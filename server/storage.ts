@@ -2442,7 +2442,11 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (options.category) {
-      conditions.push(eq(prompt_components.category, options.category));
+      // Compare normalized values: convert both the database category and the input to the same format
+      // This handles categories with existing hyphens (e.g., "Sci-Fi Concepts")
+      conditions.push(
+        sql`LOWER(REPLACE(${prompt_components.category}, ' ', '-')) = ${options.category.toLowerCase()}`
+      );
     }
     if (options.search) {
       conditions.push(
