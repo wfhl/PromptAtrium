@@ -124,8 +124,8 @@ export default function Tools() {
       title: "Wordsmith Codex",
       description: "Explore word meanings",
       icon: BookOpen,
-      color: "text-indigo-500",
-      link: "/tools/wordsmith-codex",
+      color: "text-red-500",
+      link: "/codex",
     },
     {
       id: "prompting-guides",

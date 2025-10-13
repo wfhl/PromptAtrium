@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2 } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2, Wand2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -458,16 +458,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                       Metadata Analyzer
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => toast({
-                      title: "Coming Soon",
-                      description: "Prompt Generator will be available soon!",
-                    })}
-                    className="cursor-pointer"
-                    data-testid="menu-prompt-generator"
-                  >
-                    <Lightbulb className="mr-2 h-4 w-4" />
-                    Prompt Generator
+                  <DropdownMenuItem asChild>
+                    <Link href="/tools/quick-prompter" className="flex items-center cursor-pointer" data-testid="menu-quick-prompt">
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Quick Prompter
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/codex" className="flex items-center cursor-pointer" data-testid="menu-wordsmith-codex">
