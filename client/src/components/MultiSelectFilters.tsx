@@ -19,7 +19,7 @@ export interface MultiSelectFilters {
   collection: string[];
 }
 
-interface EnabledFilters {
+export interface EnabledFilters {
   category: boolean;
   type: boolean;
   style: boolean;
@@ -31,6 +31,8 @@ interface EnabledFilters {
 interface MultiSelectFiltersProps {
   onFiltersChange: (filters: MultiSelectFilters) => void;
   onEnabledFiltersChange?: (enabledFilters: EnabledFilters) => void;
+  enabledFilters?: EnabledFilters;
+  selectedFilters?: MultiSelectFilters;
   sortBy: string;
   showButton?: boolean;
   showTabs?: boolean;
@@ -39,12 +41,14 @@ interface MultiSelectFiltersProps {
 export function MultiSelectFilters({ 
   onFiltersChange,
   onEnabledFiltersChange,
+  enabledFilters: enabledFiltersProp,
+  selectedFilters: selectedFiltersProp,
   sortBy,
   showButton = true,
   showTabs = true
 }: MultiSelectFiltersProps) {
-  // State for which filter categories are enabled
-  const [enabledFilters, setEnabledFilters] = useState<EnabledFilters>({
+  // State for which filter categories are enabled (use props if provided)
+  const [localEnabledFilters, setLocalEnabledFilters] = useState<EnabledFilters>({
     category: false,
     type: false,
     style: false,
@@ -53,8 +57,8 @@ export function MultiSelectFilters({
     collection: false,
   });
 
-  // State for selected values in each filter
-  const [selectedFilters, setSelectedFilters] = useState<MultiSelectFilters>({
+  // State for selected values in each filter (use props if provided)
+  const [localSelectedFilters, setLocalSelectedFilters] = useState<MultiSelectFilters>({
     category: [],
     type: [],
     style: [],
@@ -62,6 +66,26 @@ export function MultiSelectFilters({
     recommendedModel: [],
     collection: [],
   });
+
+  // Use props if provided, otherwise use local state
+  const enabledFilters = enabledFiltersProp || localEnabledFilters;
+  const selectedFilters = selectedFiltersProp || localSelectedFilters;
+  const setEnabledFilters = (filters: EnabledFilters) => {
+    if (enabledFiltersProp) {
+      onEnabledFiltersChange?.(filters);
+    } else {
+      setLocalEnabledFilters(filters);
+      onEnabledFiltersChange?.(filters);
+    }
+  };
+  const setSelectedFilters = (filters: MultiSelectFilters) => {
+    if (selectedFiltersProp) {
+      onFiltersChange(filters);
+    } else {
+      setLocalSelectedFilters(filters);
+      onFiltersChange(filters);
+    }
+  };
 
   const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
 

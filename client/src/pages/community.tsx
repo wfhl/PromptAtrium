@@ -19,7 +19,7 @@ import {
 import { PromptCard } from "@/components/PromptCard";
 import { MobilePageNav } from "@/components/MobilePageNav";
 import { MultiSelectFilters } from "@/components/MultiSelectFilters";
-import type { MultiSelectFilters as MultiSelectFiltersType } from "@/components/MultiSelectFilters";
+import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } from "@/components/MultiSelectFilters";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Prompt, User, Collection } from "@shared/schema";
@@ -41,6 +41,16 @@ export default function Community() {
     intendedGenerator: [],
     recommendedModel: [],
     collection: [],
+  });
+
+  // Enabled filters state
+  const [enabledFilters, setEnabledFilters] = useState<EnabledFilters>({
+    category: false,
+    type: false,
+    style: false,
+    intendedGenerator: false,
+    recommendedModel: false,
+    collection: false,
   });
   
   // State for dynamic filter options
@@ -371,6 +381,9 @@ export default function Community() {
                 setMultiSelectFilters(filters);
                 refetch();
               }}
+              onEnabledFiltersChange={setEnabledFilters}
+              enabledFilters={enabledFilters}
+              selectedFilters={multiSelectFilters}
               sortBy={sortBy}
               showButton={true}
               showTabs={false}
@@ -401,6 +414,9 @@ export default function Community() {
               setMultiSelectFilters(filters);
               refetch();
             }}
+            onEnabledFiltersChange={setEnabledFilters}
+            enabledFilters={enabledFilters}
+            selectedFilters={multiSelectFilters}
             sortBy={sortBy}
             showButton={false}
             showTabs={true}
