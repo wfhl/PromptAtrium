@@ -783,18 +783,51 @@ export default function QuickPromptPlay() {
     // Stage 2: Build the prompt with character and subject
     let basePrompt = effectiveSubject;
     
-    if (character && character !== 'no-character') {
-      if (character === 'custom-character') {
-        // Use custom character input
-        if (customCharacterInput.trim()) {
-          basePrompt = `${customCharacterInput.trim()}, ${basePrompt}`;
+    // Check if we have an image and need to format differently
+    if (imagePreview && imageAnalysisResponse) {
+      // Get the character description if provided
+      let characterDescription = '';
+      if (character && character !== 'no-character') {
+        if (character === 'custom-character') {
+          characterDescription = customCharacterInput.trim();
+        } else {
+          const selectedCharacter = characterPresets.find(preset => preset.id === character);
+          if (selectedCharacter) {
+            characterDescription = selectedCharacter.description || selectedCharacter.name || '';
+          } else if (character === "character") {
+            characterDescription = "character";
+          }
         }
-      } else {
-        const selectedCharacter = characterPresets.find(preset => preset.id === character);
-        if (selectedCharacter) {
-          basePrompt = `${selectedCharacter.name}, ${basePrompt}`;
-        } else if (character === "character") {
-          basePrompt = `character, ${basePrompt}`;
+      }
+      
+      // Format prompt based on input combinations
+      if (characterDescription && !subject) {
+        // Character + Image (NO Subject)
+        basePrompt = `please apply the following character description: ${characterDescription} to the following image description: ${imageAnalysisResponse}`;
+      } else if (characterDescription && subject) {
+        // Subject + Character + Image
+        basePrompt = `please apply the following character description: ${characterDescription}, and subject details: ${subject} to the following image description: ${imageAnalysisResponse}`;
+      } else if (!characterDescription && subject) {
+        // Subject + Image (NO Character)
+        basePrompt = `please apply the following subject details: ${subject} to the following image description: ${imageAnalysisResponse}`;
+      }
+      // else: Just Image (no character, no subject) - use the image analysis as-is
+      
+    } else {
+      // Original logic when no image is present
+      if (character && character !== 'no-character') {
+        if (character === 'custom-character') {
+          // Use custom character input
+          if (customCharacterInput.trim()) {
+            basePrompt = `${customCharacterInput.trim()}, ${basePrompt}`;
+          }
+        } else {
+          const selectedCharacter = characterPresets.find(preset => preset.id === character);
+          if (selectedCharacter) {
+            basePrompt = `${selectedCharacter.name}, ${basePrompt}`;
+          } else if (character === "character") {
+            basePrompt = `character, ${basePrompt}`;
+          }
         }
       }
     }
