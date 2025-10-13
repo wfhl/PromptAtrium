@@ -448,19 +448,51 @@ export class DatabaseStorage implements IStorage {
     
     // Add filtering for new array fields
     if (options.categories && options.categories.length > 0) {
-      conditions.push(sql`${prompts.categories} && ARRAY[${sql.raw(options.categories.map(c => `'${c.replace(/'/g, "''")}'`).join(','))}]::text[]`);
+      // Check both the array field and the singular field for backward compatibility
+      conditions.push(
+        or(
+          // Check if the categories array contains any of the requested categories
+          sql`${prompts.categories} && ARRAY[${sql.raw(options.categories.map(c => `'${c.replace(/'/g, "''")}'`).join(','))}]::text[]`,
+          // Also check the singular category field for backward compatibility
+          inArray(prompts.category, options.categories)
+        )
+      );
     }
     
     if (options.promptTypes && options.promptTypes.length > 0) {
-      conditions.push(sql`${prompts.promptTypes} && ARRAY[${sql.raw(options.promptTypes.map(t => `'${t.replace(/'/g, "''")}'`).join(','))}]::text[]`);
+      // Check both the array field and the singular field for backward compatibility
+      conditions.push(
+        or(
+          // Check if the promptTypes array contains any of the requested types
+          sql`${prompts.promptTypes} && ARRAY[${sql.raw(options.promptTypes.map(t => `'${t.replace(/'/g, "''")}'`).join(','))}]::text[]`,
+          // Also check the singular promptType field for backward compatibility
+          inArray(prompts.promptType, options.promptTypes)
+        )
+      );
     }
     
     if (options.promptStyles && options.promptStyles.length > 0) {
-      conditions.push(sql`${prompts.promptStyles} && ARRAY[${sql.raw(options.promptStyles.map(s => `'${s.replace(/'/g, "''")}'`).join(','))}]::text[]`);
+      // Check both the array field and the singular field for backward compatibility
+      conditions.push(
+        or(
+          // Check if the promptStyles array contains any of the requested styles
+          sql`${prompts.promptStyles} && ARRAY[${sql.raw(options.promptStyles.map(s => `'${s.replace(/'/g, "''")}'`).join(','))}]::text[]`,
+          // Also check the singular promptStyle field for backward compatibility
+          inArray(prompts.promptStyle, options.promptStyles)
+        )
+      );
     }
     
     if (options.intendedGenerators && options.intendedGenerators.length > 0) {
-      conditions.push(sql`${prompts.intendedGenerators} && ARRAY[${sql.raw(options.intendedGenerators.map(g => `'${g.replace(/'/g, "''")}'`).join(','))}]::text[]`);
+      // Check both the array field and the singular field for backward compatibility
+      conditions.push(
+        or(
+          // Check if the intendedGenerators array contains any of the requested generators
+          sql`${prompts.intendedGenerators} && ARRAY[${sql.raw(options.intendedGenerators.map(g => `'${g.replace(/'/g, "''")}'`).join(','))}]::text[]`,
+          // Also check the singular intendedGenerator field for backward compatibility
+          inArray(prompts.intendedGenerator, options.intendedGenerators)
+        )
+      );
     }
     
     if (options.collectionIds && options.collectionIds.length > 0) {
