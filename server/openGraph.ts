@@ -105,7 +105,7 @@ function generateOpenGraphHTML(prompt: any, req?: Request): string {
         else if (firstImage.startsWith('/objects/')) {
           // Remove the /objects/ prefix and use the serve endpoint
           const cleanPath = firstImage.replace('/objects/', '');
-          imageUrl = `${baseUrl}/api/objects/serve/objects/${cleanPath}`;
+          imageUrl = `${baseUrl}/api/objects/serve/${cleanPath}`;
         }
         // If it starts with / (absolute path on our server)
         else if (firstImage.startsWith('/')) {
@@ -113,8 +113,8 @@ function generateOpenGraphHTML(prompt: any, req?: Request): string {
         }
         // Otherwise assume it's a relative path or object storage key
         else {
-          // This could be an object storage key
-          imageUrl = `${baseUrl}/api/objects/serve/objects/${firstImage}`;
+          // This could be an object storage key  
+          imageUrl = `${baseUrl}/api/objects/serve/${firstImage}`;
         }
         
         console.log('[Open Graph] Processed first image:', firstImage, '->', imageUrl);
