@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { MobilePageNav } from "@/components/MobilePageNav";
+import { MultiSelectFilters } from "@/components/MultiSelectFilters";
+import type { MultiSelectFilters as MultiSelectFiltersType } from "@/components/MultiSelectFilters";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Prompt, User, Collection } from "@shared/schema";
@@ -30,12 +32,16 @@ export default function Community() {
   const [searchQuery, setSearchQuery] = useState("");
   const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [styleFilter, setStyleFilter] = useState("all");
-  const [generatorFilter, setGeneratorFilter] = useState("all");
-  const [modelFilter, setModelFilter] = useState("all");
-  const [collectionFilter, setCollectionFilter] = useState("all");
+  
+  // Multi-select filters state
+  const [multiSelectFilters, setMultiSelectFilters] = useState<MultiSelectFiltersType>({
+    category: [],
+    type: [],
+    style: [],
+    intendedGenerator: [],
+    recommendedModel: [],
+    collection: [],
+  });
   
   // State for dynamic filter options
   const [filterOptions, setFilterOptions] = useState<{
@@ -79,12 +85,26 @@ export default function Community() {
     const params = new URLSearchParams();
     params.append("isPublic", "true");
     if (searchQuery) params.append("search", searchQuery);
-    if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
-    if (typeFilter && typeFilter !== "all") params.append("type", typeFilter);
-    if (styleFilter && styleFilter !== "all") params.append("style", styleFilter);
-    if (generatorFilter && generatorFilter !== "all") params.append("generator", generatorFilter);
-    if (modelFilter && modelFilter !== "all") params.append("model", modelFilter);
-    if (collectionFilter && collectionFilter !== "all") params.append("collection", collectionFilter);
+    
+    // Handle multi-select filters
+    if (multiSelectFilters.category.length > 0) {
+      params.append("category", multiSelectFilters.category.join(","));
+    }
+    if (multiSelectFilters.type.length > 0) {
+      params.append("type", multiSelectFilters.type.join(","));
+    }
+    if (multiSelectFilters.style.length > 0) {
+      params.append("style", multiSelectFilters.style.join(","));
+    }
+    if (multiSelectFilters.intendedGenerator.length > 0) {
+      params.append("generator", multiSelectFilters.intendedGenerator.join(","));
+    }
+    if (multiSelectFilters.recommendedModel.length > 0) {
+      params.append("model", multiSelectFilters.recommendedModel.join(","));
+    }
+    if (multiSelectFilters.collection.length > 0) {
+      params.append("collection", multiSelectFilters.collection.join(","));
+    }
     
     // Use promptsSubTab instead of sortBy for filtering
     if (promptsSubTab === "featured") {
@@ -110,12 +130,12 @@ export default function Community() {
     retry: false,
   });
 
-  // Refetch prompts when sub-tab changes
+  // Refetch prompts when sub-tab or filters change
   useEffect(() => {
     if (activeTab === "prompts" && isAuthenticated) {
       refetch();
     }
-  }, [promptsSubTab, activeTab, isAuthenticated]);
+  }, [promptsSubTab, activeTab, isAuthenticated, multiSelectFilters]);
   
   // Fetch public collections
   const { data: publicCollections = [] } = useQuery<(Collection & { promptCount?: number; user?: User })[]>({
@@ -327,187 +347,34 @@ export default function Community() {
 
         {/* Prompts Tab */}
         <TabsContent value="prompts" className="space-y-4">
-          {/* Search Bar with Filter Dropdown */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search community prompts..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  // Auto-apply search on type
+          {/* Search Bar with Multi-Select Filters */}
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search community prompts..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    // Auto-apply search on type
+                    refetch();
+                  }}
+                  className="pl-10 pr-4"
+                  data-testid="input-search"
+                />
+              </div>
+              
+              {/* Multi-Select Filter Component */}
+              <MultiSelectFilters
+                onFiltersChange={(filters) => {
+                  setMultiSelectFilters(filters);
                   refetch();
                 }}
-                className="pl-10 pr-4"
-                data-testid="input-search"
+                sortBy={sortBy}
               />
             </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" data-testid="button-filter">
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                
-                {/* Category Filter */}
-                <div className="px-2 py-2">
-                  <label className="text-sm font-medium mb-2 block">Category</label>
-                  <Select value={categoryFilter} onValueChange={(value) => {
-                    setCategoryFilter(value);
-                    refetch();
-                  }}>
-                    <SelectTrigger className="w-full" data-testid="select-category">
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {filterOptions.categories.map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Type Filter */}
-                <div className="px-2 py-2">
-                  <label className="text-sm font-medium mb-2 block">Type</label>
-                  <Select value={typeFilter} onValueChange={(value) => {
-                    setTypeFilter(value);
-                    refetch();
-                  }}>
-                    <SelectTrigger className="w-full" data-testid="select-type">
-                      <SelectValue placeholder="All Types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      {filterOptions.promptTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Style Filter */}
-                <div className="px-2 py-2">
-                  <label className="text-sm font-medium mb-2 block">Style</label>
-                  <Select value={styleFilter} onValueChange={(value) => {
-                    setStyleFilter(value);
-                    refetch();
-                  }}>
-                    <SelectTrigger className="w-full" data-testid="select-style">
-                      <SelectValue placeholder="All Styles" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Styles</SelectItem>
-                      {filterOptions.promptStyles.map(style => (
-                        <SelectItem key={style} value={style}>{style}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Intended Generator Filter */}
-                <div className="px-2 py-2">
-                  <label className="text-sm font-medium mb-2 block">Intended Generator</label>
-                  <Select value={generatorFilter} onValueChange={(value) => {
-                    setGeneratorFilter(value);
-                    refetch();
-                  }}>
-                    <SelectTrigger className="w-full" data-testid="select-generator">
-                      <SelectValue placeholder="All Generators" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Generators</SelectItem>
-                      {filterOptions.intendedGenerators.map(gen => (
-                        <SelectItem key={gen} value={gen}>{gen}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Recommended Models Filter */}
-                <div className="px-2 py-2">
-                  <label className="text-sm font-medium mb-2 block">Recommended Model</label>
-                  <Select value={modelFilter} onValueChange={(value) => {
-                    setModelFilter(value);
-                    refetch();
-                  }}>
-                    <SelectTrigger className="w-full" data-testid="select-model">
-                      <SelectValue placeholder="All Models" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Models</SelectItem>
-                      {filterOptions.models.map(model => (
-                        <SelectItem key={model} value={model}>{model}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Collection Filter */}
-                <div className="px-2 py-2">
-                  <label className="text-sm font-medium mb-2 block">Collection</label>
-                  <Select value={collectionFilter} onValueChange={(value) => {
-                    setCollectionFilter(value);
-                    refetch();
-                  }}>
-                    <SelectTrigger className="w-full" data-testid="select-collection">
-                      <SelectValue placeholder="All Collections" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Collections</SelectItem>
-                      {filterOptions.collections.map(coll => (
-                        <SelectItem key={coll.id} value={coll.id}>{coll.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <DropdownMenuSeparator />
-                
-                {/* Sort Filter */}
-                <div className="px-2 py-2">
-                  <label className="text-sm font-medium mb-2 block">Sort By</label>
-                  <Select value={sortBy} onValueChange={(value) => {
-                    setSortBy(value);
-                    refetch();
-                  }}>
-                    <SelectTrigger className="w-full" data-testid="select-sort">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="featured">Featured</SelectItem>
-                      <SelectItem value="trending">Trending</SelectItem>
-                      <SelectItem value="recent">Most Recent</SelectItem>
-                      {isSuperAdmin && <SelectItem value="hidden">Hidden</SelectItem>}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <DropdownMenuSeparator />
-                
-                {/* Apply Filters Button */}
-                <div className="px-2 py-2">
-                  <Button 
-                    onClick={() => refetch()} 
-                    className="w-full"
-                    size="sm"
-                    data-testid="button-apply-filters"
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      {getSortIcon()}
-                      <span>Apply Filters</span>
-                    </div>
-                  </Button>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           {/* Sub-tabs styled like dashboard */}
@@ -547,7 +414,7 @@ export default function Community() {
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">No community prompts found</h3>
                   <p className="text-muted-foreground mb-6">
-                    {searchQuery || categoryFilter
+                    {searchQuery || Object.values(multiSelectFilters).some(filters => filters.length > 0)
                       ? "Try adjusting your filters to discover more prompts from the community."
                       : "The community is just getting started. Check back soon for amazing prompts!"}
                   </p>
