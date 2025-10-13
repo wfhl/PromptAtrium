@@ -443,28 +443,32 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (options.tags && options.tags.length > 0) {
-      conditions.push(sql`${prompts.tags} && ${options.tags}`);
+      conditions.push(sql`${prompts.tags} && ARRAY[${sql.raw(options.tags.map(t => `'${t.replace(/'/g, "''")}'`).join(','))}]::text[]`);
     }
     
     // Add filtering for new array fields
     if (options.categories && options.categories.length > 0) {
-      conditions.push(sql`${prompts.categories} && ${options.categories}`);
+      conditions.push(sql`${prompts.categories} && ARRAY[${sql.raw(options.categories.map(c => `'${c.replace(/'/g, "''")}'`).join(','))}]::text[]`);
     }
     
     if (options.promptTypes && options.promptTypes.length > 0) {
-      conditions.push(sql`${prompts.promptTypes} && ${options.promptTypes}`);
+      conditions.push(sql`${prompts.promptTypes} && ARRAY[${sql.raw(options.promptTypes.map(t => `'${t.replace(/'/g, "''")}'`).join(','))}]::text[]`);
     }
     
     if (options.promptStyles && options.promptStyles.length > 0) {
-      conditions.push(sql`${prompts.promptStyles} && ${options.promptStyles}`);
+      conditions.push(sql`${prompts.promptStyles} && ARRAY[${sql.raw(options.promptStyles.map(s => `'${s.replace(/'/g, "''")}'`).join(','))}]::text[]`);
     }
     
     if (options.intendedGenerators && options.intendedGenerators.length > 0) {
-      conditions.push(sql`${prompts.intendedGenerators} && ${options.intendedGenerators}`);
+      conditions.push(sql`${prompts.intendedGenerators} && ARRAY[${sql.raw(options.intendedGenerators.map(g => `'${g.replace(/'/g, "''")}'`).join(','))}]::text[]`);
     }
     
     if (options.collectionIds && options.collectionIds.length > 0) {
-      conditions.push(sql`${prompts.collectionIds} && ${options.collectionIds}`);
+      conditions.push(sql`${prompts.collectionIds} && ARRAY[${sql.raw(options.collectionIds.map(id => `'${id.replace(/'/g, "''")}'`).join(','))}]::text[]`);
+    }
+    
+    if (options.recommendedModels && options.recommendedModels.length > 0) {
+      conditions.push(sql`${prompts.recommendedModels} && ARRAY[${sql.raw(options.recommendedModels.map(m => `'${m.replace(/'/g, "''")}'`).join(','))}]::text[]`);
     }
     
     // Filter by single collectionId field
