@@ -82,7 +82,8 @@ function AssemblyToastPortal({
   copyAssembledString,
   saveAssembledStringMutation,
   setSaveType,
-  setSaveDialogOpen
+  setSaveDialogOpen,
+  setLocation
 }: {
   assembledString: string[];
   toastMinimized: boolean;
@@ -93,6 +94,7 @@ function AssemblyToastPortal({
   saveAssembledStringMutation: any;
   setSaveType: (type: "preset" | "wildcard") => void;
   setSaveDialogOpen: (open: boolean) => void;
+  setLocation: (path: string) => void;
 }) {
   return createPortal(
     <div 
@@ -1444,6 +1446,7 @@ export default function Codex() {
             saveAssembledStringMutation={saveAssembledStringMutation}
             setSaveType={setSaveType}
             setSaveDialogOpen={setSaveDialogOpen}
+            setLocation={setLocation}
           />
         ) : null}
 
