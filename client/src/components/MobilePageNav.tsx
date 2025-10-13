@@ -11,7 +11,7 @@ export function MobilePageNav() {
   return (
     <>
       {/* Extended blur effect below nav */}
-      <div className="block lg:hidden fixed left-0 right-0 bottom-0 z-40 h-24 bg-background/95 dark:bg-background/95 backdrop-blur-sm pointer-events-none" />
+      <div className="block lg:hidden fixed left-0 right-0 bottom-0 z-40 h-6 bg-background/95 dark:bg-background/95 backdrop-blur-sm pointer-events-none" />
 
       <div className="block border-transparent lg:hidden fixed left-0 right-0 bottom-5 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-safe mobile-nav-fixed">
         <div className="flex gap-2 max-w-screen-xl mx-auto">

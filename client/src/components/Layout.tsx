@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkImportModal } from "@/components/BulkImportModal";
+import { MobilePageNav } from "@/components/MobilePageNav";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
