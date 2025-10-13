@@ -121,12 +121,57 @@ export default function Dashboard() {
     retry: false,
   });
 
+  // Build query string for community prompts
+  const buildCommunityQuery = () => {
+    const params = new URLSearchParams();
+    params.append("isPublic", "true");
+    params.append("limit", "10");
+    
+    // Handle community tab selection
+    if (communityTab === "featured") {
+      params.append("isFeatured", "true");
+    } else if (communityTab === "trending") {
+      params.append("sortBy", "trending");
+    } else if (communityTab === "recent") {
+      params.append("sortBy", "recent");
+    }
+    
+    // Handle multi-select filters
+    if (multiSelectFilters.category.length > 0) {
+      params.append("category", multiSelectFilters.category.join(","));
+    }
+    if (multiSelectFilters.type.length > 0) {
+      params.append("type", multiSelectFilters.type.join(","));
+    }
+    if (multiSelectFilters.style.length > 0) {
+      params.append("style", multiSelectFilters.style.join(","));
+    }
+    if (multiSelectFilters.intendedGenerator.length > 0) {
+      params.append("generator", multiSelectFilters.intendedGenerator.join(","));
+    }
+    if (multiSelectFilters.recommendedModel.length > 0) {
+      params.append("model", multiSelectFilters.recommendedModel.join(","));
+    }
+    if (multiSelectFilters.collection.length > 0) {
+      params.append("collection", multiSelectFilters.collection.join(","));
+    }
+    
+    return params.toString();
+  };
+
   // Fetch community featured prompts
-  const { data: communityPrompts = [] } = useQuery<Prompt[]>({
-    queryKey: ["/api/prompts?isPublic=true&isFeatured=true&limit=3"],
+  const { data: communityPrompts = [], refetch: refetchCommunity } = useQuery<Prompt[]>({
+    queryKey: [`/api/prompts?${buildCommunityQuery()}`],
     enabled: isAuthenticated,
     retry: false,
   });
+  
+  // Refetch community prompts when filters or tab change
+  useEffect(() => {
+    if (isAuthenticated) {
+      refetchCommunity();
+    }
+  }, [communityTab, multiSelectFilters, isAuthenticated]);
 
   // Fetch user collections
   const { data: collections = [] } = useQuery<Collection[]>({
@@ -501,22 +546,50 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-[#a328c9]">Community Highlights</h2>
-                <Tabs value={communityTab} onValueChange={setCommunityTab}>
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="featured" className="text-xs" data-testid="filter-featured">
-                      Featured
-                    </TabsTrigger>
-                    <TabsTrigger value="trending" className="text-xs" data-testid="filter-trending">
-                      Trending
-                    </TabsTrigger>
-                    <TabsTrigger value="recent" className="text-xs" data-testid="filter-recent">
-                      Recent
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <div className="flex items-center gap-2">
+                  {/* Filter Options Button */}
+                  <MultiSelectFilters
+                    onFiltersChange={(filters) => {
+                      setMultiSelectFilters(filters);
+                    }}
+                    onEnabledFiltersChange={setEnabledFilters}
+                    enabledFilters={enabledFilters}
+                    selectedFilters={multiSelectFilters}
+                    sortBy={communityTab}
+                    showButton={true}
+                    showTabs={false}
+                  />
+                  
+                  <Tabs value={communityTab} onValueChange={setCommunityTab}>
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="featured" className="text-xs" data-testid="filter-featured">
+                        Featured
+                      </TabsTrigger>
+                      <TabsTrigger value="trending" className="text-xs" data-testid="filter-trending">
+                        Trending
+                      </TabsTrigger>
+                      <TabsTrigger value="recent" className="text-xs" data-testid="filter-recent">
+                        Recent
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
               </div>
 
-              <div className="space-y-4" data-testid="section-community-highlights">
+              {/* Multi-Select Filter Tabs - Show below headers */}
+              <MultiSelectFilters
+                onFiltersChange={(filters) => {
+                  setMultiSelectFilters(filters);
+                }}
+                onEnabledFiltersChange={setEnabledFilters}
+                enabledFilters={enabledFilters}
+                selectedFilters={multiSelectFilters}
+                sortBy={communityTab}
+                showButton={false}
+                showTabs={true}
+              />
+
+              <div className="space-y-4 mt-4" data-testid="section-community-highlights">
                 {communityPrompts.length > 0 ? (
                   communityPrompts.map((prompt) => (
                     <PromptCard key={prompt.id} prompt={prompt} isCommunityPage={true} />
