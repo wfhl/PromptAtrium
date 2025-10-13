@@ -2150,47 +2150,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Follow operations
   app.post('/api/users/:userId/follow', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUserId = (req.user as any).claims.sub;
+      const currentUserId = (req.user as any).claims?.sub || (req.user as any).id;
       const targetUserId = req.params.userId;
       
+      // Validate input
+      if (!currentUserId) {
+        return res.status(401).json({ 
+          error: "UNAUTHORIZED",
+          message: "Authentication required" 
+        });
+      }
+      
+      if (!targetUserId) {
+        return res.status(400).json({ 
+          error: "INVALID_USER_ID",
+          message: "Invalid user ID" 
+        });
+      }
+      
       if (currentUserId === targetUserId) {
-        return res.status(400).json({ message: "Cannot follow yourself" });
+        return res.status(400).json({ 
+          error: "CANNOT_FOLLOW_SELF",
+          message: "Cannot follow yourself" 
+        });
+      }
+      
+      // Verify target user exists
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ 
+          error: "USER_NOT_FOUND",
+          message: "User not found" 
+        });
       }
       
       const follow = await storage.followUser(currentUserId, targetUserId);
       
-      // Create notification for the followed user
-      const follower = await storage.getUser(currentUserId);
-      if (follower) {
-        await storage.createNotification({
-          userId: targetUserId,
-          type: "follow",
-          message: `${follower.username || follower.firstName || 'Someone'} started following you`,
-          relatedUserId: currentUserId,
-          relatedPromptId: null,
-          relatedListId: null,
-          isRead: false,
-          metadata: {}
+      // Create notification in background to not block response
+      (async () => {
+        try {
+          const follower = await storage.getUser(currentUserId);
+          if (follower) {
+            await storage.createNotification({
+              userId: targetUserId,
+              type: "follow",
+              message: `${follower.username || follower.firstName || 'Someone'} started following you`,
+              relatedUserId: currentUserId,
+              relatedPromptId: null,
+              relatedListId: null,
+              isRead: false,
+              metadata: {}
+            });
+          }
+        } catch (notifError) {
+          console.error("Error creating follow notification:", notifError);
+        }
+      })();
+      
+      res.json({ 
+        following: true,
+        userId: targetUserId 
+      });
+    } catch (error: any) {
+      console.error("Error following user:", error);
+      
+      // Handle specific errors
+      if (error.message?.includes("already following")) {
+        return res.status(409).json({ 
+          error: "ALREADY_FOLLOWING",
+          message: "You are already following this user",
+          retryable: false 
         });
       }
       
-      res.json(follow);
-    } catch (error) {
-      console.error("Error following user:", error);
-      res.status(500).json({ message: "Failed to follow user" });
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        return res.status(503).json({ 
+          error: "SERVICE_UNAVAILABLE",
+          message: "Service temporarily unavailable. Please try again.",
+          retryable: true 
+        });
+      }
+      
+      res.status(500).json({ 
+        error: "INTERNAL_ERROR",
+        message: "Failed to follow user. Please try again.",
+        retryable: true,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
 
   app.delete('/api/users/:userId/follow', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUserId = (req.user as any).claims.sub;
+      const currentUserId = (req.user as any).claims?.sub || (req.user as any).id;
       const targetUserId = req.params.userId;
       
+      // Validate input
+      if (!currentUserId) {
+        return res.status(401).json({ 
+          error: "UNAUTHORIZED",
+          message: "Authentication required" 
+        });
+      }
+      
+      if (!targetUserId) {
+        return res.status(400).json({ 
+          error: "INVALID_USER_ID",
+          message: "Invalid user ID" 
+        });
+      }
+      
       await storage.unfollowUser(currentUserId, targetUserId);
-      res.json({ message: "Unfollowed successfully" });
-    } catch (error) {
+      
+      res.json({ 
+        following: false,
+        message: "Unfollowed successfully" 
+      });
+    } catch (error: any) {
       console.error("Error unfollowing user:", error);
-      res.status(500).json({ message: "Failed to unfollow user" });
+      
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        return res.status(503).json({ 
+          error: "SERVICE_UNAVAILABLE",
+          message: "Service temporarily unavailable. Please try again.",
+          retryable: true 
+        });
+      }
+      
+      res.status(500).json({ 
+        error: "INTERNAL_ERROR",
+        message: "Failed to unfollow user. Please try again.",
+        retryable: true,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
 

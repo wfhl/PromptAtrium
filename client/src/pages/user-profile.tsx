@@ -111,12 +111,29 @@ export default function UserProfile() {
   // Follow mutation
   const followMutation = useMutation({
     mutationFn: async () => {
-      if (isFollowing) {
-        return await apiRequest("DELETE", `/api/users/${profile?.id}/follow`);
-      } else {
-        return await apiRequest("POST", `/api/users/${profile?.id}/follow`);
+      const method = isFollowing ? "DELETE" : "POST";
+      const response = await apiRequest(method, `/api/users/${profile?.id}/follow`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        const error = Object.assign(
+          new Error(errorData.message || 'Failed to update follow status'),
+          errorData
+        );
+        throw error;
       }
+      
+      return await response.json();
     },
+    retry: (failureCount, error: any) => {
+      const retryableErrors = ['SERVICE_UNAVAILABLE', 'INTERNAL_ERROR'];
+      if ((error?.error && retryableErrors.includes(error.error)) || error?.retryable === true) {
+        console.log(`Retrying follow operation (attempt ${failureCount + 1})...`);
+        return failureCount < 2;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     onSuccess: () => {
       setIsFollowing(!isFollowing);
       queryClient.invalidateQueries({ queryKey: [`/api/users/${profile?.id}/followers`] });
@@ -131,10 +148,36 @@ export default function UserProfile() {
           : `You are now following ${profile?.firstName || username}`,
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      // Handle specific error types
+      if (error?.error === 'USER_NOT_FOUND') {
+        toast({
+          title: "User not found",
+          description: "This user may have been deleted",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (error?.error === 'CANNOT_FOLLOW_SELF') {
+        toast({
+          title: "Cannot follow yourself",
+          description: "You cannot follow your own account",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (error?.error === 'ALREADY_FOLLOWING') {
+        // Silently update the state - user is already following
+        setIsFollowing(true);
+        return;
+      }
+      
+      // Generic error
       toast({
-        title: "Error",
-        description: "Failed to update follow status",
+        title: "Could not update follow status",
+        description: error?.message || "Please try again in a moment",
         variant: "destructive",
       });
     },

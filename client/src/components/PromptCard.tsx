@@ -1194,8 +1194,8 @@ export function PromptCard({
             >
               <motion.div
                 animate={isAnimatingLike ? {
-                  scale: [1, 1.3, 0.9, 1.1, 1],
-                  rotate: [0, -10, 10, -5, 0]
+                  scale: [1, 1.9, 0.9, 1.1, 1],
+                  rotate: [0, -10, 20, -5, 0]
                 } : {}}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
               >
