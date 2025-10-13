@@ -14,7 +14,17 @@ const CRAWLER_USER_AGENTS = [
   'skypeuripreview',
   'pinterest',
   'tumblr',
-  'redditbot'
+  'redditbot',
+  'applebot',        // Apple Messages
+  'imessagebot',     // iMessage
+  'googlebot',       // Google
+  'bingbot',         // Bing
+  'duckduckbot',     // DuckDuckGo
+  'baiduspider',     // Baidu
+  'yandexbot',       // Yandex
+  'viberbot',        // Viber
+  'kakaotalk-scrap', // KakaoTalk
+  'line-poker'       // Line messenger
 ];
 
 // Check if the request is from a social media crawler
@@ -24,15 +34,28 @@ function isCrawler(userAgent: string | undefined): boolean {
   return CRAWLER_USER_AGENTS.some(crawler => ua.includes(crawler));
 }
 
+// Helper to get the correct base URL
+function getBaseUrl(): string {
+  // Check for Replit deployment domain first (most reliable)
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
+  // Fallback to REPL_SLUG construction
+  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    // Use the correct Replit app URL format
+    return `https://${process.env.REPL_SLUG}-${process.env.REPL_OWNER}.replit.app`;
+  }
+  // Production fallback
+  return 'https://promptatrium.com';
+}
+
 // Generate Open Graph HTML for a prompt
 function generateOpenGraphHTML(prompt: any): string {
   const title = prompt?.name || 'AI Prompt';
   const description = prompt?.description || 'Discover and share AI prompts';
   
   // Get the base URL for the application
-  const baseUrl = process.env.REPL_SLUG 
-    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` 
-    : 'https://promptatrium.com';
+  const baseUrl = getBaseUrl();
   
   // Handle image URL - ensure it's absolute
   let imageUrl = `${baseUrl}/atrium-square-icon.png`; // Default app icon with full URL
@@ -40,35 +63,50 @@ function generateOpenGraphHTML(prompt: any): string {
   // Check if prompt has example images
   if (prompt?.exampleImagesUrl && Array.isArray(prompt.exampleImagesUrl) && prompt.exampleImagesUrl.length > 0) {
     const firstImage = prompt.exampleImagesUrl[0];
-    if (firstImage) {
-      // If the image URL is already an absolute URL (http/https)
-      if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
-        imageUrl = firstImage;
-      } 
-      // If it includes Google Cloud Storage domain without protocol
-      else if (firstImage.includes('storage.googleapis.com') || firstImage.includes('googleusercontent.com')) {
-        imageUrl = `https://${firstImage}`;
-      }
-      // If it's an /objects/ path (object storage path)
-      else if (firstImage.startsWith('/objects/') || firstImage.includes('/objects/')) {
-        // Use the serve endpoint for object storage
-        imageUrl = `${baseUrl}/api/objects/serve/${encodeURIComponent(firstImage)}`;
-      }
-      // If it starts with / (absolute path on our server)
-      else if (firstImage.startsWith('/')) {
-        imageUrl = `${baseUrl}${firstImage}`;
-      }
-      // Otherwise assume it's a relative path
-      else {
-        // This could be an object storage key
-        imageUrl = `${baseUrl}/api/objects/serve/${encodeURIComponent(firstImage)}`;
+    if (firstImage && firstImage.trim() !== '') {
+      try {
+        // If the image URL is already an absolute URL (http/https)
+        if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
+          imageUrl = firstImage;
+        } 
+        // If it includes Google Cloud Storage domain without protocol
+        else if (firstImage.includes('storage.googleapis.com') || firstImage.includes('googleusercontent.com')) {
+          imageUrl = `https://${firstImage}`;
+        }
+        // For development storage paths - these are already properly formatted
+        else if (firstImage.includes('/api/dev-storage/')) {
+          // These paths come as /api/dev-storage/uploads/{id} or similar
+          imageUrl = `${baseUrl}${firstImage.startsWith('/') ? firstImage : '/' + firstImage}`;
+        }
+        // If it's an /objects/ path (object storage path)
+        else if (firstImage.startsWith('/objects/')) {
+          // Remove the /objects/ prefix and use the serve endpoint
+          const cleanPath = firstImage.replace('/objects/', '');
+          imageUrl = `${baseUrl}/api/objects/serve/objects/${cleanPath}`;
+        }
+        // If it starts with / (absolute path on our server)
+        else if (firstImage.startsWith('/')) {
+          imageUrl = `${baseUrl}${firstImage}`;
+        }
+        // Otherwise assume it's a relative path or object storage key
+        else {
+          // This could be an object storage key
+          imageUrl = `${baseUrl}/api/objects/serve/objects/${firstImage}`;
+        }
+        
+        console.log('[Open Graph] Processed first image:', firstImage, '->', imageUrl);
+      } catch (error) {
+        console.error('[Open Graph] Error processing image URL:', error);
+        // Fall back to default app icon on error
+        imageUrl = `${baseUrl}/atrium-square-icon.png`;
       }
     }
   }
   
-  // Log for debugging
-  console.log('Open Graph Image URL:', imageUrl);
-  console.log('Prompt example images:', prompt?.exampleImagesUrl);
+  // Log for debugging with more detail
+  console.log('[Open Graph] Base URL:', baseUrl);
+  console.log('[Open Graph] Generated Image URL:', imageUrl);
+  console.log('[Open Graph] Prompt example images:', prompt?.exampleImagesUrl);
   
   const author = prompt?.user?.username || prompt?.user?.firstName || 'Anonymous';
   
@@ -181,6 +219,10 @@ export function setupOpenGraph(app: Express) {
       return next();
     }
     
+    // Get the base URL using the helper function
+    const baseUrl = getBaseUrl();
+    console.log('[Open Graph] Homepage - Base URL:', baseUrl);
+    
     // Generate homepage Open Graph tags
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -195,18 +237,20 @@ export function setupOpenGraph(app: Express) {
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}">
+  <meta property="og:url" content="${baseUrl}">
   <meta property="og:title" content="PromptAtrium - AI Prompt Discovery & Sharing Platform">
   <meta property="og:description" content="Discover, create, and share AI prompts for various generators. Join our community of AI enthusiasts and unlock the potential of generative AI.">
-  <meta property="og:image" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}/atrium-square-icon.png">
+  <meta property="og:image" content="${baseUrl}/atrium-square-icon.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
   <meta property="og:site_name" content="PromptAtrium">
   
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}">
+  <meta property="twitter:url" content="${baseUrl}">
   <meta property="twitter:title" content="PromptAtrium - AI Prompt Discovery & Sharing Platform">
   <meta property="twitter:description" content="Discover, create, and share AI prompts for various generators. Join our community of AI enthusiasts and unlock the potential of generative AI.">
-  <meta property="twitter:image" content="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://promptatrium.com'}/atrium-square-icon.png">
+  <meta property="twitter:image" content="${baseUrl}/atrium-square-icon.png">
 </head>
 <body>
   <h1>PromptAtrium</h1>
