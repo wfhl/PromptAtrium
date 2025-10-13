@@ -909,20 +909,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/prompts/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const prompt = await storage.getPrompt(req.params.id);
+      const promptId = req.params.id;
+      
+      console.log("Delete prompt request:", { promptId, userId });
+      
+      const prompt = await storage.getPrompt(promptId);
       
       if (!prompt) {
+        console.error("Delete failed - prompt not found:", promptId);
         return res.status(404).json({ message: "Prompt not found" });
       }
       
+      console.log("Found prompt to delete:", { promptId: prompt.id, ownerId: prompt.userId, requesterId: userId });
+      
       if (prompt.userId !== userId) {
+        console.error("Delete failed - unauthorized:", { promptOwner: prompt.userId, requester: userId });
         return res.status(403).json({ message: "Not authorized to delete this prompt" });
       }
 
-      await storage.deletePrompt(req.params.id);
+      await storage.deletePrompt(promptId);
+      console.log("Prompt deleted successfully:", promptId);
       res.status(204).send();
     } catch (error) {
-      console.error("Error deleting prompt:", error);
+      console.error("Error deleting prompt - full error:", error);
+      console.error("Error details:", { 
+        message: (error as any)?.message, 
+        stack: (error as any)?.stack,
+        promptId: req.params.id,
+        userId: (req.user as any)?.claims?.sub 
+      });
       res.status(500).json({ message: "Failed to delete prompt" });
     }
   });
