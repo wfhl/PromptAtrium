@@ -351,7 +351,7 @@ export function MultiSelectFilters({
         <div className="space-y-0">
         {/* Category Tabs */}
         {enabledFilters.category && filterOptions?.categories && filterOptions.categories.length > 0 && (
-          <div className="inline-flex w-auto pr-3 py-2">
+          <div className="inline-flex w-auto pr-3">
             <div className="inline-flex h-6 items-center justify-center rounded-lg bg-black/90 backdrop-blur-sm px-3 w-auto gap-1">
               {/* All Categories button */}
               <button

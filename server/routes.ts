@@ -759,11 +759,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: userId as string,
         isPublic: isPublic === "true" ? true : isPublic === "false" ? false : undefined,
         isFeatured: isFeatured === "true",
-        category: category as string,
-        promptType: type as string,
-        promptStyle: style as string,
-        intendedGenerator: generator as string,
-        collectionId: collection as string,
         status: status as string,
         statusNotEqual: statusNotEqual as string,
         tags: tags ? (tags as string).split(",") : undefined,
@@ -774,9 +769,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         showNsfw: showNsfw,
       };
       
-      // Handle recommended models filter (array)
+      // Handle multi-select filters (arrays)
+      if (category) {
+        options.categories = (category as string).split(",");
+      }
+      if (type) {
+        options.promptTypes = (type as string).split(",");
+      }
+      if (style) {
+        options.promptStyles = (style as string).split(",");
+      }
+      if (generator) {
+        options.intendedGenerators = (generator as string).split(",");
+      }
       if (model) {
-        options.recommendedModels = [model as string];
+        options.recommendedModels = (model as string).split(",");
+      }
+      if (collection) {
+        options.collectionIds = (collection as string).split(",");
       }
 
       const prompts = await storage.getPrompts(options);
