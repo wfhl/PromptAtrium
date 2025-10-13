@@ -129,20 +129,12 @@ export default function Tools() {
       link: "/tools/wordsmith-codex",
     },
     {
-      id: "project-canvas",
-      title: "Project Canvas",
-      description: "Start new project",
-      icon: ChartScatter,
-      color: "text-pink-500",
-      onClick: () => handleComingSoon("Project Canvas"),
-    },
-    {
-      id: "prompt-vault",
-      title: "Prompt Vault",
-      description: "Private prompt storage",
-      icon: Lock,
-      color: "text-red-500",
-      onClick: () => handleComingSoon("Prompt Vault"),
+      id: "prompting-guides",
+      title: "Prompting Guides",
+      description: "Learn prompting techniques",
+      icon: BookOpen,
+      color: "text-blue-500",
+      link: "/prompting-guides",
     },
   ];
 
@@ -159,7 +151,7 @@ export default function Tools() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {toolsData.map((tool) => {
             const IconComponent = tool.icon;
             const content = (
@@ -198,33 +190,6 @@ export default function Tools() {
             }
           })}
         </div>
-
-        {/* Quick Links Section */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Quick Links</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Link href="/library">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-go-to-library">
-                <FileSearch className="h-4 w-4 mr-2" />
-                My Prompt Library
-              </Button>
-            </Link>
-            <Link href="/community">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-go-to-community">
-                <Sparkles className="h-4 w-4 mr-2" />
-                Community Prompts
-              </Button>
-            </Link>
-            <Link href="/prompting-guides">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-go-to-guides">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Prompting Guides
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Prompt Modal */}
