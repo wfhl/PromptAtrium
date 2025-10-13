@@ -28,14 +28,18 @@ export function QuickActions({
   return (
     <div data-testid="card-quick-actions">
       <h3 className="text-base md:text-xl font-semibold mb-2 md:mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-2 md:gap-2 lg:grid-cols-2 lg:gap-2 lg:space-y-0">
-        <Button
+        <div className="grid grid-cols-8 gap-2 md:grid-cols-2 md:gap-2 lg:grid-cols-2 lg:gap-2 lg:space-y-0">
+        
+          
+          
+          
+          <Button
           variant="ghost"
           className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
           onClick={onCreatePrompt}
           data-testid="button-create-prompt"
         >
-          <div className="w-8 h-8 md:w-7 md:h-7 bg-primary/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
+          <div className="w-8 h-8 md:w-7 md:h-7 bg-blue-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
             <Plus className="h-4 w-4 text-primary transition-all group-hover:brightness-150" />
           </div>
           <div className="text-center  md:text-left">
@@ -44,6 +48,9 @@ export function QuickActions({
           </div>
         </Button>
 
+
+          
+          {/* Collections */}
         <Button
           variant="ghost"
           className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
@@ -58,6 +65,9 @@ export function QuickActions({
             <p className="text-xs text-muted-foreground hidden md:block">Organize prompts</p>
           </div>
         </Button>
+
+
+          
           {/* Quick Prompt Generator */}
           <Link href="/tools/quick-prompter" className="contents">
             <Button
