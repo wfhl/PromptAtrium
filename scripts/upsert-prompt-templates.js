@@ -12,10 +12,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Configuration
-const BATCH_SIZE = 100; // Insert/update 100 rows at a time
+const BATCH_SIZE = 50; // Process 50 rows at a time
 
-console.log('Database UPSERT Script (Update without Duplicates)');
-console.log('===================================================\n');
+console.log('Prompt StyleRule Templates UPSERT Script');
+console.log('=========================================\n');
 
 // Check for production database URL
 if (!process.env.PRODUCTION_DATABASE_URL) {
@@ -23,14 +23,14 @@ if (!process.env.PRODUCTION_DATABASE_URL) {
   console.log('\nTo use this script:');
   console.log('1. Get your production database URL from the Database pane');
   console.log('2. Run the script with:');
-    console.log('   PRODUCTION_DATABASE_URL="your-production-url" node scripts/upsert-db-import.js');
+  console.log('   PRODUCTION_DATABASE_URL="your-production-url" node scripts/upsert-prompt-templates.js');
   console.log('\nExample:');
-  console.log('   PRODUCTION_DATABASE_URL="postgresql://user:pass@host/db" node scripts/upsert-db-import.js');
+  console.log('   PRODUCTION_DATABASE_URL="postgresql://user:pass@host/db" node scripts/upsert-prompt-templates.js');
   process.exit(1);
 }
 
 // File path - using the new CSV file
-const inputFile = path.join(__dirname, '../attached_assets/prompt_stylerule_templates_1760345884641.csv');
+const inputFile = path.join(__dirname, '../attached_assets/prompt_stylerule_templates_1760346266712.csv');
 
 // Function to convert JavaScript date string to PostgreSQL timestamp
 function convertJSDateToPostgres(dateStr) {
@@ -56,19 +56,20 @@ function prepareValue(value, columnName) {
   }
   
   // Handle date columns
-  if (columnName === 'imported_at' || columnName === 'created_at' || columnName === 'updated_at') {
+  if (columnName === 'created_at' || columnName === 'updated_at') {
     return convertJSDateToPostgres(value);
   }
   
   // Handle boolean columns
-  if (columnName === 'is_default' || columnName === 'is_nsfw') {
+  if (columnName === 'is_custom' || columnName === 'is_default' || 
+      columnName === 'use_happy_talk' || columnName === 'compress_prompt') {
     return value === 'true' || value === true || value === 't';
   }
   
   // Handle numeric columns
-  if (columnName === 'usage_count' || columnName === 'order_index' || columnName === 'original_id') {
+  if (columnName === 'compression_level') {
     const num = parseInt(value);
-    return isNaN(num) ? 0 : num;
+    return isNaN(num) ? null : num;
   }
   
   // Default: return as string
@@ -89,8 +90,8 @@ async function upsertData() {
     console.log('✅ Connected successfully!\n');
 
     // Check current count
-    const countResult = await client.query('SELECT COUNT(*) FROM prompt_components');
-    console.log(`Current prompt_components count: ${countResult.rows[0].count}\n`);
+    const countResult = await client.query('SELECT COUNT(*) FROM prompt_stylerule_templates');
+    console.log(`Current prompt_stylerule_templates count: ${countResult.rows[0].count}\n`);
 
     // Ask for confirmation
     console.log('⚠️  WARNING: This will update/insert data in your production database.');
@@ -128,7 +129,7 @@ async function upsertData() {
       
       for (const row of batch) {
         try {
-          // Filter out empty column names and the extra empty column
+          // Filter out empty column names
           const columns = Object.keys(row).filter(col => col && col.trim() && col !== '');
           
           if (columns.length === 0) continue;
@@ -153,10 +154,10 @@ async function upsertData() {
             .join(', ');
           
           const query = `
-            INSERT INTO prompt_components (${columns.join(', ')}) 
+            INSERT INTO prompt_stylerule_templates (${columns.join(', ')}) 
             VALUES (${placeholders})
             ON CONFLICT (id) 
-            DO UPDATE SET ${updateClauses}, updated_at = CURRENT_TIMESTAMP
+            DO UPDATE SET ${updateClauses}
             RETURNING (xmax = 0) AS inserted
           `;
           
@@ -177,11 +178,9 @@ async function upsertData() {
       }
       
       // Progress update
-      if ((i + BATCH_SIZE) % 1000 === 0 || i + BATCH_SIZE >= rows.length) {
-        const processed = Math.min(i + BATCH_SIZE, rows.length);
-        const percentage = Math.round((processed / rows.length) * 100);
-        console.log(`Progress: ${processed}/${rows.length} rows (${percentage}%) - Inserted: ${insertCount}, Updated: ${updateCount}`);
-      }
+      const processed = Math.min(i + BATCH_SIZE, rows.length);
+      const percentage = Math.round((processed / rows.length) * 100);
+      console.log(`Progress: ${processed}/${rows.length} rows (${percentage}%) - Inserted: ${insertCount}, Updated: ${updateCount}`);
     }
 
     if (errorCount === 0) {
@@ -190,7 +189,7 @@ async function upsertData() {
       await client.query('COMMIT');
       
       // Final count
-      const finalCount = await client.query('SELECT COUNT(*) FROM prompt_components');
+      const finalCount = await client.query('SELECT COUNT(*) FROM prompt_stylerule_templates');
       console.log(`\n✅ UPSERT complete!`);
       console.log(`   - New rows inserted: ${insertCount}`);
       console.log(`   - Existing rows updated: ${updateCount}`);
