@@ -170,7 +170,7 @@ export function MultiSelectFilters({
               data-testid="button-filter-options"
             >
               <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filter Options</span>
+              <span className="hidden sm:inline"></span>
               {activeFilterCount > 0 && (
                 <Badge
                   variant="secondary"
@@ -181,7 +181,7 @@ export function MultiSelectFilters({
               )}
             </Button>
           </PopoverTrigger>
-        <PopoverContent className="w-80 p-4" align="end">
+        <PopoverContent className="w-60 p-4" align="end">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Filter Options</h3>
@@ -200,10 +200,10 @@ export function MultiSelectFilters({
 
             <Separator />
 
-            <ScrollArea className="h-[300px] pr-4">
+            <ScrollArea className="h-[200px] pr-4">
               <div className="space-y-3">
                 {/* Category Filter Checkbox */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center bg-black space-x-2">
                   <Checkbox
                     id="filter-category"
                     checked={enabledFilters.category}
@@ -351,107 +351,193 @@ export function MultiSelectFilters({
         <div className="space-y-3">
         {/* Category Tabs */}
         {enabledFilters.category && filterOptions?.categories && filterOptions.categories.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Category</Label>
-            <div className="inline-flex w-auto">
-              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
-                {filterOptions.categories.map((category) => (
-                  <button
-                    key={category}
-                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
-                      selectedFilters.category.includes(category) 
-                        ? 'bg-background text-foreground shadow-sm' 
-                        : 'hover:bg-background/50'
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleToggleFilterValue("category", category);
-                    }}
-                    data-testid={`tab-category-${category}`}
-                    type="button"
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
+          <div className="inline-flex w-auto">
+            <div className="inline-flex h-9 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+              {/* All Categories button */}
+              <button
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                  selectedFilters.category.length === filterOptions.categories.length
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (selectedFilters.category.length === filterOptions.categories.length) {
+                    // Deselect all
+                    setSelectedFilters({ ...selectedFilters, category: [] });
+                  } else {
+                    // Select all
+                    setSelectedFilters({ ...selectedFilters, category: [...filterOptions.categories] });
+                  }
+                }}
+                data-testid="button-all-categories"
+                type="button"
+              >
+                All Categories
+              </button>
+              <div className="w-px h-5 bg-gray-600" />
+              {filterOptions.categories.map((category) => (
+                <button
+                  key={category}
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    selectedFilters.category.includes(category) 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleToggleFilterValue("category", category);
+                  }}
+                  data-testid={`tab-category-${category}`}
+                  type="button"
+                >
+                  {category}
+                </button>
+              ))}
             </div>
           </div>
         )}
 
         {/* Type Tabs */}
         {enabledFilters.type && filterOptions?.promptTypes && filterOptions.promptTypes.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Type</Label>
-            <div className="inline-flex w-auto">
-              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
-                {filterOptions.promptTypes.map((type) => (
-                  <button
-                    key={type}
-                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
-                      selectedFilters.type.includes(type) 
-                        ? 'bg-background text-foreground shadow-sm' 
-                        : 'hover:bg-background/50'
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleToggleFilterValue("type", type);
-                    }}
-                    data-testid={`tab-type-${type}`}
-                    type="button"
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
+          <div className="inline-flex w-auto">
+            <div className="inline-flex h-9 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+              {/* All Types button */}
+              <button
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                  selectedFilters.type.length === filterOptions.promptTypes.length
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (selectedFilters.type.length === filterOptions.promptTypes.length) {
+                    // Deselect all
+                    setSelectedFilters({ ...selectedFilters, type: [] });
+                  } else {
+                    // Select all
+                    setSelectedFilters({ ...selectedFilters, type: [...filterOptions.promptTypes] });
+                  }
+                }}
+                data-testid="button-all-types"
+                type="button"
+              >
+                All Types
+              </button>
+              <div className="w-px h-5 bg-gray-600" />
+              {filterOptions.promptTypes.map((type) => (
+                <button
+                  key={type}
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    selectedFilters.type.includes(type) 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleToggleFilterValue("type", type);
+                  }}
+                  data-testid={`tab-type-${type}`}
+                  type="button"
+                >
+                  {type}
+                </button>
+              ))}
             </div>
           </div>
         )}
 
         {/* Style Tabs */}
         {enabledFilters.style && filterOptions?.promptStyles && filterOptions.promptStyles.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Style</Label>
-            <div className="inline-flex w-auto">
-              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
-                {filterOptions.promptStyles.map((style) => (
-                  <button
-                    key={style}
-                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
-                      selectedFilters.style.includes(style) 
-                        ? 'bg-background text-foreground shadow-sm' 
-                        : 'hover:bg-background/50'
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleToggleFilterValue("style", style);
-                    }}
-                    data-testid={`tab-style-${style}`}
-                    type="button"
-                  >
-                    {style}
-                  </button>
-                ))}
-              </div>
+          <div className="inline-flex w-auto">
+            <div className="inline-flex h-9 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+              {/* All Styles button */}
+              <button
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                  selectedFilters.style.length === filterOptions.promptStyles.length
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (selectedFilters.style.length === filterOptions.promptStyles.length) {
+                    // Deselect all
+                    setSelectedFilters({ ...selectedFilters, style: [] });
+                  } else {
+                    // Select all
+                    setSelectedFilters({ ...selectedFilters, style: [...filterOptions.promptStyles] });
+                  }
+                }}
+                data-testid="button-all-styles"
+                type="button"
+              >
+                All Styles
+              </button>
+              <div className="w-px h-5 bg-gray-600" />
+              {filterOptions.promptStyles.map((style) => (
+                <button
+                  key={style}
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    selectedFilters.style.includes(style) 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleToggleFilterValue("style", style);
+                  }}
+                  data-testid={`tab-style-${style}`}
+                  type="button"
+                >
+                  {style}
+                </button>
+              ))}
             </div>
           </div>
         )}
 
         {/* Intended Generator Tabs */}
         {enabledFilters.intendedGenerator && filterOptions?.intendedGenerators && filterOptions.intendedGenerators.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Intended Generator</Label>
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+                {/* All Generators button */}
+                <button
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    selectedFilters.intendedGenerator.length === filterOptions.intendedGenerators.length
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (selectedFilters.intendedGenerator.length === filterOptions.intendedGenerators.length) {
+                      // Deselect all
+                      setSelectedFilters({ ...selectedFilters, intendedGenerator: [] });
+                    } else {
+                      // Select all
+                      setSelectedFilters({ ...selectedFilters, intendedGenerator: [...filterOptions.intendedGenerators] });
+                    }
+                  }}
+                  data-testid="button-all-generators"
+                  type="button"
+                >
+                  All Generators
+                </button>
+                <div className="w-px h-5 bg-gray-600" />
                 {filterOptions.intendedGenerators.map((generator) => (
                   <button
                     key={generator}
-                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
                       selectedFilters.intendedGenerator.includes(generator) 
-                        ? 'bg-background text-foreground shadow-sm' 
-                        : 'hover:bg-background/50'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                        : 'text-gray-400 hover:text-white hover:bg-white/10'
                     }`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -465,23 +551,46 @@ export function MultiSelectFilters({
                   </button>
                 ))}
               </div>
-            </ScrollArea>
-          </div>
+            </div>
+          </ScrollArea>
         )}
 
         {/* Recommended Model Tabs */}
         {enabledFilters.recommendedModel && filterOptions?.models && filterOptions.models.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Recommended Model</Label>
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+                {/* All Models button */}
+                <button
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    selectedFilters.recommendedModel.length === filterOptions.models.length
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (selectedFilters.recommendedModel.length === filterOptions.models.length) {
+                      // Deselect all
+                      setSelectedFilters({ ...selectedFilters, recommendedModel: [] });
+                    } else {
+                      // Select all
+                      setSelectedFilters({ ...selectedFilters, recommendedModel: [...filterOptions.models] });
+                    }
+                  }}
+                  data-testid="button-all-models"
+                  type="button"
+                >
+                  All Models
+                </button>
+                <div className="w-px h-5 bg-gray-600" />
                 {filterOptions.models.map((model) => (
                   <button
                     key={model}
-                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
                       selectedFilters.recommendedModel.includes(model) 
-                        ? 'bg-background text-foreground shadow-sm' 
-                        : 'hover:bg-background/50'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                        : 'text-gray-400 hover:text-white hover:bg-white/10'
                     }`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -495,23 +604,47 @@ export function MultiSelectFilters({
                   </button>
                 ))}
               </div>
-            </ScrollArea>
-          </div>
+            </div>
+          </ScrollArea>
         )}
 
         {/* Collection Tabs */}
         {enabledFilters.collection && filterOptions?.collections && filterOptions.collections.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Collection</Label>
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+                {/* All Collections button */}
+                <button
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    selectedFilters.collection.length === filterOptions.collections.length
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const collectionIds = filterOptions.collections.map(c => c.id);
+                    if (selectedFilters.collection.length === filterOptions.collections.length) {
+                      // Deselect all
+                      setSelectedFilters({ ...selectedFilters, collection: [] });
+                    } else {
+                      // Select all
+                      setSelectedFilters({ ...selectedFilters, collection: collectionIds });
+                    }
+                  }}
+                  data-testid="button-all-collections"
+                  type="button"
+                >
+                  All Collections
+                </button>
+                <div className="w-px h-5 bg-gray-600" />
                 {filterOptions.collections.map((collection) => (
                   <button
                     key={collection.id}
-                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
                       selectedFilters.collection.includes(collection.id) 
-                        ? 'bg-background text-foreground shadow-sm' 
-                        : 'hover:bg-background/50'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                        : 'text-gray-400 hover:text-white hover:bg-white/10'
                     }`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -525,8 +658,8 @@ export function MultiSelectFilters({
                   </button>
                 ))}
               </div>
-            </ScrollArea>
-          </div>
+            </div>
+          </ScrollArea>
         )}
       </div>
       )}
