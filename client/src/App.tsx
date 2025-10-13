@@ -30,6 +30,7 @@ import GettingStarted from "@/pages/getting-started";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsAndConditions from "@/pages/terms";
 import Codex from "@/pages/Codex";
+import Tools from "@/pages/tools";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -124,6 +125,9 @@ function Router() {
             </Route>
             <Route path="/community">
               {() => <Layout><Community /></Layout>}
+            </Route>
+            <Route path="/tools">
+              {() => <Layout><Tools /></Layout>}
             </Route>
             <Route path="/projects">
               {() => <Layout><Projects /></Layout>}

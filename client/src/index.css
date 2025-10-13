@@ -149,6 +149,15 @@
   font-weight: 600;
 }
 
+.nav-gradient-tools {
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 30%, #10b981 70%, #22c55e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+}
+
 /* Admin and Dev navigation colors - ensure consistency on mobile */
 .mobile-nav-dropdown a[href="/admin"],
 .mobile-nav-dropdown a[href="/admin"]:visited {
@@ -211,6 +220,29 @@
 }
 
 .button-gradient-community:hover * {
+  color: white !important;
+}
+
+.button-gradient-tools {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.8) 0%, rgba(16, 185, 129, 0.8) 50%, rgba(34, 197, 94, 0.8) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 0px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  transition: all 0.3s ease;
+  font-weight: 700;
+}
+
+.button-gradient-tools:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(16, 185, 129, 0.9) 50%, rgba(34, 197, 94, 0.9) 100%);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  color: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0px rgba(34, 197, 94, 0.3);
+}
+
+.button-gradient-tools:hover * {
   color: white !important;
 }
 
