@@ -30,7 +30,7 @@ if (!process.env.PRODUCTION_DATABASE_URL) {
 }
 
 // File path - using the new CSV file
-const inputFile = path.join(__dirname, '../attached_assets/prompt_stylerule_templates_1760345884641.csv');
+const inputFile = path.join(__dirname, '../attached_assets/prompt_components.csv');
 
 // Function to convert JavaScript date string to PostgreSQL timestamp
 function convertJSDateToPostgres(dateStr) {
