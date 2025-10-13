@@ -151,7 +151,7 @@ export default function Tools() {
           </p>
         </div>
 
-        <div className="grid grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {toolsData.map((tool) => {
             const IconComponent = tool.icon;
             const content = (

@@ -9,12 +9,12 @@ export function MobilePageNav() {
   const isToolsPage = location === "/tools";
 
   return (
-    <div className="block lg:hidden fixed left-0 right-0 bottom-0 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-safe mobile-nav-fixed">
+    <div className="block border-transparent lg:hidden fixed left-0 right-0 bottom-5 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-safe mobile-nav-fixed">
       <div className="flex gap-2 max-w-screen-xl mx-auto">
         <Link href="/library" className="flex-1">
           <Button 
             variant="outline"
-            className={`w-full relative group ${isLibraryPage ? 'button-gradient-library hover:color-white' : 'bg-transparent hover:bg-white/5'}`}
+            className={`w-full relative group ${isLibraryPage ? 'button-gradient-library hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
             data-testid="button-my-prompts"
           >
             <FileText className={`h-4 w-4 mr-1 text-white transition-all ${!isLibraryPage ? 'group-hover:scale-110 group-hover:brightness-150' : ''}`} />
@@ -27,7 +27,7 @@ export function MobilePageNav() {
         <Link href="/tools" className="flex-1">
           <Button 
             variant="outline"
-            className={`w-full relative group ${isToolsPage ? 'button-gradient-tools hover:color-white' : 'bg-transparent hover:bg-white/5'}`}
+            className={`w-full relative group ${isToolsPage ? 'button-gradient-tools hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
             data-testid="button-tools"
           >
             <Wrench className={`h-4 w-4 mr-1 text-white transition-all ${!isToolsPage ? 'group-hover:scale-110 group-hover:brightness-150' : ''}`} />
@@ -40,7 +40,7 @@ export function MobilePageNav() {
         <Link href="/community" className="flex-1">
           <Button 
             variant="outline"
-            className={`w-full relative group ${isCommunityPage ? 'button-gradient-community hover:color-white' : 'bg-transparent hover:bg-white/5'}`}
+            className={`w-full relative group ${isCommunityPage ? 'button-gradient-community hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
             data-testid="button-community-prompts"
           >
             <Users className={`h-4 w-4 mr-1 text-white transition-all ${!isCommunityPage ? 'group-hover:scale-110 group-hover:brightness-150' : ''}`} />
