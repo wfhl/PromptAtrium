@@ -7,7 +7,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Filter, X } from "lucide-react";
 
 export interface MultiSelectFilters {
@@ -355,24 +354,27 @@ export function MultiSelectFilters({
           <div className="space-y-2">
             <Label className="text-sm text-muted-foreground">Category</Label>
             <div className="inline-flex w-auto">
-              <TabsList className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
                 {filterOptions.categories.map((category) => (
-                  <TabsTrigger
+                  <button
                     key={category}
-                    value={category}
-                    className={`text-xs px-3 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                       selectedFilters.category.includes(category) 
-                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
-                        : ''
+                        ? 'bg-background text-foreground shadow-sm' 
+                        : 'hover:bg-background/50'
                     }`}
-                    onClick={() => handleToggleFilterValue("category", category)}
-                    data-state={selectedFilters.category.includes(category) ? "active" : "inactive"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggleFilterValue("category", category);
+                    }}
                     data-testid={`tab-category-${category}`}
+                    type="button"
                   >
                     {category}
-                  </TabsTrigger>
+                  </button>
                 ))}
-              </TabsList>
+              </div>
             </div>
           </div>
         )}
@@ -382,24 +384,27 @@ export function MultiSelectFilters({
           <div className="space-y-2">
             <Label className="text-sm text-muted-foreground">Type</Label>
             <div className="inline-flex w-auto">
-              <TabsList className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
                 {filterOptions.promptTypes.map((type) => (
-                  <TabsTrigger
+                  <button
                     key={type}
-                    value={type}
-                    className={`text-xs px-3 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                       selectedFilters.type.includes(type) 
-                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
-                        : ''
+                        ? 'bg-background text-foreground shadow-sm' 
+                        : 'hover:bg-background/50'
                     }`}
-                    onClick={() => handleToggleFilterValue("type", type)}
-                    data-state={selectedFilters.type.includes(type) ? "active" : "inactive"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggleFilterValue("type", type);
+                    }}
                     data-testid={`tab-type-${type}`}
+                    type="button"
                   >
                     {type}
-                  </TabsTrigger>
+                  </button>
                 ))}
-              </TabsList>
+              </div>
             </div>
           </div>
         )}
@@ -409,24 +414,27 @@ export function MultiSelectFilters({
           <div className="space-y-2">
             <Label className="text-sm text-muted-foreground">Style</Label>
             <div className="inline-flex w-auto">
-              <TabsList className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
                 {filterOptions.promptStyles.map((style) => (
-                  <TabsTrigger
+                  <button
                     key={style}
-                    value={style}
-                    className={`text-xs px-3 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                       selectedFilters.style.includes(style) 
-                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
-                        : ''
+                        ? 'bg-background text-foreground shadow-sm' 
+                        : 'hover:bg-background/50'
                     }`}
-                    onClick={() => handleToggleFilterValue("style", style)}
-                    data-state={selectedFilters.style.includes(style) ? "active" : "inactive"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggleFilterValue("style", style);
+                    }}
                     data-testid={`tab-style-${style}`}
+                    type="button"
                   >
                     {style}
-                  </TabsTrigger>
+                  </button>
                 ))}
-              </TabsList>
+              </div>
             </div>
           </div>
         )}
@@ -436,24 +444,27 @@ export function MultiSelectFilters({
           <div className="space-y-2">
             <Label className="text-sm text-muted-foreground">Intended Generator</Label>
             <ScrollArea className="w-full whitespace-nowrap">
-              <TabsList className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
                 {filterOptions.intendedGenerators.map((generator) => (
-                  <TabsTrigger
+                  <button
                     key={generator}
-                    value={generator}
-                    className={`text-xs px-3 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                       selectedFilters.intendedGenerator.includes(generator) 
-                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
-                        : ''
+                        ? 'bg-background text-foreground shadow-sm' 
+                        : 'hover:bg-background/50'
                     }`}
-                    onClick={() => handleToggleFilterValue("intendedGenerator", generator)}
-                    data-state={selectedFilters.intendedGenerator.includes(generator) ? "active" : "inactive"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggleFilterValue("intendedGenerator", generator);
+                    }}
                     data-testid={`tab-generator-${generator}`}
+                    type="button"
                   >
                     {generator}
-                  </TabsTrigger>
+                  </button>
                 ))}
-              </TabsList>
+              </div>
             </ScrollArea>
           </div>
         )}
@@ -463,24 +474,27 @@ export function MultiSelectFilters({
           <div className="space-y-2">
             <Label className="text-sm text-muted-foreground">Recommended Model</Label>
             <ScrollArea className="w-full whitespace-nowrap">
-              <TabsList className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
                 {filterOptions.models.map((model) => (
-                  <TabsTrigger
+                  <button
                     key={model}
-                    value={model}
-                    className={`text-xs px-3 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                       selectedFilters.recommendedModel.includes(model) 
-                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
-                        : ''
+                        ? 'bg-background text-foreground shadow-sm' 
+                        : 'hover:bg-background/50'
                     }`}
-                    onClick={() => handleToggleFilterValue("recommendedModel", model)}
-                    data-state={selectedFilters.recommendedModel.includes(model) ? "active" : "inactive"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggleFilterValue("recommendedModel", model);
+                    }}
                     data-testid={`tab-model-${model}`}
+                    type="button"
                   >
                     {model}
-                  </TabsTrigger>
+                  </button>
                 ))}
-              </TabsList>
+              </div>
             </ScrollArea>
           </div>
         )}
@@ -490,24 +504,27 @@ export function MultiSelectFilters({
           <div className="space-y-2">
             <Label className="text-sm text-muted-foreground">Collection</Label>
             <ScrollArea className="w-full whitespace-nowrap">
-              <TabsList className="inline-flex w-auto">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
                 {filterOptions.collections.map((collection) => (
-                  <TabsTrigger
+                  <button
                     key={collection.id}
-                    value={collection.id}
-                    className={`text-xs px-3 ${
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                       selectedFilters.collection.includes(collection.id) 
-                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
-                        : ''
+                        ? 'bg-background text-foreground shadow-sm' 
+                        : 'hover:bg-background/50'
                     }`}
-                    onClick={() => handleToggleFilterValue("collection", collection.id)}
-                    data-state={selectedFilters.collection.includes(collection.id) ? "active" : "inactive"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggleFilterValue("collection", collection.id);
+                    }}
                     data-testid={`tab-collection-${collection.id}`}
+                    type="button"
                   >
                     {collection.name}
-                  </TabsTrigger>
+                  </button>
                 ))}
-              </TabsList>
+              </div>
             </ScrollArea>
           </div>
         )}
