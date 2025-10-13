@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Filter, X } from "lucide-react";
 
 export interface MultiSelectFilters {
@@ -31,12 +32,16 @@ interface MultiSelectFiltersProps {
   onFiltersChange: (filters: MultiSelectFilters) => void;
   onEnabledFiltersChange?: (enabledFilters: EnabledFilters) => void;
   sortBy: string;
+  showButton?: boolean;
+  showTabs?: boolean;
 }
 
 export function MultiSelectFilters({ 
   onFiltersChange,
   onEnabledFiltersChange,
-  sortBy
+  sortBy,
+  showButton = true,
+  showTabs = true
 }: MultiSelectFiltersProps) {
   // State for which filter categories are enabled
   const [enabledFilters, setEnabledFilters] = useState<EnabledFilters>({
@@ -132,26 +137,27 @@ export function MultiSelectFilters({
 
   return (
     <>
-      {/* Filter Options Button */}
-      <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="relative h-10 gap-2"
-            data-testid="button-filter-options"
-          >
-            <Filter className="h-4 w-4" />
-            <span className="hidden sm:inline">Filter Options</span>
-            {activeFilterCount > 0 && (
-              <Badge
-                variant="secondary"
-                className="ml-1 px-1.5 py-0 h-5 min-w-[20px] text-xs"
-              >
-                {activeFilterCount}
-              </Badge>
-            )}
-          </Button>
-        </PopoverTrigger>
+      {/* Filter Options Button - Only show when showButton is true */}
+      {showButton && (
+        <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="relative h-10 gap-2"
+              data-testid="button-filter-options"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Filter Options</span>
+              {activeFilterCount > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-1 px-1.5 py-0 h-5 min-w-[20px] text-xs"
+                >
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
         <PopoverContent className="w-80 p-4" align="end">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -315,165 +321,174 @@ export function MultiSelectFilters({
           </div>
         </PopoverContent>
       </Popover>
+      )}
 
-      {/* Filter Tabs - Show when filters are enabled */}
-      <div className="space-y-3">
+      {/* Filter Tabs - Show when showTabs is true and filters are enabled */}
+      {showTabs && (
+        <div className="space-y-3">
         {/* Category Tabs */}
-        {enabledFilters.category && filterOptions?.categories && (
+        {enabledFilters.category && filterOptions?.categories && filterOptions.categories.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Category</Label>
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex gap-2">
+            <Label className="text-sm text-muted-foreground">Category</Label>
+            <div className="inline-flex w-auto">
+              <TabsList className="inline-flex w-auto">
                 {filterOptions.categories.map((category) => (
-                  <Button
+                  <TabsTrigger
                     key={category}
-                    variant={selectedFilters.category.includes(category) ? "default" : "outline"}
-                    size="sm"
+                    value={category}
+                    className={`text-xs px-3 ${
+                      selectedFilters.category.includes(category) 
+                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
+                        : ''
+                    }`}
                     onClick={() => handleToggleFilterValue("category", category)}
-                    className="flex-shrink-0"
-                    data-testid={`button-category-${category}`}
+                    data-state={selectedFilters.category.includes(category) ? "active" : "inactive"}
+                    data-testid={`tab-category-${category}`}
                   >
                     {category}
-                    {selectedFilters.category.includes(category) && (
-                      <X className="ml-1 h-3 w-3" />
-                    )}
-                  </Button>
+                  </TabsTrigger>
                 ))}
-              </div>
-            </ScrollArea>
+              </TabsList>
+            </div>
           </div>
         )}
 
         {/* Type Tabs */}
-        {enabledFilters.type && filterOptions?.promptTypes && (
+        {enabledFilters.type && filterOptions?.promptTypes && filterOptions.promptTypes.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Type</Label>
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex gap-2">
+            <Label className="text-sm text-muted-foreground">Type</Label>
+            <div className="inline-flex w-auto">
+              <TabsList className="inline-flex w-auto">
                 {filterOptions.promptTypes.map((type) => (
-                  <Button
+                  <TabsTrigger
                     key={type}
-                    variant={selectedFilters.type.includes(type) ? "default" : "outline"}
-                    size="sm"
+                    value={type}
+                    className={`text-xs px-3 ${
+                      selectedFilters.type.includes(type) 
+                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
+                        : ''
+                    }`}
                     onClick={() => handleToggleFilterValue("type", type)}
-                    className="flex-shrink-0"
-                    data-testid={`button-type-${type}`}
+                    data-state={selectedFilters.type.includes(type) ? "active" : "inactive"}
+                    data-testid={`tab-type-${type}`}
                   >
                     {type}
-                    {selectedFilters.type.includes(type) && (
-                      <X className="ml-1 h-3 w-3" />
-                    )}
-                  </Button>
+                  </TabsTrigger>
                 ))}
-              </div>
-            </ScrollArea>
+              </TabsList>
+            </div>
           </div>
         )}
 
         {/* Style Tabs */}
-        {enabledFilters.style && filterOptions?.promptStyles && (
+        {enabledFilters.style && filterOptions?.promptStyles && filterOptions.promptStyles.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Style</Label>
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex gap-2">
+            <Label className="text-sm text-muted-foreground">Style</Label>
+            <div className="inline-flex w-auto">
+              <TabsList className="inline-flex w-auto">
                 {filterOptions.promptStyles.map((style) => (
-                  <Button
+                  <TabsTrigger
                     key={style}
-                    variant={selectedFilters.style.includes(style) ? "default" : "outline"}
-                    size="sm"
+                    value={style}
+                    className={`text-xs px-3 ${
+                      selectedFilters.style.includes(style) 
+                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
+                        : ''
+                    }`}
                     onClick={() => handleToggleFilterValue("style", style)}
-                    className="flex-shrink-0"
-                    data-testid={`button-style-${style}`}
+                    data-state={selectedFilters.style.includes(style) ? "active" : "inactive"}
+                    data-testid={`tab-style-${style}`}
                   >
                     {style}
-                    {selectedFilters.style.includes(style) && (
-                      <X className="ml-1 h-3 w-3" />
-                    )}
-                  </Button>
+                  </TabsTrigger>
                 ))}
-              </div>
-            </ScrollArea>
+              </TabsList>
+            </div>
           </div>
         )}
 
         {/* Intended Generator Tabs */}
-        {enabledFilters.intendedGenerator && filterOptions?.intendedGenerators && (
+        {enabledFilters.intendedGenerator && filterOptions?.intendedGenerators && filterOptions.intendedGenerators.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Intended Generator</Label>
+            <Label className="text-sm text-muted-foreground">Intended Generator</Label>
             <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex gap-2">
+              <TabsList className="inline-flex w-auto">
                 {filterOptions.intendedGenerators.map((generator) => (
-                  <Button
+                  <TabsTrigger
                     key={generator}
-                    variant={selectedFilters.intendedGenerator.includes(generator) ? "default" : "outline"}
-                    size="sm"
+                    value={generator}
+                    className={`text-xs px-3 ${
+                      selectedFilters.intendedGenerator.includes(generator) 
+                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
+                        : ''
+                    }`}
                     onClick={() => handleToggleFilterValue("intendedGenerator", generator)}
-                    className="flex-shrink-0"
-                    data-testid={`button-generator-${generator}`}
+                    data-state={selectedFilters.intendedGenerator.includes(generator) ? "active" : "inactive"}
+                    data-testid={`tab-generator-${generator}`}
                   >
                     {generator}
-                    {selectedFilters.intendedGenerator.includes(generator) && (
-                      <X className="ml-1 h-3 w-3" />
-                    )}
-                  </Button>
+                  </TabsTrigger>
                 ))}
-              </div>
+              </TabsList>
             </ScrollArea>
           </div>
         )}
 
         {/* Recommended Model Tabs */}
-        {enabledFilters.recommendedModel && filterOptions?.models && (
+        {enabledFilters.recommendedModel && filterOptions?.models && filterOptions.models.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Recommended Model</Label>
+            <Label className="text-sm text-muted-foreground">Recommended Model</Label>
             <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex gap-2">
+              <TabsList className="inline-flex w-auto">
                 {filterOptions.models.map((model) => (
-                  <Button
+                  <TabsTrigger
                     key={model}
-                    variant={selectedFilters.recommendedModel.includes(model) ? "default" : "outline"}
-                    size="sm"
+                    value={model}
+                    className={`text-xs px-3 ${
+                      selectedFilters.recommendedModel.includes(model) 
+                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
+                        : ''
+                    }`}
                     onClick={() => handleToggleFilterValue("recommendedModel", model)}
-                    className="flex-shrink-0"
-                    data-testid={`button-model-${model}`}
+                    data-state={selectedFilters.recommendedModel.includes(model) ? "active" : "inactive"}
+                    data-testid={`tab-model-${model}`}
                   >
                     {model}
-                    {selectedFilters.recommendedModel.includes(model) && (
-                      <X className="ml-1 h-3 w-3" />
-                    )}
-                  </Button>
+                  </TabsTrigger>
                 ))}
-              </div>
+              </TabsList>
             </ScrollArea>
           </div>
         )}
 
         {/* Collection Tabs */}
-        {enabledFilters.collection && filterOptions?.collections && (
+        {enabledFilters.collection && filterOptions?.collections && filterOptions.collections.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Collection</Label>
+            <Label className="text-sm text-muted-foreground">Collection</Label>
             <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex gap-2">
+              <TabsList className="inline-flex w-auto">
                 {filterOptions.collections.map((collection) => (
-                  <Button
+                  <TabsTrigger
                     key={collection.id}
-                    variant={selectedFilters.collection.includes(collection.id) ? "default" : "outline"}
-                    size="sm"
+                    value={collection.id}
+                    className={`text-xs px-3 ${
+                      selectedFilters.collection.includes(collection.id) 
+                        ? 'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm' 
+                        : ''
+                    }`}
                     onClick={() => handleToggleFilterValue("collection", collection.id)}
-                    className="flex-shrink-0"
-                    data-testid={`button-collection-${collection.id}`}
+                    data-state={selectedFilters.collection.includes(collection.id) ? "active" : "inactive"}
+                    data-testid={`tab-collection-${collection.id}`}
                   >
                     {collection.name}
-                    {selectedFilters.collection.includes(collection.id) && (
-                      <X className="ml-1 h-3 w-3" />
-                    )}
-                  </Button>
+                  </TabsTrigger>
                 ))}
-              </div>
+              </TabsList>
             </ScrollArea>
           </div>
         )}
       </div>
+      )}
     </>
   );
 }

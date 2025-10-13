@@ -347,34 +347,34 @@ export default function Community() {
 
         {/* Prompts Tab */}
         <TabsContent value="prompts" className="space-y-4">
-          {/* Search Bar with Multi-Select Filters */}
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  type="text"
-                  placeholder="Search community prompts..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    // Auto-apply search on type
-                    refetch();
-                  }}
-                  className="pl-10 pr-4"
-                  data-testid="input-search"
-                />
-              </div>
-              
-              {/* Multi-Select Filter Component */}
-              <MultiSelectFilters
-                onFiltersChange={(filters) => {
-                  setMultiSelectFilters(filters);
+          {/* Search Bar */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search community prompts..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  // Auto-apply search on type
                   refetch();
                 }}
-                sortBy={sortBy}
+                className="pl-10 pr-4"
+                data-testid="input-search"
               />
             </div>
+            
+            {/* Filter Options Button */}
+            <MultiSelectFilters
+              onFiltersChange={(filters) => {
+                setMultiSelectFilters(filters);
+                refetch();
+              }}
+              sortBy={sortBy}
+              showButton={true}
+              showTabs={false}
+            />
           </div>
 
           {/* Sub-tabs styled like dashboard */}
@@ -394,6 +394,17 @@ export default function Community() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+
+          {/* Multi-Select Filter Tabs - Show below main tabs */}
+          <MultiSelectFilters
+            onFiltersChange={(filters) => {
+              setMultiSelectFilters(filters);
+              refetch();
+            }}
+            sortBy={sortBy}
+            showButton={false}
+            showTabs={true}
+          />
 
           {/* Prompts Grid */}
           <div className="space-y-4" data-testid="section-community-prompts">
