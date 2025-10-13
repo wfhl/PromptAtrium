@@ -269,7 +269,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 md:pb-8">
+      <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 lg:pb-8">
         {/* Dashboard Header */}
         <div className="mb-2 md:mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 md:mb-6">
@@ -699,7 +699,7 @@ export default function Dashboard() {
       </Dialog>
       
       {/* Floating Navigation Buttons for Mobile */}
-      <div className="block md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-safe">
+      <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-safe">
         <div className="flex gap-2 max-w-screen-xl mx-auto">
           <Link href="/library" className="flex-1">
             <Button className="w-full button-gradient-library" data-testid="button-my-prompts">

@@ -158,7 +158,7 @@ export default function PromptingGuides() {
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-6 max-w-7xl pb-24 md:pb-6">
+      <div className="container mx-auto px-4 py-6 max-w-7xl pb-24 lg:pb-6">
         {/* Mobile Navigation */}
         <MobilePageNav />
         
