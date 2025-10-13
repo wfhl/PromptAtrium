@@ -409,9 +409,8 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
 }
 
 /* Ensure mobile navigation stays fixed to bottom on all mobile browsers */
-.block.lg\:hidden.fixed[style*="padding-bottom"] {
+.block.lg\:hidden.fixed {
   position: fixed !important;
-  bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
   transform: translate3d(0, 0, 0); /* Force hardware acceleration */
