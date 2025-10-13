@@ -105,14 +105,14 @@ export function MultiSelectFilters({
   const handleEnableFilter = (filterType: keyof EnabledFilters, enabled: boolean) => {
     const newEnabledFilters = { ...enabledFilters, [filterType]: enabled };
     setEnabledFilters(newEnabledFilters);
-    
+
     // Clear selections for disabled filters
     if (!enabled) {
       const newSelectedFilters = { ...selectedFilters, [filterType]: [] };
       setSelectedFilters(newSelectedFilters);
       onFiltersChange(newSelectedFilters);
     }
-    
+
     onEnabledFiltersChange?.(newEnabledFilters);
   };
 
@@ -122,7 +122,7 @@ export function MultiSelectFilters({
     const newValues = currentValues.includes(value)
       ? currentValues.filter(v => v !== value)
       : [...currentValues, value];
-    
+
     const newFilters = { ...selectedFilters, [filterType]: newValues };
     setSelectedFilters(newFilters);
     onFiltersChange(newFilters);
@@ -145,7 +145,7 @@ export function MultiSelectFilters({
     };
     setSelectedFilters(emptyFilters);
     onFiltersChange(emptyFilters);
-    
+
     const disabledFilters: EnabledFilters = {
       category: false,
       type: false,
@@ -348,7 +348,7 @@ export function MultiSelectFilters({
 
       {/* Filter Tabs - Show when showTabs is true and filters are enabled */}
       {showTabs && (
-        <div className="space-y-0">
+        <div className="space-y-1">
         {/* Category Tabs */}
         {enabledFilters.category && filterOptions?.categories && filterOptions.categories.length > 0 && (
           <div className="inline-flex w-auto pr-3">

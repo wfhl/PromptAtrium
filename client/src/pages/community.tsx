@@ -338,7 +338,7 @@ export default function Community() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-1 md:space-y-2">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid grid-cols-3">
           <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
             <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">Prompts</span>
@@ -391,7 +391,7 @@ export default function Community() {
           </div>
 
           {/* Sub-tabs styled like dashboard */}
-          <Tabs value={promptsSubTab} onValueChange={setPromptsSubTab}>
+          <Tabs value={promptsSubTab} onValueChange={setPromptsSubTab} className="mb-2">
             <TabsList className="inline-flex w-auto">
               <TabsTrigger value="featured" className="text-xs px-3" data-testid="filter-featured">
                 Featured
