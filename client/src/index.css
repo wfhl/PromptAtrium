@@ -401,6 +401,24 @@ div.md\:hidden.bg-gray-900\/30.backdrop-blur-lg.border-b.border-cyan-500\/30.mob
   color: white !important;
 }
 
+/* Fix mobile bottom navigation to stay locked to bottom */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .block.lg\:hidden.fixed {
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
+}
+
+/* Ensure mobile navigation stays fixed to bottom on all mobile browsers */
+.block.lg\:hidden.fixed[style*="padding-bottom"] {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: translate3d(0, 0, 0); /* Force hardware acceleration */
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
 /* Custom scrollbar styles - completely transparent track */
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
