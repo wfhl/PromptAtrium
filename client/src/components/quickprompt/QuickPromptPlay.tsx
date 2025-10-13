@@ -462,10 +462,26 @@ export default function QuickPromptPlay() {
   // Mutation for saving prompt to history
   const saveToHistoryMutation = useMutation({
     mutationFn: async (historyData: any) => {
-      return apiRequest('/api/prompt-history', 'POST', historyData);
+      console.log('About to save to history with:', historyData);
+      try {
+        const result = await apiRequest('/api/prompt-history', 'POST', historyData);
+        console.log('Successfully saved to history:', result);
+        return result;
+      } catch (err: any) {
+        console.error('Error saving to history - full error:', err);
+        console.error('Error message:', err?.message);
+        console.error('Error response:', err?.response);
+        throw err;
+      }
     },
-    onError: (error) => {
-      console.error('Failed to save to prompt history:', error);
+    onSuccess: (data) => {
+      console.log('History save successful:', data);
+      // Invalidate the prompt history query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['/api/prompt-history'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to save to prompt history - onError:', error);
+      console.error('Error details:', error?.message, error?.response);
       // Silent failure - we don't want to interrupt the user experience
     }
   });
