@@ -17,7 +17,6 @@ import {
   Share2, BookOpen, Folder, ChevronRight
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
-import { MobilePageNav } from "@/components/MobilePageNav";
 import { MultiSelectFilters } from "@/components/MultiSelectFilters";
 import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } from "@/components/MultiSelectFilters";
 import { useAuth } from "@/hooks/useAuth";
@@ -333,9 +332,6 @@ export default function Community() {
 
   return (
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 lg:pb-8">
-      {/* Mobile Navigation */}
-      <MobilePageNav />
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-1 md:space-y-2">
         <TabsList className="grid grid-cols-3">

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Search, Hash, Palette, ChevronRight, ExternalLink, Heart, Lightbulb, Wand2, Wrench, Users, MessageCircle, PlayCircle, MessageSquare, Sparkles, AlertCircle, Book, Zap, Code } from "lucide-react";
-import { MobilePageNav } from "@/components/MobilePageNav";
 import { useLocation } from "wouter";
 import { SYNTAX_GUIDES, ANATOMY_GUIDES, PROMPT_RESOURCES, LEARNING_RESOURCES, QUICK_TIPS } from "@/data/promptingGuides";
 import type { Guide, Resource } from "@/data/promptingGuides";
@@ -159,8 +158,6 @@ export default function PromptingGuides() {
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6 max-w-7xl pb-24 lg:pb-6">
-        {/* Mobile Navigation */}
-        <MobilePageNav />
         
         {/* Header */}
         <div className="mb-8">

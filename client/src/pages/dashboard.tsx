@@ -21,7 +21,6 @@ import { QuickActions } from "@/components/QuickActions";
 import { BulkImportModal } from "@/components/BulkImportModal";
 import { StatsCard } from "@/components/StatsCard";
 import { CollectionItem } from "@/components/CollectionItem";
-import { MobilePageNav } from "@/components/MobilePageNav";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -793,9 +792,6 @@ export default function Dashboard() {
           </Form>
         </DialogContent>
       </Dialog>
-      
-      {/* Mobile Navigation */}
-      <MobilePageNav />
     </>
   );
 }

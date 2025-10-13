@@ -822,6 +822,9 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         {children}
       </main>
 
+      {/* Mobile Page Navigation */}
+      <MobilePageNav />
+
       {/* Global Modals */}
       <PromptModal
         open={promptModalOpen}

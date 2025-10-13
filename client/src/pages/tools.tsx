@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
 import { Plus, FolderPlus, FileUp, FileSearch, Sparkles, BookOpen, RatioIcon, ChartScatter, Lock, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { MobilePageNav } from "@/components/MobilePageNav";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkImportModal } from "@/components/BulkImportModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -291,8 +290,6 @@ export default function Tools() {
         </DialogContent>
       </Dialog>
 
-      {/* Mobile Navigation */}
-      <MobilePageNav />
     </>
   );
 }
