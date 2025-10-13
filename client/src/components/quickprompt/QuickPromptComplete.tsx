@@ -83,6 +83,7 @@ export default function QuickPromptComplete() {
   const [showCustomCharacterInput, setShowCustomCharacterInput] = useState(false);
   const [customCharacterInput, setCustomCharacterInput] = useState("");
   const [savedCustomCharacters, setSavedCustomCharacters] = useState<CharacterPreset[]>([]);
+  const [showManageCharacters, setShowManageCharacters] = useState(false);
   
   // Image state
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
@@ -946,6 +947,12 @@ export default function QuickPromptComplete() {
                   placeholder="Describe your custom character..."
                   value={customCharacterInput}
                   onChange={(e) => setCustomCharacterInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSaveCustomCharacter();
+                    }
+                  }}
                   className="bg-gray-800/50 border-gray-700 flex-1"
                   data-testid="input-custom-character"
                 />
@@ -959,6 +966,43 @@ export default function QuickPromptComplete() {
                 >
                   <Save className="h-4 w-4" />
                 </Button>
+              </div>
+            )}
+            
+            {/* Manage Saved Characters */}
+            {savedCustomCharacters.length > 0 && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs text-gray-500">Saved Characters</Label>
+                  <Button
+                    onClick={() => setShowManageCharacters(!showManageCharacters)}
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs hover:bg-gray-700"
+                  >
+                    {showManageCharacters ? 'Hide' : 'Manage'}
+                  </Button>
+                </div>
+                {showManageCharacters && (
+                  <div className="space-y-1 p-2 bg-gray-800/30 rounded-md">
+                    {savedCustomCharacters.map((char) => (
+                      <div key={char.id} className="flex items-center justify-between p-1 hover:bg-gray-700/50 rounded">
+                        <span className="text-sm text-gray-300 truncate flex-1">
+                          💾 {char.name}
+                        </span>
+                        <Button
+                          onClick={() => handleDeleteCustomCharacter(char.id.toString())}
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 hover:bg-red-900/50"
+                          title="Delete character"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
