@@ -8,7 +8,7 @@ export function MobilePageNav() {
   const isCommunityPage = location === "/community";
 
   return (
-    <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3" style={{ paddingBottom: "calc(32px + env(safe-area-inset-bottom, 0px))" }}>
+    <div className="block lg:hidden fixed left-0 right-0 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-6" style={{ bottom: "20px", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <div className="flex gap-2 max-w-screen-xl mx-auto">
         <Link href="/library" className="flex-1">
          
