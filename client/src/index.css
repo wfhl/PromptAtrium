@@ -150,7 +150,7 @@
 }
 
 .nav-gradient-tools {
-  background: linear-gradient(135deg, #22c55e 0%, #336c59 30%, #336c59 70%, #22c55e 100%);
+  background: linear-gradient(135deg, #8466d6 0%, #128fc4 30%, #128fc4 70%, #8466d6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -224,7 +224,7 @@
 }
 
 .button-gradient-tools {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.8) 0%, rgba(16, 185, 129, 0.8) 50%, rgba(34, 197, 94, 0.8) 100%);
+  background: linear-gradient(135deg, #8466d6 0%, #128fc4 50%, #8466d6 100%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 0px solid rgba(255, 255, 255, 0.2);
@@ -234,7 +234,7 @@
 }
 
 .button-gradient-tools:hover {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(16, 185, 129, 0.9) 50%, rgba(34, 197, 94, 0.9) 100%);
+  background: linear-gradient(135deg, #8466d6 0%, #128fc4 50%, #8466d6 100%);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   color: white !important;
