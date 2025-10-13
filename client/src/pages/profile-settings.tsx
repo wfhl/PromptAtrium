@@ -120,7 +120,8 @@ export default function ProfileSettings() {
     mutationFn: async (data: ProfileFormData) => {
       const profileData = {
         ...data,
-        birthday: data.birthday || null,
+        // Ensure birthday is sent as ISO string or null
+        birthday: data.birthday ? data.birthday.toISOString() : null,
         customSocials,
       };
       const response = await apiRequest("PUT", "/api/profile", profileData);

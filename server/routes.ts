@@ -172,8 +172,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).claims.sub;
       
+      // Pre-process birthday field: convert string to Date if present
+      const processedBody = { ...req.body };
+      if (processedBody.birthday) {
+        // Convert birthday string to Date object
+        processedBody.birthday = new Date(processedBody.birthday);
+        // Check if the date is valid
+        if (isNaN(processedBody.birthday.getTime())) {
+          return res.status(400).json({ message: "Invalid birthday format" });
+        }
+      } else if (processedBody.birthday === null || processedBody.birthday === '') {
+        // Handle null or empty string as undefined (remove birthday)
+        processedBody.birthday = null;
+      }
+      
       // Validate request body
-      const validatedData = insertUserSchema.partial().parse(req.body);
+      const validatedData = insertUserSchema.partial().parse(processedBody);
       
       // Check username uniqueness if username is being updated
       if (validatedData.username) {
