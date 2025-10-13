@@ -40,7 +40,7 @@ export function QuickActions({
           </div>
           <div className="text-center md:text-left">
             <p className="text-xs md:text-base font-medium text-foreground">Prompt</p>
-            <p className="text-xs text-muted-foreground hidden md:block">Create a new prompt</p>
+            <p className="text-xs text-muted-foreground hidden md:block">Add a prompt</p>
           </div>
         </Button>
 
@@ -58,7 +58,22 @@ export function QuickActions({
             <p className="text-xs text-muted-foreground hidden md:block">Organize prompts</p>
           </div>
         </Button>
-
+          {/* Quick Prompt Generator */}
+          <Link href="/tools/quick-prompter" className="contents">
+            <Button
+              variant="ghost"
+              className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
+              data-testid="button-prompt-generator"
+            >
+              <div className="w-8 h-8 md:w-7 md:h-7 bg-purple-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0">
+                <Sparkles className="h-4 w-4 text-purple-500" />
+              </div>
+              <div className="text-center md:text-left">
+                <p className="text-xs md:text-base font-medium text-foreground">Prompt Generator</p>
+                <p className="text-xs text-muted-foreground hidden md:block">AI prompt generator</p>
+              </div>
+            </Button>
+          </Link>
         <Button
           variant="ghost"
           className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
@@ -104,22 +119,7 @@ export function QuickActions({
               </div>
             </Button>
           </Link>
-        {/* Quick Prompt Generator */}
-        <Link href="/tools/quick-prompter" className="contents">
-          <Button
-            variant="ghost"
-            className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2"
-            data-testid="button-prompt-generator"
-          >
-            <div className="w-8 h-8 md:w-7 md:h-7 bg-purple-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0">
-              <Sparkles className="h-4 w-4 text-purple-500" />
-            </div>
-            <div className="text-center md:text-left">
-              <p className="text-xs md:text-base font-medium text-foreground">Quick Prompt</p>
-              <p className="text-xs text-muted-foreground hidden md:block">AI prompt generator</p>
-            </div>
-          </Button>
-        </Link>
+      
 
         {/* Wordsmith Codex */}
         <Link to="/codex" className="contents">
