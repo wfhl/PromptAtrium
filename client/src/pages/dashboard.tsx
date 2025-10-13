@@ -19,6 +19,7 @@ import { QuickActions } from "@/components/QuickActions";
 import { BulkImportModal } from "@/components/BulkImportModal";
 import { StatsCard } from "@/components/StatsCard";
 import { CollectionItem } from "@/components/CollectionItem";
+import { MobilePageNav } from "@/components/MobilePageNav";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -698,23 +699,8 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
       
-      {/* Floating Navigation Buttons for Mobile */}
-      <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 dark:bg-background/95 backdrop-blur-sm border-t border-border p-3 pb-safe">
-        <div className="flex gap-2 max-w-screen-xl mx-auto">
-          <Link href="/library" className="flex-1">
-            <Button className="w-full button-gradient-library" data-testid="button-my-prompts">
-              <FileText className="h-4 w-4 mr-2" />
-              My Prompts
-            </Button>
-          </Link>
-          <Link href="/community" className="flex-1">
-            <Button className="w-full button-gradient-community" data-testid="button-community-prompts">
-              <Users className="h-4 w-4 mr-2" />
-              Community Prompts
-            </Button>
-          </Link>
-        </div>
-      </div>
+      {/* Mobile Navigation */}
+      <MobilePageNav />
     </>
   );
 }
