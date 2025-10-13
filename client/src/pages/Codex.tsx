@@ -658,14 +658,15 @@ export default function Codex() {
                   <TabsContent value="all" className="mt-0">
                     <Tabs value={categoryView} onValueChange={(v) => setCategoryView(v as "all" | "organized")} className="w-full">
                       <TabsList className="grid w-full grid-cols-2 h-6">
-                        <TabsTrigger value="all" className="text-xs py-0.2" data-testid="tab-all-view">
-                          <Grid className="w-3 h-3 mr-1" />
-                          All
-                        </TabsTrigger>
                         <TabsTrigger value="organized" className="text-xs py-0.2" data-testid="tab-organized-view">
                           <Layers className="w-3 h-3 mr-1" />
                           Organized
                         </TabsTrigger>
+                        <TabsTrigger value="all" className="text-xs py-0.2" data-testid="tab-all-view">
+                          <Grid className="w-3 h-3 mr-1" />
+                          All
+                        </TabsTrigger>
+                    
                       </TabsList>
 
                       <TabsContent value="all" className="mt-1">
