@@ -238,8 +238,8 @@ export default function Codex() {
   const [showAssemblyToast, setShowAssemblyToast] = useState(false);
   const [toastMinimized, setToastMinimized] = useState(false);
   const [categoryTab, setCategoryTab] = useState<"all" | "aesthetics">("all");
-  const [categoryView, setCategoryView] = useState<"all" | "organized">("all");
-  const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("all");
+  const [categoryView, setCategoryView] = useState<"all" | "organized">("organized");
+  const [aestheticsView, setAestheticsView] = useState<"all" | "organized">("organized");
   const [categoryHeight, setCategoryHeight] = useState(250); // Default mobile height in pixels
   const [isMobile, setIsMobile] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
