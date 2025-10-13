@@ -16,7 +16,7 @@ export function MobilePageNav() {
           
           <Button 
             variant="outline"
-            className={`w-full relative group ${isLibraryPage ? 'button-gradient-library hover:color-white' : 'hover:bg-transparent'}`}
+            className={`w-full relative group ${isLibraryPage ? 'button-gradient-library hover:color-white' : 'bg-transparent hover:bg-white/5'}`}
             data-testid="button-my-prompts"
           >
             <FileText className={`h-4 w-4 mr-2 text-white transition-all ${!isLibraryPage ? 'group-hover:scale-110 group-hover:brightness-150' : ''}`} />
@@ -33,7 +33,7 @@ export function MobilePageNav() {
           
           <Button 
             variant="outline"
-            className={`w-full relative group ${isCommunityPage ? 'button-gradient-community hover:color-white' : 'hover:bg-transparent'}`}
+            className={`w-full relative group ${isCommunityPage ? 'button-gradient-community hover:color-white' : 'bg-transparent hover:bg-white/5'}`}
             data-testid="button-community-prompts"
           >
             <Users className={`h-4 w-4 mr-2 text-white transition-all ${!isCommunityPage ? 'group-hover:scale-110 group-hover:brightness-150' : ''}`} />

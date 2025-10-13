@@ -27,8 +27,8 @@ export function QuickActions({
 
   return (
     <div data-testid="card-quick-actions">
-      <h3 className="text-base md:text-xl font-semibold mb-2 md:mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-8 gap-2 md:grid-cols-2 md:gap-2 lg:grid-cols-2 lg:gap-2 lg:space-y-0">
+      <h3 className="text-base md:text-xl font-semibold mb-2 md:mb-3">Tools</h3>
+        <div className="grid grid-cols-4 gap-2 md:grid-cols-2 md:gap-2 lg:grid-cols-2 lg:gap-2 lg:space-y-0">
         
           
           
@@ -39,34 +39,18 @@ export function QuickActions({
           onClick={onCreatePrompt}
           data-testid="button-create-prompt"
         >
-          <div className="w-8 h-8 md:w-7 md:h-7 bg-blue-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
+          <div className="w-8 h-8 md:w-7 md:h-7 bg-blue-500/0 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-150">
             <Plus className="h-4 w-4 text-primary transition-all group-hover:brightness-150" />
           </div>
           <div className="text-center  md:text-left">
-            <p className="text-xs md:text-base font-medium text-foreground">Prompt</p>
+            <p className="text-xs md:text-base font-medium text-foreground">Add Prompt</p>
             <p className="text-xs text-muted-foreground hidden md:block">Add a prompt</p>
           </div>
         </Button>
 
 
           
-          {/* Collections */}
-        <Button
-          variant="ghost"
-          className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
-          onClick={onCreateCollection}
-          data-testid="button-create-collection"
-        >
-          <div className="w-8 h-8 md:w-7 md:h-7 bg-green-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
-            <FolderPlus className="h-4 w-4 text-green-500 transition-all group-hover:brightness-150" />
-          </div>
-          <div className="text-center md:text-left">
-            <p className="text-xs md:text-base font-medium text-foreground">Collection</p>
-            <p className="text-xs text-muted-foreground hidden md:block">Organize prompts</p>
-          </div>
-        </Button>
-
-
+  
           
           {/* Quick Prompt Generator */}
           <Link href="/tools/quick-prompter" className="contents">
@@ -75,26 +59,29 @@ export function QuickActions({
               className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
               data-testid="button-prompt-generator"
             >
-              <div className="w-8 h-8 md:w-7 md:h-7 bg-purple-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
+              <div className="w-8 h-8 md:w-7 md:h-7 bg-purple-500/0 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-150">
                 <Sparkles className="h-4 w-4 text-purple-500 transition-all group-hover:brightness-150" />
               </div>
               <div className="text-center md:text-left">
-                <p className="text-xs md:text-base font-medium text-foreground">Prompt Generator</p>
+                <p className="text-xs md:text-base font-medium text-foreground">Generate Prompt</p>
                 <p className="text-xs text-muted-foreground hidden md:block">AI prompt generator</p>
               </div>
             </Button>
           </Link>
-        <Button
+     
+          
+          
+          <Button
           variant="ghost"
           className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
           onClick={onImportPrompts}
           data-testid="button-import-prompts"
         >
-          <div className="w-8 h-8 md:w-7 md:h-7 bg-purple-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
-            <FileUp className="h-4 w-4 text-purple-500 transition-all group-hover:brightness-150" />
+          <div className="w-8 h-8 md:w-7 md:h-7 bg-yellow-500/0 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-150">
+            <FileUp className="h-4 w-4 text-yellow-500 transition-all group-hover:brightness-150" />
           </div>
           <div className="text-center md:text-left">
-            <p className="text-xs md:text-base font-medium text-foreground">Import</p>
+            <p className="text-xs md:text-base font-medium text-foreground">Import Prompts</p>
             <p className="text-xs text-muted-foreground hidden md:block">Bulk import from file</p>
           </div>
         </Button>
@@ -105,22 +92,44 @@ export function QuickActions({
             className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
             data-testid="button-metadata-analyzer"
           >
-            <div className="w-8 h-8 md:w-7 md:h-7 bg-cyan-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
+            <div className="w-8 h-8 md:w-7 md:h-7 bg-cyan-500/0 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-150">
               <FileSearch className="h-4 w-4 text-cyan-500 transition-all group-hover:brightness-150" />
             </div>
             <div className="text-center md:text-left">
-              <p className="text-xs md:text-base font-medium text-foreground">Metadata</p>
+              <p className="text-xs md:text-base font-medium text-foreground">Metadata Extract</p>
               <p className="text-xs text-muted-foreground hidden md:block">Analyze image metadata</p>
             </div>
           </Button>
         </Link>
           <Link href="/tools/aspect-ratio-calculator" className="contents">
+           
+            
+            
+            {/* Collections */}
+            <Button
+              variant="ghost"
+              className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
+              onClick={onCreateCollection}
+              data-testid="button-create-collection"
+            >
+              <div className="w-8 h-8 md:w-7 md:h-7 bg-green-500/0 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-150">
+                <FolderPlus className="h-4 w-4 text-green-500 transition-all group-hover:brightness-150" />
+              </div>
+              <div className="text-center md:text-left">
+                <p className="text-xs md:text-base font-medium text-foreground">Prompt Collections</p>
+                <p className="text-xs text-muted-foreground hidden md:block">Organize prompts</p>
+              </div>
+            </Button>
+
+
+            
+            
             <Button
               variant="ghost"
               className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
               data-testid="button-aspect-ratio-calculator"
             >
-              <div className="w-8 h-8 md:w-7 md:h-7 bg-orange-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
+              <div className="w-8 h-8 md:w-7 md:h-7 bg-orange-500/0 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-150">
                 <RatioIcon className="h-4 w-4 text-orange-500 transition-all group-hover:brightness-150" />
               </div>
               <div className="text-center md:text-left">
@@ -138,11 +147,11 @@ export function QuickActions({
             className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
             data-testid="button-wordsmith-codex"
           >
-            <div className="w-8 h-8 md:w-7 md:h-7 bg-rose-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-110">
+            <div className="w-8 h-8 md:w-7 md:h-7 bg-rose-500/0 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-150">
               <BookOpen className="h-4 w-4 text-rose-500 transition-all group-hover:brightness-150" />
             </div>
             <div className="text-center md:text-left">
-              <p className="text-xs md:text-base font-medium text-foreground">Codex</p>
+              <p className="text-xs md:text-base font-medium text-foreground">Wordsmith Codex</p>
               <p className="text-xs text-muted-foreground hidden md:block">Browse Wildcards</p>
             </div>
           </Button>
@@ -154,7 +163,7 @@ export function QuickActions({
             onClick={() => handleComingSoon("Project")}
             data-testid="button-start-project"
           >
-            <div className="w-8 h-8 md:w-7 md:h-7 bg-blue-500/10 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 relative transition-transform group-hover:scale-110">
+            <div className="w-8 h-8 md:w-7 md:h-7 bg-blue-500/00 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 relative transition-transform group-hover:scale-150">
               <ChartScatter className="h-4 w-4 text-blue-500 transition-all group-hover:brightness-150" />
               <Lock className="h-2.5 w-2.5 text-blue-500 absolute -top-1 -right-1 bg-background rounded-full transition-all group-hover:brightness-150" />
             </div>
