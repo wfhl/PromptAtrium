@@ -193,6 +193,21 @@ export default function Dashboard() {
     id: string;
     actionType: string;
     userId: string;
+    targetId?: string;
+    targetType?: string;
+    targetEntity?: {
+      id: string;
+      name?: string;
+      username?: string;
+      firstName?: string;
+      lastName?: string;
+      isPublic?: boolean;
+    };
+    metadata?: {
+      promptName?: string;
+      collectionName?: string;
+      userName?: string;
+    };
     details?: any;
     createdAt: string;
     user?: User;
@@ -295,23 +310,58 @@ export default function Dashboard() {
 
   const getActivityDescription = (activity: ActivityType) => {
     const userName = activity.user?.username || "Someone";
+    const userLink = userName !== "Someone" ? (
+      <Link href={`/profile/${userName}`} className="font-medium text-foreground hover:underline">
+        @{userName}
+      </Link>
+    ) : (
+      <span className="font-medium text-foreground">@{userName}</span>
+    );
+
+    const promptName = activity.targetEntity?.name || activity.metadata?.promptName || "a prompt";
+    const promptLink = (activity.targetEntity || activity.metadata?.promptName) && activity.targetId && activity.targetType === 'prompt' ? (
+      <Link href={`/prompt/${activity.targetId}`} className="font-medium hover:underline">
+        "{promptName}"
+      </Link>
+    ) : (
+      <span className="font-medium">"{promptName}"</span>
+    );
+
+    const collectionName = activity.targetEntity?.name || activity.metadata?.collectionName || "a collection";
+    const collectionLink = (activity.targetEntity || activity.metadata?.collectionName) && activity.targetId && activity.targetType === 'collection' ? (
+      <Link href={`/collection/${activity.targetId}`} className="font-medium hover:underline">
+        {collectionName}
+      </Link>
+    ) : (
+      <span className="font-medium">{collectionName}</span>
+    );
+
+    const targetUserName = activity.targetEntity?.username || activity.targetEntity?.firstName || "someone";
+    const targetUserLink = activity.targetEntity && activity.targetId && activity.targetType === 'user' ? (
+      <Link href={`/profile/${activity.targetEntity.username || activity.targetId}`} className="font-medium hover:underline">
+        {targetUserName}
+      </Link>
+    ) : (
+      <span className="font-medium">{targetUserName}</span>
+    );
+
     switch (activity.actionType) {
       case "created_prompt":
-        return `@${userName} created a new prompt`;
+        return <>{userLink} created {promptLink}</>;
       case "shared_prompt":
-        return `@${userName} shared a prompt`;
+        return <>{userLink} shared {promptLink}</>;
       case "liked_prompt":
-        return `@${userName} liked a prompt`;
+        return <>{userLink} liked {promptLink}</>;
       case "favorited_prompt":
-        return `@${userName} favorited a prompt`;
+        return <>{userLink} favorited {promptLink}</>;
       case "followed_user":
-        return `@${userName} started following someone`;
+        return <>{userLink} started following {targetUserLink}</>;
       case "joined_community":
-        return `@${userName} joined the community`;
+        return <>{userLink} joined the community</>;
       case "created_collection":
-        return `@${userName} created a new collection`;
+        return <>{userLink} created {collectionLink}</>;
       default:
-        return `@${userName} performed an action`;
+        return <>{userLink} performed an action</>;
     }
   };
 
