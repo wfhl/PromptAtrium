@@ -152,14 +152,13 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     if (!open) {
       hasPopulatedRef.current = false;
       lastPromptRef.current = null;
+      setFormData(getInitialFormData()); // Reset form when modal closes
       return;
     }
     
-    // When modal opens or prompt changes, update the form data
-    if (open && prompt && prompt !== lastPromptRef.current) {
-      console.log('Updating form with new prompt data');
-      
-      if (mode === "edit") {
+    // When modal opens, always update the form data based on current mode and prompt
+    if (open) {
+      if (mode === "edit" && prompt) {
         console.log('Edit mode - populating form with existing prompt data');
         setFormData({
           name: prompt.name || "",
@@ -184,7 +183,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
           variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
         });
-      } else if (mode === "create") {
+        hasPopulatedRef.current = true;
+        lastPromptRef.current = prompt;
+      } else if (mode === "create" && prompt) {
         console.log('Create mode - populating form with prepopulated data');
         console.log('Prepopulated prompt data:', prompt);
         setFormData({
@@ -210,10 +211,15 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           technicalParams: "",
           variables: "",
         });
+        hasPopulatedRef.current = true;
+        lastPromptRef.current = prompt;
+      } else if (mode === "create" && !prompt) {
+        // Reset to empty form for create mode without prepopulated data
+        console.log('Create mode - resetting to empty form');
+        setFormData(getInitialFormData());
+        hasPopulatedRef.current = false;
+        lastPromptRef.current = null;
       }
-      
-      hasPopulatedRef.current = true;
-      lastPromptRef.current = prompt;
     }
   }, [prompt, mode, open, defaultCollectionId]);
 
