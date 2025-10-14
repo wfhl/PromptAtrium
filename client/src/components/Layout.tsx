@@ -556,6 +556,22 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </DropdownMenuItem>
 
                 <DropdownMenuItem asChild>
+                  <Link href={`/user/${typedUser?.username}?tab=followers`} className="flex items-center cursor-pointer" data-testid="menu-followers">
+                    <Users className="mr-2 h-4 w-4" />
+                    Followers
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link href={`/user/${typedUser?.username}?tab=following`} className="flex items-center cursor-pointer" data-testid="menu-following">
+                    <Users className="mr-2 h-4 w-4" />
+                    Following
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem asChild>
                   <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
                     <Settings className="mr-2 h-4 w-4" />
                     Profile Settings

@@ -39,7 +39,13 @@ export default function UserProfile() {
   const { username } = useParams();
   const { toast } = useToast();
   const [isFollowing, setIsFollowing] = useState(false);
-  const [activeSection, setActiveSection] = useState<"prompts" | "followers" | "following">("prompts");
+  
+  // Get tab from URL query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab') as "prompts" | "followers" | "following" | null;
+  const [activeSection, setActiveSection] = useState<"prompts" | "followers" | "following">(
+    tabParam && ["prompts", "followers", "following"].includes(tabParam) ? tabParam : "prompts"
+  );
 
   // Fetch user profile
   const { data: profile, isLoading: profileLoading } = useQuery<User>({
