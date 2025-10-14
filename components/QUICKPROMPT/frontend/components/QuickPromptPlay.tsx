@@ -1340,6 +1340,7 @@ export default function QuickPromptPlay() {
               description: shareData.description,
               tags: shareData.tags,
               category_id: shareData.category_id,
+              promptStyle: dbRuleTemplates.find(t => t.id.toString() === template)?.name || 'Custom',
               user_id: "1"
             });
           }}
