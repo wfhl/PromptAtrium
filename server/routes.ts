@@ -1447,7 +1447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const promptId = req.params.id;
       const isFavorited = await storage.toggleFavorite(userId, promptId);
       
-      // Create activity for favoriting (only when favoriting, not unfavoriting)
+      // Create activity and notification for favoriting (only when favoriting, not unfavoriting)
       if (isFavorited) {
         const prompt = await storage.getPrompt(promptId);
         if (prompt && prompt.isPublic) {
@@ -1458,6 +1458,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             targetType: "prompt",
             metadata: { promptName: prompt.name }
           });
+          
+          // Create notification for prompt owner (if not bookmarking own prompt)
+          if (prompt.userId !== userId) {
+            const bookmarker = await storage.getUser(userId);
+            if (bookmarker) {
+              await storage.createNotification({
+                userId: prompt.userId,
+                type: "fork", // Using 'fork' type for bookmark since there's no 'bookmark' type
+                message: `${bookmarker.username || bookmarker.firstName || 'Someone'} bookmarked your prompt "${prompt.name}"`,
+                relatedUserId: userId,
+                relatedPromptId: promptId,
+                relatedListId: null,
+                isRead: false,
+                metadata: { promptName: prompt.name, actionType: 'bookmark' }
+              });
+            }
+          }
         }
       }
       
@@ -1493,6 +1510,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const newFeaturedStatus = !prompt.isFeatured;
       await storage.updatePrompt(req.params.id, { isFeatured: newFeaturedStatus });
+      
+      // Create notification when prompt is featured (not when unfeatured)
+      if (newFeaturedStatus && prompt.userId) {
+        const adminUserId = (req.user as any).claims.sub;
+        await storage.createNotification({
+          userId: prompt.userId,
+          type: "approval", // Using 'approval' type for featured since there's no 'featured' type
+          message: `Congratulations! Your prompt "${prompt.name}" has been featured!`,
+          relatedUserId: adminUserId,
+          relatedPromptId: req.params.id,
+          relatedListId: null,
+          isRead: false,
+          metadata: { promptName: prompt.name, actionType: 'featured' }
+        });
+      }
+      
       res.json({ featured: newFeaturedStatus });
     } catch (error) {
       console.error("Error toggling featured status:", error);
