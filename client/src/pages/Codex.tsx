@@ -624,7 +624,7 @@ export default function Codex() {
           </Link>
         </div>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Browse and assemble AI prompt components from our extensive wildcard database
+          Browse and Assembly our extensive database of Keyword Terms for prompt inspiration as well as creating wildcard sets for generating with Stable Diffusion
         </p>
       </div>
 
