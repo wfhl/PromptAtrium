@@ -311,7 +311,7 @@ export default function Dashboard() {
   const getActivityDescription = (activity: ActivityType) => {
     const userName = activity.user?.username || "Someone";
     const userLink = userName !== "Someone" ? (
-      <Link href={`/profile/${userName}`} className="font-medium text-foreground hover:underline">
+      <Link href={`/user/${userName}`} className="font-medium text-foreground hover:underline">
         @{userName}
       </Link>
     ) : (
@@ -338,7 +338,7 @@ export default function Dashboard() {
 
     const targetUserName = activity.targetEntity?.username || activity.targetEntity?.firstName || "someone";
     const targetUserLink = activity.targetEntity && activity.targetId && activity.targetType === 'user' ? (
-      <Link href={`/profile/${activity.targetEntity.username || activity.targetId}`} className="font-medium hover:underline">
+      <Link href={`/user/${activity.targetEntity.username || activity.targetId}`} className="font-medium hover:underline">
         {targetUserName}
       </Link>
     ) : (
