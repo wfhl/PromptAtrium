@@ -540,7 +540,21 @@ export function PromptCard({
         }
       }, (old: any) => {
         if (!old) return old;
-        return old.filter((p: any) => p.id !== prompt.id);
+        
+        // Handle array format
+        if (Array.isArray(old)) {
+          return old.filter((p: any) => p.id !== prompt.id);
+        }
+        
+        // Handle object with items property
+        if (old.items && Array.isArray(old.items)) {
+          return {
+            ...old,
+            items: old.items.filter((p: any) => p.id !== prompt.id)
+          };
+        }
+        
+        return old;
       });
       
       return { previousData };
@@ -634,7 +648,21 @@ export function PromptCard({
         }
       }, (old: any) => {
         if (!old) return old;
-        return old.filter((p: any) => p.id !== prompt.id);
+        
+        // Handle array format
+        if (Array.isArray(old)) {
+          return old.filter((p: any) => p.id !== prompt.id);
+        }
+        
+        // Handle object with items property
+        if (old.items && Array.isArray(old.items)) {
+          return {
+            ...old,
+            items: old.items.filter((p: any) => p.id !== prompt.id)
+          };
+        }
+        
+        return old;
       });
       
       return { previousData };
