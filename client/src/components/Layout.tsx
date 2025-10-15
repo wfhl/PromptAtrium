@@ -555,26 +555,26 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </Link>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem 
-                  onClick={() => {
-                    window.location.href = `/user/${typedUser?.username}?tab=followers`;
-                  }}
-                  className="flex items-center cursor-pointer" 
-                  data-testid="menu-followers"
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Followers
+                <DropdownMenuItem asChild>
+                  <Link 
+                    href={`/user/${typedUser?.username}?tab=followers`}
+                    className="flex items-center cursor-pointer" 
+                    data-testid="menu-followers"
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Followers
+                  </Link>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem 
-                  onClick={() => {
-                    window.location.href = `/user/${typedUser?.username}?tab=following`;
-                  }}
-                  className="flex items-center cursor-pointer" 
-                  data-testid="menu-following"
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Following
+                <DropdownMenuItem asChild>
+                  <Link 
+                    href={`/user/${typedUser?.username}?tab=following`}
+                    className="flex items-center cursor-pointer" 
+                    data-testid="menu-following"
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Following
+                  </Link>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />

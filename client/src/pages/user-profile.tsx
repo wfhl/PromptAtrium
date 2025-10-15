@@ -470,7 +470,7 @@ export default function UserProfile() {
       {/* Content Sections */}
       <div className="space-y-4">
         {/* Section Title */}
-        <div className="mb-4">
+        <div className="mb-4 transition-all duration-200 ease-in-out">
           <h2 className="text-xl font-semibold capitalize">
             {activeSection === "prompts" && `Prompts (${prompts.length})`}
             {activeSection === "followers" && `Followers (${followersData?.total || 0})`}
@@ -478,109 +478,112 @@ export default function UserProfile() {
           </h2>
         </div>
 
-        {/* Prompts Section */}
-        {activeSection === "prompts" && (
-          <>
-            {promptsLoading ? (
-              <div className="text-center py-10 text-gray-500">Loading prompts...</div>
-            ) : prompts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {prompts.map((prompt: Prompt) => (
-                  <PromptCard key={prompt.id} prompt={prompt} isProfilePage={true} />
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="text-center py-10">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-500">No public prompts yet</p>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
-
-        {/* Followers Section */}
-        {activeSection === "followers" && (
-          <>
-            {followersData?.followers && followersData.followers.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {followersData.followers.map((follower: User) => (
-                  <Card key={follower.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={follower.profileImageUrl || undefined} />
-                          <AvatarFallback>
-                            {follower.firstName?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <a
-                            href={`/user/${follower.username}`}
-                            className="font-semibold hover:underline"
-                            data-testid={`link-follower-${follower.id}`}
-                          >
-                            {follower.firstName} {follower.lastName}
-                          </a>
-                          <p className="text-sm text-gray-500">@{follower.username}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="text-center py-10">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-500">No followers yet</p>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
-
-        {/* Following Section */}
-        {activeSection === "following" && (
-          <>
-            {followingData?.following && followingData.following.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {followingData.following.map((following: User) => (
-                <Card key={following.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={following.profileImageUrl || undefined} />
-                        <AvatarFallback>
-                          {following.firstName?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <a
-                          href={`/user/${following.username}`}
-                          className="font-semibold hover:underline"
-                          data-testid={`link-following-${following.id}`}
-                        >
-                          {following.firstName} {following.lastName}
-                        </a>
-                        <p className="text-sm text-gray-500">@{following.username}</p>
-                      </div>
-                    </div>
+        {/* Content with smooth transitions */}
+        <div className="transition-all duration-200 ease-in-out">
+          {/* Prompts Section */}
+          {activeSection === "prompts" && (
+            <div className="animate-fadeIn">
+              {promptsLoading ? (
+                <div className="text-center py-10 text-gray-500">Loading prompts...</div>
+              ) : prompts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {prompts.map((prompt: Prompt) => (
+                    <PromptCard key={prompt.id} prompt={prompt} isProfilePage={true} />
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="text-center py-10">
+                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500">No public prompts yet</p>
                   </CardContent>
                 </Card>
-              ))}
+              )}
             </div>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-10">
-                <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-500">Not following anyone yet</p>
-              </CardContent>
-            </Card>
-            )}
-          </>
-        )}
+          )}
+
+          {/* Followers Section */}
+          {activeSection === "followers" && (
+            <div className="animate-fadeIn">
+              {followersData?.followers && followersData.followers.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {followersData.followers.map((follower: User) => (
+                    <Card key={follower.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={follower.profileImageUrl || undefined} />
+                            <AvatarFallback>
+                              {follower.firstName?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <a
+                              href={`/user/${follower.username}`}
+                              className="font-semibold hover:underline"
+                              data-testid={`link-follower-${follower.id}`}
+                            >
+                              {follower.firstName} {follower.lastName}
+                            </a>
+                            <p className="text-sm text-gray-500">@{follower.username}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="text-center py-10">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500">No followers yet</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Following Section */}
+          {activeSection === "following" && (
+            <div className="animate-fadeIn">
+              {followingData?.following && followingData.following.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {followingData.following.map((following: User) => (
+                    <Card key={following.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={following.profileImageUrl || undefined} />
+                            <AvatarFallback>
+                              {following.firstName?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <a
+                              href={`/user/${following.username}`}
+                              className="font-semibold hover:underline"
+                              data-testid={`link-following-${following.id}`}
+                            >
+                              {following.firstName} {following.lastName}
+                            </a>
+                            <p className="text-sm text-gray-500">@{following.username}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="text-center py-10">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500">Not following anyone yet</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
