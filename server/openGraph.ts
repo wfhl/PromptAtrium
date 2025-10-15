@@ -88,6 +88,9 @@ function generateOpenGraphHTML(prompt: any, req?: Request): string {
     const firstImage = prompt.exampleImagesUrl[0];
     if (firstImage && firstImage.trim() !== '') {
       try {
+        // Log the original image URL for debugging
+        console.log('[Open Graph] Original image URL:', firstImage);
+        
         // If the image URL is already an absolute URL (http/https)
         if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
           imageUrl = firstImage;
@@ -103,9 +106,10 @@ function generateOpenGraphHTML(prompt: any, req?: Request): string {
         }
         // If it's an /objects/ path (object storage path)
         else if (firstImage.startsWith('/objects/')) {
-          // Remove the /objects/ prefix and use the serve endpoint
-          const cleanPath = firstImage.replace('/objects/', '');
-          imageUrl = `${baseUrl}/api/objects/serve/${cleanPath}`;
+          // For object storage, we need to serve through the proper endpoint
+          // Extract just the path after /objects/
+          const objectPath = firstImage.substring('/objects/'.length);
+          imageUrl = `${baseUrl}/api/objects/serve/${objectPath}`;
         }
         // If it starts with / (absolute path on our server)
         else if (firstImage.startsWith('/')) {
@@ -117,7 +121,14 @@ function generateOpenGraphHTML(prompt: any, req?: Request): string {
           imageUrl = `${baseUrl}/api/objects/serve/${firstImage}`;
         }
         
-        console.log('[Open Graph] Processed first image:', firstImage, '->', imageUrl);
+        console.log('[Open Graph] Processed image URL:', imageUrl);
+        console.log('[Open Graph] Using base URL:', baseUrl);
+        
+        // Additional validation - make sure the URL is properly formed
+        if (!imageUrl.includes('://')) {
+          console.error('[Open Graph] Invalid URL generated:', imageUrl);
+          imageUrl = `${baseUrl}/atrium-square-icon.png`;
+        }
       } catch (error) {
         console.error('[Open Graph] Error processing image URL:', error);
         // Fall back to default app icon on error
