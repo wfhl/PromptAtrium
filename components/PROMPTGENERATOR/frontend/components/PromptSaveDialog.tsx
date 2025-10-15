@@ -86,14 +86,32 @@ export default function PromptSaveDialog({
       if (mode === 'edit' && existingPrompt) {
         setTitle(existingPrompt.name || "");
         setDescription(existingPrompt.description || "");
-        setPositivePrompt(existingPrompt.positive_prompt || "");
-        setNegativePromptValue(existingPrompt.negative_prompt || "");
-        setSelectedFolder(existingPrompt.folder_id);
-        setVisibility((existingPrompt.visibility as "private" | "public" | "unlisted") || "private");
-        setIsFavorite(existingPrompt.is_favorite || false);
-        setSelectedTags(existingPrompt.tags || []);
-        setExampleImages(existingPrompt.example_images || []);
-        setSavedPromptId(existingPrompt.id);
+        // Handle both field names: positive_prompt (saved_prompts table) and promptContent (prompts table)
+        const promptText = existingPrompt.positive_prompt || (existingPrompt as any).promptContent || "";
+        setPositivePrompt(promptText);
+        // Handle both field names: negative_prompt and negativePrompt
+        const negativeText = existingPrompt.negative_prompt || (existingPrompt as any).negativePrompt || "";
+        setNegativePromptValue(negativeText);
+        // Handle both field names for folder/collection
+        const folderId = existingPrompt.folder_id || (existingPrompt as any).collectionId || null;
+        setSelectedFolder(folderId);
+        // Handle visibility - use isPublic field if visibility is not present
+        const visibilityValue = existingPrompt.visibility || 
+          ((existingPrompt as any).isPublic === true ? "public" : 
+           (existingPrompt as any).isPublic === false ? "private" : "private");
+        setVisibility(visibilityValue as "private" | "public" | "unlisted");
+        // Handle favorite field
+        const isFav = existingPrompt.is_favorite || (existingPrompt as any).isFavorite || false;
+        setIsFavorite(isFav);
+        // Handle tags array
+        const tagsList = existingPrompt.tags || (existingPrompt as any).tagsNormalized || [];
+        setSelectedTags(tagsList);
+        // Handle example images
+        const images = existingPrompt.example_images || (existingPrompt as any).exampleImagesUrl || [];
+        setExampleImages(images);
+        // Handle ID - could be numeric or string
+        const promptId = typeof existingPrompt.id === 'string' ? existingPrompt.id : existingPrompt.id;
+        setSavedPromptId(promptId);
       } else {
         // Create mode - reset to defaults
         setTitle("");
