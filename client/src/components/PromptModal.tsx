@@ -140,9 +140,8 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
 
   const [formData, setFormData] = useState(getInitialFormData);
   
-  // Use ref to track if we've populated the form for the current prompt
-  const hasPopulatedRef = useRef(false);
-  const lastPromptRef = useRef(prompt);
+  // Use ref to track the current prompt ID to detect changes
+  const currentPromptIdRef = useRef<string | null>(null);
   
   // Update form data when prop changes
   useEffect(() => {
@@ -150,16 +149,24 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     
     // Reset tracking when modal closes
     if (!open) {
-      hasPopulatedRef.current = false;
-      lastPromptRef.current = null;
-      setFormData(getInitialFormData()); // Reset form when modal closes
+      currentPromptIdRef.current = null;
+      // Small delay to ensure state is cleared after modal animation
+      setTimeout(() => {
+        setFormData(getInitialFormData());
+      }, 100);
       return;
     }
     
-    // When modal opens, always update the form data based on current mode and prompt
+    // When modal opens or prompt changes while open
     if (open) {
-      if (mode === "edit" && prompt) {
-        console.log('Edit mode - populating form with existing prompt data');
+      const promptId = prompt?.id || null;
+      
+      // Check if we're switching to a different prompt
+      const isPromptChanged = promptId !== currentPromptIdRef.current;
+      
+      if (mode === "edit" && prompt && isPromptChanged) {
+        console.log('Edit mode - populating form with prompt:', prompt.id);
+        currentPromptIdRef.current = promptId;
         setFormData({
           name: prompt.name || "",
           description: prompt.description || "",
@@ -183,11 +190,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           technicalParams: prompt.technicalParams ? JSON.stringify(prompt.technicalParams, null, 2) : "",
           variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
         });
-        hasPopulatedRef.current = true;
-        lastPromptRef.current = prompt;
-      } else if (mode === "create" && prompt) {
+      } else if (mode === "create" && prompt && isPromptChanged) {
         console.log('Create mode - populating form with prepopulated data');
-        console.log('Prepopulated prompt data:', prompt);
+        currentPromptIdRef.current = promptId;
         setFormData({
           name: prompt.name || "",
           description: "",
@@ -211,17 +216,14 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           technicalParams: "",
           variables: "",
         });
-        hasPopulatedRef.current = true;
-        lastPromptRef.current = prompt;
-      } else if (mode === "create" && !prompt) {
+      } else if (mode === "create" && !prompt && currentPromptIdRef.current !== 'create-mode') {
         // Reset to empty form for create mode without prepopulated data
         console.log('Create mode - resetting to empty form');
+        currentPromptIdRef.current = 'create-mode';
         setFormData(getInitialFormData());
-        hasPopulatedRef.current = false;
-        lastPromptRef.current = null;
       }
     }
-  }, [prompt, mode, open, defaultCollectionId]);
+  }, [prompt?.id, prompt, mode, open, defaultCollectionId]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();

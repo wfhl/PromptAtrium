@@ -257,13 +257,27 @@ export default function CollectionView() {
   });
 
   const handleEditPrompt = (prompt: Prompt) => {
-    setEditingPrompt(prompt);
-    setPromptModalOpen(true);
+    // First ensure modal is closed and state is reset
+    setPromptModalOpen(false);
+    setEditingPrompt(null);
+    
+    // Then set the new prompt and open modal after a brief delay
+    // This ensures React processes the state changes in order
+    setTimeout(() => {
+      setEditingPrompt(prompt);
+      setPromptModalOpen(true);
+    }, 50);
   };
 
   const handleCreatePrompt = () => {
+    // First ensure modal is closed and state is reset
+    setPromptModalOpen(false);
     setEditingPrompt(null);
-    setPromptModalOpen(true);
+    
+    // Then open modal for create mode after a brief delay
+    setTimeout(() => {
+      setPromptModalOpen(true);
+    }, 50);
   };
 
   const handleToggleBulkMode = () => {
