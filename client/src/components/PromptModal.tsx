@@ -142,18 +142,23 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   
   // Use ref to track the current prompt ID to detect changes
   const currentPromptIdRef = useRef<string | null>(null);
+  const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Update form data when prop changes
   useEffect(() => {
     console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt);
     
+    // Clear any pending reset timer when modal state changes
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+    
     // Reset tracking when modal closes
     if (!open) {
       currentPromptIdRef.current = null;
-      // Small delay to ensure state is cleared after modal animation
-      setTimeout(() => {
-        setFormData(getInitialFormData());
-      }, 100);
+      // Reset form data synchronously when closing
+      setFormData(getInitialFormData());
       return;
     }
     
