@@ -231,39 +231,16 @@ export function setupOpenGraph(app: Express) {
     console.log(`[Open Graph] Crawler detected for prompt ${promptId}, user-agent: ${userAgent}`);
     
     try {
-      // Check database connection first
-      let dbAvailable = false;
+      // Try to fetch prompt directly with better error handling
+      let prompt = null;
       try {
-        // Quick connection test with short timeout
-        const testQuery = pool.query('SELECT 1', [], { queryTimeout: 1000 });
-        await Promise.race([
-          testQuery,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('DB test timeout')), 1500))
-        ]);
-        dbAvailable = true;
-        console.log('[Open Graph] Database connection successful');
-      } catch (dbErr) {
-        console.error('[Open Graph] Database connection failed:', dbErr.message);
+        // Use storage directly without connection test to avoid the pool issue
+        prompt = await storage.getPromptWithUser(promptId);
+        console.log('[Open Graph] Successfully fetched prompt data');
+      } catch (dbErr: any) {
+        console.error('[Open Graph] Database error:', dbErr.message || dbErr);
+        // Don't throw, just continue with null prompt
       }
-      
-      if (!dbAvailable) {
-        console.log('[Open Graph] Skipping database fetch due to connection issue');
-        throw new Error('Database unavailable');
-      }
-      
-      // Add timeout to prevent hanging in production
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database timeout')), 5000)
-      );
-      
-      // Try to fetch prompt with timeout
-      const prompt = await Promise.race([
-        storage.getPromptWithUser(promptId),
-        timeoutPromise
-      ]).catch(err => {
-        console.error('[Open Graph] Database error:', err.message);
-        return null;
-      });
       
       if (!prompt) {
         console.log(`[Open Graph] Prompt ${promptId} not found or database unavailable`);
