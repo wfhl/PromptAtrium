@@ -1491,26 +1491,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Like toggle result:", isLiked);
       
       // Create activity for liking (only when liking, not unliking)
-      // Do this asynchronously to not block the response
+      // Do this synchronously but with error handling to not fail the like
       if (isLiked) {
-        // Run activity/notification creation in background
-        (async () => {
-          try {
-            const prompt = await storage.getPrompt(promptId);
-            if (prompt && prompt.isPublic) {
-              await storage.createActivity({
-                userId,
-                actionType: "liked_prompt",
-                targetId: promptId,
-                targetType: "prompt",
-                metadata: { promptName: prompt.name }
-              });
-              
-              // Create notification for prompt owner (if not liking own prompt)
-              if (prompt.userId !== userId) {
-                const liker = await storage.getUser(userId);
-                if (liker) {
-                  await storage.createNotification({
+        try {
+          const prompt = await storage.getPrompt(promptId);
+          if (prompt && prompt.isPublic) {
+            // Create activity
+            await storage.createActivity({
+              userId,
+              actionType: "liked_prompt",
+              targetId: promptId,
+              targetType: "prompt",
+              metadata: { promptName: prompt.name }
+            });
+            
+            // Create notification for prompt owner (if not liking own prompt)
+            if (prompt.userId && prompt.userId !== userId) {
+              const liker = await storage.getUser(userId);
+              if (liker) {
+                try {
+                  const notification = await storage.createNotification({
                     userId: prompt.userId,
                     type: "like",
                     message: `${liker.username || liker.firstName || 'Someone'} liked your prompt "${prompt.name}"`,
@@ -1520,14 +1520,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     isRead: false,
                     metadata: { promptName: prompt.name }
                   });
+                  console.log("Created like notification:", notification.id);
+                } catch (notifError) {
+                  console.error("Error creating like notification:", notifError);
+                  console.error("Notification data:", {
+                    userId: prompt.userId,
+                    type: "like",
+                    relatedUserId: userId,
+                    relatedPromptId: promptId
+                  });
                 }
               }
             }
-          } catch (activityError) {
-            // Log but don't fail the like operation
-            console.error("Error creating activity/notification:", activityError);
           }
-        })();
+        } catch (activityError) {
+          // Log but don't fail the like operation
+          console.error("Error creating activity:", activityError);
+        }
       }
       
       // Return success immediately
@@ -1590,24 +1599,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create activity and notification for favoriting (only when favoriting, not unfavoriting)
       if (isFavorited) {
-        // Run async to not block the response
-        (async () => {
-          try {
-            const prompt = await storage.getPrompt(promptId);
-            if (prompt && prompt.isPublic) {
-              await storage.createActivity({
-                userId,
-                actionType: "favorited_prompt",
-                targetId: promptId,
-                targetType: "prompt",
-                metadata: { promptName: prompt.name }
-              });
-              
-              // Create notification for prompt owner (if not bookmarking own prompt)
-              if (prompt.userId !== userId) {
-                const bookmarker = await storage.getUser(userId);
-                if (bookmarker) {
-                  await storage.createNotification({
+        try {
+          const prompt = await storage.getPrompt(promptId);
+          if (prompt && prompt.isPublic) {
+            // Create activity
+            await storage.createActivity({
+              userId,
+              actionType: "favorited_prompt",
+              targetId: promptId,
+              targetType: "prompt",
+              metadata: { promptName: prompt.name }
+            });
+            
+            // Create notification for prompt owner (if not bookmarking own prompt)
+            if (prompt.userId && prompt.userId !== userId) {
+              const bookmarker = await storage.getUser(userId);
+              if (bookmarker) {
+                try {
+                  const notification = await storage.createNotification({
                     userId: prompt.userId,
                     type: "fork", // Using 'fork' type for bookmark since there's no 'bookmark' type
                     message: `${bookmarker.username || bookmarker.firstName || 'Someone'} bookmarked your prompt "${prompt.name}"`,
@@ -1617,13 +1626,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     isRead: false,
                     metadata: { promptName: prompt.name, actionType: 'bookmark' }
                   });
+                  console.log("Created bookmark notification:", notification.id);
+                } catch (notifError) {
+                  console.error("Error creating bookmark notification:", notifError);
+                  console.error("Notification data:", {
+                    userId: prompt.userId,
+                    type: "fork",
+                    relatedUserId: userId,
+                    relatedPromptId: promptId
+                  });
                 }
               }
             }
-          } catch (notifError) {
-            console.error("Error creating bookmark notification:", notifError);
           }
-        })();
+        } catch (error) {
+          console.error("Error creating bookmark activity:", error);
+        }
       }
       
       res.json({ favorited: isFavorited });
@@ -1660,25 +1678,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updatePrompt(req.params.id, { isFeatured: newFeaturedStatus });
       
       // Create notification when prompt is featured (not when unfeatured)
-      // Run async to not block the response
       if (newFeaturedStatus && prompt.userId) {
-        (async () => {
-          try {
-            const adminUserId = (req.user as any).claims.sub;
-            await storage.createNotification({
-              userId: prompt.userId,
-              type: "approval", // Using 'approval' type for featured since there's no 'featured' type
-              message: `Congratulations! Your prompt "${prompt.name}" has been featured!`,
-              relatedUserId: adminUserId,
-              relatedPromptId: req.params.id,
-              relatedListId: null,
-              isRead: false,
-              metadata: { promptName: prompt.name, actionType: 'featured' }
-            });
-          } catch (notifError) {
-            console.error("Error creating featured notification:", notifError);
-          }
-        })();
+        try {
+          const adminUserId = (req.user as any).claims.sub;
+          const notification = await storage.createNotification({
+            userId: prompt.userId,
+            type: "approval", // Using 'approval' type for featured since there's no 'featured' type
+            message: `Congratulations! Your prompt "${prompt.name}" has been featured!`,
+            relatedUserId: adminUserId,
+            relatedPromptId: req.params.id,
+            relatedListId: null,
+            isRead: false,
+            metadata: { promptName: prompt.name, actionType: 'featured' }
+          });
+          console.log("Created featured notification:", notification.id);
+        } catch (notifError) {
+          console.error("Error creating featured notification:", notifError);
+          console.error("Notification data:", {
+            userId: prompt.userId,
+            type: "approval",
+            relatedUserId: adminUserId,
+            relatedPromptId: req.params.id
+          });
+        }
       }
       
       res.json({ featured: newFeaturedStatus });
@@ -2413,26 +2435,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const follow = await storage.followUser(currentUserId, targetUserId);
       
-      // Create notification in background to not block response
-      (async () => {
-        try {
-          const follower = await storage.getUser(currentUserId);
-          if (follower) {
-            await storage.createNotification({
-              userId: targetUserId,
-              type: "follow",
-              message: `${follower.username || follower.firstName || 'Someone'} started following you`,
-              relatedUserId: currentUserId,
-              relatedPromptId: null,
-              relatedListId: null,
-              isRead: false,
-              metadata: {}
-            });
-          }
-        } catch (notifError) {
-          console.error("Error creating follow notification:", notifError);
+      // Create notification synchronously with error handling
+      try {
+        const follower = await storage.getUser(currentUserId);
+        if (follower) {
+          const notification = await storage.createNotification({
+            userId: targetUserId,
+            type: "follow",
+            message: `${follower.username || follower.firstName || 'Someone'} started following you`,
+            relatedUserId: currentUserId,
+            relatedPromptId: null,
+            relatedListId: null,
+            isRead: false,
+            metadata: {}
+          });
+          console.log("Created follow notification:", notification.id);
         }
-      })();
+      } catch (notifError) {
+        console.error("Error creating follow notification:", notifError);
+        console.error("Notification data:", {
+          userId: targetUserId,
+          type: "follow",
+          relatedUserId: currentUserId
+        });
+      }
       
       res.json({ 
         following: true,
