@@ -766,6 +766,7 @@ export default function QuickPrompt() {
             negative_prompt: '',
             tags: [subject, character === 'no-character' ? null : character].filter(Boolean),
             template_name: dbRuleTemplates.find(t => t.id.toString() === template)?.name,
+            promptStyle: dbRuleTemplates.find(t => t.id.toString() === template)?.name || 'Custom',
             character_preset: character === 'no-character' ? null : character
           }}
           onShare={(shareData) => {

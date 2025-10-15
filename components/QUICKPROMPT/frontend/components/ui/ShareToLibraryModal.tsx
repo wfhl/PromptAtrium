@@ -30,6 +30,7 @@ interface ShareToLibraryModalProps {
     negative_prompt?: string;
     tags?: string[];
     template_name?: string;
+    promptStyle?: string;
     character_preset?: string;
     example_images?: string[];
   } | null;
@@ -361,6 +362,21 @@ Tags: ${tags.join(', ')}
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
+
+          {/* Prompt Style */}
+          {promptData.promptStyle && (
+            <div className="space-y-2">
+              <Label>Prompt Style</Label>
+              <div className="p-3 bg-purple-900/20 border border-purple-700/30 rounded-md text-sm">
+                <div className="text-purple-200 flex items-center gap-2">
+                  <span className="font-medium">Template:</span>
+                  <Badge variant="secondary" className="bg-purple-700/50 text-purple-100">
+                    {promptData.promptStyle}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-2">
