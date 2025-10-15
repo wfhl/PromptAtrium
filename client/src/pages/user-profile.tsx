@@ -55,6 +55,14 @@ export default function UserProfile() {
     }
   }, [location]);
 
+  // Invalidate queries when username changes to ensure fresh data
+  useEffect(() => {
+    // Invalidate all user-related queries when switching profiles
+    queryClient.invalidateQueries({ queryKey: [`/api/profile`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/prompts`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/users`] });
+  }, [username]);
+
   // Fetch user profile
   const { data: profile, isLoading: profileLoading } = useQuery<User>({
     queryKey: [`/api/profile/${username}`],
@@ -63,7 +71,7 @@ export default function UserProfile() {
 
   // Fetch user's public prompts
   const { data: prompts = [], isLoading: promptsLoading } = useQuery({
-    queryKey: [`/api/prompts`],
+    queryKey: [`/api/prompts`, profile?.id, 'public'],
     queryFn: async () => {
       const response = await fetch(`/api/prompts?userId=${profile?.id}&isPublic=true`);
       if (!response.ok) throw new Error("Failed to fetch prompts");
