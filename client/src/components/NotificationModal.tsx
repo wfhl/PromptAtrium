@@ -10,14 +10,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import { NotificationSelect } from "@shared/schema";
+import { Notification } from "@shared/schema";
 
 interface NotificationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const getNotificationIcon = (type: NotificationSelect["type"]) => {
+const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
     case "follow":
       return <UserPlus className="h-4 w-4" />;
@@ -25,6 +25,8 @@ const getNotificationIcon = (type: NotificationSelect["type"]) => {
       return <Heart className="h-4 w-4 fill-red-500 text-red-500" />;
     case "fork":
       return <GitFork className="h-4 w-4" />;
+    case "image_contribution":
+      return <Bell className="h-4 w-4 text-blue-500" />; // TODO: add a proper image icon
     default:
       return <Bell className="h-4 w-4" />;
   }
@@ -34,16 +36,14 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const { data: notifications, isLoading } = useQuery<NotificationSelect[]>({
+  const { data: notifications, isLoading } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
     enabled: open,
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      return await apiRequest(`/api/notifications/${notificationId}/read`, {
-        method: "PUT",
-      });
+      return await apiRequest(`/api/notifications/${notificationId}/read`, "PUT");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
@@ -53,9 +53,7 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/notifications/read-all", {
-        method: "PUT",
-      });
+      return await apiRequest("/api/notifications/read-all", "PUT");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
@@ -66,7 +64,7 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
     },
   });
 
-  const handleNotificationClick = (notification: NotificationSelect) => {
+  const handleNotificationClick = (notification: Notification) => {
     // Mark as read if unread
     if (!notification.isRead) {
       markAsReadMutation.mutate(notification.id);
