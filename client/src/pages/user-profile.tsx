@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,15 +37,23 @@ import {
 
 export default function UserProfile() {
   const { username } = useParams();
+  const [location] = useLocation();
   const { toast } = useToast();
   const [isFollowing, setIsFollowing] = useState(false);
   
   // Get tab from URL query parameter
-  const urlParams = new URLSearchParams(window.location.search);
-  const tabParam = urlParams.get('tab') as "prompts" | "followers" | "following" | null;
-  const [activeSection, setActiveSection] = useState<"prompts" | "followers" | "following">(
-    tabParam && ["prompts", "followers", "following"].includes(tabParam) ? tabParam : "prompts"
-  );
+  const [activeSection, setActiveSection] = useState<"prompts" | "followers" | "following">("prompts");
+
+  // Update active section when URL changes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab') as "prompts" | "followers" | "following" | null;
+    if (tabParam && ["prompts", "followers", "following"].includes(tabParam)) {
+      setActiveSection(tabParam);
+    } else {
+      setActiveSection("prompts");
+    }
+  }, [location]);
 
   // Fetch user profile
   const { data: profile, isLoading: profileLoading } = useQuery<User>({
