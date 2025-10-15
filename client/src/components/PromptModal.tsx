@@ -232,24 +232,24 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   });
 
   // Fetch option data from database
-  const { data: categories = [] } = useQuery<any[]>({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<any[]>({
     queryKey: ["/api/categories"],
-    enabled: open,
+    // Always fetch so options are ready when modal opens
   });
 
-  const { data: promptTypes = [] } = useQuery<any[]>({
+  const { data: promptTypes = [], isLoading: promptTypesLoading } = useQuery<any[]>({
     queryKey: ["/api/prompt-types"],
-    enabled: open,
+    // Always fetch so options are ready when modal opens
   });
 
-  const { data: promptStyles = [] } = useQuery<any[]>({
+  const { data: promptStyles = [], isLoading: promptStylesLoading } = useQuery<any[]>({
     queryKey: ["/api/prompt-styles"],
-    enabled: open,
+    // Always fetch so options are ready when modal opens
   });
 
-  const { data: intendedGenerators = [] } = useQuery<any[]>({
+  const { data: intendedGenerators = [], isLoading: generatorsLoading } = useQuery<any[]>({
     queryKey: ["/api/intended-generators"],
-    enabled: open,
+    // Always fetch so options are ready when modal opens
   });
 
   const { data: recommendedModels = [] } = useQuery<any[]>({
@@ -684,6 +684,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+  
+  // Show loading spinner while fetching options in edit mode
+  const isLoadingOptions = mode === "edit" && (categoriesLoading || promptTypesLoading || promptStylesLoading || generatorsLoading);
 
   return (
     <>
@@ -702,6 +705,11 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           )}
         </DialogHeader>
 
+        {isLoadingOptions ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-6 pt-1">
           <Card className="mb-6 bg-gradient-to-br from-cyan-400/20 via-purple-400/20 to-purple-400/20">
                        <CardContent className="space-y-3 pt-3">
@@ -721,8 +729,8 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
-                  {/* Only show extract button when not from generator and in create mode */}
-                  {mode === 'create' && !prompt?.isFromGenerator && (
+                  {/* Only show extract button in create mode */}
+                  {mode === 'create' && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -1134,6 +1142,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           </CardContent>
             </Card>
         </form>
+        )}
       </DialogContent>
     </Dialog>
 
