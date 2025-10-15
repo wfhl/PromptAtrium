@@ -1717,9 +1717,11 @@ export class DatabaseStorage implements IStorage {
 
   // Notification operations
   async createNotification(notification: InsertNotification): Promise<Notification> {
+    // Generate a short ID similar to prompt IDs (10 chars hex)
+    const id = randomBytes(5).toString('hex');
     const [newNotification] = await db
       .insert(notifications)
-      .values(notification)
+      .values({ ...notification, id })
       .returning();
     
     return newNotification;
