@@ -40,7 +40,7 @@ router.get("/saved-prompts/:id", async (req, res) => {
 // Create a new saved prompt
 router.post("/saved-prompts", async (req, res) => {
   try {
-    const { name, positive_prompt, negative_prompt, tags } = req.body;
+    const { name, positive_prompt, negative_prompt, tags, promptStyle } = req.body;
     
     if (!name || !positive_prompt) {
       return res.status(400).json({ error: "Name and positive prompt are required" });
@@ -50,7 +50,8 @@ router.post("/saved-prompts", async (req, res) => {
       name,
       positive_prompt,
       negative_prompt: negative_prompt || "",
-      tags: tags || []
+      tags: tags || [],
+      promptStyle: promptStyle || ""
     });
     
     res.status(201).json(newPrompt);
@@ -68,7 +69,7 @@ router.put("/saved-prompts/:id", async (req, res) => {
       return res.status(400).json({ error: "Invalid prompt ID" });
     }
     
-    const { name, positive_prompt, negative_prompt, tags } = req.body;
+    const { name, positive_prompt, negative_prompt, tags, promptStyle } = req.body;
     
     if (!name || !positive_prompt) {
       return res.status(400).json({ error: "Name and positive prompt are required" });
@@ -78,7 +79,8 @@ router.put("/saved-prompts/:id", async (req, res) => {
       name,
       positive_prompt,
       negative_prompt: negative_prompt || "",
-      tags: tags || []
+      tags: tags || [],
+      promptStyle: promptStyle || ""
     });
     
     if (!updatedPrompt) {
