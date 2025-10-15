@@ -22,6 +22,7 @@ import {
   prompt_components,
   aesthetics,
   promptHistory,
+  promptImageContributions,
   type User,
   type UpsertUser,
   type Prompt,
@@ -85,6 +86,8 @@ import {
   type InsertCodexContribution,
   type CodexAssembledString,
   type InsertCodexAssembledString,
+  type PromptImageContribution,
+  type InsertPromptImageContribution,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray, isNull } from "drizzle-orm";
@@ -791,6 +794,12 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Use the edit prompt endpoint to add images to your own prompts");
     }
 
+    // Get contributor details
+    const [contributor] = await db.select().from(users).where(eq(users.id, contributorId));
+    if (!contributor) {
+      throw new Error("Contributor not found");
+    }
+
     // Merge the new images with existing ones
     const existingImages = prompt.exampleImagesUrl || [];
     const updatedImages = [...existingImages, ...imageUrls];
@@ -800,6 +809,17 @@ export class DatabaseStorage implements IStorage {
     if (updatedImages.length > maxImages) {
       throw new Error(`Prompt cannot have more than ${maxImages} example images`);
     }
+
+    // Store each contribution in the contributions table
+    const contributionPromises = imageUrls.map(imageUrl => 
+      db.insert(promptImageContributions).values({
+        promptId: promptId,
+        imageUrl: imageUrl,
+        contributorId: contributorId,
+        isApproved: true, // Auto-approve for now
+      })
+    );
+    await Promise.all(contributionPromises);
 
     // Update the prompt with new images
     const [updatedPrompt] = await db
@@ -811,7 +831,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(prompts.id, promptId))
       .returning();
 
-    // Log the contribution as an activity (optional, for tracking contributions)
+    // Create a notification for the prompt owner
+    const contributorUsername = contributor.username || contributor.email || 'Someone';
+    await db.insert(notifications).values({
+      userId: prompt.userId,
+      type: 'image_contribution',
+      message: `${contributorUsername} added ${imageUrls.length} example image${imageUrls.length > 1 ? 's' : ''} to your prompt "${prompt.name}"`,
+      relatedUserId: contributorId,
+      relatedPromptId: promptId,
+      isRead: false,
+      metadata: {
+        imageCount: imageUrls.length,
+        imageUrls: imageUrls,
+        contributorUsername: contributorUsername,
+        promptName: prompt.name
+      }
+    });
+
+    // Log the contribution as an activity
     await db.insert(activities).values({
       userId: contributorId,
       actionType: "shared_prompt",
