@@ -440,12 +440,13 @@ export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id), // Who receives the notification
   type: varchar("type", { 
-    enum: ["follow", "like", "fork", "approval", "contribution_approved", "comment", "mention"] 
+    enum: ["follow", "like", "fork", "approval", "contribution_approved", "comment", "mention", "image_contribution"] 
   }).notNull(),
   message: text("message").notNull(),
   relatedUserId: varchar("related_user_id").references(() => users.id), // Who triggered the notification
   relatedPromptId: char("related_prompt_id", { length: 10 }).references(() => prompts.id), // Related prompt if applicable
   relatedListId: varchar("related_list_id").references(() => codexUserLists.id), // For codex list approvals
+  relatedImageId: varchar("related_image_id"), // For image contribution notifications
   isRead: boolean("is_read").default(false),
   metadata: jsonb("metadata"), // Additional notification-specific data
   createdAt: timestamp("created_at").defaultNow(),
@@ -550,6 +551,22 @@ export const codexAssembledStrings = pgTable("codex_assembled_strings", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Prompt image contributions table - tracks images added by other users
+export const promptImageContributions = pgTable("prompt_image_contributions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id),
+  imageUrl: varchar("image_url").notNull(),
+  contributorId: varchar("contributor_id").notNull().references(() => users.id),
+  caption: text("caption"),
+  isApproved: boolean("is_approved").default(true), // Auto-approve for now, can add moderation later
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  // Index for fetching images for a prompt
+  index("idx_prompt_contributions_prompt").on(table.promptId),
+  // Index for fetching user's contributions
+  index("idx_prompt_contributions_contributor").on(table.contributorId),
+]);
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -794,6 +811,11 @@ export const insertCodexAssembledStringSchema = createInsertSchema(codexAssemble
   updatedAt: true,
 });
 
+export const insertPromptImageContributionSchema = createInsertSchema(promptImageContributions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -904,6 +926,10 @@ export type InsertCodexContribution = z.infer<typeof insertCodexContributionSche
 export type CodexContribution = typeof codexContributions.$inferSelect;
 export type InsertCodexAssembledString = z.infer<typeof insertCodexAssembledStringSchema>;
 export type CodexAssembledString = typeof codexAssembledStrings.$inferSelect;
+
+// Image contribution types
+export type PromptImageContribution = typeof promptImageContributions.$inferSelect;
+export type InsertPromptImageContribution = z.infer<typeof insertPromptImageContributionSchema>;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;
