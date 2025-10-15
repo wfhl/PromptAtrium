@@ -1550,7 +1550,7 @@ export class DatabaseStorage implements IStorage {
                 if (prompt) {
                   activity.targetEntity = {
                     id: prompt.id,
-                    name: prompt.title || 'Untitled Prompt',
+                    name: prompt.name || 'Untitled Prompt',
                     isPublic: prompt.isPublic
                   };
                 }
@@ -1630,7 +1630,7 @@ export class DatabaseStorage implements IStorage {
                 if (prompt) {
                   activity.targetEntity = {
                     id: prompt.id,
-                    name: prompt.title || 'Untitled Prompt',
+                    name: prompt.name || 'Untitled Prompt',
                     isPublic: prompt.isPublic
                   };
                 }

@@ -339,10 +339,10 @@ export default function Dashboard() {
     const targetUserName = activity.targetEntity?.username || activity.targetEntity?.firstName || "someone";
     const targetUserLink = activity.targetEntity && activity.targetId && activity.targetType === 'user' ? (
       <Link href={`/user/${activity.targetEntity.username || activity.targetId}`} className="font-medium hover:underline">
-        {targetUserName}
+        @{targetUserName}
       </Link>
     ) : (
-      <span className="font-medium">{targetUserName}</span>
+      <span className="font-medium">@{targetUserName}</span>
     );
 
     switch (activity.actionType) {
