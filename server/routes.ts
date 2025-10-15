@@ -814,16 +814,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Prompt not found" });
       }
       
+      // Add compatibility fields for frontend components that expect different field names
+      const compatiblePrompt = {
+        ...prompt,
+        // Add fields expected by PromptSaveDialog and other components
+        positive_prompt: prompt.promptContent,
+        negative_prompt: prompt.negativePrompt,
+        folder_id: prompt.collectionId,
+        visibility: prompt.isPublic ? 'public' : 'private',
+        is_favorite: false,
+        template_used: prompt.promptStyle,
+        example_images: prompt.exampleImagesUrl,
+        category_id: prompt.category
+      };
+      
       // In development, normalize image URLs for display
-      if (process.env.NODE_ENV === 'development' && prompt) {
-        const normalizedPrompt = {
-          ...prompt,
-          imageUrls: prompt.imageUrls?.map(url => resolvePublicImageUrl(url))
-        };
-        res.json(normalizedPrompt);
-      } else {
-        res.json(prompt);
+      if (process.env.NODE_ENV === 'development') {
+        compatiblePrompt.imageUrls = prompt.imageUrls?.map(url => resolvePublicImageUrl(url));
+        compatiblePrompt.exampleImagesUrl = prompt.exampleImagesUrl?.map(url => resolvePublicImageUrl(url));
+        compatiblePrompt.example_images = compatiblePrompt.exampleImagesUrl;
       }
+      
+      res.json(compatiblePrompt);
     } catch (error) {
       console.error("Error fetching prompt:", error);
       res.status(500).json({ message: "Failed to fetch prompt" });
@@ -861,6 +873,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating prompt:", error);
       res.status(500).json({ message: "Failed to create prompt" });
+    }
+  });
+
+  // Compatibility endpoint to get saved prompts for the user
+  app.get('/api/saved-prompts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const prompts = await storage.getPrompts({ userId });
+      
+      // Map to frontend expected format
+      const mappedPrompts = prompts.map(prompt => ({
+        ...prompt,
+        positive_prompt: prompt.promptContent,
+        negative_prompt: prompt.negativePrompt,
+        folder_id: prompt.collectionId,
+        visibility: prompt.isPublic ? 'public' : 'private',
+        is_favorite: false,
+        template_used: prompt.promptStyle,
+        example_images: prompt.exampleImagesUrl
+      }));
+      
+      res.json(mappedPrompts);
+    } catch (error) {
+      console.error("Error fetching saved prompts:", error);
+      res.status(500).json({ message: "Failed to fetch saved prompts" });
+    }
+  });
+
+  // Compatibility endpoint for saved-prompts (maps to prompts table)
+  app.post('/api/saved-prompts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Map frontend field names to database schema
+      const mappedData = {
+        name: req.body.name,
+        description: req.body.description,
+        promptContent: req.body.positive_prompt || req.body.promptContent,
+        negativePrompt: req.body.negative_prompt || req.body.negativePrompt,
+        tags: req.body.tags || [],
+        collectionId: req.body.folder_id || req.body.collectionId || null,
+        isPublic: req.body.visibility === 'public' || req.body.isPublic || false,
+        status: 'published',
+        userId,
+        category: req.body.category || req.body.category_id?.toString(),
+        promptStyle: req.body.template_used || req.body.promptStyle,
+        exampleImagesUrl: req.body.example_images || req.body.exampleImagesUrl || [],
+        technicalParams: req.body.metadata || req.body.technicalParams || {}
+      };
+      
+      const promptData = insertPromptSchema.parse(mappedData);
+      const prompt = await storage.createPrompt(promptData);
+      
+      // Map response back to frontend expected format
+      const response = {
+        ...prompt,
+        positive_prompt: prompt.promptContent,
+        negative_prompt: prompt.negativePrompt,
+        folder_id: prompt.collectionId,
+        visibility: prompt.isPublic ? 'public' : 'private',
+        is_favorite: false,
+        template_used: prompt.promptStyle,
+        example_images: prompt.exampleImagesUrl
+      };
+      
+      res.status(201).json(response);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
+        return res.status(400).json({ message: "Invalid prompt data", errors: error.errors });
+      }
+      console.error("Error creating saved prompt:", error);
+      res.status(500).json({ message: "Failed to save prompt" });
+    }
+  });
+
+  // Compatibility endpoint for updating saved prompts
+  app.put('/api/prompts/user/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const promptId = req.params.id;
+      
+      const prompt = await storage.getPrompt(promptId);
+      if (!prompt) {
+        return res.status(404).json({ message: "Prompt not found" });
+      }
+      
+      if (prompt.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to edit this prompt" });
+      }
+      
+      // Map frontend field names to database schema
+      const mappedData = {
+        name: req.body.name,
+        description: req.body.description,
+        promptContent: req.body.positive_prompt || req.body.promptContent,
+        negativePrompt: req.body.negative_prompt || req.body.negativePrompt,
+        tags: req.body.tags || [],
+        collectionId: req.body.folder_id || req.body.collectionId || null,
+        isPublic: req.body.visibility === 'public' || req.body.isPublic || false,
+        category: req.body.category || req.body.category_id?.toString(),
+        promptStyle: req.body.template_used || req.body.promptStyle,
+        exampleImagesUrl: req.body.example_images || req.body.exampleImagesUrl || [],
+        technicalParams: req.body.metadata || req.body.technicalParams || {}
+      };
+      
+      const promptData = insertPromptSchema.partial().parse(mappedData);
+      const updatedPrompt = await storage.updatePrompt(promptId, promptData);
+      
+      // Map response back to frontend expected format
+      const response = {
+        ...updatedPrompt,
+        positive_prompt: updatedPrompt.promptContent,
+        negative_prompt: updatedPrompt.negativePrompt,
+        folder_id: updatedPrompt.collectionId,
+        visibility: updatedPrompt.isPublic ? 'public' : 'private',
+        is_favorite: false,
+        template_used: updatedPrompt.promptStyle,
+        example_images: updatedPrompt.exampleImagesUrl
+      };
+      
+      res.json(response);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
+        return res.status(400).json({ message: "Invalid prompt data", errors: error.errors });
+      }
+      console.error("Error updating prompt:", error);
+      res.status(500).json({ message: "Failed to update prompt" });
     }
   });
 
