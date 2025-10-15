@@ -724,12 +724,14 @@ export default function QuickPrompt() {
                   size="sm"
                   className="flex-1 border-gray-700 bg-gray-800/50 text-primary-400 hover:bg-gray-800 hover:text-primary-300"
                   onClick={() => {
+                    const templateName = dbRuleTemplates.find(t => t.id.toString() === template)?.name || 'template';
                     const promptData = {
                       name: subject ? `Quick Prompt: ${subject.slice(0, 30)}${subject.length > 30 ? '...' : ''}` : 'Quick Prompt',
                       positive_prompt: generatedPrompt,
                       negative_prompt: '',
-                      description: `Generated using ${dbRuleTemplates.find(t => t.id.toString() === template)?.name || 'template'} template`,
+                      description: `Generated using ${templateName} template`,
                       tags: [subject, character === 'no-character' ? null : character].filter(Boolean),
+                      template_used: templateName
                     };
                     saveToUserLibraryMutation.mutate(promptData);
                   }}
@@ -777,7 +779,7 @@ export default function QuickPrompt() {
               description: shareData.description,
               tags: shareData.tags,
               category_id: shareData.category_id,
-              promptStyle: dbRuleTemplates.find(t => t.id.toString() === template)?.name || 'Custom',
+              template_used: dbRuleTemplates.find(t => t.id.toString() === template)?.name || 'Custom',
               user_id: "1"
             });
           }}

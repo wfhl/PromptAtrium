@@ -1610,7 +1610,7 @@ export default function QuickPromptPlay() {
               negativePrompt: '',
               description: shareData.description,
               tags: shareData.tags,
-              promptStyle: selectedTemplate?.name || 'Custom', // Save the template name as prompt style
+              template_used: selectedTemplate?.name || 'Custom', // Save the template name as template_used
               category: shareData.category_id ? promptCategories.find(c => c.id === shareData.category_id)?.name : undefined,
               status: 'published',
               isPublic: false,

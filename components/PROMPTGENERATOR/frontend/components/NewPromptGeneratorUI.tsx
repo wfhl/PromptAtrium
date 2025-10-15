@@ -3776,7 +3776,8 @@ setSelectedTemplates(prev => {
               description: shareData.description,
               tags: shareData.tags,
               category_id: shareData.category_id,
-              user_id: "1"
+              user_id: "1",
+              template_used: currentSaveResult.templateName || 'Enhanced Template'
             });
           }}
           categories={promptCategories}
