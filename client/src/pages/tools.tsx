@@ -113,7 +113,7 @@ export default function Tools() {
     },
     {
       id: "aspect-ratio",
-      title: "AR Calculator",
+      title: "Aspect Ratio Calculator",
       description: "Calculate aspect ratios",
       icon: RatioIcon,
       color: "text-orange-500",
@@ -122,7 +122,7 @@ export default function Tools() {
     {
       id: "wordsmith-codex",
       title: "Wordsmith Codex",
-      description: "Explore word meanings",
+      description: "Browse and Assemble Keyword Terms",
       icon: BookOpen,
       color: "text-red-500",
       link: "/codex",

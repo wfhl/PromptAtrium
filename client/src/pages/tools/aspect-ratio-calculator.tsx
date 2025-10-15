@@ -2,6 +2,7 @@ import AspectRatioCalculator from "@/components/AspectRatioCalculator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+import SocialMediaGuide from "@/components/SocialMediaGuide";
 
 export default function AspectRatioCalculatorPage() {
   const { user } = useAuth();
@@ -35,6 +36,8 @@ export default function AspectRatioCalculatorPage() {
           <AspectRatioCalculator />
         </CardContent>
       </Card>
+      {/* Social Media Guide */}
+      <SocialMediaGuide />
     </div>
   );
 }
