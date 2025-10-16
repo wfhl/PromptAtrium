@@ -25,8 +25,6 @@ const getNotificationIcon = (type: Notification["type"]) => {
       return <Heart className="h-4 w-4 fill-red-500 text-red-500" />;
     case "fork":
       return <GitFork className="h-4 w-4 text-purple-500" />;
-    case "bookmark":
-      return <Bookmark className="h-4 w-4 text-green-500" />;
     case "approval": // For featured prompts
       return <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />;
     case "image_contribution":
@@ -68,20 +66,45 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
     },
   });
 
-  const handleNotificationClick = (notification: Notification) => {
-    // Mark as read if unread
-    if (!notification.isRead) {
-      markAsReadMutation.mutate(notification.id);
+  // Auto-mark notifications as seen when modal opens
+  useEffect(() => {
+    if (open && notifications && notifications.length > 0) {
+      const unreadNotifications = notifications.filter(n => !n.isRead);
+      if (unreadNotifications.length > 0) {
+        // Mark all notifications as read when modal opens
+        markAllAsReadMutation.mutate();
+      }
     }
+  }, [open]);
 
-    // Navigate based on notification type
-    if (notification.relatedPromptId) {
-      onOpenChange(false);
-      setLocation(`/prompts/${notification.relatedPromptId}`);
-    } else if (notification.relatedUserId) {
-      onOpenChange(false);
-      setLocation(`/profile/${notification.relatedUserId}`);
-    }
+  const renderNotificationMessage = (notification: Notification) => {
+    const message = notification.message;
+    // Parse message to find prompt names in quotes and make them clickable
+    const parts = message.split(/([""].*?[""])/g);
+    
+    return parts.map((part, index) => {
+      // Check if this part is a quoted prompt name
+      if (part.match(/^[""].*[""]$/)) {
+        const promptName = part.slice(1, -1); // Remove quotes
+        if (notification.relatedPromptId) {
+          return (
+            <Link 
+              key={index}
+              href={`/prompt/${notification.relatedPromptId}`}
+              className="font-semibold text-primary hover:underline"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                onOpenChange(false);
+              }}
+            >
+              "{promptName}"
+            </Link>
+          );
+        }
+        return <span key={index} className="font-semibold">"{promptName}"</span>;
+      }
+      return <span key={index}>{part}</span>;
+    });
   };
 
   const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
@@ -139,8 +162,7 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-secondary/50 ${
+                  className={`flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-secondary/50 ${
                     !notification.isRead ? "bg-secondary/20" : ""
                   }`}
                   data-testid={`notification-item-${notification.id}`}
@@ -151,10 +173,10 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
                   
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm ${!notification.isRead ? "font-semibold" : ""}`}>
-                      {notification.message}
+                      {renderNotificationMessage(notification)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                      {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) : 'Recently'}
                     </p>
                   </div>
 
