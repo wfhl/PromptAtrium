@@ -522,7 +522,7 @@ export default function CollectionView() {
               <PromptCard
                 key={prompt.id}
                 prompt={prompt}
-                showActions={isOwner}
+                showActions={false}
                 onEdit={handleEditPrompt}
                 isSelectable={isBulkMode && isOwner}
                 isSelected={selectedPromptIds.has(prompt.id)}
