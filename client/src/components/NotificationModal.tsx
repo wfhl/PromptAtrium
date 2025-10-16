@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, Heart, GitFork, UserPlus, Check, X } from "lucide-react";
+import { Bell, Heart, GitFork, UserPlus, Check, X, Bookmark, Star, Image } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,13 +20,17 @@ interface NotificationModalProps {
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
     case "follow":
-      return <UserPlus className="h-4 w-4" />;
+      return <UserPlus className="h-4 w-4 text-blue-500" />;
     case "like":
       return <Heart className="h-4 w-4 fill-red-500 text-red-500" />;
     case "fork":
-      return <GitFork className="h-4 w-4" />;
+      return <GitFork className="h-4 w-4 text-purple-500" />;
+    case "bookmark":
+      return <Bookmark className="h-4 w-4 text-green-500" />;
+    case "approval": // For featured prompts
+      return <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />;
     case "image_contribution":
-      return <Bell className="h-4 w-4 text-blue-500" />; // TODO: add a proper image icon
+      return <Image className="h-4 w-4 text-cyan-500" />;
     default:
       return <Bell className="h-4 w-4" />;
   }

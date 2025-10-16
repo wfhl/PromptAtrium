@@ -1618,20 +1618,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 try {
                   const notification = await storage.createNotification({
                     userId: prompt.userId,
-                    type: "fork", // Using 'fork' type for bookmark since there's no 'bookmark' type
+                    type: "bookmark",
                     message: `${bookmarker.username || bookmarker.firstName || 'Someone'} bookmarked your prompt "${prompt.name}"`,
                     relatedUserId: userId,
                     relatedPromptId: promptId,
                     relatedListId: null,
                     isRead: false,
-                    metadata: { promptName: prompt.name, actionType: 'bookmark' }
+                    metadata: { promptName: prompt.name }
                   });
                   console.log("Created bookmark notification:", notification.id);
                 } catch (notifError) {
                   console.error("Error creating bookmark notification:", notifError);
                   console.error("Notification data:", {
                     userId: prompt.userId,
-                    type: "fork",
+                    type: "bookmark",
                     relatedUserId: userId,
                     relatedPromptId: promptId
                   });

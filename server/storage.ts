@@ -777,7 +777,30 @@ export class DatabaseStorage implements IStorage {
       userId,
     };
 
-    return await this.createPrompt(forkedPrompt);
+    const newPrompt = await this.createPrompt(forkedPrompt);
+    
+    // Create notification when someone forks a prompt (if the original has an owner)
+    if (originalPrompt.userId && originalPrompt.userId !== userId) {
+      const [forker] = await db.select().from(users).where(eq(users.id, userId));
+      if (forker) {
+        await this.createNotification({
+          userId: originalPrompt.userId,
+          type: "fork",
+          message: `${forker.username || forker.firstName || 'Someone'} forked your prompt "${originalPrompt.name}"`,
+          relatedUserId: userId,
+          relatedPromptId: newPrompt.id,
+          relatedListId: null,
+          isRead: false,
+          metadata: { 
+            originalPromptId: originalPrompt.id,
+            originalPromptName: originalPrompt.name,
+            forkedPromptId: newPrompt.id
+          }
+        });
+      }
+    }
+
+    return newPrompt;
   }
 
   async contributeImagesToPrompt(promptId: string, imageUrls: string[], contributorId: string): Promise<Prompt> {
@@ -1185,6 +1208,26 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(prompts.id, promptId));
       
+      // Create notification when someone likes a prompt (not when unliking)
+      if (isLiked) {
+        const [prompt] = await tx.select().from(prompts).where(eq(prompts.id, promptId));
+        if (prompt && prompt.userId && prompt.userId !== userId) {
+          const [liker] = await tx.select().from(users).where(eq(users.id, userId));
+          if (liker) {
+            await this.createNotification({
+              userId: prompt.userId,
+              type: "like",
+              message: `${liker.username || liker.firstName || 'Someone'} liked your prompt "${prompt.name}"`,
+              relatedUserId: userId,
+              relatedPromptId: promptId,
+              relatedListId: null,
+              isRead: false,
+              metadata: { promptName: prompt.name }
+            });
+          }
+        }
+      }
+      
       return isLiked;
     }).catch((error: any) => {
       console.error("Error toggling like - Full error:", error);
@@ -1418,6 +1461,21 @@ export class DatabaseStorage implements IStorage {
       targetId: followingId,
       targetType: "user",
     });
+    
+    // Create notification when someone follows a user
+    const [follower] = await db.select().from(users).where(eq(users.id, followerId));
+    if (follower) {
+      await this.createNotification({
+        userId: followingId,
+        type: "follow",
+        message: `${follower.username || follower.firstName || 'Someone'} started following you`,
+        relatedUserId: followerId,
+        relatedPromptId: null,
+        relatedListId: null,
+        isRead: false,
+        metadata: { followerUsername: follower.username }
+      });
+    }
     
     return follow;
   }
