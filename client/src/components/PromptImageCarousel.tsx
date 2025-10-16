@@ -48,8 +48,11 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
               let imageSrc = imageUrl;
               if (imageUrl.startsWith('http')) {
                 imageSrc = imageUrl;
-              } else if (imageUrl.startsWith('/api/dev-storage/')) {
-                // Dev storage paths should be used directly
+              } else if (imageUrl.startsWith('/objects/')) {
+                // Object storage paths need the serve prefix
+                imageSrc = `/api/objects/serve${imageUrl}`;
+              } else if (imageUrl.startsWith('/api/')) {
+                // API paths should be used directly (dev-storage, etc)
                 imageSrc = imageUrl;
               } else if (imageUrl.startsWith('/')) {
                 // Other absolute paths
@@ -74,8 +77,11 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
               let imageSrc = imageUrl;
               if (imageUrl.startsWith('http')) {
                 imageSrc = imageUrl;
-              } else if (imageUrl.startsWith('/api/dev-storage/')) {
-                // Dev storage paths should be used directly
+              } else if (imageUrl.startsWith('/objects/')) {
+                // Object storage paths need the serve prefix
+                imageSrc = `/api/objects/serve${imageUrl}`;
+              } else if (imageUrl.startsWith('/api/')) {
+                // API paths should be used directly (dev-storage, etc)
                 imageSrc = imageUrl;
               } else if (imageUrl.startsWith('/')) {
                 // Other absolute paths
@@ -100,7 +106,9 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
             // Set the img.src with the same logic
             if (imageUrl.startsWith('http')) {
               img.src = imageUrl;
-            } else if (imageUrl.startsWith('/api/dev-storage/')) {
+            } else if (imageUrl.startsWith('/objects/')) {
+              img.src = `/api/objects/serve${imageUrl}`;
+            } else if (imageUrl.startsWith('/api/')) {
               img.src = imageUrl;
             } else if (imageUrl.startsWith('/')) {
               img.src = imageUrl;

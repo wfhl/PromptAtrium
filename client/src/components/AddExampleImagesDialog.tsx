@@ -203,15 +203,9 @@ export function AddExampleImagesDialog({ open, onOpenChange, prompt }: AddExampl
           }
           const updateData = await updateResponse.json();
           
-          // Use the correct path format for displaying images
-          // Convert /api/dev-storage/uploads/ paths to the format expected by carousel
-          let finalPath = updateData.normalizedPath || uploadedImagePath;
-          if (finalPath.startsWith('/api/dev-storage/')) {
-            // Keep the dev storage path as is - it will be served correctly by the backend
-            uploadedUrls.push(finalPath);
-          } else {
-            uploadedUrls.push(finalPath);
-          }
+          // Use the objectPath returned by the API which is properly normalized
+          const finalPath = updateData.objectPath || uploadedImagePath;
+          uploadedUrls.push(finalPath);
 
           // Mark image as uploaded
           setImages(prev => prev.map(img => 
