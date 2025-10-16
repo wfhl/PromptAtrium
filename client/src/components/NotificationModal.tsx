@@ -55,13 +55,26 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/notifications/read-all", "PUT");
+      const response = await apiRequest("/api/notifications/read-all", "PUT");
+      if (!response.ok) {
+        throw new Error("Failed to mark notifications as read");
+      }
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+      queryClient.refetchQueries({ queryKey: ["/api/notifications/unread-count"] });
       toast({
         description: "All notifications marked as read",
+      });
+    },
+    onError: (error) => {
+      console.error("Error marking notifications as read:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark notifications as read",
+        variant: "destructive",
       });
     },
   });
