@@ -425,7 +425,7 @@ export default function Community() {
                 <PromptCard
                   key={prompt.id}
                   prompt={prompt}
-                  showActions={true}
+                  showActions={false}
                   isCommunityPage={true}
                 />
               ))
