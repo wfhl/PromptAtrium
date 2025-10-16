@@ -43,9 +43,25 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
             img.onload = () => {
               const aspectRatio = img.naturalWidth / img.naturalHeight;
               const calculatedWidth = Math.round(FIXED_HEIGHT * aspectRatio);
+              
+              // Handle different image URL formats
+              let imageSrc = imageUrl;
+              if (imageUrl.startsWith('http')) {
+                imageSrc = imageUrl;
+              } else if (imageUrl.startsWith('/api/dev-storage/')) {
+                // Dev storage paths should be used directly
+                imageSrc = imageUrl;
+              } else if (imageUrl.startsWith('/')) {
+                // Other absolute paths
+                imageSrc = imageUrl;
+              } else {
+                // Relative paths need the objects/serve prefix
+                imageSrc = `/api/objects/serve/${encodeURIComponent(imageUrl)}`;
+              }
+              
               resolve({
                 id: index,
-                src: imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${encodeURIComponent(imageUrl)}`,
+                src: imageSrc,
                 originalUrl: imageUrl,
                 alt: `Example ${index + 1} for ${promptName}`,
                 width: calculatedWidth,
@@ -54,10 +70,25 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
               });
             };
             img.onerror = () => {
+              // Handle different image URL formats for fallback
+              let imageSrc = imageUrl;
+              if (imageUrl.startsWith('http')) {
+                imageSrc = imageUrl;
+              } else if (imageUrl.startsWith('/api/dev-storage/')) {
+                // Dev storage paths should be used directly
+                imageSrc = imageUrl;
+              } else if (imageUrl.startsWith('/')) {
+                // Other absolute paths
+                imageSrc = imageUrl;
+              } else {
+                // Relative paths need the objects/serve prefix
+                imageSrc = `/api/objects/serve/${encodeURIComponent(imageUrl)}`;
+              }
+              
               // Fallback width if image fails to load
               resolve({
                 id: index,
-                src: imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${encodeURIComponent(imageUrl)}`,
+                src: imageSrc,
                 originalUrl: imageUrl,
                 alt: `Example ${index + 1} for ${promptName}`,
                 width: 150,
@@ -65,7 +96,17 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
                 naturalHeight: 150
               });
             };
-            img.src = imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${encodeURIComponent(imageUrl)}`;
+            
+            // Set the img.src with the same logic
+            if (imageUrl.startsWith('http')) {
+              img.src = imageUrl;
+            } else if (imageUrl.startsWith('/api/dev-storage/')) {
+              img.src = imageUrl;
+            } else if (imageUrl.startsWith('/')) {
+              img.src = imageUrl;
+            } else {
+              img.src = `/api/objects/serve/${encodeURIComponent(imageUrl)}`;
+            }
           });
         })
       );
