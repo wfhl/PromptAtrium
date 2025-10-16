@@ -66,16 +66,7 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
     },
   });
 
-  // Auto-mark notifications as seen when modal opens
-  useEffect(() => {
-    if (open && notifications && notifications.length > 0) {
-      const unreadNotifications = notifications.filter(n => !n.isRead);
-      if (unreadNotifications.length > 0) {
-        // Mark all notifications as read when modal opens
-        markAllAsReadMutation.mutate();
-      }
-    }
-  }, [open]);
+  // Don't auto-mark as read - let user click "Mark all as read" button
 
   const renderNotificationMessage = (notification: Notification) => {
     const message = notification.message;

@@ -857,12 +857,14 @@ export class DatabaseStorage implements IStorage {
     // Create a notification for the prompt owner
     if (prompt.userId) {
       const contributorUsername = contributor.username || contributor.email || 'Someone';
-      await db.insert(notifications).values({
+      // Use the createNotification method which properly generates the ID
+      await this.createNotification({
         userId: prompt.userId,
         type: 'image_contribution',
         message: `${contributorUsername} added ${imageUrls.length} example image${imageUrls.length > 1 ? 's' : ''} to your prompt "${prompt.name}"`,
         relatedUserId: contributorId,
         relatedPromptId: promptId,
+        relatedListId: null,
         relatedImageId: imageUrls[0], // Use the first image URL as reference
         isRead: false,
         metadata: {
