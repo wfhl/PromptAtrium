@@ -855,21 +855,24 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     // Create a notification for the prompt owner
-    const contributorUsername = contributor.username || contributor.email || 'Someone';
-    await db.insert(notifications).values({
-      userId: prompt.userId,
-      type: 'image_contribution',
-      message: `${contributorUsername} added ${imageUrls.length} example image${imageUrls.length > 1 ? 's' : ''} to your prompt "${prompt.name}"`,
-      relatedUserId: contributorId,
-      relatedPromptId: promptId,
-      isRead: false,
-      metadata: {
-        imageCount: imageUrls.length,
-        imageUrls: imageUrls,
-        contributorUsername: contributorUsername,
-        promptName: prompt.name
-      }
-    });
+    if (prompt.userId) {
+      const contributorUsername = contributor.username || contributor.email || 'Someone';
+      await db.insert(notifications).values({
+        userId: prompt.userId,
+        type: 'image_contribution',
+        message: `${contributorUsername} added ${imageUrls.length} example image${imageUrls.length > 1 ? 's' : ''} to your prompt "${prompt.name}"`,
+        relatedUserId: contributorId,
+        relatedPromptId: promptId,
+        relatedImageId: imageUrls[0], // Use the first image URL as reference
+        isRead: false,
+        metadata: {
+          imageCount: imageUrls.length,
+          imageUrls: imageUrls,
+          contributorUsername: contributorUsername,
+          promptName: prompt.name
+        }
+      });
+    }
 
     // Log the contribution as an activity
     await db.insert(activities).values({

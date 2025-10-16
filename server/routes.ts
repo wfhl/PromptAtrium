@@ -1872,8 +1872,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Contribute images to a prompt (community contribution feature)
   app.post('/api/prompts/:id/contribute-images', isAuthenticated, async (req: any, res) => {
+    const contributorId = (req.user as any).claims.sub;
+    
     try {
-      const contributorId = (req.user as any).claims.sub;
       const { imageUrls } = req.body;
       
       // Validate imageUrls
@@ -1899,6 +1900,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error contributing images:", error);
+      console.error("Error details:", {
+        promptId: req.params.id,
+        imageUrls: req.body.imageUrls,
+        contributorId: contributorId,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined
+      });
       
       if (error instanceof Error) {
         // Handle specific error messages from storage
@@ -1911,6 +1919,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error.message.includes("more than")) {
           return res.status(400).json({ message: error.message });
         }
+        // Return the actual error message for better debugging
+        return res.status(500).json({ message: error.message });
       }
       
       res.status(500).json({ message: "Failed to contribute images" });
