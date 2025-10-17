@@ -478,12 +478,12 @@ export default function Community() {
             </div>
           </div>
 
-          {/* Collections Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2" data-testid="section-community-collections">
+          {/* Collections Grid - Masonry Layout */}
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-2 space-y-2" data-testid="section-community-collections">
             {publicCollections.length > 0 ? (
               publicCollections.map((collection) => (
                 <Link key={collection.id} href={`/collection/${collection.id}`}>
-                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer" data-testid={`collection-card-${collection.id}`}>
+                  <Card className="break-inside-avoid mb-2 hover:shadow-lg transition-shadow cursor-pointer" data-testid={`collection-card-${collection.id}`}>
                     <CardContent className="p-3">
                       {/* Display example images if available */}
                       {collection.exampleImages && collection.exampleImages.length > 0 && (

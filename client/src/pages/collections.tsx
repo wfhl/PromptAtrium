@@ -439,7 +439,7 @@ export default function CollectionsPage() {
           </div>
         </div>
 
-        {/* Collections Grid */}
+        {/* Collections Grid - Masonry Layout */}
         {filteredAndSortedCollections.length === 0 ? (
           <div className="text-center py-12">
             <Folder className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50 dark:text-gray-600" />
@@ -460,11 +460,11 @@ export default function CollectionsPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
             {filteredAndSortedCollections.map((collection: any) => (
               <Card 
                 key={collection.id} 
-                className="hover:shadow-md dark:hover:shadow-2xl transition-shadow cursor-pointer bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                className="break-inside-avoid mb-6 hover:shadow-md dark:hover:shadow-2xl transition-shadow cursor-pointer bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 data-testid={`card-collection-${collection.id}`}
               >
                 <CardHeader className="pb-3">
