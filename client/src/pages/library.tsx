@@ -67,10 +67,11 @@ export default function Library() {
   
   const [statusFilter, setStatusFilter] = useState("");
   
-  // Parse query parameters to get the tab
+  // Parse query parameters to get the tab, fallback to localStorage, then default
   const queryParams = new URLSearchParams(window.location.search);
   const tabFromQuery = queryParams.get('tab');
-  const [activeTab, setActiveTab] = useState<string>(tabFromQuery || "prompts");
+  const savedTab = localStorage.getItem('library-active-tab');
+  const [activeTab, setActiveTab] = useState<string>(tabFromQuery || savedTab || "prompts");
   
   // Fetch user activities  
   const { data: userActivities = [] } = useQuery<any[]>({
@@ -752,7 +753,10 @@ export default function Library() {
       <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 lg:pb-8">
         
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-6">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          localStorage.setItem('library-active-tab', value);
+        }} className="space-y-3 md:space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-my-prompts">
               My Prompts
