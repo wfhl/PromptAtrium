@@ -1125,7 +1125,139 @@ ripples, waterfalls, bubbles, wet surfaces
   }
 ];
 
-export const ALL_GUIDES = [...SYNTAX_GUIDES, ...ANATOMY_GUIDES];
+export const NANO_BANANA_GUIDES: Guide[] = [
+  {
+    id: 19,
+    title: "How to Use Nano Banana AI with Gemini 2.5",
+    content: `**Getting started with Nano Banana AI tool is simple, but the key to stunning results lies in your input images and Nano Banana model prompts. Follow these steps to turn ordinary photos into creative, professional-quality visuals.**
+
+## 1. Go to the Nano Banana AI Tool
+
+Visit the official platform, [Google AI Studio](https://aistudio.google.com), or other tools to access Nano Banana AI. The interface is simple, so you can start creating right away.
+
+**Look for the Nano Banana Model (Gemini 2.5 Flash Image)** in the model selection area and select it to begin working with this powerful AI image generation tool.
+
+### Key Features
+- **Input Your Prompts**: Describe what you want to create or edit
+- **Upload Your Images**: Add reference images or photos to transform
+
+## 2. Upload the Image You Want to Edit
+
+Upload a clear photo or sketch as your base. **High-quality inputs always produce better results.**
+
+The clearer and higher quality your input image, the better the AI can understand and transform it according to your prompts.
+
+## 3. Input Nano Banana Prompts
+
+Type in detailed AI photo prompts for Gemini Nano Banana describing the edits, styles, or transformations you want. You can copy and paste one of the provided trending Nano Banana image prompts for the first try.
+
+**Example Prompt:**
+\`\`\`
+Create an image of a smiling young woman wearing a flowing red dress, 
+gently cradling a golden retriever puppy in her arms, standing on a 
+grassy park path with sunlight filtering through the trees. 
+Photorealistic style, with natural shadows and vivid colors.
+\`\`\`
+
+## 4. Preview the Result
+
+Generate and check the output instantly. If needed, **adjust your AI photo prompt and refine it until it's perfect**. Then, you can download this Nano Banana AI-generated image and enjoy the fun.
+
+### Bonus
+✨ **Fotor** also provides access to the Nano Banana AI photo editor, allowing you to experiment with the same powerful prompts while enjoying its built-in photo editing tools. It's a convenient way to explore creative image generation and editing all in one platform.
+
+*Source: Google AI Studio Documentation*`,
+    category: "nano-banana",
+    order: 1
+  },
+  {
+    id: 20,
+    title: "Practical Nano Banana Prompt Tips",
+    content: `**Master the art of Nano Banana prompting with these essential tips for creating stunning AI-generated images.**
+
+## 1️⃣ Craft Detailed Prompts
+
+Begin your Nano Banana model photo prompts with action verbs like **"Create,"** **"Generate,"** or **"Draw."** Clearly describe the subject, action, setting, and desired style. For example:
+
+**Example:**
+\`\`\`
+"Create an image of a smiling young woman wearing a flowing red dress, 
+gently cradling a golden retriever puppy in her arms, standing on a 
+grassy park path with sunlight filtering through the trees. 
+Photorealistic style, with natural shadows and vivid colors."
+\`\`\`
+
+If you don't know how to start, you can try to copy and paste Gemini AI photo prompts from above.
+
+## 2️⃣ Iterative Refinement
+
+Use a conversational approach to refine your image over multiple interactions. Start with a broad Gemini AI photo prompt and progressively add details to achieve the desired outcome.
+
+### Refinement Process
+- Start with basic description
+- Add specific details in follow-up prompts
+- Adjust elements that need improvement
+- Fine-tune until satisfied
+
+## 3️⃣ Specify Artistic Styles
+
+Incorporate Nano Banana prompt style example such as **"watercolor painting,"** **"cyberpunk,"** or **"anime"** to guide the aesthetic of the generated image. This helps in aligning the output with your creative vision.
+
+### Popular Style Examples
+\`\`\`
+- Watercolor painting
+- Cyberpunk aesthetic
+- Anime style
+- Oil painting
+- Digital art
+- Photorealistic
+- Minimalist
+- Vintage photography
+\`\`\`
+
+## 4️⃣ Leverage Contextual Information
+
+Provide context about the scene, time of day, or emotional tone to enhance the relevance and coherence of the Gemini AI-generated image.
+
+### Contextual Elements to Include
+- **Time of Day**: Dawn, sunset, midnight, golden hour
+- **Weather**: Sunny, rainy, foggy, stormy
+- **Mood**: Peaceful, dramatic, mysterious, joyful
+- **Season**: Spring blooms, autumn leaves, winter snow
+
+## 5️⃣ Experiment with Variations
+
+Don't hesitate to modify your Gemini prompts by changing elements like color schemes, lighting conditions, or perspectives to explore different creative possibilities.
+
+### Variation Ideas
+- Change color palettes
+- Adjust lighting angles
+- Try different camera perspectives
+- Modify composition elements
+- Experiment with different times of day
+
+## 6️⃣ Maintain Consistent Lighting
+
+When replacing objects, adjusting poses, or fusing images, match lighting and perspective to keep results realistic.
+
+### Lighting Tips
+- Match light direction across all elements
+- Maintain consistent shadow angles
+- Keep color temperature uniform
+- Consider ambient vs. direct lighting
+- Preserve light intensity relationships
+
+## Conclusion
+
+Explored the latest and most popular ways to use the Nano Banana AI image editor model, from multi-image fusion and style blending to pose control, facial expression edits, and creative 3D figure generation. We provided detailed Nano Banana AI photo and practical tips to help users achieve high-quality, customized outputs effortlessly. You can check the [Nano Banana vs Flux Kontext](https://www.fotor.com/blog/nano-banana-vs-flux-kontext/) to see that Nano Banana AI stands out with faster generation speeds, more versatile style adaptation, and superior handling of complex edits, making it a go-to choice for both creative experimentation and professional-grade image generation. By applying the techniques shared here, users can unlock the full potential of AI-driven visual creativity.
+
+*Source: Nano Banana AI Best Practices & Community Guides*`,
+    category: "nano-banana",
+    order: 2
+  }
+];
+
+export const ALL_GUIDES = [...SYNTAX_GUIDES, ...ANATOMY_GUIDES, ...NANO_BANANA_GUIDES];
 
 export interface Resource {
   id: string;
