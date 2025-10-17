@@ -57,53 +57,40 @@ export default function AIServices() {
   }, [filteredServices]);
 
   const getCategoryColor = (text: string) => {
-    // Unified color mapping for both categories and subcategories
     const colors: Record<string, string> = {
-      // Original category colors for badges
-      "Image Generation": "bg-purple-500/20 text-purple-400 border-purple-500/30",
-      "Text Generation": "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      "Video": "bg-pink-500/20 text-pink-400 border-pink-500/30",
+      "3D": "bg-purple-500/20 text-purple-400 border-purple-500/30",
       "Audio": "bg-green-500/20 text-green-400 border-green-500/30",
       "Code": "bg-orange-500/20 text-orange-400 border-orange-500/30",
-      "Research": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
-      "Design": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
-      
-      // Subcategory colors for filter pills - aligned with similar categories
-      "3D": "bg-purple-500/20 text-purple-400 border-purple-500/30",
-      "Image": "bg-purple-500/20 text-purple-400 border-purple-500/30",
-      "Image Gen": "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      "Image": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      "Image Gen": "bg-blue-500/20 text-blue-400 border-blue-500/30",
       "Image Gen API": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
       "Image / Fine-tuning": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
-      "Upscaler / Enhancer": "bg-sky-500/20 text-sky-400 border-sky-500/30",
-      
       "Marketing AI Tools": "bg-pink-500/20 text-pink-400 border-pink-500/30",
       "Model APIs / Inference": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
       "Model Hosting / API": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
       "Models / Datasets / Inference": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+      "Video": "bg-rose-500/20 text-rose-400 border-rose-500/30",
+      "Text Generation": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      "Phone Calls": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      "Prompt Library / Search": "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30",
+      "Prompt Manager": "bg-violet-500/20 text-violet-400 border-violet-500/30",
+      "Upscaler / Enhancer": "bg-sky-500/20 text-sky-400 border-sky-500/30",
+      "Custom Model Training": "bg-amber-500/20 text-amber-400 border-amber-500/30",
+      "Generative Media API": "bg-teal-500/20 text-teal-400 border-teal-500/30",
       "Model / Image Gen": "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      
+      "NVIDIA Platform Extensions": "bg-lime-500/20 text-lime-400 border-lime-500/30",
       "Video / Avatars": "bg-rose-500/20 text-rose-400 border-rose-500/30",
       "Video / Avatars / Lip-sync": "bg-rose-500/20 text-rose-400 border-rose-500/30",
       "Video / Editing": "bg-pink-500/20 text-pink-400 border-pink-500/30",
       "Video (Research/Access)": "bg-red-500/20 text-red-400 border-red-500/30",
-      
-      "Phone Calls": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
       "Voice FX": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-      
-      "Prompt Library / Search": "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30",
-      "Prompt Manager": "bg-violet-500/20 text-violet-400 border-violet-500/30",
-      
-      "Custom Model Training": "bg-amber-500/20 text-amber-400 border-amber-500/30",
-      "Generative Media API": "bg-teal-500/20 text-teal-400 border-teal-500/30",
-      "NVIDIA Platform Extensions": "bg-lime-500/20 text-lime-400 border-lime-500/30",
-      
       "Other": "bg-gray-500/20 text-gray-400 border-gray-500/30",
     };
     return colors[text] || "bg-gray-500/20 text-gray-400 border-gray-500/30";
   };
 
   const getSubcategoryColor = (subcategory: string) => {
-    // Use same unified color mapping for consistency between filter pills and category badges
+    // Use same color mapping for consistency between filter pills and category badges
     return getCategoryColor(subcategory);
   };
 
@@ -208,39 +195,39 @@ export default function AIServices() {
                       className="bg-gray-900/30 border-gray-800 hover:border-purple-500/50 transition-all group"
                       data-testid={`card-service-${subcategory}-${index}`}
                     >
-                      <CardHeader>
-                        <div className="flex items-start justify-between mb-2">
-                          <CardTitle className="text-xl text-gray-100 group-hover:text-purple-400 transition-colors">
+                      <CardHeader className="p-3 md:p-6">
+                        <div className="flex items-start justify-between mb-1.5 md:mb-2">
+                          <CardTitle className="text-sm md:text-xl text-gray-100 group-hover:text-purple-400 transition-colors leading-tight">
                             {service.name}
                           </CardTitle>
                           {service.category && (
                             <Badge 
                               variant="outline" 
-                              className={`${getCategoryColor(service.category)} text-xs flex-shrink-0 ml-2`}
+                              className={`${getCategoryColor(service.category)} text-[10px] md:text-xs flex-shrink-0 ml-2 px-1.5 py-0.5 md:px-2 md:py-1`}
                               data-testid={`badge-category-${index}`}
                             >
                               {service.category}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-400 leading-relaxed">
+                        <p className="text-xs md:text-sm text-gray-400 leading-snug md:leading-relaxed line-clamp-2 md:line-clamp-none">
                           {service.description}
                         </p>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-2 md:space-y-4 p-3 pt-0 md:p-6 md:pt-0">
                         {service.features && (
-                          <div className="flex items-start gap-2">
-                            <Zap className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-gray-300">
+                          <div className="flex items-start gap-1.5 md:gap-2">
+                            <Zap className="h-3 w-3 md:h-4 md:w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs md:text-sm text-gray-300 line-clamp-2 md:line-clamp-none leading-snug">
                               {service.features}
                             </p>
                           </div>
                         )}
                         
                         {service.pricing && (
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-green-500" />
-                            <span className="text-sm text-gray-300">{service.pricing}</span>
+                          <div className="flex items-center gap-1.5 md:gap-2">
+                            <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
+                            <span className="text-xs md:text-sm text-gray-300">{service.pricing}</span>
                           </div>
                         )}
 
@@ -248,11 +235,11 @@ export default function AIServices() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+                            className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 h-8 md:h-9 text-xs md:text-sm"
                             onClick={() => window.open(service.website, '_blank')}
                             data-testid={`button-visit-${index}`}
                           >
-                            <ExternalLink className="h-4 w-4 mr-2" />
+                            <ExternalLink className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                             Visit Website
                           </Button>
                         )}
