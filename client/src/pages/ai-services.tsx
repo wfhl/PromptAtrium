@@ -18,15 +18,15 @@ interface AIService {
 
 export default function AIServices() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const { data: services = [], isLoading } = useQuery<AIService[]>({
     queryKey: ["/api/ai-services"],
   });
 
-  const subcategories = useMemo(() => {
-    const uniqueSubcategories = new Set(services.map(s => s.subcategory).filter(Boolean));
-    return ["all", ...Array.from(uniqueSubcategories).sort()];
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set(services.map(s => s.category).filter(Boolean));
+    return ["all", ...Array.from(uniqueCategories).sort()];
   }, [services]);
 
   const filteredServices = useMemo(() => {
@@ -35,13 +35,14 @@ export default function AIServices() {
         service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.features.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesSubcategory = selectedSubcategory === "all" || service.subcategory === selectedSubcategory;
+      const matchesCategory = selectedCategory === "all" || service.category === selectedCategory;
       
-      return matchesSearch && matchesSubcategory;
+      return matchesSearch && matchesCategory;
     });
-  }, [services, searchQuery, selectedSubcategory]);
+  }, [services, searchQuery, selectedCategory]);
 
   // Group services by subcategory for organized display
   const groupedServices = useMemo(() => {
@@ -125,21 +126,21 @@ export default function AIServices() {
           </div>
         </div>
 
-        {/* Subcategory Filters */}
+        {/* Category Filters */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {subcategories.map((subcategory) => (
+          {categories.map((category) => (
             <Badge
-              key={subcategory}
-              variant={selectedSubcategory === subcategory ? "default" : "outline"}
+              key={category}
+              variant={selectedCategory === category ? "default" : "outline"}
               className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${
-                selectedSubcategory === subcategory
-                  ? getSubcategoryColor(subcategory)
+                selectedCategory === category
+                  ? getCategoryColor(category)
                   : "bg-gray-900/30 text-gray-400 border-gray-700 hover:bg-gray-800/50"
               }`}
-              onClick={() => setSelectedSubcategory(subcategory)}
-              data-testid={`filter-${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
+              onClick={() => setSelectedCategory(category)}
+              data-testid={`filter-${category.toLowerCase().replace(/\s+/g, '-')}`}
             >
-              {subcategory === "all" ? "All Categories" : subcategory}
+              {category === "all" ? "All Categories" : category}
             </Badge>
           ))}
         </div>
