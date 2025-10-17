@@ -83,15 +83,20 @@ export async function fetchAIServices(): Promise<AIService[]> {
     const rows = response.data.values || [];
     console.log(`Fetched ${rows.length} AI services from Google Sheets`);
     
-    return rows.map(row => ({
+    const services = rows.map(row => ({
       name: row[1] || '',
       description: row[3] || '',
       category: row[0] || '',
       website: row[2] || '',
       pricing: row[4] || '',
       features: row[5] || '',
-      subcategory: row[6] || '',
+      subcategory: row[6] || row[0] || '', // Fallback to category if subcategory is empty
     }));
+    
+    // Log sample to debug subcategories
+    console.log('Sample services:', services.slice(0, 3).map(s => ({ name: s.name, category: s.category, subcategory: s.subcategory })));
+    
+    return services;
   } catch (error) {
     console.error('Error fetching AI services from Google Sheets:', error);
     throw error;
