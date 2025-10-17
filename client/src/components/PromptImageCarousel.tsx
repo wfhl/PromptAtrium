@@ -26,9 +26,12 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
   // Drag state
   const dragState = useRef({
     startX: 0,
+    startY: 0,
     startTranslateX: 0,
     velocityTracker: [] as { x: number; time: number }[],
-    isClick: true
+    isClick: true,
+    isHorizontalSwipe: false,
+    swipeDetected: false
   });
   
   const animationRef = useRef<number | null>(null);
@@ -208,7 +211,7 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
   }, [scrollBy, containerWidth]);
 
   // Start drag
-  const handleDragStart = useCallback((clientX: number) => {
+  const handleDragStart = useCallback((clientX: number, clientY: number) => {
     if (isTransitioning || slides.length === 0) return;
     
     if (animationRef.current) {
@@ -218,17 +221,33 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
     setIsDragging(true);
     dragState.current = {
       startX: clientX,
+      startY: clientY,
       startTranslateX: translateX,
       velocityTracker: [{ x: clientX, time: performance.now() }],
-      isClick: true
+      isClick: true,
+      isHorizontalSwipe: false,
+      swipeDetected: false
     };
   }, [translateX, isTransitioning, slides.length]);
 
   // Handle drag move
-  const handleDragMove = useCallback((clientX: number) => {
-    if (!isDragging || slides.length === 0) return;
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    if (!isDragging || slides.length === 0) return false;
     
     const deltaX = clientX - dragState.current.startX;
+    const deltaY = clientY - dragState.current.startY;
+    
+    // Detect swipe direction on first significant movement
+    if (!dragState.current.swipeDetected && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+      dragState.current.swipeDetected = true;
+      // Determine if this is primarily a horizontal swipe
+      dragState.current.isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
+    }
+    
+    // Only handle horizontal swipes
+    if (dragState.current.swipeDetected && !dragState.current.isHorizontalSwipe) {
+      return false; // Let the browser handle vertical scrolling
+    }
     
     // Mark as not a click if moved more than 8px
     if (Math.abs(deltaX) > 8) {
@@ -245,6 +264,8 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
     // Keep only recent points for velocity calculation
     dragState.current.velocityTracker = dragState.current.velocityTracker
       .filter(point => now - point.time < 100);
+    
+    return true; // Indicate we handled this event
   }, [isDragging, slides.length]);
 
   // End drag with momentum
@@ -306,12 +327,12 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
   // Mouse events
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    handleDragStart(e.clientX);
+    handleDragStart(e.clientX, e.clientY);
   }, [handleDragStart]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     e.preventDefault();
-    handleDragMove(e.clientX);
+    handleDragMove(e.clientX, e.clientY);
   }, [handleDragMove]);
 
   const handleMouseUp = useCallback(() => {
@@ -320,16 +341,25 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
 
   // Touch events
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    handleDragStart(e.touches[0].clientX);
+    const touch = e.touches[0];
+    handleDragStart(touch.clientX, touch.clientY);
   }, [handleDragStart]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    handleDragMove(e.touches[0].clientX);
+    const touch = e.touches[0];
+    const shouldHandle = handleDragMove(touch.clientX, touch.clientY);
+    
+    // Only prevent default if we're handling a horizontal swipe
+    if (shouldHandle && dragState.current.isHorizontalSwipe) {
+      e.preventDefault();
+    }
   }, [handleDragMove]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
+    // Only prevent default if we handled a horizontal swipe
+    if (dragState.current.isHorizontalSwipe) {
+      e.preventDefault();
+    }
     handleDragEnd();
   }, [handleDragEnd]);
 
@@ -420,7 +450,10 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
       <div 
         ref={containerRef}
         className="relative w-full overflow-hidden rounded-lg"
-        style={{ cursor: isDragging ? "grabbing" : needsScroll ? "grab" : "default" }}
+        style={{ 
+          cursor: isDragging ? "grabbing" : needsScroll ? "grab" : "default",
+          touchAction: "pan-y pinch-zoom"
+        }}
       >
         {/* Navigation Arrows */}
         {needsScroll && canScrollLeft && (
