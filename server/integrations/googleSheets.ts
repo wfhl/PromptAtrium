@@ -95,8 +95,17 @@ export async function fetchAIServices(): Promise<AIService[]> {
       features: row[7] || '', // Column H is features
     }));
     
-    // Log sample to debug subcategories
-    console.log('Sample services:', services.slice(0, 3).map(s => ({ name: s.name, category: s.category, subcategory: s.subcategory })));
+    // Log sample to debug subcategories and featured status
+    console.log('Sample services:', services.slice(0, 3).map(s => ({ 
+      name: s.name, 
+      category: s.category, 
+      subcategory: s.subcategory,
+      is_featured: s.is_featured 
+    })));
+    
+    // Count and log featured services
+    const featuredCount = services.filter(s => s.is_featured).length;
+    console.log(`Found ${featuredCount} featured services out of ${services.length} total`);
     
     return services;
   } catch (error) {

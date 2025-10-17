@@ -54,7 +54,7 @@ export default function AIServices() {
   };
 
   const filteredServices = useMemo(() => {
-    const filtered = services.filter(service => {
+    return services.filter(service => {
       const matchesSearch = 
         service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -67,19 +67,19 @@ export default function AIServices() {
       
       return matchesSearch && matchesCategory && matchesSubcategory;
     });
-    
-    // Sort to show featured services first
-    return filtered.sort((a, b) => {
-      if (a.is_featured && !b.is_featured) return -1;
-      if (!a.is_featured && b.is_featured) return 1;
-      return 0;
-    });
   }, [services, searchQuery, selectedCategory, selectedSubcategory]);
 
-  // Group services by subcategory for organized display
+  // Separate featured and non-featured services
+  const { featuredServices, nonFeaturedServices } = useMemo(() => {
+    const featured = filteredServices.filter(s => s.is_featured);
+    const nonFeatured = filteredServices.filter(s => !s.is_featured);
+    return { featuredServices: featured, nonFeaturedServices: nonFeatured };
+  }, [filteredServices]);
+
+  // Group NON-FEATURED services by subcategory for organized display
   const groupedServices = useMemo(() => {
     const groups: Record<string, AIService[]> = {};
-    filteredServices.forEach(service => {
+    nonFeaturedServices.forEach(service => {
       const subcategory = service.subcategory || 'Other';
       if (!groups[subcategory]) {
         groups[subcategory] = [];
@@ -87,7 +87,7 @@ export default function AIServices() {
       groups[subcategory].push(service);
     });
     return groups;
-  }, [filteredServices]);
+  }, [nonFeaturedServices]);
 
   const getCategoryColor = (text: string) => {
     const colors: Record<string, string> = {
@@ -231,6 +231,86 @@ export default function AIServices() {
           </Card>
         ) : (
           <div className="space-y-12">
+            {/* Featured Services Section */}
+            {featuredServices.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Badge 
+                    variant="outline" 
+                    className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-sm px-4 py-1.5"
+                  >
+                    <Star className="h-4 w-4 mr-1.5 fill-yellow-500" />
+                    Featured Services
+                  </Badge>
+                  <div className="h-px flex-1 bg-gradient-to-r from-yellow-500/30 to-transparent"></div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+                  {featuredServices.map((service, index) => (
+                    <Card 
+                      key={`featured-${index}`}
+                      className="bg-gray-900/30 border-yellow-500/30 hover:border-yellow-500/50 transition-all group"
+                      data-testid={`card-featured-service-${index}`}
+                    >
+                      <CardHeader className="p-3">
+                        <div className="flex items-start justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" data-testid={`icon-featured-${index}`} />
+                            <CardTitle className="text-sm text-gray-100 group-hover:text-yellow-400 transition-colors leading-tight">
+                              {service.name}
+                            </CardTitle>
+                          </div>
+                          {service.category && (
+                            <Badge 
+                              variant="outline" 
+                              className={`${getCategoryColor(service.category)} text-[10px] flex-shrink-0 ml-2 px-1.5 py-0.5`}
+                              data-testid={`badge-category-featured-${index}`}
+                            >
+                              {service.category}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400 leading-snug line-clamp-2">
+                          {service.description}
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-2 p-3 pt-0">
+                        {service.features && (
+                          <div className="flex items-start gap-1.5">
+                            <Zap className="h-3 w-3 text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-gray-300 line-clamp-2 leading-snug">
+                              {service.features}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {service.pricing && (
+                          <div className="flex items-center gap-1.5">
+                            <DollarSign className="h-3 w-3 text-green-500" />
+                            <span className="text-xs text-gray-300">{service.pricing}</span>
+                          </div>
+                        )}
+
+                        {service.website && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 hover:text-yellow-300 h-7 text-xs"
+                            onClick={() => window.open(service.website, '_blank')}
+                            data-testid={`button-visit-featured-${index}`}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1.5" />
+                            Visit Website
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Regular Services Grouped by Subcategory */}
             {Object.entries(groupedServices).sort(([a], [b]) => a.localeCompare(b)).map(([subcategory, subcategoryServices]) => (
               <div key={subcategory} className="space-y-4">
                 {/* Subcategory Header */}
