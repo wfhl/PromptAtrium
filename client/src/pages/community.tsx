@@ -70,9 +70,11 @@ export default function Community() {
   });
   const [sortBy, setSortBy] = useState("featured");
   
-  // Read tab from URL query parameter
+  // Read tab from URL query parameter, fallback to localStorage, then default
   const urlParams = new URLSearchParams(window.location.search);
-  const initialTab = urlParams.get('tab') || 'prompts';
+  const tabFromUrl = urlParams.get('tab');
+  const savedTab = localStorage.getItem('community-active-tab');
+  const initialTab = tabFromUrl || savedTab || 'prompts';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [promptsSubTab, setPromptsSubTab] = useState("featured");
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
@@ -337,7 +339,10 @@ export default function Community() {
   return (
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 lg:pb-8">
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-1 md:space-y-2">
+      <Tabs value={activeTab} onValueChange={(value) => {
+        setActiveTab(value);
+        localStorage.setItem('community-active-tab', value);
+      }} className="space-y-1 md:space-y-2">
         <TabsList className="grid grid-cols-3">
           <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
             <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
