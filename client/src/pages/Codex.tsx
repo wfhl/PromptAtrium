@@ -577,7 +577,7 @@ export default function Codex() {
   // Update assembled string mutation
   const updateAssembledStringMutation = useMutation({
     mutationFn: async (data: { id: string; name: string }) => {
-      return apiRequest(`/api/codex/assembled-strings/${data.id}`, "PUT", {
+      return apiRequest("PUT", `/api/codex/assembled-strings/${data.id}`, {
         name: data.name,
       });
     },
