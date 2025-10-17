@@ -474,15 +474,15 @@ export default function Community() {
           </div>
 
           {/* Collections Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="section-community-collections">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2" data-testid="section-community-collections">
             {publicCollections.length > 0 ? (
               publicCollections.map((collection) => (
                 <Link key={collection.id} href={`/collection/${collection.id}`}>
                   <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer" data-testid={`collection-card-${collection.id}`}>
-                    <CardContent className="p-6">
+                    <CardContent className="p-3">
                       {/* Display example images if available */}
                       {collection.exampleImages && collection.exampleImages.length > 0 && (
-                        <div className="grid grid-cols-2 gap-1 mb-4">
+                        <div className="grid grid-cols-2 gap-0.5 mb-2">
                           {collection.exampleImages.slice(0, 4).map((imageUrl, index) => (
                             <div key={index} className="aspect-square rounded overflow-hidden bg-muted">
                               <img
@@ -504,17 +504,17 @@ export default function Community() {
                         </div>
                       )}
 
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                            <Folder className="h-5 w-5 text-white" />
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-indigo-600 rounded flex items-center justify-center flex-shrink-0">
+                            <Folder className="h-3 w-3 text-white" />
                           </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-lg text-foreground line-clamp-1" data-testid={`text-collection-name-${collection.id}`}>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm text-foreground line-clamp-1" data-testid={`text-collection-name-${collection.id}`}>
                               {collection.name}
                             </h3>
                             {collection.user && (
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-xs text-muted-foreground truncate">
                                 by @{collection.user.username || collection.user.firstName}
                               </p>
                             )}
@@ -523,23 +523,21 @@ export default function Community() {
                       </div>
 
                       {collection.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3" data-testid={`text-collection-desc-${collection.id}`}>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2" data-testid={`text-collection-desc-${collection.id}`}>
                           {collection.description}
                         </p>
                       )}
 
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <BookOpen className="h-3 w-3" />
-                            <span>{collection.promptCount || 0} prompts</span>
-                          </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <BookOpen className="h-3 w-3" />
+                          <span>{collection.promptCount || 0}</span>
                         </div>
                         {collection.type === "community" && (
-                          <Badge variant="secondary">Community</Badge>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Community</Badge>
                         )}
                         {collection.type === "global" && (
-                          <Badge variant="default">Global</Badge>
+                          <Badge variant="default" className="text-[10px] px-1.5 py-0">Global</Badge>
                         )}
                       </div>
                     </CardContent>
