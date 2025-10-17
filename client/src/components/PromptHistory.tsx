@@ -372,7 +372,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                               </Button>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-6">
                               {/* Save to Library Button - Only if not saved */}
                               {!entry.isSaved && (
                                 <Button
@@ -383,7 +383,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     saveToLibraryMutation.mutate(entry);
                                   }}
                                   disabled={saveToLibraryMutation.isPending}
-                                  className="w-full h-10"
+                                  className="w-full h-6"
                                   data-testid={`button-save-library-${entry.id}`}
                                 >
                                   <Save className="h-3 w-3 mr-1" />
@@ -400,7 +400,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     e.stopPropagation();
                                     handleLoad(entry);
                                   }}
-                                  className={`w-full h-10 ${!entry.isSaved ? '' : entry.isSaved ? 'col-start-1' : ''}`}
+                                  className={`w-full h-6 ${!entry.isSaved ? '' : entry.isSaved ? 'col-start-1' : ''}`}
                                   data-testid={`button-load-${entry.id}`}
                                 >
                                   <FileText className="h-3 w-3 mr-1" />
@@ -419,7 +419,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     setSelectedEntry(null);
                                   }
                                 }}
-                                className="w-full h-10"
+                                className="w-full h-6"
                                 data-testid={`button-delete-${entry.id}`}
                               >
                                 <Trash2 className="h-3 w-3 mr-1" />
