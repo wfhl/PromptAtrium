@@ -1987,6 +1987,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           const prompts = await storage.getPrompts({ collectionId: collection.id, showNsfw });
           
+          // Extract example images from prompts (max 4 images)
+          const exampleImages: string[] = [];
+          for (const prompt of prompts.slice(0, 10)) { // Check first 10 prompts
+            if (prompt.exampleImagesUrl && Array.isArray(prompt.exampleImagesUrl)) {
+              exampleImages.push(...prompt.exampleImagesUrl);
+              if (exampleImages.length >= 4) break;
+            }
+          }
+          
           // Get user info if this is a public collection
           let user = null;
           if (collection.userId) {
@@ -1996,6 +2005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             ...collection,
             promptCount: prompts.length,
+            exampleImages: exampleImages.slice(0, 4), // Ensure max 4 images
             user: user ? {
               id: user.id,
               username: user.username,
