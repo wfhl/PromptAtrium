@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,16 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Clock, Copy, Trash2, Search, X, ChevronRight,
-  FileText, Image, MessageSquare, Loader2
+  FileText, Image, MessageSquare, Loader2, Database, HardDrive
 } from "lucide-react";
 import { format } from "date-fns";
+import { 
+  getLocalPromptHistory, 
+  clearLocalPromptHistory, 
+  deleteLocalPrompt,
+  transformLocalToDBFormat,
+  convertHistoryToLibrary
+} from "@/utils/promptHistoryStorage";
 
 interface PromptHistoryEntry {
   id: string;
@@ -23,6 +30,7 @@ interface PromptHistoryEntry {
   metadata?: any;
   isSaved: boolean;
   createdAt: string;
+  isLocal?: boolean; // Flag to identify local storage entries
 }
 
 interface PromptHistoryProps {
@@ -35,17 +43,67 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEntry, setSelectedEntry] = useState<PromptHistoryEntry | null>(null);
+  const [localHistory, setLocalHistory] = useState<PromptHistoryEntry[]>([]);
 
-  // Fetch prompt history
-  const { data: history = [], isLoading, refetch } = useQuery<PromptHistoryEntry[]>({
+  // Fetch prompt history from database
+  const { data: dbHistory = [], isLoading, refetch, error } = useQuery<PromptHistoryEntry[]>({
     queryKey: ['/api/prompt-history'],
     enabled: open,
+    retry: false, // Don't retry if user is not authenticated
   });
+  
+  // Handle authentication errors
+  useEffect(() => {
+    if (error && (error as any)?.message?.includes('401')) {
+      console.log('User not authenticated, showing local history only');
+    }
+  }, [error]);
+
+  // Load local storage history when dialog opens
+  useEffect(() => {
+    if (open) {
+      const local = getLocalPromptHistory();
+      const transformed = local.map(transformLocalToDBFormat);
+      setLocalHistory(transformed);
+    }
+  }, [open]);
+
+  // Merge database and local history
+  const history = useMemo(() => {
+    // Remove duplicates based on promptText and timestamp proximity
+    const dbHistoryArray = Array.isArray(dbHistory) ? dbHistory : [];
+    const combined = [...localHistory, ...dbHistoryArray];
+    const unique = new Map();
+    
+    combined.forEach(entry => {
+      // Create a key based on the first 50 chars of prompt and rough timestamp (to minute)
+      const promptKey = entry.promptText.substring(0, 50);
+      const timeKey = new Date(entry.createdAt).toISOString().substring(0, 16); // YYYY-MM-DDTHH:MM
+      const key = `${promptKey}_${timeKey}`;
+      
+      // Prefer database entry over local if duplicate
+      if (!unique.has(key) || !entry.isLocal) {
+        unique.set(key, entry);
+      }
+    });
+    
+    return Array.from(unique.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [dbHistory, localHistory]);
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/prompt-history/${id}`, 'DELETE');
+      // Check if this is a local entry
+      if (id.startsWith('local_')) {
+        deleteLocalPrompt(id);
+        setLocalHistory(prev => prev.filter(e => e.id !== id));
+        return Promise.resolve();
+      } else {
+        // Delete from database
+        return apiRequest('DELETE', `/api/prompt-history/${id}`);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/prompt-history'] });
@@ -66,7 +124,19 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
   // Clear all history mutation
   const clearMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/prompt-history', 'DELETE');
+      // Clear local storage
+      clearLocalPromptHistory();
+      setLocalHistory([]);
+      
+      // Try to clear database history if authenticated
+      try {
+        await apiRequest('DELETE', '/api/prompt-history');
+      } catch (error: any) {
+        // Ignore 401 errors - user just isn't logged in
+        if (!error?.message?.includes('401')) {
+          throw error;
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/prompt-history'] });
@@ -201,6 +271,17 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                             {entry.metadata?.socialMediaTone && (
                               <Badge variant="outline" className="text-xs">
                                 {entry.metadata.socialMediaTone}
+                              </Badge>
+                            )}
+                            {entry.isLocal ? (
+                              <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/50">
+                                <HardDrive className="h-3 w-3 mr-1" />
+                                Local
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-green-500 border-green-500/50">
+                                <Database className="h-3 w-3 mr-1" />
+                                Saved
                               </Badge>
                             )}
                           </div>

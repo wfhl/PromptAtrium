@@ -12,6 +12,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PromptModal } from "@/components/PromptModal";
 import { PromptHistory } from "@/components/PromptHistory";
+import { savePromptToLocalStorage, migrateLocalPromptsToDatabase } from "@/utils/promptHistoryStorage";
 import { 
   Sparkles, Copy, Share2, Save, Plus, ImageIcon, X, ChevronUp, 
   Camera, FileText, Loader2, AlertCircle, CheckCircle, 
@@ -131,10 +132,31 @@ export default function QuickPromptComplete() {
   const saveToHistoryMutation = useMutation({
     mutationFn: async (historyData: any) => {
       console.log('Saving to history:', historyData);
-      return apiRequest('/api/prompt-history', 'POST', historyData);
+      
+      // Always save to localStorage first for immediate availability
+      const localEntry = savePromptToLocalStorage({
+        promptText: historyData.promptText,
+        templateUsed: historyData.templateUsed,
+        settings: historyData.settings,
+        metadata: historyData.metadata,
+      });
+      
+      // Try to save to database if user is authenticated
+      try {
+        const response = await apiRequest('POST', '/api/prompt-history', historyData);
+        if (!response.ok && response.status === 401) {
+          console.log('User not authenticated, saved to localStorage only');
+        }
+        return response;
+      } catch (error: any) {
+        // If save to database fails (e.g., user not authenticated), we still have localStorage
+        console.log('Database save failed, but saved to localStorage:', error);
+        return localEntry;
+      }
     },
     onSuccess: () => {
       console.log('History saved successfully');
+      queryClient.invalidateQueries({ queryKey: ['/api/prompt-history'] });
     },
     onError: (error) => {
       console.error('Failed to save history:', error);

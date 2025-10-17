@@ -319,15 +319,12 @@ function QuickPromptPlayContent() {
     }
 
     try {
-      await apiRequest("/api/prompts", {
-        method: "POST",
-        body: JSON.stringify({
-          title: `Quick Prompt - ${new Date().toLocaleDateString()}`,
-          content: generatedPrompt,
-          description: `Generated with: ${character || "No character"}, ${subject || "No subject"}`,
-          category: "quick-prompt",
-          isPublic: false,
-        }),
+      await apiRequest("POST", "/api/prompts", {
+        title: `Quick Prompt - ${new Date().toLocaleDateString()}`,
+        content: generatedPrompt,
+        description: `Generated with: ${character || "No character"}, ${subject || "No subject"}`,
+        category: "quick-prompt",
+        isPublic: false,
       });
 
       await queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
@@ -430,7 +427,7 @@ function QuickPromptPlayContent() {
           ) : (
             <div className="relative">
               <img
-                src={imagePreview}
+                src={imagePreview || undefined}
                 alt="Uploaded"
                 className="w-full max-h-48 object-contain rounded-lg border border-gray-800"
               />
