@@ -389,16 +389,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                       Prompting Guides
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => toast({
-                      title: "Coming Soon",
-                      description: "AI Services will be available soon!",
-                    })}
-                    className="cursor-pointer"
-                    data-testid="menu-ai-services"
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    AI Services
+                  <DropdownMenuItem asChild>
+                    <Link href="/ai-services" className="flex items-center cursor-pointer" data-testid="menu-ai-services">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      AI Services
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => toast({
