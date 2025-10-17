@@ -350,25 +350,29 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                       {selectedEntry?.id === entry.id && (
                         <div className="mt-3 pt-3 border-t border-gray-800">
                           <div className="space-y-4">
-                            <div className="bg-gray-900/50 rounded p-2 sm:p-3 max-h-48 overflow-y-auto">
-                              <p className="text-xs sm:text-sm whitespace-pre-wrap break-words select-text cursor-text">{entry.promptText}</p>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-3">
-                              {/* Copy Button - Always shown */}
+                            <div 
+                              className="relative bg-green-900/20 border border-green-700/30 hover:border-green-600/40 transition-colors rounded-md p-2 sm:p-3 group"
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="pr-8 max-h-48 overflow-y-auto">
+                                <p className="text-xs sm:text-sm text-gray-200/70 font-mono leading-relaxed whitespace-pre-wrap break-words select-text cursor-text">{entry.promptText}</p>
+                              </div>
                               <Button
                                 size="sm"
+                                variant="ghost"
+                                className="absolute top-2 right-1 h-6 w-6 p-0 bg-transparent hover:opacity-100 text-green-400 opacity-50 group-hover:opacity-100 transition-opacity"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleCopy(entry.promptText);
                                 }}
-                                className="w-full h-10"
-                                data-testid={`button-copy-${entry.id}`}
+                                data-testid={`button-copy-text-${entry.id}`}
                               >
-                                <Copy className="h-3 w-3 mr-1" />
-                                Copy
+                                <Copy className="h-3 w-3" />
                               </Button>
-                              
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
                               {/* Save to Library Button - Only if not saved */}
                               {!entry.isSaved && (
                                 <Button
@@ -396,16 +400,13 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     e.stopPropagation();
                                     handleLoad(entry);
                                   }}
-                                  className={`w-full h-10 ${!entry.isSaved ? '' : 'col-start-2'}`}
+                                  className={`w-full h-10 ${!entry.isSaved ? '' : entry.isSaved ? 'col-start-1' : ''}`}
                                   data-testid={`button-load-${entry.id}`}
                                 >
                                   <FileText className="h-3 w-3 mr-1" />
                                   Load
                                 </Button>
                               )}
-                              
-                              {/* Empty cell if saved and no load */}
-                              {entry.isSaved && !onLoadPrompt && <div></div>}
                               
                               {/* Delete Button - Always shown */}
                               <Button
