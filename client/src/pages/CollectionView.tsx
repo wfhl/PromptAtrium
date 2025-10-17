@@ -369,12 +369,20 @@ export default function CollectionView() {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/library?tab=collections">
-            <Button variant="ghost" size="sm" className="mb-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Collections
-            </Button>
-          </Link>
+          <div className="flex gap-2 mb-4">
+            <Link href="/library?tab=collections">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to My Collections
+              </Button>
+            </Link>
+            <Link href="/community?tab=collections">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Community Collections
+              </Button>
+            </Link>
+          </div>
           
           <div className="flex items-start justify-between">
             <div className="flex-1">
