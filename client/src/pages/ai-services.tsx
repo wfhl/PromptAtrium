@@ -18,16 +18,39 @@ interface AIService {
 
 export default function AIServices() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
 
   const { data: services = [], isLoading } = useQuery<AIService[]>({
     queryKey: ["/api/ai-services"],
   });
 
-  const subcategories = useMemo(() => {
-    const uniqueSubcategories = new Set(services.map(s => s.subcategory).filter(Boolean));
-    return ["all", ...Array.from(uniqueSubcategories).sort()];
+  // Get unique categories from Column A
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set(
+      services.map(s => s.category).filter(cat => cat && cat.trim() !== '')
+    );
+    return ["all", ...Array.from(uniqueCategories).sort()];
   }, [services]);
+
+  // Get subcategories (Column F) for the selected category only
+  const subcategories = useMemo(() => {
+    if (selectedCategory === "all") return [];
+    
+    const categoryServices = services.filter(s => s.category === selectedCategory);
+    const uniqueSubcategories = new Set(
+      categoryServices
+        .map(s => s.subcategory)
+        .filter(sub => sub && sub.trim() !== '')
+    );
+    return ["all", ...Array.from(uniqueSubcategories).sort()];
+  }, [services, selectedCategory]);
+
+  // Reset subcategory when category changes
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedSubcategory("all");
+  };
 
   const filteredServices = useMemo(() => {
     return services.filter(service => {
@@ -35,13 +58,15 @@ export default function AIServices() {
         service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.features.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
       
+      const matchesCategory = selectedCategory === "all" || service.category === selectedCategory;
       const matchesSubcategory = selectedSubcategory === "all" || service.subcategory === selectedSubcategory;
       
-      return matchesSearch && matchesSubcategory;
+      return matchesSearch && matchesCategory && matchesSubcategory;
     });
-  }, [services, searchQuery, selectedSubcategory]);
+  }, [services, searchQuery, selectedCategory, selectedSubcategory]);
 
   // Group services by subcategory for organized display
   const groupedServices = useMemo(() => {
@@ -125,28 +150,47 @@ export default function AIServices() {
           </div>
         </div>
 
-        {/* Subcategory Filters */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {subcategories.map((subcategory) => {
-            const isSelected = selectedSubcategory === subcategory;
-            const baseColor = getSubcategoryColor(subcategory);
-            
-            return (
+        {/* Two-Tier Filters */}
+        <div className="space-y-3 mb-6">
+          {/* First Row: Categories (Column A) */}
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
               <Badge
-                key={subcategory}
-                variant="outline"
-                className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${baseColor} ${
-                  isSelected 
-                    ? "brightness-150 font-bold border-2" 
-                    : "opacity-60 hover:opacity-80"
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${
+                  selectedCategory === category
+                    ? getCategoryColor(category)
+                    : "bg-gray-900/30 text-gray-400 border-gray-700 hover:bg-gray-800/50"
                 }`}
-                onClick={() => setSelectedSubcategory(subcategory)}
-                data-testid={`filter-${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
+                onClick={() => handleCategoryChange(category)}
+                data-testid={`filter-category-${category.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                {subcategory === "all" ? "All Categories" : subcategory}
+                {category === "all" ? "All Categories" : category}
               </Badge>
-            );
-          })}
+            ))}
+          </div>
+          
+          {/* Second Row: Subcategories (Column F) - Only shown when a category is selected */}
+          {subcategories.length > 0 && (
+            <div className="flex flex-wrap gap-2 pl-4 border-l-2 border-purple-500/30">
+              {subcategories.map((subcategory) => (
+                <Badge
+                  key={subcategory}
+                  variant={selectedSubcategory === subcategory ? "default" : "outline"}
+                  className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${
+                    selectedSubcategory === subcategory
+                      ? getSubcategoryColor(subcategory)
+                      : "bg-gray-900/30 text-gray-400 border-gray-700 hover:bg-gray-800/50"
+                  }`}
+                  onClick={() => setSelectedSubcategory(subcategory)}
+                  data-testid={`filter-subcategory-${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  {subcategory === "all" ? "All Subcategories" : subcategory}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Services Grid - Organized by Subcategory */}

@@ -89,8 +89,8 @@ export async function fetchAIServices(): Promise<AIService[]> {
       category: row[0] || '',
       website: row[2] || '',
       pricing: row[4] || '',
-      features: row[5] || '',
-      subcategory: row[6] || row[0] || '', // Fallback to category if subcategory is empty
+      subcategory: row[5] || '', // Column F is subcategory
+      features: row[6] || '', // Column G is features
     }));
     
     // Log sample to debug subcategories
