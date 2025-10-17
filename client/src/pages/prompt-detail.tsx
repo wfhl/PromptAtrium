@@ -34,6 +34,7 @@ export default function PromptDetail() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showAllImages, setShowAllImages] = useState(false);
 
   // Apply dark theme for unauthenticated users
   useEffect(() => {
@@ -56,6 +57,11 @@ export default function PromptDetail() {
     queryKey: [`/api/prompts/${promptId}`],
     enabled: !!promptId,
   });
+
+  // Reset showAllImages when prompt changes
+  useEffect(() => {
+    setShowAllImages(false);
+  }, [promptId]);
 
   // Check if prompt is favorited
   useEffect(() => {
@@ -357,51 +363,74 @@ export default function PromptDetail() {
                   <span className="text-sm text-muted-foreground">Example Images ({prompt.exampleImagesUrl.length})</span>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-1 md:gap-2">
-                  {prompt.exampleImagesUrl?.slice(0, 4).map((imageUrl, index) => (
-                    <div 
-                      key={index} 
-                      className="relative aspect-square overflow-hidden rounded-md md:rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
-                      onClick={() => setSelectedImage(imageUrl)}
-                      data-testid={`image-thumbnail-${index}`}
-                    >
-                      <img
-                        src={imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${encodeURIComponent(imageUrl)}`}
-                        alt={`Example ${index + 1} for ${prompt.name}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          // Try fallback URL if not already tried
-                          if (!target.dataset.fallbackTried && !imageUrl.startsWith('http')) {
-                            target.dataset.fallbackTried = 'true';
-                            target.src = imageUrl;
+                  {(showAllImages ? prompt.exampleImagesUrl : prompt.exampleImagesUrl?.slice(0, 4)).map((imageUrl, index) => {
+                    const hasMoreImages = !showAllImages && index === 3 && prompt.exampleImagesUrl && prompt.exampleImagesUrl.length > 4;
+                    
+                    return (
+                      <div 
+                        key={index} 
+                        className="relative aspect-square overflow-hidden rounded-md md:rounded-lg border bg-muted cursor-pointer group hover:ring-2 hover:ring-primary/50 transition-all"
+                        onClick={() => {
+                          if (hasMoreImages) {
+                            setShowAllImages(true);
                           } else {
-                            target.style.display = 'none';
-                            // Add fallback or placeholder
-                            const parent = target.parentElement;
-                            if (parent && !parent.querySelector('.fallback')) {
-                              const fallback = document.createElement('div');
-                              fallback.className = 'fallback absolute inset-0 flex items-center justify-center bg-muted';
-                              fallback.innerHTML = '<span class="text-muted-foreground text-xs">Image unavailable</span>';
-                              parent.appendChild(fallback);
-                            }
+                            setSelectedImage(imageUrl);
                           }
                         }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      {/* Show count badge for additional images */}
-                      {index === 3 && prompt.exampleImagesUrl && prompt.exampleImagesUrl.length > 4 && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <span className="text-white font-medium text-sm">
-                            +{prompt.exampleImagesUrl.length - 4}
-                          </span>
+                        data-testid={`image-thumbnail-${index}`}
+                      >
+                        <img
+                          src={imageUrl.startsWith('http') ? imageUrl : `/api/objects/serve/${encodeURIComponent(imageUrl)}`}
+                          alt={`Example ${index + 1} for ${prompt.name}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            // Try fallback URL if not already tried
+                            if (!target.dataset.fallbackTried && !imageUrl.startsWith('http')) {
+                              target.dataset.fallbackTried = 'true';
+                              target.src = imageUrl;
+                            } else {
+                              target.style.display = 'none';
+                              // Add fallback or placeholder
+                              const parent = target.parentElement;
+                              if (parent && !parent.querySelector('.fallback')) {
+                                const fallback = document.createElement('div');
+                                fallback.className = 'fallback absolute inset-0 flex items-center justify-center bg-muted';
+                                fallback.innerHTML = '<span class="text-muted-foreground text-xs">Image unavailable</span>';
+                                parent.appendChild(fallback);
+                              }
+                            }
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {/* Show count badge for additional images */}
+                        {hasMoreImages && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <span className="text-white font-medium text-sm">
+                              +{(prompt.exampleImagesUrl?.length || 0) - 4}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+                {/* Show less button when all images are displayed */}
+                {showAllImages && prompt.exampleImagesUrl.length > 4 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllImages(false)}
+                    className="mt-2 text-muted-foreground hover:text-foreground"
+                    data-testid="button-show-less-images"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Show less
+                  </Button>
+                )}
               </div>
             )}
 
