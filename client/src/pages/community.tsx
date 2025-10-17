@@ -69,7 +69,11 @@ export default function Community() {
     collections: []
   });
   const [sortBy, setSortBy] = useState("featured");
-  const [activeTab, setActiveTab] = useState("prompts");
+  
+  // Read tab from URL query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTab = urlParams.get('tab') || 'prompts';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [promptsSubTab, setPromptsSubTab] = useState("featured");
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
   const [followingCollapsed, setFollowingCollapsed] = useState(false);
