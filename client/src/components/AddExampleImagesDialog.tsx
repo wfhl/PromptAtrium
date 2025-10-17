@@ -25,6 +25,7 @@ interface ImageUpload {
 export function AddExampleImagesDialog({ open, onOpenChange, prompt }: AddExampleImagesDialogProps) {
   const [images, setImages] = useState<ImageUpload[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -45,8 +46,22 @@ export function AddExampleImagesDialog({ open, onOpenChange, prompt }: AddExampl
         title: "Images contributed!",
         description: `Your example images have been added to "${prompt.name}"`,
       });
+      // Invalidate all prompt-related queries to ensure immediate updates
       queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      // Invalidate the specific prompt using tuple format (used by PromptCard)
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts", prompt.id] });
+      // Invalidate the detail page format
       queryClient.invalidateQueries({ queryKey: [`/api/prompts/${prompt.id}`] });
+      // Refetch the specific prompt queries
+      queryClient.refetchQueries({ queryKey: ["/api/prompts", prompt.id] });
+      queryClient.refetchQueries({ queryKey: [`/api/prompts/${prompt.id}`] });
+      // Also invalidate any queries that might include the prompt with query params
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey as string[];
+          return typeof key[0] === 'string' && key[0].includes('/api/prompts');
+        }
+      });
       onOpenChange(false);
       setImages([]);
     },
@@ -61,7 +76,10 @@ export function AddExampleImagesDialog({ open, onOpenChange, prompt }: AddExampl
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    
+    processFiles(files);
+  }, [images.length, toast]);
+
+  const processFiles = useCallback((files: File[]) => {
     if (files.length === 0) return;
 
     // Limit to 5 images per contribution
@@ -115,6 +133,44 @@ export function AddExampleImagesDialog({ open, onOpenChange, prompt }: AddExampl
       fileInputRef.current.value = '';
     }
   }, [images.length, toast]);
+
+  // Drag and drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploading && e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  }, [isUploading]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the drop zone entirely
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (isUploading) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    processFiles(files);
+  }, [isUploading, processFiles]);
 
   const removeImage = (imageId: string) => {
     setImages(prev => {
@@ -261,18 +317,28 @@ export function AddExampleImagesDialog({ open, onOpenChange, prompt }: AddExampl
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* File upload area */}
+          {/* File upload area with drag and drop support */}
           <Card 
-            className="border-2 border-dashed hover:border-primary/50 transition-colors cursor-pointer"
+            className={`border-2 border-dashed transition-all cursor-pointer ${
+              isDragging 
+                ? 'border-primary bg-primary/10 scale-[1.02]' 
+                : 'hover:border-primary/50'
+            }`}
             onClick={() => !isUploading && fileInputRef.current?.click()}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
           >
-            <div className="p-8 text-center">
-              <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+            <div className="p-8 text-center pointer-events-none">
+              <Upload className={`h-10 w-10 mx-auto mb-3 ${
+                isDragging ? 'text-primary' : 'text-muted-foreground'
+              }`} />
               <p className="text-sm font-medium mb-1">
-                Click to upload images
+                {isDragging ? 'Drop images here' : 'Click or drag images to upload'}
               </p>
               <p className="text-xs text-muted-foreground">
-                PNG, JPG up to 5MB each
+                PNG, JPG up to 5MB each • Max 5 images
               </p>
             </div>
           </Card>

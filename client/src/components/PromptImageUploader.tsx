@@ -34,6 +34,7 @@ export function PromptImageUploader({
   );
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -52,7 +53,10 @@ export function PromptImageUploader({
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    
+    processFiles(files);
+  }, [images.length, maxImages, toast]);
+
+  const processFiles = useCallback((files: File[]) => {
     if (files.length === 0) return;
 
     // Check if adding these files would exceed the limit
@@ -110,6 +114,37 @@ export function PromptImageUploader({
       fileInputRef.current.value = '';
     }
   }, [images.length, maxImages, toast]);
+
+  // Drag and drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploading && e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  }, [isUploading]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (isUploading) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    processFiles(files);
+  }, [isUploading, processFiles]);
 
   const uploadFiles = async (newImages: PromptImage[]) => {
     setIsUploading(true);
@@ -236,7 +271,13 @@ export function PromptImageUploader({
   const canAddMore = images.length < maxImages;
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div 
+      className={`space-y-4 ${className}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -248,19 +289,29 @@ export function PromptImageUploader({
         data-testid="input-prompt-image-files"
       />
 
-      {/* Upload button */}
+      {/* Upload button with drag and drop visual feedback */}
       {canAddMore && (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={triggerFileSelect}
-          disabled={isUploading}
-          className="w-full border-dashed"
-          data-testid="button-upload-prompt-images"
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          {images.length === 0 ? "Upload Example Images" : `Add More Images (${images.length}/${maxImages})`}
-        </Button>
+        <div className={`relative ${isDragging ? 'scale-[1.02]' : ''} transition-transform`}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={triggerFileSelect}
+            disabled={isUploading}
+            className={`w-full border-dashed ${
+              isDragging 
+                ? 'border-primary bg-primary/10' 
+                : ''
+            }`}
+            data-testid="button-upload-prompt-images"
+          >
+            <Upload className={`h-4 w-4 mr-2 ${isDragging ? 'text-primary' : ''}`} />
+            {isDragging 
+              ? "Drop images here" 
+              : images.length === 0 
+                ? "Upload Example Images (Click or Drag)" 
+                : `Add More Images (${images.length}/${maxImages})`}
+          </Button>
+        </div>
       )}
 
       {/* Image grid */}
