@@ -349,25 +349,27 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                       {/* Expanded view */}
                       {selectedEntry?.id === entry.id && (
                         <div className="mt-3 pt-3 border-t border-gray-800">
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             <div className="bg-gray-900/50 rounded p-2 sm:p-3 max-h-48 overflow-y-auto">
-                              <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{entry.promptText}</p>
+                              <p className="text-xs sm:text-sm whitespace-pre-wrap break-words select-text cursor-text">{entry.promptText}</p>
                             </div>
                             
-                            <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="grid grid-cols-2 gap-3">
+                              {/* Copy Button - Always shown */}
                               <Button
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleCopy(entry.promptText);
                                 }}
-                                className="w-full sm:w-auto"
+                                className="w-full h-10"
                                 data-testid={`button-copy-${entry.id}`}
                               >
                                 <Copy className="h-3 w-3 mr-1" />
                                 Copy
                               </Button>
                               
+                              {/* Save to Library Button - Only if not saved */}
                               {!entry.isSaved && (
                                 <Button
                                   size="sm"
@@ -377,15 +379,15 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     saveToLibraryMutation.mutate(entry);
                                   }}
                                   disabled={saveToLibraryMutation.isPending}
-                                  className="w-full sm:w-auto"
+                                  className="w-full h-10"
                                   data-testid={`button-save-library-${entry.id}`}
                                 >
                                   <Save className="h-3 w-3 mr-1" />
-                                  <span className="sm:hidden">{saveToLibraryMutation.isPending ? "Saving..." : "Save"}</span>
-                                  <span className="hidden sm:inline">{saveToLibraryMutation.isPending ? "Saving..." : "Save to Library"}</span>
+                                  <span>{saveToLibraryMutation.isPending ? "Saving..." : "Save"}</span>
                                 </Button>
                               )}
                               
+                              {/* Load Button - If onLoadPrompt is available */}
                               {onLoadPrompt && (
                                 <Button
                                   size="sm"
@@ -394,15 +396,18 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     e.stopPropagation();
                                     handleLoad(entry);
                                   }}
-                                  className="w-full sm:w-auto"
+                                  className={`w-full h-10 ${!entry.isSaved ? '' : 'col-start-2'}`}
                                   data-testid={`button-load-${entry.id}`}
                                 >
                                   <FileText className="h-3 w-3 mr-1" />
-                                  <span className="sm:hidden">Load</span>
-                                  <span className="hidden sm:inline">Load in Generator</span>
+                                  Load
                                 </Button>
                               )}
                               
+                              {/* Empty cell if saved and no load */}
+                              {entry.isSaved && !onLoadPrompt && <div></div>}
+                              
+                              {/* Delete Button - Always shown */}
                               <Button
                                 size="sm"
                                 variant="destructive"
@@ -413,7 +418,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     setSelectedEntry(null);
                                   }
                                 }}
-                                className="w-full sm:w-auto"
+                                className="w-full h-10"
                                 data-testid={`button-delete-${entry.id}`}
                               >
                                 <Trash2 className="h-3 w-3 mr-1" />

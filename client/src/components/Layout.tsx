@@ -708,7 +708,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 <DropdownMenuContent align="end" className="w-48" data-testid="mobile-dropdown-resources">
 
                   <DropdownMenuItem asChild>
-                    <Link href="/prompting-guides" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-prompting-guides">
+                    <Link to="/prompting-guides" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-prompting-guides">
                       <BookOpen className="mr-2 h-4 w-4" />
                       Prompting Guides
                     </Link>
@@ -716,7 +716,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 
                   
                   <DropdownMenuItem asChild>
-                    <Link href="/ai-services" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-ai-sevices">
+                    <Link to="/ai-services" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-ai-sevices">
                       <BookOpen className="mr-2 h-4 w-4" />
                       AI Services
                     </Link>
