@@ -147,7 +147,7 @@ export default function Community() {
   }, [promptsSubTab, activeTab, isAuthenticated, multiSelectFilters]);
 
   // Fetch public collections
-  const { data: publicCollections = [] } = useQuery<(Collection & { promptCount?: number; user?: User })[]>({
+  const { data: publicCollections = [] } = useQuery<(Collection & { promptCount?: number; exampleImages?: string[]; user?: User })[]>({
     queryKey: [`/api/collections?isPublic=true&search=${collectionSearchQuery}&limit=50`],
     enabled: isAuthenticated && activeTab === "collections",
     retry: false,
@@ -476,6 +476,30 @@ export default function Community() {
                 <Link key={collection.id} href={`/collection/${collection.id}`}>
                   <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer" data-testid={`collection-card-${collection.id}`}>
                     <CardContent className="p-6">
+                      {/* Display example images if available */}
+                      {collection.exampleImages && collection.exampleImages.length > 0 && (
+                        <div className="grid grid-cols-2 gap-1 mb-4">
+                          {collection.exampleImages.slice(0, 4).map((imageUrl, index) => (
+                            <div key={index} className="aspect-square rounded overflow-hidden bg-muted">
+                              <img
+                                src={imageUrl}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                  // Hide broken images
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          ))}
+                          {/* Fill empty slots with placeholders */}
+                          {collection.exampleImages.length < 4 && [...Array(4 - collection.exampleImages.length)].map((_, i) => (
+                            <div key={`placeholder-${i}`} className="aspect-square rounded bg-muted/50" />
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
