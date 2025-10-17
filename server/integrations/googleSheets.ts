@@ -61,12 +61,26 @@ export async function fetchAIServices(): Promise<AIService[]> {
     const sheets = await getUncachableGoogleSheetClient();
     const spreadsheetId = '1tfOk1b_ygQfKJlLCXOS2VYH1Y8AiAAodhvvMHmDIMtg';
     
+    // Get spreadsheet metadata to find the first sheet's name
+    const metadata = await sheets.spreadsheets.get({
+      spreadsheetId,
+    });
+    
+    const firstSheet = metadata.data.sheets?.[0];
+    if (!firstSheet?.properties?.title) {
+      throw new Error('No sheets found in spreadsheet');
+    }
+    
+    const sheetName = firstSheet.properties.title;
+    console.log(`Using sheet: ${sheetName}`);
+    
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A2:F',
+      range: `${sheetName}!A2:F`,
     });
 
     const rows = response.data.values || [];
+    console.log(`Fetched ${rows.length} AI services from Google Sheets`);
     
     return rows.map(row => ({
       name: row[0] || '',
