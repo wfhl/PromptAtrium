@@ -25,6 +25,7 @@ import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import QuickPrompterPage from "@/pages/tools/quick-prompter";
 import InstallGuide from "@/pages/install-guide";
 import PromptDetail from "@/pages/prompt-detail";
+import PromptHistoryPage from "@/pages/prompt-history";
 import PromptingGuides from "@/pages/prompting-guides";
 import AIServices from "@/pages/ai-services";
 import GettingStarted from "@/pages/getting-started";
@@ -162,6 +163,9 @@ function Router() {
             </Route>
             <Route path="/codex">
               {() => <Layout><Codex /></Layout>}
+            </Route>
+            <Route path="/prompt-history">
+              {() => <Layout><PromptHistoryPage /></Layout>}
             </Route>
           </>
         )}

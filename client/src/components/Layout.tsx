@@ -582,7 +582,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </DropdownMenuItem>
 
                 <DropdownMenuItem asChild>
-                  <Link href="/tools/quick-prompter" className="flex items-center cursor-pointer" data-testid="menu-prompt-history">
+                  <Link href="/prompt-history" className="flex items-center cursor-pointer" data-testid="menu-prompt-history">
                     <FileText className="mr-2 h-4 w-4" />
                     Prompt History
                   </Link>
