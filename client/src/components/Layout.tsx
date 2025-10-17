@@ -715,19 +715,11 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </DropdownMenuItem>
                 
                   
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "AI Services will be available soon!",
-                      });
-                      setMobileMenuOpen(false);
-                    }}
-                    className="cursor-pointer"
-                    data-testid="mobile-menu-ai-services"
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    AI Services
+                  <DropdownMenuItem asChild>
+                    <Link href="/ai-services" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-ai-sevices">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      AI Services
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => {
