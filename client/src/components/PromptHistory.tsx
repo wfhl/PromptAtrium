@@ -10,7 +10,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Clock, Copy, Trash2, Search, X, ChevronRight,
-  FileText, Image, MessageSquare, Loader2, Database, HardDrive
+  FileText, Image, MessageSquare, Loader2, Database, HardDrive, Save
 } from "lucide-react";
 import { format } from "date-fns";
 import { 
@@ -151,6 +151,42 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
         description: "Could not clear prompt history",
         variant: "destructive"
       });
+    }
+  });
+
+  // Save to library mutation
+  const saveToLibraryMutation = useMutation({
+    mutationFn: async (entry: PromptHistoryEntry) => {
+      const libraryData = convertHistoryToLibrary(entry);
+      await apiRequest("POST", "/api/prompts", libraryData);
+      
+      // Update the history entry to mark as saved if it's in the database
+      if (!entry.isLocal) {
+        await apiRequest("PATCH", `/api/prompt-history/${entry.id}`, { isSaved: true });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+      refetch();
+      toast({
+        title: "Saved to Library",
+        description: "Prompt has been added to your library"
+      });
+    },
+    onError: (error: any) => {
+      if (error?.message?.includes("401")) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to save prompts to library",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save prompt to library",
+          variant: "destructive"
+        });
+      }
     }
   });
 
@@ -326,6 +362,22 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                 <Copy className="h-3 w-3 mr-1" />
                                 Copy
                               </Button>
+                              
+                              {!entry.isSaved && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    saveToLibraryMutation.mutate(entry);
+                                  }}
+                                  disabled={saveToLibraryMutation.isPending}
+                                  data-testid={`button-save-library-${entry.id}`}
+                                >
+                                  <Save className="h-3 w-3 mr-1" />
+                                  {saveToLibraryMutation.isPending ? "Saving..." : "Save to Library"}
+                                </Button>
+                              )}
                               
                               {onLoadPrompt && (
                                 <Button
