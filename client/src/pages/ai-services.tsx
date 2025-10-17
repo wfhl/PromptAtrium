@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ExternalLink, Sparkles, DollarSign, Zap } from "lucide-react";
+import { Search, ExternalLink, Sparkles, DollarSign, Zap, Star } from "lucide-react";
 
 interface AIService {
   name: string;
@@ -13,6 +13,7 @@ interface AIService {
   subcategory: string;
   website: string;
   pricing: string;
+  is_featured: boolean;
   features: string;
 }
 
@@ -53,7 +54,7 @@ export default function AIServices() {
   };
 
   const filteredServices = useMemo(() => {
-    return services.filter(service => {
+    const filtered = services.filter(service => {
       const matchesSearch = 
         service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -65,6 +66,13 @@ export default function AIServices() {
       const matchesSubcategory = selectedSubcategory === "all" || service.subcategory === selectedSubcategory;
       
       return matchesSearch && matchesCategory && matchesSubcategory;
+    });
+    
+    // Sort to show featured services first
+    return filtered.sort((a, b) => {
+      if (a.is_featured && !b.is_featured) return -1;
+      if (!a.is_featured && b.is_featured) return 1;
+      return 0;
     });
   }, [services, searchQuery, selectedCategory, selectedSubcategory]);
 
@@ -246,9 +254,14 @@ export default function AIServices() {
                     >
                       <CardHeader className="p-3">
                         <div className="flex items-start justify-between mb-1.5">
-                          <CardTitle className="text-sm text-gray-100 group-hover:text-purple-400 transition-colors leading-tight">
-                            {service.name}
-                          </CardTitle>
+                          <div className="flex items-center gap-1.5">
+                            {service.is_featured && (
+                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" data-testid={`icon-featured-${index}`} />
+                            )}
+                            <CardTitle className="text-sm text-gray-100 group-hover:text-purple-400 transition-colors leading-tight">
+                              {service.name}
+                            </CardTitle>
+                          </div>
                           {service.category && (
                             <Badge 
                               variant="outline" 

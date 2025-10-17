@@ -54,6 +54,7 @@ export interface AIService {
   subcategory: string;
   website: string;
   pricing: string;
+  is_featured: boolean;
   features: string;
 }
 
@@ -77,7 +78,7 @@ export async function fetchAIServices(): Promise<AIService[]> {
     
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A2:G`,
+      range: `${sheetName}!A2:H`,
     });
 
     const rows = response.data.values || [];
@@ -90,7 +91,8 @@ export async function fetchAIServices(): Promise<AIService[]> {
       website: row[2] || '',
       pricing: row[4] || '',
       subcategory: row[5] || '', // Column F is subcategory
-      features: row[6] || '', // Column G is features
+      is_featured: row[6]?.toLowerCase() === 'yes' || row[6]?.toLowerCase() === 'true', // Column G is is_featured
+      features: row[7] || '', // Column H is features
     }));
     
     // Log sample to debug subcategories
