@@ -224,12 +224,12 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+      <DialogContent className="w-full max-w-4xl max-h-[90vh] sm:max-h-[80vh] p-4 sm:p-6">
+        <DialogHeader className="space-y-3 pb-4">
+          <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Prompt Generation History
+              <Clock className="h-5 w-5 flex-shrink-0" />
+              <span className="text-base sm:text-lg">Prompt Generation History</span>
             </div>
             {history.length > 0 && (
               <Button
@@ -240,6 +240,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                     clearMutation.mutate();
                   }
                 }}
+                className="w-full sm:w-auto"
                 data-testid="button-clear-history"
               >
                 Clear All
@@ -273,7 +274,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
           </div>
 
           {/* History list */}
-          <ScrollArea className="h-[500px] pr-4">
+          <ScrollArea className="h-[60vh] sm:h-[500px] pr-2 sm:pr-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -287,13 +288,13 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                 {filteredHistory.map((entry) => (
                   <Card 
                     key={entry.id} 
-                    className="cursor-pointer hover:bg-gray-800/50 transition-colors"
+                    className="cursor-pointer hover:bg-gray-800/50 transition-colors overflow-hidden"
                     onClick={() => setSelectedEntry(selectedEntry?.id === entry.id ? null : entry)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                             {getTemplateIcon(entry.templateUsed)}
                             <Badge variant="secondary" className="text-xs">
                               {entry.templateUsed || "No Template"}
@@ -301,62 +302,66 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                             {entry.metadata?.hasImage && (
                               <Badge variant="outline" className="text-xs">
                                 <Image className="h-3 w-3 mr-1" />
-                                Image
+                                <span className="hidden sm:inline">Image</span>
                               </Badge>
                             )}
                             {entry.metadata?.socialMediaTone && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                                 {entry.metadata.socialMediaTone}
                               </Badge>
                             )}
                             {entry.isLocal ? (
                               <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/50">
                                 <HardDrive className="h-3 w-3 mr-1" />
-                                Local
+                                <span className="hidden sm:inline">Local</span>
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="text-xs text-green-500 border-green-500/50">
                                 <Database className="h-3 w-3 mr-1" />
-                                Saved
+                                <span className="hidden sm:inline">Saved</span>
                               </Badge>
                             )}
                           </div>
                           
-                          <p className="text-sm line-clamp-2">
+                          <p className="text-sm line-clamp-2 break-words">
                             {entry.promptText}
                           </p>
                           
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>{format(new Date(entry.createdAt), 'MMM d, yyyy h:mm a')}</span>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-gray-500">
+                            <span className="whitespace-nowrap">{format(new Date(entry.createdAt), 'MMM d, h:mm a')}</span>
                             {entry.metadata?.subject && (
-                              <span>Subject: {entry.metadata.subject}</span>
+                              <span className="truncate">Subject: {entry.metadata.subject}</span>
                             )}
                             {entry.metadata?.character && (
-                              <span>Character: {entry.metadata.character}</span>
+                              <span className="truncate sm:hidden">Char: {entry.metadata.character}</span>
+                            )}
+                            {entry.metadata?.character && (
+                              <span className="hidden sm:inline truncate">Character: {entry.metadata.character}</span>
                             )}
                           </div>
                         </div>
                         
-                        <ChevronRight className={`h-4 w-4 transition-transform ${
+                        <ChevronRight className={`h-4 w-4 flex-shrink-0 transition-transform ${
                           selectedEntry?.id === entry.id ? 'rotate-90' : ''
                         }`} />
                       </div>
 
                       {/* Expanded view */}
                       {selectedEntry?.id === entry.id && (
-                        <div className="mt-4 pt-4 border-t border-gray-800">
+                        <div className="mt-3 pt-3 border-t border-gray-800">
                           <div className="space-y-3">
-                            <div className="bg-gray-900/50 rounded p-3">
-                              <p className="text-sm whitespace-pre-wrap">{entry.promptText}</p>
+                            <div className="bg-gray-900/50 rounded p-2 sm:p-3 max-h-48 overflow-y-auto">
+                              <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{entry.promptText}</p>
                             </div>
                             
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <Button
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleCopy(entry.promptText);
                                 }}
+                                className="w-full sm:w-auto"
                                 data-testid={`button-copy-${entry.id}`}
                               >
                                 <Copy className="h-3 w-3 mr-1" />
@@ -372,10 +377,12 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     saveToLibraryMutation.mutate(entry);
                                   }}
                                   disabled={saveToLibraryMutation.isPending}
+                                  className="w-full sm:w-auto"
                                   data-testid={`button-save-library-${entry.id}`}
                                 >
                                   <Save className="h-3 w-3 mr-1" />
-                                  {saveToLibraryMutation.isPending ? "Saving..." : "Save to Library"}
+                                  <span className="sm:hidden">{saveToLibraryMutation.isPending ? "Saving..." : "Save"}</span>
+                                  <span className="hidden sm:inline">{saveToLibraryMutation.isPending ? "Saving..." : "Save to Library"}</span>
                                 </Button>
                               )}
                               
@@ -387,10 +394,12 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     e.stopPropagation();
                                     handleLoad(entry);
                                   }}
+                                  className="w-full sm:w-auto"
                                   data-testid={`button-load-${entry.id}`}
                                 >
                                   <FileText className="h-3 w-3 mr-1" />
-                                  Load in Generator
+                                  <span className="sm:hidden">Load</span>
+                                  <span className="hidden sm:inline">Load in Generator</span>
                                 </Button>
                               )}
                               
@@ -404,6 +413,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                     setSelectedEntry(null);
                                   }
                                 }}
+                                className="w-full sm:w-auto"
                                 data-testid={`button-delete-${entry.id}`}
                               >
                                 <Trash2 className="h-3 w-3 mr-1" />
