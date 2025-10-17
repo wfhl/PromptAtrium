@@ -57,40 +57,53 @@ export default function AIServices() {
   }, [filteredServices]);
 
   const getCategoryColor = (text: string) => {
+    // Unified color mapping for both categories and subcategories
     const colors: Record<string, string> = {
-      "3D": "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      // Original category colors for badges
+      "Image Generation": "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      "Text Generation": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      "Video": "bg-pink-500/20 text-pink-400 border-pink-500/30",
       "Audio": "bg-green-500/20 text-green-400 border-green-500/30",
       "Code": "bg-orange-500/20 text-orange-400 border-orange-500/30",
-      "Image": "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      "Image Gen": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      "Research": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+      "Design": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
+      
+      // Subcategory colors for filter pills - aligned with similar categories
+      "3D": "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      "Image": "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      "Image Gen": "bg-purple-500/20 text-purple-400 border-purple-500/30",
       "Image Gen API": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
       "Image / Fine-tuning": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
+      "Upscaler / Enhancer": "bg-sky-500/20 text-sky-400 border-sky-500/30",
+      
       "Marketing AI Tools": "bg-pink-500/20 text-pink-400 border-pink-500/30",
       "Model APIs / Inference": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
       "Model Hosting / API": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
       "Models / Datasets / Inference": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
-      "Video": "bg-rose-500/20 text-rose-400 border-rose-500/30",
-      "Text Generation": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-      "Phone Calls": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-      "Prompt Library / Search": "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30",
-      "Prompt Manager": "bg-violet-500/20 text-violet-400 border-violet-500/30",
-      "Upscaler / Enhancer": "bg-sky-500/20 text-sky-400 border-sky-500/30",
-      "Custom Model Training": "bg-amber-500/20 text-amber-400 border-amber-500/30",
-      "Generative Media API": "bg-teal-500/20 text-teal-400 border-teal-500/30",
       "Model / Image Gen": "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      "NVIDIA Platform Extensions": "bg-lime-500/20 text-lime-400 border-lime-500/30",
+      
       "Video / Avatars": "bg-rose-500/20 text-rose-400 border-rose-500/30",
       "Video / Avatars / Lip-sync": "bg-rose-500/20 text-rose-400 border-rose-500/30",
       "Video / Editing": "bg-pink-500/20 text-pink-400 border-pink-500/30",
       "Video (Research/Access)": "bg-red-500/20 text-red-400 border-red-500/30",
+      
+      "Phone Calls": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
       "Voice FX": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      
+      "Prompt Library / Search": "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30",
+      "Prompt Manager": "bg-violet-500/20 text-violet-400 border-violet-500/30",
+      
+      "Custom Model Training": "bg-amber-500/20 text-amber-400 border-amber-500/30",
+      "Generative Media API": "bg-teal-500/20 text-teal-400 border-teal-500/30",
+      "NVIDIA Platform Extensions": "bg-lime-500/20 text-lime-400 border-lime-500/30",
+      
       "Other": "bg-gray-500/20 text-gray-400 border-gray-500/30",
     };
     return colors[text] || "bg-gray-500/20 text-gray-400 border-gray-500/30";
   };
 
   const getSubcategoryColor = (subcategory: string) => {
-    // Use same color mapping for consistency between filter pills and category badges
+    // Use same unified color mapping for consistency between filter pills and category badges
     return getCategoryColor(subcategory);
   };
 
