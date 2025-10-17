@@ -51,6 +51,7 @@ export interface AIService {
   name: string;
   description: string;
   category: string;
+  subcategory: string;
   website: string;
   pricing: string;
   features: string;
@@ -76,19 +77,20 @@ export async function fetchAIServices(): Promise<AIService[]> {
     
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A2:F`,
+      range: `${sheetName}!A2:G`,
     });
 
     const rows = response.data.values || [];
     console.log(`Fetched ${rows.length} AI services from Google Sheets`);
     
     return rows.map(row => ({
-      name: row[0] || '',
-      description: row[1] || '',
-      category: row[2] || '',
-      website: row[3] || '',
+      name: row[1] || '',
+      description: row[3] || '',
+      category: row[0] || '',
+      website: row[2] || '',
       pricing: row[4] || '',
       features: row[5] || '',
+      subcategory: row[6] || '',
     }));
   } catch (error) {
     console.error('Error fetching AI services from Google Sheets:', error);

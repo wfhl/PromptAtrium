@@ -10,6 +10,7 @@ interface AIService {
   name: string;
   description: string;
   category: string;
+  subcategory: string;
   website: string;
   pricing: string;
   features: string;
@@ -17,15 +18,15 @@ interface AIService {
 
 export default function AIServices() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
 
   const { data: services = [], isLoading } = useQuery<AIService[]>({
     queryKey: ["/api/ai-services"],
   });
 
-  const categories = useMemo(() => {
-    const uniqueCategories = new Set(services.map(s => s.category).filter(Boolean));
-    return ["all", ...Array.from(uniqueCategories)];
+  const subcategories = useMemo(() => {
+    const uniqueSubcategories = new Set(services.map(s => s.subcategory).filter(Boolean));
+    return ["all", ...Array.from(uniqueSubcategories).sort()];
   }, [services]);
 
   const filteredServices = useMemo(() => {
@@ -33,25 +34,64 @@ export default function AIServices() {
       const matchesSearch = 
         service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        service.features.toLowerCase().includes(searchQuery.toLowerCase());
+        service.features.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesCategory = selectedCategory === "all" || service.category === selectedCategory;
+      const matchesSubcategory = selectedSubcategory === "all" || service.subcategory === selectedSubcategory;
       
-      return matchesSearch && matchesCategory;
+      return matchesSearch && matchesSubcategory;
     });
-  }, [services, searchQuery, selectedCategory]);
+  }, [services, searchQuery, selectedSubcategory]);
 
-  const getCategoryColor = (category: string) => {
+  // Group services by subcategory for organized display
+  const groupedServices = useMemo(() => {
+    const groups: Record<string, AIService[]> = {};
+    filteredServices.forEach(service => {
+      const subcategory = service.subcategory || 'Other';
+      if (!groups[subcategory]) {
+        groups[subcategory] = [];
+      }
+      groups[subcategory].push(service);
+    });
+    return groups;
+  }, [filteredServices]);
+
+  const getCategoryColor = (text: string) => {
     const colors: Record<string, string> = {
-      "Image Generation": "bg-purple-500/20 text-purple-400 border-purple-500/30",
-      "Text Generation": "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      "Video": "bg-pink-500/20 text-pink-400 border-pink-500/30",
+      "3D": "bg-purple-500/20 text-purple-400 border-purple-500/30",
       "Audio": "bg-green-500/20 text-green-400 border-green-500/30",
       "Code": "bg-orange-500/20 text-orange-400 border-orange-500/30",
-      "Research": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
-      "Design": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
+      "Image": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      "Image Gen": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      "Image Gen API": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
+      "Image / Fine-tuning": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
+      "Marketing AI Tools": "bg-pink-500/20 text-pink-400 border-pink-500/30",
+      "Model APIs / Inference": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+      "Model Hosting / API": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+      "Models / Datasets / Inference": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+      "Video": "bg-rose-500/20 text-rose-400 border-rose-500/30",
+      "Text Generation": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      "Phone Calls": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      "Prompt Library / Search": "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30",
+      "Prompt Manager": "bg-violet-500/20 text-violet-400 border-violet-500/30",
+      "Upscaler / Enhancer": "bg-sky-500/20 text-sky-400 border-sky-500/30",
+      "Custom Model Training": "bg-amber-500/20 text-amber-400 border-amber-500/30",
+      "Generative Media API": "bg-teal-500/20 text-teal-400 border-teal-500/30",
+      "Model / Image Gen": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      "NVIDIA Platform Extensions": "bg-lime-500/20 text-lime-400 border-lime-500/30",
+      "Video / Avatars": "bg-rose-500/20 text-rose-400 border-rose-500/30",
+      "Video / Avatars / Lip-sync": "bg-rose-500/20 text-rose-400 border-rose-500/30",
+      "Video / Editing": "bg-pink-500/20 text-pink-400 border-pink-500/30",
+      "Video (Research/Access)": "bg-red-500/20 text-red-400 border-red-500/30",
+      "Voice FX": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      "Other": "bg-gray-500/20 text-gray-400 border-gray-500/30",
     };
-    return colors[category] || "bg-gray-500/20 text-gray-400 border-gray-500/30";
+    return colors[text] || "bg-gray-500/20 text-gray-400 border-gray-500/30";
+  };
+
+  const getSubcategoryColor = (subcategory: string) => {
+    // Use same color mapping for consistency between filter pills and category badges
+    return getCategoryColor(subcategory);
   };
 
   return (
@@ -85,26 +125,26 @@ export default function AIServices() {
           </div>
         </div>
 
-        {/* Category Filters */}
+        {/* Subcategory Filters */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {categories.map((category) => (
+          {subcategories.map((subcategory) => (
             <Badge
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
+              key={subcategory}
+              variant={selectedSubcategory === subcategory ? "default" : "outline"}
               className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${
-                selectedCategory === category
-                  ? "bg-purple-500 text-white border-purple-500"
+                selectedSubcategory === subcategory
+                  ? getSubcategoryColor(subcategory)
                   : "bg-gray-900/30 text-gray-400 border-gray-700 hover:bg-gray-800/50"
               }`}
-              onClick={() => setSelectedCategory(category)}
-              data-testid={`filter-${category.toLowerCase()}`}
+              onClick={() => setSelectedSubcategory(subcategory)}
+              data-testid={`filter-${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
             >
-              {category === "all" ? "All Categories" : category}
+              {subcategory === "all" ? "All Categories" : subcategory}
             </Badge>
           ))}
         </div>
 
-        {/* Services Grid */}
+        {/* Services Grid - Organized by Subcategory */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -133,63 +173,81 @@ export default function AIServices() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredServices.map((service, index) => (
-              <Card 
-                key={index} 
-                className="bg-gray-900/30 border-gray-800 hover:border-purple-500/50 transition-all group"
-                data-testid={`card-service-${index}`}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-2">
-                    <CardTitle className="text-xl text-gray-100 group-hover:text-purple-400 transition-colors">
-                      {service.name}
-                    </CardTitle>
-                    {service.category && (
-                      <Badge 
-                        variant="outline" 
-                        className={`${getCategoryColor(service.category)} text-xs`}
-                        data-testid={`badge-category-${index}`}
-                      >
-                        {service.category}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-400 leading-relaxed">
-                    {service.description}
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {service.features && (
-                    <div className="flex items-start gap-2">
-                      <Zap className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-gray-300">
-                        {service.features}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {service.pricing && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-gray-300">{service.pricing}</span>
-                    </div>
-                  )}
-
-                  {service.website && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
-                      onClick={() => window.open(service.website, '_blank')}
-                      data-testid={`button-visit-${index}`}
+          <div className="space-y-12">
+            {Object.entries(groupedServices).sort(([a], [b]) => a.localeCompare(b)).map(([subcategory, subcategoryServices]) => (
+              <div key={subcategory} className="space-y-4">
+                {/* Subcategory Header */}
+                <div className="flex items-center gap-3">
+                  <Badge 
+                    variant="outline" 
+                    className={`${getSubcategoryColor(subcategory)} text-sm px-4 py-1.5`}
+                  >
+                    {subcategory}
+                  </Badge>
+                  <div className="h-px flex-1 bg-gradient-to-r from-gray-800 to-transparent"></div>
+                </div>
+                
+                {/* Services Grid for this Subcategory */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {subcategoryServices.map((service, index) => (
+                    <Card 
+                      key={`${subcategory}-${index}`}
+                      className="bg-gray-900/30 border-gray-800 hover:border-purple-500/50 transition-all group"
+                      data-testid={`card-service-${subcategory}-${index}`}
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Visit Website
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
+                      <CardHeader>
+                        <div className="flex items-start justify-between mb-2">
+                          <CardTitle className="text-xl text-gray-100 group-hover:text-purple-400 transition-colors">
+                            {service.name}
+                          </CardTitle>
+                          {service.category && (
+                            <Badge 
+                              variant="outline" 
+                              className={`${getCategoryColor(service.category)} text-xs flex-shrink-0 ml-2`}
+                              data-testid={`badge-category-${index}`}
+                            >
+                              {service.category}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          {service.description}
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {service.features && (
+                          <div className="flex items-start gap-2">
+                            <Zap className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-gray-300">
+                              {service.features}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {service.pricing && (
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-green-500" />
+                            <span className="text-sm text-gray-300">{service.pricing}</span>
+                          </div>
+                        )}
+
+                        {service.website && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+                            onClick={() => window.open(service.website, '_blank')}
+                            data-testid={`button-visit-${index}`}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Visit Website
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
