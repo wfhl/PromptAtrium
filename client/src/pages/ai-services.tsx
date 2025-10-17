@@ -18,34 +18,16 @@ interface AIService {
 
 export default function AIServices() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
 
   const { data: services = [], isLoading } = useQuery<AIService[]>({
     queryKey: ["/api/ai-services"],
   });
 
-  const categories = useMemo(() => {
-    const uniqueCategories = new Set(services.map(s => s.category).filter(Boolean));
-    return ["all", ...Array.from(uniqueCategories).sort()];
-  }, [services]);
-
-  // Get subcategories for the selected category
   const subcategories = useMemo(() => {
-    if (selectedCategory === "all") return [];
-    
-    const categoryServices = services.filter(s => s.category === selectedCategory);
-    const uniqueSubcategories = new Set(
-      categoryServices.map(s => s.subcategory).filter(Boolean)
-    );
+    const uniqueSubcategories = new Set(services.map(s => s.subcategory).filter(Boolean));
     return ["all", ...Array.from(uniqueSubcategories).sort()];
-  }, [services, selectedCategory]);
-
-  // Reset subcategory when category changes
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    setSelectedSubcategory("all");
-  };
+  }, [services]);
 
   const filteredServices = useMemo(() => {
     return services.filter(service => {
@@ -53,15 +35,13 @@ export default function AIServices() {
         service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.features.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        service.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesCategory = selectedCategory === "all" || service.category === selectedCategory;
       const matchesSubcategory = selectedSubcategory === "all" || service.subcategory === selectedSubcategory;
       
-      return matchesSearch && matchesCategory && matchesSubcategory;
+      return matchesSearch && matchesSubcategory;
     });
-  }, [services, searchQuery, selectedCategory, selectedSubcategory]);
+  }, [services, searchQuery, selectedSubcategory]);
 
   // Group services by subcategory for organized display
   const groupedServices = useMemo(() => {
@@ -145,46 +125,23 @@ export default function AIServices() {
           </div>
         </div>
 
-        {/* Category Filters - First Row */}
-        <div className="space-y-3 mb-6">
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Badge
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${
-                  selectedCategory === category
-                    ? getCategoryColor(category)
-                    : "bg-gray-900/30 text-gray-400 border-gray-700 hover:bg-gray-800/50"
-                }`}
-                onClick={() => handleCategoryChange(category)}
-                data-testid={`filter-category-${category.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                {category === "all" ? "All Categories" : category}
-              </Badge>
-            ))}
-          </div>
-          
-          {/* Subcategory Filters - Second Row (shown only when a category is selected) */}
-          {subcategories.length > 0 && (
-            <div className="flex flex-wrap gap-2 pl-4 border-l-2 border-purple-500/30">
-              {subcategories.map((subcategory) => (
-                <Badge
-                  key={subcategory}
-                  variant={selectedSubcategory === subcategory ? "default" : "outline"}
-                  className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${
-                    selectedSubcategory === subcategory
-                      ? getSubcategoryColor(subcategory)
-                      : "bg-gray-900/30 text-gray-400 border-gray-700 hover:bg-gray-800/50"
-                  }`}
-                  onClick={() => setSelectedSubcategory(subcategory)}
-                  data-testid={`filter-subcategory-${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  {subcategory === "all" ? "All Subcategories" : subcategory}
-                </Badge>
-              ))}
-            </div>
-          )}
+        {/* Subcategory Filters */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {subcategories.map((subcategory) => (
+            <Badge
+              key={subcategory}
+              variant={selectedSubcategory === subcategory ? "default" : "outline"}
+              className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${
+                selectedSubcategory === subcategory
+                  ? getSubcategoryColor(subcategory)
+                  : "bg-gray-900/30 text-gray-400 border-gray-700 hover:bg-gray-800/50"
+              }`}
+              onClick={() => setSelectedSubcategory(subcategory)}
+              data-testid={`filter-${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              {subcategory === "all" ? "All Categories" : subcategory}
+            </Badge>
+          ))}
         </div>
 
         {/* Services Grid - Organized by Subcategory */}
@@ -231,46 +188,46 @@ export default function AIServices() {
                 </div>
                 
                 {/* Services Grid for this Subcategory */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
                   {subcategoryServices.map((service, index) => (
                     <Card 
                       key={`${subcategory}-${index}`}
                       className="bg-gray-900/30 border-gray-800 hover:border-purple-500/50 transition-all group"
                       data-testid={`card-service-${subcategory}-${index}`}
                     >
-                      <CardHeader className="p-3 md:p-6">
-                        <div className="flex items-start justify-between mb-1.5 md:mb-2">
-                          <CardTitle className="text-sm md:text-xl text-gray-100 group-hover:text-purple-400 transition-colors leading-tight">
+                      <CardHeader className="p-3">
+                        <div className="flex items-start justify-between mb-1.5">
+                          <CardTitle className="text-sm text-gray-100 group-hover:text-purple-400 transition-colors leading-tight">
                             {service.name}
                           </CardTitle>
                           {service.category && (
                             <Badge 
                               variant="outline" 
-                              className={`${getCategoryColor(service.category)} text-[10px] md:text-xs flex-shrink-0 ml-2 px-1.5 py-0.5 md:px-2 md:py-1`}
+                              className={`${getCategoryColor(service.category)} text-[10px] flex-shrink-0 ml-2 px-1.5 py-0.5`}
                               data-testid={`badge-category-${index}`}
                             >
                               {service.category}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs md:text-sm text-gray-400 leading-snug md:leading-relaxed line-clamp-2 md:line-clamp-none">
+                        <p className="text-xs text-gray-400 leading-snug line-clamp-2">
                           {service.description}
                         </p>
                       </CardHeader>
-                      <CardContent className="space-y-2 md:space-y-4 p-3 pt-0 md:p-6 md:pt-0">
+                      <CardContent className="space-y-2 p-3 pt-0">
                         {service.features && (
-                          <div className="flex items-start gap-1.5 md:gap-2">
-                            <Zap className="h-3 w-3 md:h-4 md:w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs md:text-sm text-gray-300 line-clamp-2 md:line-clamp-none leading-snug">
+                          <div className="flex items-start gap-1.5">
+                            <Zap className="h-3 w-3 text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-gray-300 line-clamp-2 leading-snug">
                               {service.features}
                             </p>
                           </div>
                         )}
                         
                         {service.pricing && (
-                          <div className="flex items-center gap-1.5 md:gap-2">
-                            <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
-                            <span className="text-xs md:text-sm text-gray-300">{service.pricing}</span>
+                          <div className="flex items-center gap-1.5">
+                            <DollarSign className="h-3 w-3 text-green-500" />
+                            <span className="text-xs text-gray-300">{service.pricing}</span>
                           </div>
                         )}
 
@@ -278,11 +235,11 @@ export default function AIServices() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 h-8 md:h-9 text-xs md:text-sm"
+                            className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 h-7 text-xs"
                             onClick={() => window.open(service.website, '_blank')}
                             data-testid={`button-visit-${index}`}
                           >
-                            <ExternalLink className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+                            <ExternalLink className="h-3 w-3 mr-1.5" />
                             Visit Website
                           </Button>
                         )}
