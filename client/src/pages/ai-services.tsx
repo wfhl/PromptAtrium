@@ -127,21 +127,26 @@ export default function AIServices() {
 
         {/* Subcategory Filters */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {subcategories.map((subcategory) => (
-            <Badge
-              key={subcategory}
-              variant={selectedSubcategory === subcategory ? "default" : "outline"}
-              className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${
-                selectedSubcategory === subcategory
-                  ? getSubcategoryColor(subcategory)
-                  : "bg-gray-900/30 text-gray-400 border-gray-700 hover:bg-gray-800/50"
-              }`}
-              onClick={() => setSelectedSubcategory(subcategory)}
-              data-testid={`filter-${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
-            >
-              {subcategory === "all" ? "All Categories" : subcategory}
-            </Badge>
-          ))}
+          {subcategories.map((subcategory) => {
+            const isSelected = selectedSubcategory === subcategory;
+            const baseColor = getSubcategoryColor(subcategory);
+            
+            return (
+              <Badge
+                key={subcategory}
+                variant="outline"
+                className={`cursor-pointer transition-all text-xs px-3 py-1.5 ${baseColor} ${
+                  isSelected 
+                    ? "brightness-150 font-bold border-2" 
+                    : "opacity-60 hover:opacity-80"
+                }`}
+                onClick={() => setSelectedSubcategory(subcategory)}
+                data-testid={`filter-${subcategory.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                {subcategory === "all" ? "All Categories" : subcategory}
+              </Badge>
+            );
+          })}
         </div>
 
         {/* Services Grid - Organized by Subcategory */}
