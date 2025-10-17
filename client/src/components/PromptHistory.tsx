@@ -324,13 +324,13 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                           </div>
                           
                           <p className="text-sm line-clamp-2 break-words">
-                            {entry.promptText}
+                            {entry.metadata.subject}
                           </p>
                           
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-gray-500">
                             <span className="whitespace-nowrap">{format(new Date(entry.createdAt), 'MMM d, h:mm a')}</span>
                             {entry.metadata?.subject && (
-                              <span className="truncate">Subject: {entry.metadata.subject}</span>
+                              <span className="truncate">Style: {entry.templateUsed}</span>
                             )}
                             {entry.metadata?.character && (
                               <span className="truncate sm:hidden">Char: {entry.metadata.character}</span>
