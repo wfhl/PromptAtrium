@@ -4,9 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Search, Hash, Palette, ChevronRight, ExternalLink, Heart, Lightbulb, Wand2, Wrench, Users, MessageCircle, PlayCircle, MessageSquare, Sparkles, AlertCircle, Book, Zap, Code } from "lucide-react";
+import { BookOpen, Search, Hash, Palette, ChevronRight, ExternalLink, Heart, Lightbulb, Wand2, Wrench, Users, MessageCircle, PlayCircle, MessageSquare, Sparkles, AlertCircle, Book, Zap, Code, Banana } from "lucide-react";
 import { useLocation } from "wouter";
-import { SYNTAX_GUIDES, ANATOMY_GUIDES, PROMPT_RESOURCES, LEARNING_RESOURCES, QUICK_TIPS } from "@/data/promptingGuides";
+import { SYNTAX_GUIDES, ANATOMY_GUIDES, NANO_BANANA_GUIDES, PROMPT_RESOURCES, LEARNING_RESOURCES, QUICK_TIPS } from "@/data/promptingGuides";
 import type { Guide, Resource } from "@/data/promptingGuides";
 
 // Markdown support
@@ -77,6 +77,15 @@ export default function PromptingGuides() {
   const filteredAnatomyGuides = useMemo(() => {
     if (!searchQuery) return ANATOMY_GUIDES;
     return ANATOMY_GUIDES.filter(
+      guide =>
+        guide.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        guide.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
+
+  const filteredNanoBananaGuides = useMemo(() => {
+    if (!searchQuery) return NANO_BANANA_GUIDES;
+    return NANO_BANANA_GUIDES.filter(
       guide =>
         guide.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         guide.content.toLowerCase().includes(searchQuery.toLowerCase())
@@ -188,7 +197,7 @@ export default function PromptingGuides() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-black">
+          <TabsList className="grid w-full grid-cols-4 bg-black">
             <TabsTrigger 
               value="resources" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20"
@@ -212,6 +221,14 @@ export default function PromptingGuides() {
             >
               <Hash className="h-4 w-4 mr-2" />
               Syntax
+            </TabsTrigger>
+            <TabsTrigger 
+              value="nano-banana" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20"
+              data-testid="tab-nano-banana"
+            >
+              <Banana className="h-4 w-4 mr-2" />
+              Nano-Banana
             </TabsTrigger>
           </TabsList>
 
@@ -335,6 +352,75 @@ export default function PromptingGuides() {
                         id={`syntax-guide-${guide.id}`}
                         className={`${bgClass} ${colorClass.split(' ')[2]} scroll-mt-4`} 
                         data-testid={`card-syntax-guide-${guide.id}`}
+                      >
+                        <CardHeader className="border-b border-gray-800">
+                          <CardTitle className={`text-xl ${textClass}`}>{guide.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <div 
+                            className="prose prose-invert max-w-none"
+                            dangerouslySetInnerHTML={{ __html: formatContent(guide.content) }}
+                          />
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Nano-Banana Tab Content */}
+          <TabsContent value="nano-banana" className="mt-6">
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-100 mb-2">Nano-Banana on Gemini 2.5</h2>
+                <p className="text-gray-400">Learn how to use Nano-Banana AI for creative image generation and editing</p>
+              </div>
+
+              {/* Topic Pills */}
+              <div className="flex flex-wrap gap-2 mb-8 justify-center">
+                {filteredNanoBananaGuides.map((guide) => {
+                  const colorClass = "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+                  return (
+                    <Badge
+                      key={guide.id}
+                      variant="outline"
+                      className={`${colorClass} border cursor-pointer hover:opacity-80 transition-opacity text-xs px-3 py-1.5`}
+                      data-testid={`pill-nano-banana-${guide.id}`}
+                      onClick={() => {
+                        const element = document.getElementById(`nano-banana-guide-${guide.id}`);
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                    >
+                      {getTopicPillName(guide.title)}
+                    </Badge>
+                  );
+                })}
+              </div>
+
+              {/* All Nano-Banana Guides */}
+              <div className="space-y-4">
+                {filteredNanoBananaGuides.length === 0 ? (
+                  <Card className="bg-gray-900/30 border-gray-800">
+                    <CardContent className="p-6">
+                      <p className="text-center text-gray-400">
+                        No guides found matching "{searchQuery}"
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filteredNanoBananaGuides.map((guide) => {
+                    const colorClass = "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+                    const bgClass = colorClass.split(' ')[0];
+                    const textClass = colorClass.split(' ')[1];
+                    return (
+                      <Card 
+                        key={guide.id} 
+                        id={`nano-banana-guide-${guide.id}`}
+                        className={`${bgClass} ${colorClass.split(' ')[2]} scroll-mt-4`} 
+                        data-testid={`card-nano-banana-guide-${guide.id}`}
                       >
                         <CardHeader className="border-b border-gray-800">
                           <CardTitle className={`text-xl ${textClass}`}>{guide.title}</CardTitle>
