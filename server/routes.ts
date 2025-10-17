@@ -3801,6 +3801,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Services endpoint - fetches from Google Sheet
+  app.get('/api/ai-services', async (req, res) => {
+    try {
+      const { fetchAIServices } = await import('./integrations/googleSheets');
+      const services = await fetchAIServices();
+      res.json(services);
+    } catch (error) {
+      console.error('Error fetching AI services:', error);
+      res.status(500).json({ error: 'Failed to fetch AI services' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
