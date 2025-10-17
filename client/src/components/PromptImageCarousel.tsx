@@ -460,10 +460,16 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
           <Button
             size="sm"
             variant="secondary"
-            onClick={scrollLeft}
+            onClick={(e) => {
+              e.stopPropagation();
+              scrollLeft();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             disabled={isTransitioning || isDragging}
             className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-background/90 hover:bg-background shadow-lg"
             style={{ opacity: isTransitioning || isDragging ? 0.5 : 1 }}
+            data-testid="button-carousel-left"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -473,10 +479,16 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
           <Button
             size="sm"
             variant="secondary"
-            onClick={scrollRight}
+            onClick={(e) => {
+              e.stopPropagation();
+              scrollRight();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             disabled={isTransitioning || isDragging}
             className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-background/90 hover:bg-background shadow-lg"
             style={{ opacity: isTransitioning || isDragging ? 0.5 : 1 }}
+            data-testid="button-carousel-right"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
