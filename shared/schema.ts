@@ -224,6 +224,16 @@ export const characterPresets = pgTable("character_presets", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Character preset types
+export const insertCharacterPresetSchema = createInsertSchema(characterPresets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCharacterPreset = z.infer<typeof insertCharacterPresetSchema>;
+export type CharacterPreset = typeof characterPresets.$inferSelect;
+
 // Prompt templates table for Quick Prompt
 export const promptTemplates = pgTable("prompt_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

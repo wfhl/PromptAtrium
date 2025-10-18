@@ -5,6 +5,7 @@ import {
   characterPresets as characterPresetsTable 
 } from '@shared/schema';
 import { eq, desc, and, isNotNull } from 'drizzle-orm';
+import { storage } from '../storage';
 
 const router = Router();
 
@@ -14,12 +15,12 @@ const router = Router();
  */
 router.get('/character-presets', async (req, res) => {
   try {
-    // First check if the table exists and has data
-    const presets = await db
-      .select()
-      .from(characterPresetsTable)
-      .where(isNotNull(characterPresetsTable.name))
-      .orderBy(desc(characterPresetsTable.isFavorite), characterPresetsTable.name);
+    const userId = (req as any).user?.id || null;
+    
+    // Get presets for the user (their own + global ones)
+    const presets = await storage.getCharacterPresets({ 
+      userId: userId || undefined 
+    });
 
     // If no presets exist, return default ones
     if (presets.length === 0) {
@@ -235,7 +236,7 @@ Create wonder and imagination.`,
  */
 router.post('/character-presets', async (req, res) => {
   try {
-    const { name, gender, role, description, is_favorite } = req.body;
+    const { name, gender, role, description, isFavorite } = req.body;
     const userId = (req as any).user?.id || null;
 
     if (!name) {
@@ -245,27 +246,101 @@ router.post('/character-presets', async (req, res) => {
       });
     }
 
-    const newPreset = await db
-      .insert(characterPresetsTable)
-      .values({
-        name,
-        gender: gender || 'Any',
-        role: role || 'Character',
-        description: description || '',
-        isFavorite: is_favorite || false,
-        user_id: userId
-      })
-      .returning();
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        success: false
+      });
+    }
+
+    const newPreset = await storage.createCharacterPreset({
+      name,
+      gender: gender || 'Any',
+      role: role || 'Character',
+      description: description || '',
+      isFavorite: isFavorite || false,
+      userId: userId,
+      isGlobal: false
+    });
 
     res.json({
       success: true,
-      preset: newPreset[0]
+      preset: newPreset
     });
   } catch (error: any) {
     console.error('Error creating character preset:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to create character preset'
+    });
+  }
+});
+
+/**
+ * PUT /api/system-data/character-presets/:id
+ * Update a character preset
+ */
+router.put('/character-presets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, gender, role, description, isFavorite } = req.body;
+    const userId = (req as any).user?.id || null;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        success: false
+      });
+    }
+
+    const updatedPreset = await storage.updateCharacterPreset(id, {
+      name,
+      gender,
+      role,
+      description,
+      isFavorite
+    });
+
+    res.json({
+      success: true,
+      preset: updatedPreset
+    });
+  } catch (error: any) {
+    console.error('Error updating character preset:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update character preset'
+    });
+  }
+});
+
+/**
+ * POST /api/system-data/character-presets/:id/favorite
+ * Toggle favorite status of a character preset
+ */
+router.post('/character-presets/:id/favorite', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user?.id || null;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        success: false
+      });
+    }
+
+    const updatedPreset = await storage.toggleCharacterPresetFavorite(id, userId);
+
+    res.json({
+      success: true,
+      preset: updatedPreset
+    });
+  } catch (error: any) {
+    console.error('Error toggling character preset favorite:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to toggle favorite'
     });
   }
 });
@@ -279,22 +354,14 @@ router.delete('/character-presets/:id', async (req, res) => {
     const { id } = req.params;
     const userId = (req as any).user?.id || null;
 
-    // Only allow deletion of user's own presets
-    if (userId) {
-      await db
-        .delete(characterPresetsTable)
-        .where(
-          and(
-            eq(characterPresetsTable.id, id),
-            eq(characterPresetsTable.userId, userId)
-          )
-        );
-    } else {
-      return res.status(403).json({
+    if (!userId) {
+      return res.status(401).json({
         error: 'Authentication required',
         success: false
       });
     }
+
+    await storage.deleteCharacterPreset(id, userId);
 
     res.json({
       success: true,

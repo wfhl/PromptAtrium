@@ -88,6 +88,9 @@ import {
   type InsertCodexAssembledString,
   type PromptImageContribution,
   type InsertPromptImageContribution,
+  characterPresets,
+  type CharacterPreset,
+  type InsertCharacterPreset,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray, isNull } from "drizzle-orm";
@@ -326,6 +329,14 @@ export interface IStorage {
   createCodexAssembledString(assembledString: InsertCodexAssembledString): Promise<CodexAssembledString>;
   updateCodexAssembledString(id: string, updates: Partial<InsertCodexAssembledString>): Promise<CodexAssembledString>;
   deleteCodexAssembledString(id: string): Promise<void>;
+
+  // Character preset operations
+  getCharacterPresets(options?: { userId?: string; isGlobal?: boolean }): Promise<CharacterPreset[]>;
+  getCharacterPreset(id: string): Promise<CharacterPreset | undefined>;
+  createCharacterPreset(preset: InsertCharacterPreset): Promise<CharacterPreset>;
+  updateCharacterPreset(id: string, preset: Partial<InsertCharacterPreset>): Promise<CharacterPreset>;
+  deleteCharacterPreset(id: string, userId: string): Promise<void>;
+  toggleCharacterPresetFavorite(id: string, userId: string): Promise<CharacterPreset>;
 }
 
 function generatePromptId(): string {
@@ -2766,6 +2777,102 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCodexAssembledString(id: string): Promise<void> {
     await db.delete(codexAssembledStrings).where(eq(codexAssembledStrings.id, id));
+  }
+
+  // Character preset operations
+  async getCharacterPresets(options: { userId?: string; isGlobal?: boolean } = {}): Promise<CharacterPreset[]> {
+    const conditions = [];
+    
+    if (options.userId) {
+      // Get user's own presets and global presets
+      conditions.push(
+        or(
+          eq(characterPresets.userId, options.userId),
+          eq(characterPresets.isGlobal, true)
+        )
+      );
+    } else if (options.isGlobal !== undefined) {
+      conditions.push(eq(characterPresets.isGlobal, options.isGlobal));
+    }
+    
+    const query = conditions.length > 0
+      ? db.select().from(characterPresets).where(and(...conditions))
+      : db.select().from(characterPresets);
+    
+    return await query.orderBy(
+      desc(characterPresets.isFavorite),
+      characterPresets.name
+    );
+  }
+
+  async getCharacterPreset(id: string): Promise<CharacterPreset | undefined> {
+    const [preset] = await db
+      .select()
+      .from(characterPresets)
+      .where(eq(characterPresets.id, id));
+    return preset;
+  }
+
+  async createCharacterPreset(preset: InsertCharacterPreset): Promise<CharacterPreset> {
+    const [newPreset] = await db
+      .insert(characterPresets)
+      .values(preset)
+      .returning();
+    return newPreset;
+  }
+
+  async updateCharacterPreset(id: string, preset: Partial<InsertCharacterPreset>): Promise<CharacterPreset> {
+    const [updatedPreset] = await db
+      .update(characterPresets)
+      .set({
+        ...preset,
+        updatedAt: new Date()
+      })
+      .where(eq(characterPresets.id, id))
+      .returning();
+    
+    if (!updatedPreset) {
+      throw new Error("Character preset not found");
+    }
+    
+    return updatedPreset;
+  }
+
+  async deleteCharacterPreset(id: string, userId: string): Promise<void> {
+    // Only allow users to delete their own presets
+    await db
+      .delete(characterPresets)
+      .where(
+        and(
+          eq(characterPresets.id, id),
+          eq(characterPresets.userId, userId)
+        )
+      );
+  }
+
+  async toggleCharacterPresetFavorite(id: string, userId: string): Promise<CharacterPreset> {
+    // First get the preset to check ownership
+    const preset = await this.getCharacterPreset(id);
+    
+    if (!preset) {
+      throw new Error("Character preset not found");
+    }
+    
+    // Only allow toggling favorites on user's own presets or global ones
+    if (preset.userId !== userId && !preset.isGlobal) {
+      throw new Error("Unauthorized to toggle favorite on this preset");
+    }
+    
+    const [updatedPreset] = await db
+      .update(characterPresets)
+      .set({
+        isFavorite: !preset.isFavorite,
+        updatedAt: new Date()
+      })
+      .where(eq(characterPresets.id, id))
+      .returning();
+    
+    return updatedPreset;
   }
 }
 
