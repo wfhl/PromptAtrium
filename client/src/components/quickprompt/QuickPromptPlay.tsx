@@ -849,6 +849,8 @@ export default function QuickPromptPlay() {
         metadata: {
           subject: subject,
           character: character === 'custom-character' ? customCharacterInput : 
+                    // Handle legacy custom-TIMESTAMP IDs from localStorage
+                    (character && character.startsWith('custom-') && /^custom-\d+$/.test(character)) ? 'Custom Character' :
                     characterPresets.find(p => p.id === character)?.name || character,
           hasImage: !!imagePreview,
           socialMediaTone: selectedSocialTone,
@@ -983,6 +985,8 @@ export default function QuickPromptPlay() {
           metadata: {
             subject: subject,
             character: character === 'custom-character' ? customCharacterInput : 
+                      // Handle legacy custom-TIMESTAMP IDs from localStorage
+                      (character && character.startsWith('custom-') && /^custom-\d+$/.test(character)) ? 'Custom Character' :
                       characterPresets.find(p => p.id === character)?.name || character,
             hasImage: !!imagePreview,
             socialMediaTone: selectedSocialTone,
@@ -1008,6 +1012,8 @@ export default function QuickPromptPlay() {
         metadata: {
           subject: subject,
           character: character === 'custom-character' ? customCharacterInput : 
+                    // Handle legacy custom-TIMESTAMP IDs from localStorage
+                    (character && character.startsWith('custom-') && /^custom-\d+$/.test(character)) ? 'Custom Character' :
                     characterPresets.find(p => p.id === character)?.name || character,
           hasImage: !!imagePreview,
           socialMediaTone: selectedSocialTone,
