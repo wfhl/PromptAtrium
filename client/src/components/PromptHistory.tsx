@@ -333,10 +333,20 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                               <span className="truncate">Style: {entry.templateUsed}</span>
                             )}
                             {entry.metadata?.character && (
-                              <span className="truncate sm:hidden">Char: {entry.metadata.character}</span>
+                              <span className="truncate sm:hidden">Char: {
+                                // Handle legacy custom- IDs
+                                entry.metadata.character.startsWith('custom-') && /custom-\d+$/.test(entry.metadata.character)
+                                  ? 'Custom Character'
+                                  : entry.metadata.character
+                              }</span>
                             )}
                             {entry.metadata?.character && (
-                              <span className="hidden sm:inline truncate">Character: {entry.metadata.character}</span>
+                              <span className="hidden sm:inline truncate">Character: {
+                                // Handle legacy custom- IDs  
+                                entry.metadata.character.startsWith('custom-') && /custom-\d+$/.test(entry.metadata.character)
+                                  ? 'Custom Character'
+                                  : entry.metadata.character
+                              }</span>
                             )}
                           </div>
                         </div>
