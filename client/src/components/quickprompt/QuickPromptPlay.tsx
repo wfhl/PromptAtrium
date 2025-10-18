@@ -848,7 +848,8 @@ export default function QuickPromptPlay() {
         },
         metadata: {
           subject: subject,
-          character: character,
+          character: character === 'custom-character' ? customCharacterInput : 
+                    characterPresets.find(p => p.id === character)?.name || character,
           hasImage: !!imagePreview,
           socialMediaTone: selectedSocialTone,
         },
@@ -943,7 +944,8 @@ export default function QuickPromptPlay() {
             },
             metadata: {
               subject: subject,
-              character: character,
+              character: character === 'custom-character' ? customCharacterInput : 
+                        characterPresets.find(p => p.id === character)?.name || character,
               hasImage: !!imagePreview,
               socialMediaTone: selectedSocialTone,
               templateId: template,
@@ -980,7 +982,8 @@ export default function QuickPromptPlay() {
           },
           metadata: {
             subject: subject,
-            character: character,
+            character: character === 'custom-character' ? customCharacterInput : 
+                      characterPresets.find(p => p.id === character)?.name || character,
             hasImage: !!imagePreview,
             socialMediaTone: selectedSocialTone,
             templateId: template,
@@ -1004,7 +1007,8 @@ export default function QuickPromptPlay() {
         },
         metadata: {
           subject: subject,
-          character: character,
+          character: character === 'custom-character' ? customCharacterInput : 
+                    characterPresets.find(p => p.id === character)?.name || character,
           hasImage: !!imagePreview,
           socialMediaTone: selectedSocialTone,
           templateId: template,
