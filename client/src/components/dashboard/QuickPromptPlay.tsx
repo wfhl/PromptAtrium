@@ -18,15 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AdminModeProvider, useAdminMode } from "@/components/quickprompt/AdminModeContext";
 import promptHelperData from "@/data/jsonprompthelper.json";
-
-// Import types
-type CharacterPreset = {
-  id: string;
-  name: string;
-  description: string;
-  isFavorite?: boolean;
-  isCustom?: boolean;
-};
+import { useCharacterPresets } from "@/hooks/useCharacterPresets";
 
 type PromptStyleRuleTemplate = {
   id: number;
@@ -78,14 +70,14 @@ function QuickPromptPlayContent() {
   const promptCategories = Object.keys(promptHelperData);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   
-  // Mock character presets for now
-  const characterPresets: CharacterPreset[] = [
-    { id: "1", name: "Professional Model", description: "Fashion & lifestyle professional", isFavorite: true },
-    { id: "2", name: "Casual Influencer", description: "Social media personality", isFavorite: false },
-    { id: "3", name: "Business Executive", description: "Corporate professional", isFavorite: false },
-    { id: "4", name: "Creative Artist", description: "Artistic and expressive individual", isFavorite: true },
-    { id: "5", name: "Fitness Enthusiast", description: "Athletic and health-focused", isFavorite: false },
-  ];
+  // Use character presets from database
+  const { 
+    presets: characterPresets, 
+    isLoading: isLoadingPresets,
+    createPreset,
+    deletePreset,
+    toggleFavorite 
+  } = useCharacterPresets();
 
   // Mock rule templates
   // Fetch prompt style rule templates from database
@@ -194,7 +186,7 @@ function QuickPromptPlayContent() {
     setTemplate(selectedTemplate.template);
   };
 
-  const handleCharacterSelect = (preset: CharacterPreset | string) => {
+  const handleCharacterSelect = (preset: any) => {
     if (preset === "custom") {
       setShowCustomCharacterInput(true);
       setCharacter("");
@@ -205,10 +197,41 @@ function QuickPromptPlayContent() {
     }
   };
 
-  const handleCustomCharacterApply = () => {
+  const handleCustomCharacterApply = async () => {
     if (customCharacterInput.trim()) {
-      setCharacter(customCharacterInput.trim());
+      const characterName = customCharacterInput.trim();
+      setCharacter(characterName);
       setShowCustomCharacterInput(false);
+      
+      // Save custom character to database if user is authenticated
+      if (isAuthenticated) {
+        createPreset({
+          name: characterName,
+          description: `Custom character: ${characterName}`,
+          role: 'Character',
+          gender: 'Any',
+          isFavorite: false
+        });
+      }
+    }
+  };
+
+  const handleSaveCustomCharacter = () => {
+    if (customCharacterInput.trim() && isAuthenticated) {
+      createPreset({
+        name: customCharacterInput.trim(),
+        description: `Custom character`,
+        role: 'Character',
+        gender: 'Any',
+        isFavorite: false
+      });
+      setCustomCharacterInput("");
+    } else if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save custom characters",
+        variant: "destructive",
+      });
     }
   };
 
