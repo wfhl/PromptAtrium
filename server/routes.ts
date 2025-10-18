@@ -3801,6 +3801,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prompt History Routes
+  app.get('/api/prompt-history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { limit = "50", offset = "0" } = req.query;
+      
+      const history = await storage.getPromptHistory(userId, {
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string)
+      });
+      
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching prompt history:", error);
+      res.status(500).json({ message: "Failed to fetch prompt history" });
+    }
+  });
+
+  app.post('/api/prompt-history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { promptText, templateUsed, settings, metadata } = req.body;
+      
+      if (!promptText) {
+        return res.status(400).json({ message: "Prompt text is required" });
+      }
+      
+      const historyEntry = await storage.savePromptToHistory({
+        userId,
+        promptText,
+        templateUsed,
+        settings,
+        metadata,
+        isSaved: false
+      });
+      
+      res.status(201).json(historyEntry);
+    } catch (error) {
+      console.error("Error saving prompt to history:", error);
+      res.status(500).json({ message: "Failed to save prompt to history" });
+    }
+  });
+
+  app.delete('/api/prompt-history/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { id } = req.params;
+      
+      await storage.deletePromptHistory(id, userId);
+      res.json({ message: "History entry deleted" });
+    } catch (error) {
+      console.error("Error deleting prompt history:", error);
+      res.status(500).json({ message: "Failed to delete history entry" });
+    }
+  });
+
+  app.delete('/api/prompt-history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      await storage.clearPromptHistory(userId);
+      res.json({ message: "History cleared" });
+    } catch (error) {
+      console.error("Error clearing prompt history:", error);
+      res.status(500).json({ message: "Failed to clear history" });
+    }
+  });
+
+  app.patch('/api/prompt-history/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { id } = req.params;
+      const { isSaved } = req.body;
+      
+      if (isSaved === true) {
+        await storage.markPromptAsSaved(id, userId);
+      }
+      
+      res.json({ message: "History entry updated" });
+    } catch (error) {
+      console.error("Error updating prompt history:", error);
+      res.status(500).json({ message: "Failed to update history entry" });
+    }
+  });
+
   // AI Services endpoint - fetches from Google Sheet
   app.get('/api/ai-services', async (req, res) => {
     try {
