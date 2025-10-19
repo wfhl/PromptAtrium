@@ -157,7 +157,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
   // Save to library mutation
   const saveToLibraryMutation = useMutation({
     mutationFn: async (entry: PromptHistoryEntry) => {
-      const libraryData = convertHistoryToLibrary(entry);
+      const libraryData = convertHistoryToLibrary(entry, entry.userId || 'anonymous');
       await apiRequest("POST", "/api/prompts", libraryData);
 
       // Update the history entry to mark as saved if it's in the database
@@ -224,7 +224,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-4xl max-h-[90vh] sm:max-h-[80vh] p-4 sm:p-6">
+      <DialogContent className="w-full max-w-4xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden p-4 sm:p-6">
         <DialogHeader className="space-y-3 pb-4">
           <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -234,9 +234,9 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 min-h-0">
+        <div className="space-y-4 flex flex-col h-full">
           {/* Search bar */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search prompts..."
