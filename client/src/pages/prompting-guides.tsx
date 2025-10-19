@@ -8,6 +8,7 @@ import { BookOpen, Search, Hash, Palette, ChevronRight, ExternalLink, Heart, Lig
 import { useLocation } from "wouter";
 import { SYNTAX_GUIDES, ANATOMY_GUIDES, NANO_BANANA_GUIDES, PROMPT_RESOURCES, LEARNING_RESOURCES, QUICK_TIPS } from "@/data/promptingGuides";
 import type { Guide, Resource } from "@/data/promptingGuides";
+import Link from "next/link";
 
 // Markdown support
 const formatContent = (content: string) => {
@@ -39,7 +40,7 @@ const getTopicColor = (title: string, isAnatomy: boolean = false) => {
     if (title.includes("Advanced") || title.includes("Modifiers")) return "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
     return "bg-gray-500/20 text-gray-400 border-gray-500/30";
   }
-  
+
   // Syntax colors
   if (title.includes("Weight") || title.includes("Emphasis")) return "bg-purple-500/10 text-purple-400 border-purple-500/30";
   if (title.includes("Mixing") || title.includes("Blend")) return "bg-blue-500/10 text-blue-400 border-blue-500/30";
@@ -146,7 +147,7 @@ export default function PromptingGuides() {
     if (resource.url) {
       window.open(resource.url, '_blank');
     } else if (resource.id === 'atrium-generator') {
-      setLocation('/tools/quick-promptergenerator');
+      setLocation('/tools/quick-prompter');
     } else if (resource.id === 'flux-generator') {
       setLocation('https://huggingface.co/spaces/gokaygokay/FLUX-Prompt-Generator');
     }
@@ -167,7 +168,7 @@ export default function PromptingGuides() {
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6 max-w-7xl pb-24 lg:pb-6">
-        
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
@@ -181,7 +182,7 @@ export default function PromptingGuides() {
               <p className="text-gray-400">Master the art of AI image generation</p>
             </div>
           </div>
-          
+
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -564,14 +565,14 @@ export default function PromptingGuides() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="h-7 text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400"
-                                  onClick={() => handleResourceClick(resource)}
-                                >
-                                  Open Generator
-                                </Button>
+                                <Link href="/tools/quick-prompter">
+                                  <Button
+                                    variant="outline"
+                                    className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                                  >
+                                    Open Generator
+                                  </Button>
+                                </Link>
                               </div>
                             </div>
                           );
