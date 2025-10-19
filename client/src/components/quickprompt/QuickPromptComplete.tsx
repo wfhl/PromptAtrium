@@ -1324,9 +1324,26 @@ export default function QuickPromptComplete() {
         mode="create"
         prompt={prepopulatedPrompt}
         onSuccess={(savedPrompt) => {
+          const ToastLink = () => (
+            <a 
+              href={`/prompts/${savedPrompt.id}`} 
+              className="font-medium underline underline-offset-4 hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              View Prompt →
+            </a>
+          );
+          
           toast({
-            title: "Prompt saved!",
-            description: "Your prompt has been saved to your library"
+            title: "✓ Prompt saved to your library!",
+            description: (
+              <div className="flex flex-col gap-1">
+                <span>Your prompt "{savedPrompt.name}" has been saved.</span>
+                <ToastLink />
+              </div>
+            )
           });
           setShowPromptModal(false);
           setPrepopulatedPrompt(null);

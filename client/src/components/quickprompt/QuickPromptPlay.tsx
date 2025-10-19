@@ -489,21 +489,29 @@ export default function QuickPromptPlay() {
   // Enhanced mutation for saving to user library with navigation toast
   const enhancedSaveToUserLibraryMutation = useMutation({
     mutationFn: (promptData: any) => apiRequest('/api/prompts', 'POST', promptData),
-    onSuccess: () => {
+    onSuccess: (savedPrompt: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/prompts'] });
       setShareModalOpen(false);
+      
+      const ToastLink = () => (
+        <a 
+          href={`/prompts/${savedPrompt.id}`} 
+          className="font-medium underline underline-offset-4 hover:text-primary"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          View Prompt →
+        </a>
+      );
+      
       toast({
-        title: "Prompt saved to your library!",
-        description: "Click below to view your saved prompt",
-        action: (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => window.location.href = '/library'}
-            className="ml-2"
-          >
-            View in Library
-          </Button>
+        title: "✓ Prompt saved to your library!",
+        description: (
+          <div className="flex flex-col gap-1">
+            <span>Your prompt "{savedPrompt.name}" has been saved.</span>
+            <ToastLink />
+          </div>
         )
       });
     },
