@@ -507,7 +507,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   Import Prompts
                 </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={handleCreatePrompt}
+                    url={/tools/quick-prompter}
                     className="cursor-pointer"
                     data-testid="menu-generate-prompt"
                   >
