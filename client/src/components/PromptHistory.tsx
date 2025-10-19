@@ -231,21 +231,6 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
               <Clock className="h-5 w-5 flex-shrink-0" />
               <span className="text-base sm:text-lg">Prompt Generation History</span>
             </div>
-            {history.length > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  if (confirm("Are you sure you want to clear all history?")) {
-                    clearMutation.mutate();
-                  }
-                }}
-                className="w-full sm:w-auto"
-                data-testid="button-clear-history"
-              >
-                Clear All
-              </Button>
-            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -446,6 +431,21 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
             )}
           </ScrollArea>
         </div>
+        {history.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              if (confirm("Are you sure you want to clear all history?")) {
+                clearMutation.mutate();
+              }
+            }}
+            className="w-full sm:w-auto"
+            data-testid="button-clear-history"
+          >
+            Clear All
+          </Button>
+        )}
       </DialogContent>
     </Dialog>
   );
