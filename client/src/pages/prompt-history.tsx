@@ -1,23 +1,36 @@
-
-import { PromptHistory } from "@/components/PromptHistory";
-import { useState } from "react";
+import { PromptHistoryContent } from "@/components/PromptHistoryContent";
+import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PromptHistoryPage() {
-  const [open, setOpen] = useState(true);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  const handleLoadPrompt = (prompt: string, metadata?: any) => {
+    // Navigate to the quick prompter tool with the loaded prompt
+    setLocation("/tools/quick-prompter");
+    toast({
+      title: "Prompt loaded",
+      description: "The prompt has been loaded into the Quick Prompt Generator"
+    });
+    
+    // Store the prompt data in sessionStorage so the quick prompter can access it
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('loadedPrompt', JSON.stringify({
+        prompt,
+        metadata
+      }));
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Prompt History</h1>
-        <p className="text-muted-foreground">
-          View and manage your previously generated prompts
-        </p>
+    <div className="container mx-auto px-4 py-8 h-full">
+      <div className="max-w-7xl mx-auto h-full">
+        <PromptHistoryContent 
+          onLoadPrompt={handleLoadPrompt}
+          embedded={true}
+        />
       </div>
-      
-      <PromptHistory
-        open={open}
-        onOpenChange={setOpen}
-      />
     </div>
   );
 }
