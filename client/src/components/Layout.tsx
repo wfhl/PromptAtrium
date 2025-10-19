@@ -506,14 +506,15 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   <FileUp className="mr-2 h-4 w-4" />
                   Import Prompts
                 </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    url={/tools/quick-prompter}
+                  <Link href="/tools/quick-prompter">
+                    <DropdownMenuItem 
                     className="cursor-pointer"
                     data-testid="menu-generate-prompt"
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
                     Generate Prompt
                   </DropdownMenuItem>
+                    </Link>
               </DropdownMenuContent>
             </DropdownMenu>
 
