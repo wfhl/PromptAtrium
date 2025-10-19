@@ -145,10 +145,10 @@ export default function PromptingGuides() {
   const handleResourceClick = (resource: Resource) => {
     if (resource.url) {
       window.open(resource.url, '_blank');
-    } else if (resource.id === 'elite-generator') {
-      setLocation('/tools/prompt-generator');
+    } else if (resource.id === 'atrium-generator') {
+      setLocation('/tools/quick-promptergenerator');
     } else if (resource.id === 'flux-generator') {
-      setLocation('/tools/flux-generator');
+      setLocation('https://huggingface.co/spaces/gokaygokay/FLUX-Prompt-Generator');
     }
   };
 

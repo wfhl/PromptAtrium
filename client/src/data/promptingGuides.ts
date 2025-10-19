@@ -1345,8 +1345,8 @@ export const PROMPT_RESOURCES: Resource[] = [
   
   // Prompt Building Tools
   {
-    id: "elite-generator",
-    title: "Elite Prompt Generator",
+    id: "atrium-generator",
+    title: "Atrium Prompt Generator",
     description: "Advanced prompt generator with detailed options and templates",
     category: "builders",
     icon: "wand",

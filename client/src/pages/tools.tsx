@@ -109,7 +109,7 @@ export default function Tools() {
       description: "Organize prompts",
       icon: FolderPlus,
       color: "text-green-500",
-      onClick: () => setCreateCollectionModalOpen(true),
+      link: "/collections",
     },
     {
       id: "aspect-ratio",
