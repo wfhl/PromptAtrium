@@ -1587,8 +1587,8 @@ export class DatabaseStorage implements IStorage {
     
     return followedPrompts.map(r => ({
       ...r.prompt,
-      creator: r.creator
-    } as Prompt & { creator: User }));
+      user: r.creator
+    } as Prompt & { user: User }));
   }
 
   // Activity operations
