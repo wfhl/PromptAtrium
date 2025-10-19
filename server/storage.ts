@@ -1828,37 +1828,40 @@ export class DatabaseStorage implements IStorage {
 
   // Notification operations
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    // Check for duplicate notifications within the last 5 seconds
-    // This prevents double-clicks and race conditions from creating duplicate notifications
-    const fiveSecondsAgo = new Date(Date.now() - 5000);
-    
-    const recentDuplicate = await db
-      .select()
-      .from(notifications)
-      .where(and(
-        eq(notifications.userId, notification.userId),
-        eq(notifications.type, notification.type),
-        eq(notifications.message, notification.message),
-        notification.relatedPromptId ? eq(notifications.relatedPromptId, notification.relatedPromptId) : isNull(notifications.relatedPromptId),
-        notification.relatedUserId ? eq(notifications.relatedUserId, notification.relatedUserId) : isNull(notifications.relatedUserId),
-        gte(notifications.createdAt, fiveSecondsAgo)
-      ))
-      .limit(1);
-    
-    // If we found a recent duplicate, return it instead of creating a new one
-    if (recentDuplicate.length > 0) {
-      console.log(`Skipping duplicate notification: ${notification.type} for user ${notification.userId}`);
-      return recentDuplicate[0];
-    }
-    
-    // Generate a short ID similar to prompt IDs (10 chars hex)
-    const id = randomBytes(5).toString('hex');
-    const [newNotification] = await db
-      .insert(notifications)
-      .values({ ...notification, id })
-      .returning();
-    
-    return newNotification;
+    // Use a transaction to prevent race conditions when checking for duplicates
+    return await db.transaction(async (tx) => {
+      // Check for duplicate notifications within the last 5 seconds
+      // This prevents double-clicks and race conditions from creating duplicate notifications
+      const fiveSecondsAgo = new Date(Date.now() - 5000);
+      
+      const recentDuplicate = await tx
+        .select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, notification.userId),
+          eq(notifications.type, notification.type),
+          eq(notifications.message, notification.message),
+          notification.relatedPromptId ? eq(notifications.relatedPromptId, notification.relatedPromptId) : isNull(notifications.relatedPromptId),
+          notification.relatedUserId ? eq(notifications.relatedUserId, notification.relatedUserId) : isNull(notifications.relatedUserId),
+          gte(notifications.createdAt, fiveSecondsAgo)
+        ))
+        .limit(1);
+      
+      // If we found a recent duplicate, return it instead of creating a new one
+      if (recentDuplicate.length > 0) {
+        console.log(`Skipping duplicate notification: ${notification.type} for user ${notification.userId}`);
+        return recentDuplicate[0];
+      }
+      
+      // Generate a short ID similar to prompt IDs (10 chars hex)
+      const id = randomBytes(5).toString('hex');
+      const [newNotification] = await tx
+        .insert(notifications)
+        .values({ ...notification, id })
+        .returning();
+      
+      return newNotification;
+    });
   }
 
   async getNotifications(userId: string, limit: number = 50, offset: number = 0): Promise<Notification[]> {
