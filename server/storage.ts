@@ -93,7 +93,7 @@ import {
   type InsertCharacterPreset,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, ilike, inArray, isNull } from "drizzle-orm";
+import { eq, desc, and, or, sql, ilike, inArray, isNull, gte } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 // Interface for storage operations
@@ -1828,6 +1828,29 @@ export class DatabaseStorage implements IStorage {
 
   // Notification operations
   async createNotification(notification: InsertNotification): Promise<Notification> {
+    // Check for duplicate notifications within the last 5 seconds
+    // This prevents double-clicks and race conditions from creating duplicate notifications
+    const fiveSecondsAgo = new Date(Date.now() - 5000);
+    
+    const recentDuplicate = await db
+      .select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, notification.userId),
+        eq(notifications.type, notification.type),
+        eq(notifications.message, notification.message),
+        notification.relatedPromptId ? eq(notifications.relatedPromptId, notification.relatedPromptId) : isNull(notifications.relatedPromptId),
+        notification.relatedUserId ? eq(notifications.relatedUserId, notification.relatedUserId) : isNull(notifications.relatedUserId),
+        gte(notifications.createdAt, fiveSecondsAgo)
+      ))
+      .limit(1);
+    
+    // If we found a recent duplicate, return it instead of creating a new one
+    if (recentDuplicate.length > 0) {
+      console.log(`Skipping duplicate notification: ${notification.type} for user ${notification.userId}`);
+      return recentDuplicate[0];
+    }
+    
     // Generate a short ID similar to prompt IDs (10 chars hex)
     const id = randomBytes(5).toString('hex');
     const [newNotification] = await db
