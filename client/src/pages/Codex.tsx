@@ -788,8 +788,8 @@ export default function Codex() {
                     </Tabs>
                   </TabsContent>
                   <TabsContent value="aesthetics" className="mt-0">
-                    <Tabs value={aestheticsView} onValueChange={(v) => setAestheticsView(v as "all" | "organized")} className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 h-6">
+                    <Tabs value={aestheticsView} onValueChange={(v) => setAestheticsView(v as "organized" | "all")} className="w-full">
+                         <TabsList className="grid w-full grid-cols-2 h-6">
                         <TabsTrigger value="organized" className="text-xs py-0.2" data-testid="tab-aesthetics-organized">
                           <Layers className="w-3 h-3 mr-1" />
                           Organized

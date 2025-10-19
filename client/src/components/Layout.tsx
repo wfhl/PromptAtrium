@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Users, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2, Wand2 } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Users, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Sparkles, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2, Wand2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -488,7 +488,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   data-testid="menu-new-prompt"
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  New Prompt
+                  Add Prompt
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={handleCreateCollection}
@@ -506,6 +506,14 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   <FileUp className="mr-2 h-4 w-4" />
                   Import Prompts
                 </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleCreatePrompt}
+                    className="cursor-pointer"
+                    data-testid="menu-generate-prompt"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Prompt
+                  </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
