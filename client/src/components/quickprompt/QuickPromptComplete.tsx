@@ -741,7 +741,8 @@ export default function QuickPromptComplete() {
         return promptWords.slice(0, 50) + '...';
       } else {
         // Fallback with template name
-        return `${template || 'Enhanced'} prompt - ${new Date().toLocaleDateString()}`;
+        const templateName = dbRuleTemplates.find(t => t.id.toString() === template)?.name || 'Enhanced';
+        return `${templateName} prompt - ${new Date().toLocaleDateString()}`;
       }
     };
     
@@ -749,7 +750,7 @@ export default function QuickPromptComplete() {
     const prepopulatedData = {
       name: generateName(),
       promptContent: generatedPrompt,
-      promptStyle: template || '',
+      promptStyle: dbRuleTemplates.find(t => t.id.toString() === template)?.name || 'Custom',
       isFromGenerator: true, // Add flag to indicate this is from generator
     };
     
