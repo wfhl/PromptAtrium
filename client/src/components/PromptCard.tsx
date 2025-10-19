@@ -21,6 +21,7 @@ import { Link } from "wouter";
 import { saveToGoogleDrive, isGoogleDriveConnected } from "@/utils/googleDrive";
 import { PromptImageCarousel } from "./PromptImageCarousel";
 import { AddExampleImagesDialog } from "./AddExampleImagesDialog";
+import { AddToCollectionDialog } from "./AddToCollectionDialog";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -84,6 +85,9 @@ export function PromptCard({
   
   // Add Example Images dialog state
   const [showAddImagesDialog, setShowAddImagesDialog] = useState(false);
+  
+  // Add to Collection dialog state
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
   
   const toggleCollapsed = () => {
     setIsCollapsed(!isCollapsed);
@@ -1279,11 +1283,8 @@ export function PromptCard({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
+                        <DropdownMenuItem onClick={() => setShowCollectionDialog(true)}>
                           Add to Collection
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
-                          Create New Collection
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -1443,11 +1444,8 @@ export function PromptCard({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
+                        <DropdownMenuItem onClick={() => setShowCollectionDialog(true)}>
                           Add to Collection
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toast({ title: "Collections", description: "Collection management coming soon!" })}>
-                          Create New Collection
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -2083,6 +2081,15 @@ export function PromptCard({
           <AddExampleImagesDialog
             open={showAddImagesDialog}
             onOpenChange={setShowAddImagesDialog}
+            prompt={prompt}
+          />
+        )}
+        
+        {/* Add to Collection Dialog */}
+        {showCollectionDialog && (
+          <AddToCollectionDialog
+            open={showCollectionDialog}
+            onOpenChange={setShowCollectionDialog}
             prompt={prompt}
           />
         )}
