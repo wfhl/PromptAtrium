@@ -78,7 +78,7 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [promptsSubTab, setPromptsSubTab] = useState("featured");
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
-  const [followingCollapsed, setFollowingCollapsed] = useState(false);
+  const [followingCollapsed, setFollowingCollapsed] = useState(true);
 
   // Redirect if not authenticated
   useEffect(() => {
