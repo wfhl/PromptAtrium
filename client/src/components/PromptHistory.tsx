@@ -51,7 +51,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
     enabled: open,
     retry: false, // Don't retry if user is not authenticated
   });
-  
+
   // Handle authentication errors
   useEffect(() => {
     if (error && (error as any)?.message?.includes('401')) {
@@ -74,19 +74,19 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
     const dbHistoryArray = Array.isArray(dbHistory) ? dbHistory : [];
     const combined = [...localHistory, ...dbHistoryArray];
     const unique = new Map();
-    
+
     combined.forEach(entry => {
       // Create a key based on the first 50 chars of prompt and rough timestamp (to minute)
       const promptKey = entry.promptText.substring(0, 50);
       const timeKey = new Date(entry.createdAt).toISOString().substring(0, 16); // YYYY-MM-DDTHH:MM
       const key = `${promptKey}_${timeKey}`;
-      
+
       // Prefer database entry over local if duplicate
       if (!unique.has(key) || !entry.isLocal) {
         unique.set(key, entry);
       }
     });
-    
+
     return Array.from(unique.values()).sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
@@ -127,7 +127,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
       // Clear local storage
       clearLocalPromptHistory();
       setLocalHistory([]);
-      
+
       // Try to clear database history if authenticated
       try {
         await apiRequest('DELETE', '/api/prompt-history');
@@ -159,7 +159,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
     mutationFn: async (entry: PromptHistoryEntry) => {
       const libraryData = convertHistoryToLibrary(entry);
       await apiRequest("POST", "/api/prompts", libraryData);
-      
+
       // Update the history entry to mark as saved if it's in the database
       if (!entry.isLocal) {
         await apiRequest("PATCH", `/api/prompt-history/${entry.id}`, { isSaved: true });
@@ -234,7 +234,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1 min-h-0">
           {/* Search bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -307,11 +307,11 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                               </Badge>
                             )}
                           </div>
-                          
+
                           <p className="text-sm line-clamp-2 break-words">
                             {entry.metadata.subject}
                           </p>
-                          
+
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-gray-500">
                             <span className="whitespace-nowrap">{format(new Date(entry.createdAt), 'MMM d, h:mm a')}</span>
                             {entry.metadata?.subject && (
@@ -335,7 +335,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                             )}
                           </div>
                         </div>
-                        
+
                         <ChevronRight className={`h-4 w-4 flex-shrink-0 transition-transform ${
                           selectedEntry?.id === entry.id ? 'rotate-90' : ''
                         }`} />
@@ -366,7 +366,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                 <Copy className="h-3 w-3" />
                               </Button>
                             </div>
-                            
+
                             <div className="grid grid-cols-2 gap-6">
                               {/* Save to Library Button - Only if not saved */}
                               {!entry.isSaved && (
@@ -385,7 +385,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                   <span>{saveToLibraryMutation.isPending ? "Saving..." : "Save"}</span>
                                 </Button>
                               )}
-                              
+
                               {/* Load Button - If onLoadPrompt is available */}
                               {onLoadPrompt && (
                                 <Button
@@ -402,7 +402,7 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
                                   Load
                                 </Button>
                               )}
-                              
+
                               {/* Delete Button - Always shown */}
                               <Button
                                 size="sm"
