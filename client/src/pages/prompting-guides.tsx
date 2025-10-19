@@ -5,10 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Search, Hash, Palette, ChevronRight, ExternalLink, Heart, Lightbulb, Wand2, Wrench, Users, MessageCircle, PlayCircle, MessageSquare, Sparkles, AlertCircle, Book, Zap, Code, Banana } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { SYNTAX_GUIDES, ANATOMY_GUIDES, NANO_BANANA_GUIDES, PROMPT_RESOURCES, LEARNING_RESOURCES, QUICK_TIPS } from "@/data/promptingGuides";
 import type { Guide, Resource } from "@/data/promptingGuides";
-import Link from "next/link";
 
 // Markdown support
 const formatContent = (content: string) => {
@@ -565,7 +564,7 @@ export default function PromptingGuides() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Link href="/tools/quick-prompter">
+                                <Link to="/tools/quick-prompter">
                                   <Button
                                     variant="outline"
                                     className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
