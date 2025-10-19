@@ -3,6 +3,14 @@
 ## Overview
 A comprehensive platform for managing, sharing, and generating AI prompts. Features include a prompt library, community sharing, collections management, and advanced prompt generation tools.
 
+## Recent Updates (October 19, 2025)
+
+### Custom Character Preset Cross-Device Persistence Fix
+- **Fixed API Endpoint Mismatch**: Corrected character preset endpoints in frontend components from `/api/character-presets` to `/api/system-data/character-presets`
+- **Affected Components**: Updated QuickPromptPlay.tsx, QuickPrompt.tsx, and CompactCharacterSaveDialog.tsx to use correct endpoints
+- **Authentication Integration**: Character presets now properly save with userId for authenticated users, enabling cross-device persistence
+- **Consistent Data Access**: Users' custom character presets will now appear across all their devices when logged in
+
 ## Recent Updates (September 23, 2025)
 
 ### Quick Prompt Component Enhancements
