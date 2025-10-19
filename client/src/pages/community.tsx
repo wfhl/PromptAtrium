@@ -672,6 +672,7 @@ export default function Community() {
                     key={prompt.id}
                     prompt={prompt}
                     showActions={false}
+                    isCommunityPage={true}
                   />
                 ))}
               </div>
