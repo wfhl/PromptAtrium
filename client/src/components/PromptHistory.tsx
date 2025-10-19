@@ -224,19 +224,19 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-4xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden p-4 sm:p-6">
-        <DialogHeader className="space-y-3 pb-4">
-          <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 flex-shrink-0" />
-              <span className="text-base sm:text-lg">Prompt Generation History</span>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="w-full max-w-4xl h-[90vh] sm:h-[80vh] flex flex-col overflow-hidden p-0">
+        <div className="flex-shrink-0 p-4 sm:p-6 pb-0">
+          <DialogHeader className="space-y-3 pb-4">
+            <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 flex-shrink-0" />
+                <span className="text-base sm:text-lg">Prompt Generation History</span>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4 flex flex-col h-full">
           {/* Search bar */}
-          <div className="relative flex-shrink-0">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search prompts..."
@@ -257,9 +257,11 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
               </Button>
             )}
           </div>
+        </div>
 
-          {/* History list */}
-          <ScrollArea className="h-[60vh] sm:h-[500px] pr-2 sm:pr-4">
+        {/* History list - Now takes remaining space */}
+        <div className="flex-1 min-h-0 px-4 sm:px-6 mt-4">
+          <ScrollArea className="h-full">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -431,20 +433,24 @@ export function PromptHistory({ open, onOpenChange, onLoadPrompt }: PromptHistor
             )}
           </ScrollArea>
         </div>
+        
+        {/* Clear All button at bottom */}
         {history.length > 0 && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              if (confirm("Are you sure you want to clear all history?")) {
-                clearMutation.mutate();
-              }
-            }}
-            className="w-full sm:w-auto"
-            data-testid="button-clear-history"
-          >
-            Clear All
-          </Button>
+          <div className="flex-shrink-0 p-4 sm:p-6 pt-2 border-t border-gray-800">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (confirm("Are you sure you want to clear all history?")) {
+                  clearMutation.mutate();
+                }
+              }}
+              className="w-full"
+              data-testid="button-clear-history"
+            >
+              Clear All
+            </Button>
+          </div>
         )}
       </DialogContent>
     </Dialog>
