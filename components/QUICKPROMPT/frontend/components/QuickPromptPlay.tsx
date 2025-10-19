@@ -494,7 +494,7 @@ export default function QuickPromptPlay() {
   const saveCharacterMutation = useMutation({
     mutationFn: createCharacterPresetMutation.mutateAsync,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/character-presets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/system-data/character-presets'] });
       setCustomCharacterInput("");
       setShowCustomCharacterInput(false);
       setCharacter(data.id.toString());

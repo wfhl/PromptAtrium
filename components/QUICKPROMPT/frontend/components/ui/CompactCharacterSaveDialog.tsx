@@ -33,9 +33,9 @@ export default function CompactCharacterSaveDialog({
 
   const saveCharacterMutation = useMutation({
     mutationFn: (preset: any) =>
-      apiRequest('/api/character-presets', 'POST', preset),
+      apiRequest('/api/system-data/character-presets', 'POST', preset),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/character-presets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/system-data/character-presets'] });
       toast({
         title: "Character saved",
         description: `"${name}" has been saved to your presets.`,

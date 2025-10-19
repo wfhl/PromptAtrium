@@ -57,7 +57,7 @@ export default function QuickPrompt() {
   
   // Fetch character presets from database
   const { data: characterPresets = [] } = useQuery({
-    queryKey: ['/api/character-presets'],
+    queryKey: ['/api/system-data/character-presets'],
     select: (data: any[]) => {
       if (!data || !Array.isArray(data)) return [];
       
@@ -800,7 +800,7 @@ export default function QuickPrompt() {
           // Clear the input and refresh character presets
           setCustomCharacterInput("");
           setShowCustomCharacterInput(false);
-          queryClient.invalidateQueries({ queryKey: ['/api/character-presets'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/system-data/character-presets'] });
         }}
         customCharacterInput={customCharacterInput}
       />
