@@ -20,6 +20,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 interface PromptWithUser extends Prompt {
   user?: Partial<User>;
@@ -33,7 +34,8 @@ export default function PromptDetail() {
   const [, setLocation] = useLocation();
   const [isFavorited, setIsFavorited] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllImages, setShowAllImages] = useState(false);
 
   // Apply dark theme for unauthenticated users
@@ -374,7 +376,8 @@ export default function PromptDetail() {
                           if (hasMoreImages) {
                             setShowAllImages(true);
                           } else {
-                            setSelectedImage(imageUrl);
+                            setCurrentImageIndex(index);
+                            setLightboxOpen(true);
                           }
                         }}
                         data-testid={`image-thumbnail-${index}`}
@@ -753,22 +756,16 @@ export default function PromptDetail() {
         </Card>
       </div>
 
-      {/* Image Lightbox Dialog */}
-      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl">
-          <DialogTitle className="sr-only">Image Preview</DialogTitle>
-          <DialogDescription className="sr-only">
-            Full size preview of the example image
-          </DialogDescription>
-          {selectedImage && (
-            <img
-              src={selectedImage.startsWith('http') ? selectedImage : `/api/objects/serve/${encodeURIComponent(selectedImage)}`}
-              alt="Full size preview"
-              className="w-full h-auto rounded-lg"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Image Lightbox */}
+      {prompt?.exampleImagesUrl && prompt.exampleImagesUrl.length > 0 && (
+        <ImageLightbox
+          images={prompt.exampleImagesUrl}
+          currentIndex={currentImageIndex}
+          open={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+          onNavigate={(index) => setCurrentImageIndex(index)}
+        />
+      )}
     </div>
   );
 }

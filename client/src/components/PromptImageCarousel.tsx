@@ -326,6 +326,10 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
 
   // Mouse events
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Don't start drag if clicking on a button
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
     e.preventDefault();
     handleDragStart(e.clientX, e.clientY);
   }, [handleDragStart]);
@@ -461,17 +465,24 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
             size="sm"
             variant="secondary"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               scrollLeft();
             }}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             disabled={isTransitioning || isDragging}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-background/90 hover:bg-background shadow-lg"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 h-8 w-8 p-0 bg-background/90 hover:bg-background shadow-lg pointer-events-auto"
             style={{ opacity: isTransitioning || isDragging ? 0.5 : 1 }}
             data-testid="button-carousel-left"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 pointer-events-none" />
           </Button>
         )}
 
@@ -480,17 +491,24 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
             size="sm"
             variant="secondary"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               scrollRight();
             }}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             disabled={isTransitioning || isDragging}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-background/90 hover:bg-background shadow-lg"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 h-8 w-8 p-0 bg-background/90 hover:bg-background shadow-lg pointer-events-auto"
             style={{ opacity: isTransitioning || isDragging ? 0.5 : 1 }}
             data-testid="button-carousel-right"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 pointer-events-none" />
           </Button>
         )}
 
