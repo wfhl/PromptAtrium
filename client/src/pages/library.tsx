@@ -27,6 +27,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import type { Prompt, User, BulkOperationType, BulkEditPrompt, Collection, Activity as ActivityType } from "@shared/schema";
+import { ShineBorder } from "@/components/ui/shine-border";
 
 const collectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -1107,7 +1108,15 @@ export default function Library() {
               ) : filteredAndSortedCollections.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredAndSortedCollections.map((collection: any) => (
-                    <Card key={collection.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                    <ShineBorder
+                      key={collection.id}
+                      className="w-full"
+                      color={["#8B7FC8", "#C880A1", "#D4A878"]}
+                      borderRadius={12}
+                      borderWidth={0.5}
+                      duration={15}
+                    >
+                      <Card className="border-0 hover:shadow-md transition-shadow cursor-pointer">
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between mb-1">
                           <Link href={`/collection/${collection.id}`} className="flex-1">
@@ -1173,6 +1182,7 @@ export default function Library() {
                         </div>
                       </CardContent>
                     </Card>
+                    </ShineBorder>
                   ))}
                 </div>
               ) : (
