@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus, ImagePlus, Link2 } from "lucide-react";
+import { ShineBorder } from "@/components/ui/shine-border";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -1077,50 +1078,65 @@ export function PromptCard({
   // Compact mode rendering for search results
   if (compact) {
     return (
-      <Card className="border-gray-800 bg-gray-900/30 hover:bg-gray-900/50 transition-colors p-2 sm:p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm text-foreground truncate">{prompt.name}</h4>
-            {prompt.description && (
-              <p className="text-xs text-muted-foreground truncate mt-1">{prompt.description}</p>
-            )}
-            <div className="flex items-center gap-2 mt-1">
-              {prompt.category && (
-                <Badge variant="secondary" className="text-xs py-0 px-1">
-                  {prompt.category}
-                </Badge>
+      <ShineBorder
+        className="w-full p-0"
+        color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+        borderRadius={12}
+        borderWidth={1.5}
+        duration={10}
+      >
+        <Card className="border-0 bg-gray-900/30 hover:bg-gray-900/50 transition-colors p-2 sm:p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm text-foreground truncate">{prompt.name}</h4>
+              {prompt.description && (
+                <p className="text-xs text-muted-foreground truncate mt-1">{prompt.description}</p>
               )}
-              {prompt.promptType && (
-                <Badge variant="outline" className="text-xs py-0 px-1">
-                  {prompt.promptType}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2 mt-1">
+                {prompt.category && (
+                  <Badge variant="secondary" className="text-xs py-0 px-1">
+                    {prompt.category}
+                  </Badge>
+                )}
+                {prompt.promptType && (
+                  <Badge variant="outline" className="text-xs py-0 px-1">
+                    {prompt.promptType}
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Heart className="h-3 w-3" />
+                {prompt.likes || 0}
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Heart className="h-3 w-3" />
-              {prompt.likes || 0}
-            </span>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      </ShineBorder>
     );
   }
 
   return (
-    <Card className={`border-gray-800 bg-gray-400/10 hover:bg-gray-400/20 transition-colors cursor-pointer break-inside-avoid w-full max-w-full ${
-      isSelected ? "border-primary bg-muted/30" : ""
-    } ${isSelectable ? 'cursor-pointer' : ''}`} 
-    data-testid={`card-prompt-${prompt.id}`}
-    onClick={isSelectable ? (e) => {
-      // Don't trigger selection if clicking on interactive elements
-      if ((e.target as HTMLElement).closest('button, a, [role="button"]')) return;
-      onSelectionChange?.(prompt.id, !isSelected);
-    } : undefined}
+    <ShineBorder
+      className="w-full p-0"
+      color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+      borderRadius={12}
+      borderWidth={1.5}
+      duration={10}
     >
-      {/* Collapse/Expand Toggle Button */}
-      <Button
+      <Card className={`border-0 bg-gray-400/10 hover:bg-gray-400/20 transition-colors cursor-pointer break-inside-avoid w-full max-w-full ${
+        isSelected ? "border-primary bg-muted/30" : ""
+      } ${isSelectable ? 'cursor-pointer' : ''}`} 
+      data-testid={`card-prompt-${prompt.id}`}
+      onClick={isSelectable ? (e) => {
+        // Don't trigger selection if clicking on interactive elements
+        if ((e.target as HTMLElement).closest('button, a, [role="button"]')) return;
+        onSelectionChange?.(prompt.id, !isSelected);
+      } : undefined}
+      >
+        {/* Collapse/Expand Toggle Button */}
+        <Button
         size="sm"
         variant="ghost"
         className="absolute bottom-4 right-2 h-6 w-6 p-0 z-10 opacity-60 hover:opacity-100 transition-opacity"
@@ -2095,5 +2111,6 @@ export function PromptCard({
         )}
       </CardContent>
     </Card>
+    </ShineBorder>
   );
 }
