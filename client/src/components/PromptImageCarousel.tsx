@@ -145,21 +145,21 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
   }, []);
 
   // Calculate total content width and scroll limits
-  const getTotalContentWidth = () => {
+  const getTotalContentWidth = useCallback(() => {
     return slides.reduce((total, slide) => total + slide.width + GAP, 0) - GAP;
-  };
+  }, [slides]);
 
-  const getScrollLimits = () => {
+  const getScrollLimits = useCallback(() => {
     const totalWidth = getTotalContentWidth();
     const maxScroll = Math.max(0, totalWidth - containerWidth);
     return { min: -maxScroll, max: 0 };
-  };
+  }, [getTotalContentWidth, containerWidth]);
 
   // Constrain scroll position within limits
-  const constrainPosition = (position: number) => {
+  const constrainPosition = useCallback((position: number) => {
     const { min, max } = getScrollLimits();
     return Math.max(min, Math.min(max, position));
-  };
+  }, [getScrollLimits]);
 
   // Smooth scroll by a certain amount
   const scrollBy = useCallback((amount: number) => {
@@ -196,7 +196,7 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
     };
     
     animationRef.current = requestAnimationFrame(animate);
-  }, [translateX, slides.length]);
+  }, [translateX, slides.length, constrainPosition]);
 
   // Navigate left (show previous images)
   const scrollLeft = useCallback(() => {
@@ -266,7 +266,7 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
       .filter(point => now - point.time < 100);
     
     return true; // Indicate we handled this event
-  }, [isDragging, slides.length]);
+  }, [isDragging, slides.length, constrainPosition]);
 
   // End drag with momentum
   const handleDragEnd = useCallback(() => {
@@ -322,7 +322,7 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
       
       animationRef.current = requestAnimationFrame(momentumAnimate);
     }
-  }, [isDragging, translateX, slides.length]);
+  }, [isDragging, translateX, slides.length, constrainPosition]);
 
   // Mouse events
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -378,7 +378,7 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
     const scrollAmount = e.deltaY > 0 ? -100 : 100;
     const newPosition = constrainPosition(translateX + scrollAmount);
     setTranslateX(newPosition);
-  }, [translateX]);
+  }, [translateX, constrainPosition]);
 
   // Global event listeners
   useEffect(() => {
