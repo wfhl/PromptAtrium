@@ -704,13 +704,14 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             <DialogTitle data-testid="text-modal-title">
               {mode === "create" ? "Create New Prompt" : "Edit Prompt"}
             </DialogTitle>
-            <div className="mr-8">
+            {/* Temporarily hidden Auto-fill button */}
+            {/* <div className="mr-8">
               <PromptAutoFill
                 promptContent={formData.promptContent}
                 onAutoFill={handleAutoFill}
                 disabled={!formData.promptContent || formData.promptContent.length < 10}
               />
-            </div>
+            </div> */}
           </div>
         </DialogHeader>
 
