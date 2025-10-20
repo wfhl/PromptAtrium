@@ -1286,22 +1286,7 @@ export function PromptCard({
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    {/* 6.5 Add Example Images - Show for all users on public prompts on Community page */}
-                    {isCommunityPage && prompt.isPublic && typedUser?.id && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowAddImagesDialog(true);
-                        }}
-                        className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                        data-testid={`button-add-images-${prompt.id}`}
-                        title="Add example images to this prompt"
-                      >
-                        <ImagePlus className="h-4 w-4" />
-                      </Button>
-                    )}
+                
                     {/* 3. Collections - Yellow folder with dropdown */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -1322,7 +1307,22 @@ export function PromptCard({
                     </DropdownMenu>
                   </>
                 )}
-
+                {/* 6.5 Add Example Images - Show for all users on public prompts on Community page */}
+                {isCommunityPage && prompt.isPublic && typedUser?.id && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAddImagesDialog(true);
+                    }}
+                    className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                    data-testid={`button-add-images-${prompt.id}`}
+                    title="Add example images to this prompt"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
+                )}
                 {/* 4. Share Menu - Share icon with dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
