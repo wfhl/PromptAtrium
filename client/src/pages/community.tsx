@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,7 +97,7 @@ export default function Community() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Build query string for prompts
-  const buildQuery = () => {
+  const buildQuery = (offset = 0) => {
     const params = new URLSearchParams();
     params.append("isPublic", "true");
     if (searchQuery) params.append("search", searchQuery);
@@ -136,15 +136,37 @@ export default function Community() {
 
     if (sortBy === "hidden") params.append("isHidden", "true");
     params.append("limit", "20");
+    params.append("offset", offset.toString());
     return params.toString();
   };
 
-  // Fetch community prompts
-  const { data: prompts = [], refetch } = useQuery<Prompt[]>({
-    queryKey: [`/api/prompts?${buildQuery()}`],
+  // Fetch community prompts with infinite scroll
+  const {
+    data: promptsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ["prompts", promptsSubTab, searchQuery, multiSelectFilters, sortBy],
+    queryFn: async ({ pageParam = 0 }) => {
+      const response = await fetch(`/api/prompts?${buildQuery(pageParam)}`);
+      if (!response.ok) throw new Error("Failed to fetch prompts");
+      return response.json();
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      // If the last page has fewer items than the limit, there are no more pages
+      if (lastPage.length < 20) return undefined;
+      // Otherwise, return the offset for the next page
+      return allPages.length * 20;
+    },
+    initialPageParam: 0,
     enabled: isAuthenticated && activeTab === "prompts",
     retry: false,
   });
+
+  // Flatten all pages into a single array of prompts
+  const prompts = promptsData?.pages.flat() || [];
 
   // Refetch prompts when sub-tab or filters change
   useEffect(() => {
@@ -152,6 +174,31 @@ export default function Community() {
       refetch();
     }
   }, [promptsSubTab, activeTab, isAuthenticated, multiSelectFilters]);
+
+  // Intersection observer for infinite scroll
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Fetch public collections
   const { data: publicCollections = [] } = useQuery<(Collection & { promptCount?: number; exampleImages?: string[]; user?: User })[]>({
@@ -431,17 +478,34 @@ export default function Community() {
           {/* Prompts Grid - Masonry Layout */}
           <div className="space-y-4" data-testid="section-community-prompts">
             {prompts.length > 0 ? (
-              <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-                {prompts.map((prompt) => (
-                  <div key={prompt.id} className="break-inside-avoid mb-4">
-                    <PromptCard
-                      prompt={prompt}
-                      showActions={true}
-                      isCommunityPage={true}
-                    />
+              <>
+                <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+                  {prompts.map((prompt) => (
+                    <div key={prompt.id} className="break-inside-avoid mb-4">
+                      <PromptCard
+                        prompt={prompt}
+                        showActions={true}
+                        isCommunityPage={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Observer target for infinite scroll */}
+                <div ref={observerTarget} className="h-4" />
+                
+                {/* Loading indicator */}
+                {isFetchingNextPage && (
+                  <div className="flex justify-center py-8">
+                    <div className="text-center">
+                      <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center mx-auto mb-2 animate-pulse">
+                        <Lightbulb className="h-4 w-4 text-primary-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">Loading more prompts...</p>
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">
