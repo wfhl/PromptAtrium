@@ -1501,7 +1501,13 @@ export function PromptCard({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setShowAddImagesDialog(true)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Add images button clicked for prompt:', prompt.id);
+                      console.log('Current showAddImagesDialog state:', showAddImagesDialog);
+                      setShowAddImagesDialog(true);
+                      console.log('Set showAddImagesDialog to true');
+                    }}
                     className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
                     data-testid={`button-add-images-${prompt.id}`}
                     title="Contribute example images to this prompt"
@@ -2094,11 +2100,14 @@ export function PromptCard({
         
         {/* Add Example Images Dialog */}
         {showAddImagesDialog && (
-          <AddExampleImagesDialog
-            open={showAddImagesDialog}
-            onOpenChange={setShowAddImagesDialog}
-            prompt={prompt}
-          />
+          <>
+            {console.log('Rendering AddExampleImagesDialog with open=', showAddImagesDialog)}
+            <AddExampleImagesDialog
+              open={showAddImagesDialog}
+              onOpenChange={setShowAddImagesDialog}
+              prompt={prompt}
+            />
+          </>
         )}
         
         {/* Add to Collection Dialog */}
