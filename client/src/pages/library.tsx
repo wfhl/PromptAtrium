@@ -1106,82 +1106,106 @@ export default function Library() {
                   <p className="text-muted-foreground">Loading collections...</p>
                 </div>
               ) : filteredAndSortedCollections.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="columns-2 md:columns-3 lg:columns-4 gap-2 space-y-2">
                   {filteredAndSortedCollections.map((collection: any) => (
                     <ShineBorder
                       key={collection.id}
-                      className="w-full"
+                      className="w-full break-inside-avoid mb-2"
                       color={["#8B7FC8", "#C880A1", "#D4A878"]}
-                      borderRadius={12}
+                      borderRadius={8}
                       borderWidth={0.5}
                       duration={15}
                     >
-                      <Card className="border-0 hover:shadow-md transition-shadow cursor-pointer">
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between mb-1">
-                          <Link href={`/collection/${collection.id}`} className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <Folder className="h-4 w-4 text-primary" />
-                              <h3 className="font-semibold text-sm">{collection.name}</h3>
+                      <Card className="border-0 hover:shadow-lg transition-shadow cursor-pointer">
+                        <CardContent className="p-3">
+                          {/* Display example images if available */}
+                          {collection.exampleImages && collection.exampleImages.length > 0 && (
+                            <div className="grid grid-cols-2 gap-0.5 mb-2">
+                              {collection.exampleImages.slice(0, 4).map((imageUrl: string, index: number) => (
+                                <div key={index} className="aspect-square rounded overflow-hidden bg-muted">
+                                  <img
+                                    src={imageUrl}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                              {/* Fill empty slots with placeholders */}
+                              {collection.exampleImages.length < 4 && [...Array(4 - collection.exampleImages.length)].map((_: any, i: number) => (
+                                <div key={`placeholder-${i}`} className="aspect-square rounded bg-muted/50" />
+                              ))}
                             </div>
-                          </Link>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" data-testid={`button-collection-menu-${collection.id}`}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditCollectionModal(collection)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setDeletingCollection(collection);
-                                  setDeleteCollectionDialogOpen(true);
-                                }}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                        
-                        {collection.description && (
-                          <p className="text-sm text-muted-foreground mb-3">
-                            {collection.description}
-                          </p>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={collection.isPublic ? "default" : "secondary"}>
-                              {collection.isPublic ? (
-                                <>
-                                  <Globe className="h-3 w-3 mr-1" />
-                                  Public
-                                </>
-                              ) : (
-                                <>
-                                  <Lock className="h-3 w-3 mr-1" />
-                                  Private
-                                </>
-                              )}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {collection.promptCount || 0} prompts
-                            </span>
+                          )}
+
+                          <div className="flex items-start justify-between mb-2">
+                            <Link href={`/collection/${collection.id}`} className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-indigo-600 rounded flex items-center justify-center flex-shrink-0">
+                                  <Folder className="h-3 w-3 text-white" />
+                                </div>
+                                <h3 className="font-semibold text-sm text-foreground line-clamp-1">
+                                  {collection.name}
+                                </h3>
+                              </div>
+                            </Link>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" data-testid={`button-collection-menu-${collection.id}`}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEditCollectionModal(collection)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setDeletingCollection(collection);
+                                    setDeleteCollectionDialogOpen(true);
+                                  }}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(collection.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
+
+                          {collection.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                              {collection.description}
+                            </p>
+                          )}
+
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={collection.isPublic ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+                                {collection.isPublic ? (
+                                  <>
+                                    <Globe className="h-3 w-3 mr-1" />
+                                    Public
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="h-3 w-3 mr-1" />
+                                    Private
+                                  </>
+                                )}
+                              </Badge>
+                              <span className="text-muted-foreground">
+                                {collection.promptCount || 0} prompts
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </ShineBorder>
                   ))}
                 </div>

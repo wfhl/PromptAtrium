@@ -461,29 +461,85 @@ export default function CollectionsPage() {
             )}
           </div>
         ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-2 space-y-2">
             {filteredAndSortedCollections.map((collection: any) => (
               <ShineBorder
                 key={collection.id}
-                className="w-full break-inside-avoid mb-6"
+                className="w-full break-inside-avoid mb-2"
                 color={["#8B7FC8", "#C880A1", "#D4A878"]}
-                borderRadius={12}
+                borderRadius={8}
                 borderWidth={0.5}
                 duration={15}
               >
-                <Card 
-                  className="border-0 hover:shadow-md dark:hover:shadow-2xl transition-shadow cursor-pointer bg-white dark:bg-gray-900"
-                  data-testid={`card-collection-${collection.id}`}
-                >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Folder className="h-5 w-5 text-primary" />
-                        {collection.name}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={collection.isPublic ? "default" : "secondary"} className="text-xs">
+                <Card className="border-0 hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardContent className="p-3">
+                    {/* Display example images if available */}
+                    {collection.exampleImages && collection.exampleImages.length > 0 && (
+                      <div className="grid grid-cols-2 gap-0.5 mb-2">
+                        {collection.exampleImages.slice(0, 4).map((imageUrl: string, index: number) => (
+                          <div key={index} className="aspect-square rounded overflow-hidden bg-muted">
+                            <img
+                              src={imageUrl}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ))}
+                        {/* Fill empty slots with placeholders */}
+                        {collection.exampleImages.length < 4 && [...Array(4 - collection.exampleImages.length)].map((_: any, i: number) => (
+                          <div key={`placeholder-${i}`} className="aspect-square rounded bg-muted/50" />
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-start justify-between mb-2">
+                      <Link href={`/collection/${collection.id}`} className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-indigo-600 rounded flex items-center justify-center flex-shrink-0">
+                            <Folder className="h-3 w-3 text-white" />
+                          </div>
+                          <h3 className="font-semibold text-sm text-foreground line-clamp-1">
+                            {collection.name}
+                          </h3>
+                        </div>
+                      </Link>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditModal(collection)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => deleteCollectionMutation.mutate(collection.id)}
+                            disabled={deleteCollectionMutation.isPending}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {collection.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                        {collection.description}
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={collection.isPublic ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
                           {collection.isPublic ? (
                             <>
                               <Globe className="h-3 w-3 mr-1" />
@@ -496,48 +552,13 @@ export default function CollectionsPage() {
                             </>
                           )}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {collection.createdAt && new Date(collection.createdAt).toLocaleDateString()}
+                        <span className="text-muted-foreground">
+                          {collection.promptCount || 0} prompts
                         </span>
                       </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {collection.description || "No description provided"}
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t gap-2 sm:gap-0">
-                    <div className="text-xs text-muted-foreground">
-                      {/* TODO: Add prompt count */}
-                      0 prompts
-                    </div>
-                    <div className="flex items-center gap-1 self-end sm:self-auto">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditModal(collection)}
-                        data-testid={`button-edit-collection-${collection.id}`}
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only sm:not-sr-only sm:ml-1">Edit</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteCollectionMutation.mutate(collection.id)}
-                        disabled={deleteCollectionMutation.isPending}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-950"
-                        data-testid={`button-delete-collection-${collection.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only sm:not-sr-only sm:ml-1">Delete</span>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
               </ShineBorder>
             ))}
           </div>
