@@ -23,6 +23,7 @@ import { saveToGoogleDrive, isGoogleDriveConnected } from "@/utils/googleDrive";
 import { PromptImageCarousel } from "./PromptImageCarousel";
 import { AddExampleImagesDialog } from "./AddExampleImagesDialog";
 import { AddToCollectionDialog } from "./AddToCollectionDialog";
+import { ImageLightbox } from "./ImageLightbox";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -59,7 +60,7 @@ export function PromptCard({
   const { user } = useAuth();
   const typedUser = user as any;
   const isSuperAdmin = (user as any)?.role === "super_admin" || (user as any)?.role === "developer";
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
   
   // Inline editing state
@@ -1659,7 +1660,10 @@ export function PromptCard({
             <PromptImageCarousel
               images={prompt.exampleImagesUrl}
               promptName={prompt.name}
-              onImageClick={(imageUrl) => setSelectedImage(imageUrl)}
+              onImageClick={(imageUrl) => {
+                const index = prompt.exampleImagesUrl?.indexOf(imageUrl) ?? -1;
+                setSelectedImageIndex(index);
+              }}
             />
           </div>
         )}
@@ -1988,17 +1992,15 @@ export function PromptCard({
         </div>
 
         {/* Image Viewer Modal */}
-        <Dialog open={selectedImage !== null} onOpenChange={() => setSelectedImage(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-4" data-testid={`modal-image-viewer-${prompt.id}`}>
-            {selectedImage && (
-              <img
-                src={selectedImage.startsWith('http') ? selectedImage : `/api/objects/serve/${encodeURIComponent(selectedImage)}`}
-                alt="Full size example"
-                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        {prompt.exampleImagesUrl && prompt.exampleImagesUrl.length > 0 && (
+          <ImageLightbox
+            images={prompt.exampleImagesUrl}
+            currentIndex={selectedImageIndex}
+            open={selectedImageIndex >= 0}
+            onClose={() => setSelectedImageIndex(-1)}
+            onNavigate={(index) => setSelectedImageIndex(index)}
+          />
+        )}
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

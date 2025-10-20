@@ -50,6 +50,7 @@ export function ImageLightbox({ images, currentIndex, open, onClose, onNavigate 
   
   // Handle different image URL formats
   const getImageSrc = (imageUrl: string) => {
+    if (!imageUrl) return '';
     if (imageUrl.startsWith('http')) {
       return imageUrl;
     } else if (imageUrl.startsWith('/objects/')) {
@@ -62,6 +63,11 @@ export function ImageLightbox({ images, currentIndex, open, onClose, onNavigate 
       return `/api/objects/serve/${encodeURIComponent(imageUrl)}`;
     }
   };
+
+  // Don't render if no valid image
+  if (!currentImage || currentIndex < 0 || currentIndex >= images.length) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
