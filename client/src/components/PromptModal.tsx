@@ -31,7 +31,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDescription, setNewCollectionDescription] = useState("");
   const [newCollectionIsPublic, setNewCollectionIsPublic] = useState(false);
-  
+
   // States for creating new options
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -50,10 +50,10 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   const [customPromptStyles, setCustomPromptStyles] = useState<string[]>([]);
   const [customIntendedGenerators, setCustomIntendedGenerators] = useState<string[]>([]);
   const [customRecommendedModels, setCustomRecommendedModels] = useState<string[]>([]);
-  
+
   // AI extraction state
   const [showAIExtractor, setShowAIExtractor] = useState(false);
-  
+
   // Simple initial state
   const getInitialFormData = () => {
     // If we have prepopulated data in create mode, use it
@@ -83,7 +83,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         variables: "",
       };
     }
-    
+
     // If we're editing, use the existing prompt data
     if (mode === "edit" && prompt) {
       console.log('Initializing form with existing prompt data:', prompt);
@@ -111,7 +111,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         variables: prompt.variables ? JSON.stringify(prompt.variables, null, 2) : "",
       };
     }
-    
+
     // Default empty form
     return {
       name: "",
@@ -139,21 +139,21 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   };
 
   const [formData, setFormData] = useState(getInitialFormData);
-  
+
   // Use ref to track the current prompt ID to detect changes
   const currentPromptIdRef = useRef<string | null>(null);
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Update form data when prop changes
   useEffect(() => {
     console.log('PromptModal useEffect - open:', open, 'mode:', mode, 'prompt:', prompt);
-    
+
     // Clear any pending reset timer when modal state changes
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
       resetTimerRef.current = null;
     }
-    
+
     // Reset tracking when modal closes
     if (!open) {
       currentPromptIdRef.current = null;
@@ -161,14 +161,14 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       setFormData(getInitialFormData());
       return;
     }
-    
+
     // When modal opens or prompt changes while open
     if (open) {
       const promptId = prompt?.id || null;
-      
+
       // Check if we're switching to a different prompt
       const isPromptChanged = promptId !== currentPromptIdRef.current;
-      
+
       if (mode === "edit" && prompt && isPromptChanged) {
         console.log('Edit mode - populating form with prompt:', prompt.id);
         currentPromptIdRef.current = promptId;
@@ -283,11 +283,11 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       setNewCollectionName("");
       setNewCollectionDescription("");
       setNewCollectionIsPublic(false);
-      
+
       // Still refetch for consistency
       refetchCollections();
       queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
-      
+
       toast({
         title: "Success",
         description: "Collection created successfully!",
@@ -460,7 +460,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
-      
+
       // Call custom onSuccess callback if provided
       if (onSuccess) {
         onSuccess(createdPrompt);
@@ -470,7 +470,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           description: "Prompt created successfully!",
         });
       }
-      
+
       onOpenChange(false);
       resetForm();
     },
@@ -590,7 +590,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
 
   const handleCreateCollection = () => {
     if (!newCollectionName.trim()) return;
-    
+
     createCollectionMutation.mutate({
       name: newCollectionName,
       description: newCollectionDescription,
@@ -601,7 +601,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   // Handle extracted data from AI image analysis
   const handleAIExtracted = (extractedData: any) => {
     const updates: any = {};
-    
+
     if (extractedData.promptContent) {
       updates.promptContent = extractedData.promptContent;
     }
@@ -635,7 +635,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     if (extractedData.isNsfw !== undefined) {
       updates.isNsfw = extractedData.isNsfw;
     }
-    
+
     setFormData(prev => ({ ...prev, ...updates }));
     setShowAIExtractor(false);
   };
@@ -644,7 +644,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   const handleAutoFill = (generatedData: any) => {
     console.log('Auto-fill received data:', generatedData);
     const updates: any = {};
-    
+
     if (generatedData.name) {
       updates.name = generatedData.name;
     }
@@ -672,7 +672,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     if (generatedData.isNsfw !== undefined) {
       updates.isNsfw = generatedData.isNsfw;
     }
-    
+
     console.log('Auto-fill updates to apply:', updates);
     setFormData(prev => {
       const newData = { ...prev, ...updates };
@@ -691,7 +691,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
-  
+
   // Show loading spinner while fetching options in edit mode
   const isLoadingOptions = mode === "edit" && (categoriesLoading || promptTypesLoading || promptStylesLoading || generatorsLoading);
 
@@ -699,17 +699,19 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] backdrop-blur-md bg-transparent overflow-y-auto" data-testid="modal-prompt">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle data-testid="text-modal-title">
-            {mode === "create" ? "Create New Prompt" : "Edit Prompt"}
-          </DialogTitle>
-          {formData.promptContent && formData.promptContent.trim().length > 10 && (
-            <PromptAutoFill
-              promptContent={formData.promptContent}
-              onAutoFill={handleAutoFill}
-              disabled={isPending}
-            />
-          )}
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle data-testid="text-modal-title">
+              {mode === "create" ? "Create New Prompt" : "Edit Prompt"}
+            </DialogTitle>
+            <div className="mr-8">
+              <PromptAutoFill
+                promptContent={formData.promptContent}
+                onAutoFill={handleAutoFill}
+                disabled={!formData.promptContent || formData.promptContent.length < 10}
+              />
+            </div>
+          </div>
         </DialogHeader>
 
         {isLoadingOptions ? (
@@ -732,7 +734,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                 />
               </div>
 
-                          
+
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
@@ -857,7 +859,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                 </SelectContent>
               </Select>
             </div>
-          
+
             <div>
               <Label htmlFor="promptType">Prompt Type</Label>
               <Select value={formData.promptType} onValueChange={(value) => {
@@ -962,9 +964,9 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               </Select>
             </div>
           </div>
-       
-          
-          
+
+
+
           <Card className="mb-6 pt-3 bg-gradient-to-br from-teal-400/20 to-purple-400/20">
             <CardContent>
           <div>
@@ -992,12 +994,12 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           </div>
               </CardContent>
                 </Card>
-          
 
 
 
 
-          
+
+
           <Card className="mb-6 bg-gradient-to-br from-blue-400/20 to-purple-400/20">
              <CardContent className="space-y-3 pt-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1083,7 +1085,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
                  </Card>
 
 
-          
+
 
           <Card className="mb-6 bg-gradient-to-br from-yellow-400/20 to-purple-400/20">
             <CardContent className="space-y-3 pt-3">
@@ -1161,7 +1163,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             Create New Collection
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div>
             <Label htmlFor="newCollectionName">Collection Name *</Label>
@@ -1174,7 +1176,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               data-testid="input-new-collection-name"
             />
           </div>
-          
+
           <div>
             <Label htmlFor="newCollectionDescription">Description</Label>
             <Textarea
@@ -1186,7 +1188,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               data-testid="textarea-new-collection-description"
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -1199,7 +1201,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             <Label htmlFor="newCollectionIsPublic">Make collection public</Label>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-end space-x-4 pt-4">
           <Button
             type="button"
