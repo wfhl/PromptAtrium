@@ -739,8 +739,8 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label htmlFor="promptContent" className="text-green-400">Prompt Content *</Label>
-                  {/* Only show extract button in create mode */}
-                  {mode === 'create' && (
+                  {/* Only show extract button in create mode when not prepopulated from generator */}
+                  {mode === 'create' && !prompt && (
                     <Button
                       type="button"
                       variant="ghost"
