@@ -50,6 +50,7 @@ import {
   Type
 } from "lucide-react";
 import { Link } from "wouter";
+import { ShineBorder } from "@/components/ui/shine-border";
 
 const collectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -462,11 +463,18 @@ export default function CollectionsPage() {
         ) : (
           <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
             {filteredAndSortedCollections.map((collection: any) => (
-              <Card 
-                key={collection.id} 
-                className="break-inside-avoid mb-6 hover:shadow-md dark:hover:shadow-2xl transition-shadow cursor-pointer bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
-                data-testid={`card-collection-${collection.id}`}
+              <ShineBorder
+                key={collection.id}
+                className="w-full break-inside-avoid mb-6"
+                color={["#8B7FC8", "#C880A1", "#D4A878"]}
+                borderRadius={12}
+                borderWidth={0.5}
+                duration={15}
               >
+                <Card 
+                  className="border-0 hover:shadow-md dark:hover:shadow-2xl transition-shadow cursor-pointer bg-white dark:bg-gray-900"
+                  data-testid={`card-collection-${collection.id}`}
+                >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -530,6 +538,7 @@ export default function CollectionsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </ShineBorder>
             ))}
           </div>
         )}

@@ -22,6 +22,7 @@ import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } fro
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Prompt, User, Collection } from "@shared/schema";
+import { ShineBorder } from "@/components/ui/shine-border";
 
 export default function Community() {
   const { isLoading, isAuthenticated, user } = useAuth();
@@ -485,7 +486,14 @@ export default function Community() {
             {publicCollections.length > 0 ? (
               publicCollections.map((collection) => (
                 <Link key={collection.id} href={`/collection/${collection.id}`}>
-                  <Card className="break-inside-avoid mb-2 hover:shadow-lg transition-shadow cursor-pointer" data-testid={`collection-card-${collection.id}`}>
+                  <ShineBorder
+                    className="w-full break-inside-avoid mb-2"
+                    color={["#8B7FC8", "#C880A1", "#D4A878"]}
+                    borderRadius={8}
+                    borderWidth={0.5}
+                    duration={15}
+                  >
+                    <Card className="border-0 hover:shadow-lg transition-shadow cursor-pointer" data-testid={`collection-card-${collection.id}`}>
                     <CardContent className="p-3">
                       {/* Display example images if available */}
                       {collection.exampleImages && collection.exampleImages.length > 0 && (
@@ -549,6 +557,7 @@ export default function Community() {
                       </div>
                     </CardContent>
                   </Card>
+                  </ShineBorder>
                 </Link>
               ))
             ) : (
