@@ -465,17 +465,8 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
             size="sm"
             variant="secondary"
             onClick={(e) => {
-              e.preventDefault();
               e.stopPropagation();
               scrollLeft();
-            }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
             }}
             disabled={isTransitioning || isDragging}
             className="absolute left-2 top-1/2 -translate-y-1/2 z-20 h-8 w-8 p-0 bg-background/90 hover:bg-background shadow-lg pointer-events-auto"
@@ -491,17 +482,8 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
             size="sm"
             variant="secondary"
             onClick={(e) => {
-              e.preventDefault();
               e.stopPropagation();
               scrollRight();
-            }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
             }}
             disabled={isTransitioning || isDragging}
             className="absolute right-2 top-1/2 -translate-y-1/2 z-20 h-8 w-8 p-0 bg-background/90 hover:bg-background shadow-lg pointer-events-auto"
