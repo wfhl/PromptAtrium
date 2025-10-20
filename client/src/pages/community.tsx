@@ -428,17 +428,18 @@ export default function Community() {
             showTabs={true}
           />
 
-          {/* Prompts Grid */}
+          {/* Prompts Grid - Masonry Layout */}
           <div className="space-y-4" data-testid="section-community-prompts">
             {prompts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
                 {prompts.map((prompt) => (
-                  <PromptCard
-                    key={prompt.id}
-                    prompt={prompt}
-                    showActions={true}
-                    isCommunityPage={true}
-                  />
+                  <div key={prompt.id} className="break-inside-avoid mb-4">
+                    <PromptCard
+                      prompt={prompt}
+                      showActions={true}
+                      isCommunityPage={true}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
