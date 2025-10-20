@@ -430,14 +430,16 @@ export default function Community() {
           {/* Prompts Grid */}
           <div className="space-y-4" data-testid="section-community-prompts">
             {prompts.length > 0 ? (
-              prompts.map((prompt) => (
-                <PromptCard
-                  key={prompt.id}
-                  prompt={prompt}
-                  showActions={true}
-                  isCommunityPage={true}
-                />
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {prompts.map((prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    showActions={true}
+                    isCommunityPage={true}
+                  />
+                ))}
+              </div>
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">

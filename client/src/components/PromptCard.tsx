@@ -1079,13 +1079,13 @@ export function PromptCard({
   if (compact) {
     return (
       <ShineBorder
-        className="w-full p-0"
+        className="w-full"
         color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
         borderRadius={8}
         borderWidth={1}
         duration={10}
       >
-        <Card className="border-0 bg-gray-900/30 hover:bg-gray-900/50 transition-colors p-2 sm:p-3">
+        <Card className="border-0 bg-gray-900/30 hover:bg-gray-900/50 transition-colors p-2 sm:p-3 w-full">
           <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
               <h4 className="font-medium text-sm text-foreground truncate">{prompt.name}</h4>
@@ -1119,13 +1119,13 @@ export function PromptCard({
 
   return (
     <ShineBorder
-      className="w-full p-0"
+      className="w-full"
       color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
       borderRadius={12}
       borderWidth={1.5}
       duration={12}
     >
-      <Card className={`border-0 bg-gray-400/10 hover:bg-gray-400/20 transition-colors cursor-pointer break-inside-avoid w-full max-w-full ${
+      <Card className={`border-0 bg-gray-400/10 hover:bg-gray-400/20 transition-colors cursor-pointer break-inside-avoid w-full ${
         isSelected ? "border-primary bg-muted/30" : ""
       } ${isSelectable ? 'cursor-pointer' : ''}`} 
       data-testid={`card-prompt-${prompt.id}`}

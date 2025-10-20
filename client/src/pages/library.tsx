@@ -835,18 +835,20 @@ export default function Library() {
 
             {/* Content Grid */}
             {prompts.length > 0 ? (
-              prompts.map((prompt) => (
-                <PromptCard
-                  key={prompt.id}
-                  prompt={prompt}
-                  showActions={true}
-                  onEdit={handleEditPrompt}
-                  isSelectable={isBulkMode}
-                  isSelected={selectedPromptIds.has(prompt.id)}
-                  onSelectionChange={handleSelectionChange}
-                  allowInlineEdit={true}
-                />
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {prompts.map((prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    showActions={true}
+                    onEdit={handleEditPrompt}
+                    isSelectable={isBulkMode}
+                    isSelected={selectedPromptIds.has(prompt.id)}
+                    onSelectionChange={handleSelectionChange}
+                    allowInlineEdit={true}
+                  />
+                ))}
+              </div>
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">
@@ -901,15 +903,17 @@ export default function Library() {
 
             {/* Content Grid */}
             {favoritePrompts.length > 0 ? (
-              favoritePrompts.map((prompt) => (
-                <PromptCard
-                  key={prompt.id}
-                  prompt={prompt}
-                  isSelectable={isBulkMode}
-                  isSelected={selectedPromptIds.has(prompt.id)}
-                  onSelectionChange={handleSelectionChange}
-                />
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favoritePrompts.map((prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    isSelectable={isBulkMode}
+                    isSelected={selectedPromptIds.has(prompt.id)}
+                    onSelectionChange={handleSelectionChange}
+                  />
+                ))}
+              </div>
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">
@@ -1257,17 +1261,19 @@ export default function Library() {
 
             {/* Content Grid */}
             {prompts.length > 0 ? (
-              prompts.map((prompt) => (
-                <PromptCard
-                  key={prompt.id}
-                  prompt={prompt}
-                  showActions={true}
-                  onEdit={handleEditPrompt}
-                  isSelectable={isBulkMode}
-                  isSelected={selectedPromptIds.has(prompt.id)}
-                  onSelectionChange={handleSelectionChange}
-                />
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {prompts.map((prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    showActions={true}
+                    onEdit={handleEditPrompt}
+                    isSelectable={isBulkMode}
+                    isSelected={selectedPromptIds.has(prompt.id)}
+                    onSelectionChange={handleSelectionChange}
+                  />
+                ))}
+              </div>
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">
