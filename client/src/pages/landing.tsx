@@ -1,8 +1,49 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, Users, Search, Shield } from "lucide-react";
 import { useEffect } from "react";
 import PromptCardBeam from "@/components/PromptCardBeam";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
+import { cn } from "@/lib/utils";
+
+interface GridItemProps {
+  area: string;
+  icon: React.ReactNode;
+  title: string;
+  description: React.ReactNode;
+  testId?: string;
+}
+
+const GridItem = ({ area, icon, title, description, testId }: GridItemProps) => {
+  return (
+    <li className={cn("min-h-[14rem] list-none", area)} data-testid={testId}>
+      <div className="relative h-full rounded-[1.25rem] border-[0.75px] border-border p-2 md:rounded-[1.5rem] md:p-3">
+        <GlowingEffect
+          spread={40}
+          glow={true}
+          disabled={false}
+          proximity={64}
+          inactiveZone={0.01}
+          borderWidth={3}
+        />
+        <div className="relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl border-[0.75px] bg-background p-6 shadow-sm dark:shadow-[0px_0px_27px_0px_rgba(45,45,45,0.3)] md:p-6">
+          <div className="relative flex flex-1 flex-col justify-between gap-3">
+            <div className="w-fit rounded-lg border-[0.75px] border-border bg-muted p-2">
+              {icon}
+            </div>
+            <div className="space-y-3">
+              <h3 className="pt-0.5 text-xl leading-[1.375rem] font-semibold font-sans tracking-[-0.04em] md:text-2xl md:leading-[1.875rem] text-balance text-foreground">
+                {title}
+              </h3>
+              <h2 className="[&_b]:md:font-semibold [&_strong]:md:font-semibold font-sans text-sm leading-[1.125rem] md:text-base md:leading-[1.375rem] text-muted-foreground">
+                {description}
+              </h2>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+};
 
 export default function Landing() {
   // Force dark theme on mount
@@ -57,71 +98,36 @@ export default function Landing() {
             Everything you need for AI prompt management
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-            <Card className="p-2 md:p-6" data-testid="card-feature-organize">
-              <CardHeader className="p-2 md:p-6">
-                <div className="flex items-center gap-2 mb-1 justify-center md:block md:mb-0 md:justify-start">
-                  <div className="w-6 h-6 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 md:mb-4">
-                    <Lightbulb className="h-3 w-3 md:h-6 md:w-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-sm md:text-xl">Organize & Manage</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
-                <p className="text-[10px] leading-tight text-center md:text-base md:text-left text-muted-foreground">
-                  Store, categorize, and version your prompts with advanced metadata and organization tools.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="p-2 md:p-6" data-testid="card-feature-community">
-              <CardHeader className="p-2 md:p-6">
-                <div className="flex items-center gap-2 mb-1 justify-center md:block md:mb-0 md:justify-start">
-                  <div className="w-6 h-6 md:w-12 md:h-12 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0 md:mb-4">
-                    <Users className="h-3 w-3 md:h-6 md:w-6 text-green-500" />
-                  </div>
-                  <CardTitle className="text-sm md:text-xl">Community Driven</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
-                <p className="text-[10px] leading-tight text-center md:text-base md:text-left text-muted-foreground">
-                  Share, discover, and collaborate on prompts with a vibrant community of creators.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="p-2 md:p-6" data-testid="card-feature-search">
-              <CardHeader className="p-2 md:p-6">
-                <div className="flex items-center gap-2 mb-1 justify-center md:block md:mb-0 md:justify-start">
-                  <div className="w-6 h-6 md:w-12 md:h-12 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0 md:mb-4">
-                    <Search className="h-3 w-3 md:h-6 md:w-6 text-blue-500" />
-                  </div>
-                  <CardTitle className="text-sm md:text-xl">Advanced Search</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
-                <p className="text-[10px] leading-tight text-center md:text-base md:text-left text-muted-foreground">
-                  Find the perfect prompt with full-text search, filtering by tags, categories, and more.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="p-2 md:p-6" data-testid="card-feature-secure">
-              <CardHeader className="p-2 md:p-6">
-                <div className="flex items-center gap-2 mb-1 justify-center md:block md:mb-0 md:justify-start">
-                  <div className="w-6 h-6 md:w-12 md:h-12 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0 md:mb-4">
-                    <Shield className="h-3 w-3 md:h-6 md:w-6 text-purple-500" />
-                  </div>
-                  <CardTitle className="text-sm md:text-xl">Secure & Private</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
-                <p className="text-[10px] leading-tight text-center md:text-base md:text-left text-muted-foreground">
-                  Keep your prompts private or share them publicly with role-based access control.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4">
+            <GridItem
+              area="md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/7]"
+              icon={<Lightbulb className="h-4 w-4" />}
+              title="Organize & Manage"
+              description="Store, categorize, and version your prompts with advanced metadata and organization tools."
+              testId="card-feature-organize"
+            />
+            <GridItem
+              area="md:[grid-area:1/7/2/13] xl:[grid-area:1/7/2/13]"
+              icon={<Users className="h-4 w-4" />}
+              title="Community Driven"
+              description="Share, discover, and collaborate on prompts with a vibrant community of creators."
+              testId="card-feature-community"
+            />
+            <GridItem
+              area="md:[grid-area:2/1/2/7] xl:[grid-area:2/1/3/7]"
+              icon={<Search className="h-4 w-4" />}
+              title="Advanced Search"
+              description="Find the perfect prompt with full-text search, filtering by tags, categories, and more."
+              testId="card-feature-search"
+            />
+            <GridItem
+              area="md:[grid-area:2/7/2/13] xl:[grid-area:2/7/3/13]"
+              icon={<Shield className="h-4 w-4" />}
+              title="Secure & Private"
+              description="Keep your prompts private or share them publicly with role-based access control."
+              testId="card-feature-secure"
+            />
+          </ul>
         </div>
       </section>
 
