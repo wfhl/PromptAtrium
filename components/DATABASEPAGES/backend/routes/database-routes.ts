@@ -3,12 +3,41 @@ import { db } from '../database';
 
 const router = Router();
 
+// ========== Security: Table and Field Whitelists ==========
+const ALLOWED_TABLES = new Set([
+  'users', 'projects', 'communities', 'user_communities', 'prompt_history',
+  'community_admins', 'community_invites', 'collections', 'categories',
+  'prompt_types', 'prompt_styles', 'prompt_stylerule_templates',
+  'character_presets', 'prompt_templates', 'intended_generators',
+  'recommended_models', 'aesthetics', 'prompt_components', 'prompts',
+  'prompt_likes', 'prompt_favorites', 'prompt_ratings', 'follows',
+  'activities', 'notifications', 'codex_categories', 'codex_terms',
+  'codex_user_lists', 'codex_user_terms', 'codex_term_images',
+  'codex_contributions', 'codex_assembled_strings', 'prompt_image_contributions'
+]);
+
+const ALLOWED_SEARCH_FIELDS = new Set([
+  'name', 'description', 'title', 'bio', 'username', 'email',
+  'prompt_text', 'content', 'slug', 'term', 'definition'
+]);
+
+function validateTableName(table: string): boolean {
+  return ALLOWED_TABLES.has(table);
+}
+
+function validateFieldName(field: string): boolean {
+  return ALLOWED_SEARCH_FIELDS.has(field);
+}
+
 // ========== Generic CRUD Operations ==========
 
 // Generic GET all items endpoint
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     const items = await db.select().from(table);
     res.json(items);
   } catch (error) {
@@ -21,6 +50,9 @@ router.get('/:table', async (req, res) => {
 router.get('/:table/:id', async (req, res) => {
   try {
     const { table, id } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     const item = await db.select().from(table).where({ id: parseInt(id) }).first();
     
     if (!item) {
@@ -38,6 +70,9 @@ router.get('/:table/:id', async (req, res) => {
 router.post('/:table', async (req, res) => {
   try {
     const { table } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     const item = req.body;
     
     // Add timestamps
@@ -56,6 +91,9 @@ router.post('/:table', async (req, res) => {
 router.put('/:table/:id', async (req, res) => {
   try {
     const { table, id } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     const updates = req.body;
     
     // Add updated timestamp
@@ -81,6 +119,9 @@ router.put('/:table/:id', async (req, res) => {
 router.patch('/:table/:id', async (req, res) => {
   try {
     const { table, id } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     const updates = req.body;
     
     // Add updated timestamp
@@ -106,6 +147,9 @@ router.patch('/:table/:id', async (req, res) => {
 router.delete('/:table/:id', async (req, res) => {
   try {
     const { table, id } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     
     const deleted = await db.delete().from(table).where({ id: parseInt(id) });
     
@@ -124,6 +168,9 @@ router.delete('/:table/:id', async (req, res) => {
 router.put('/:table', async (req, res) => {
   try {
     const { table } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     const items = req.body;
     
     if (!Array.isArray(items)) {
@@ -162,6 +209,9 @@ router.put('/:table', async (req, res) => {
 router.post('/:table/bulk-delete', async (req, res) => {
   try {
     const { table } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     const { ids } = req.body;
     
     if (!Array.isArray(ids)) {
@@ -181,28 +231,35 @@ router.post('/:table/bulk-delete', async (req, res) => {
 router.get('/:table/search', async (req, res) => {
   try {
     const { table } = req.params;
+    if (!validateTableName(table)) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
     const { q, fields } = req.query;
     
     if (!q) {
       return res.status(400).json({ error: 'Search query is required' });
     }
     
-    const searchFields = fields ? fields.split(',') : ['name', 'description'];
+    const requestedFields = fields ? String(fields).split(',') : ['name', 'description'];
+    
+    // Validate all field names against whitelist
+    const searchFields = requestedFields.filter(field => validateFieldName(field.trim()));
+    
+    if (searchFields.length === 0) {
+      return res.status(400).json({ error: 'No valid search fields provided' });
+    }
+    
     const searchQuery = `%${q}%`;
     
-    // Build search conditions
-    const conditions = searchFields.map(field => 
-      db.raw(`${field} ILIKE ?`, searchQuery)
-    );
-    
+    // Build search conditions safely with validated field names
     const results = await db.select()
       .from(table)
       .where(function() {
-        conditions.forEach((condition, index) => {
+        searchFields.forEach((field, index) => {
           if (index === 0) {
-            this.whereRaw(condition);
+            this.whereRaw(`?? ILIKE ?`, [field, searchQuery]);
           } else {
-            this.orWhereRaw(condition);
+            this.orWhereRaw(`?? ILIKE ?`, [field, searchQuery]);
           }
         });
       });
