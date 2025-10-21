@@ -15,6 +15,15 @@ import aiAnalyzerRouter from "./routes/aiAnalyzer";
 import captionRouter from "./routes/caption";
 import enhancePromptRouter from "./routes/enhance-prompt";
 import systemDataRouter from "./routes/system-data";
+import { 
+  authLimiter, 
+  apiLimiter, 
+  strictApiLimiter, 
+  imageUploadLimiter, 
+  promptCreationLimiter,
+  searchLimiter,
+  dataExportLimiter 
+} from "./rateLimit";
 
 // Helper function to resolve public image URLs for development
 // ONLY affects development mode - production URLs pass through unchanged
@@ -168,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Profile routes
-  app.put('/api/profile', isAuthenticated, async (req: any, res) => {
+  app.put('/api/profile', isAuthenticated, apiLimiter, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
       
@@ -553,7 +562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/profile-picture", isAuthenticated, async (req, res) => {
+  app.put("/api/profile-picture", isAuthenticated, imageUploadLimiter, async (req, res) => {
     if (!req.body.profileImageUrl) {
       return res.status(400).json({ error: "profileImageUrl is required" });
     }
@@ -607,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/prompt-images", isAuthenticated, async (req, res) => {
+  app.put("/api/prompt-images", isAuthenticated, imageUploadLimiter, async (req, res) => {
     if (!req.body.imageUrl) {
       return res.status(400).json({ error: "imageUrl is required" });
     }
@@ -727,7 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/prompts', async (req: any, res) => {
+  app.get('/api/prompts', searchLimiter, async (req: any, res) => {
     try {
       const {
         userId,
@@ -842,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/prompts', isAuthenticated, async (req: any, res) => {
+  app.post('/api/prompts', isAuthenticated, promptCreationLimiter, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
       
@@ -1190,7 +1199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/prompts/bulk-import', isAuthenticated, async (req: any, res) => {
+  app.post('/api/prompts/bulk-import', isAuthenticated, strictApiLimiter, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
       const { prompts } = req.body;
@@ -1323,7 +1332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk operations endpoint
-  app.post('/api/prompts/bulk-operations', isAuthenticated, async (req: any, res) => {
+  app.post('/api/prompts/bulk-operations', isAuthenticated, strictApiLimiter, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
       
