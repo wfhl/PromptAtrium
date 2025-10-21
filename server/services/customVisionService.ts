@@ -18,28 +18,46 @@ interface CustomVisionResult {
   serverOnline?: boolean;
 }
 
-// Custom Vision Server configuration - Using stable LocalTunnel URL
-const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL || "https://elitevision.loca.lt";
+// Custom Vision Server configuration
+// Only use if explicitly configured - disabled by default for security
+const VISION_SERVER_URL = process.env.CUSTOM_VISION_URL;
+const CUSTOM_VISION_ENABLED = process.env.CUSTOM_VISION_ENABLED === 'true';
+const CUSTOM_VISION_API_KEY = process.env.CUSTOM_VISION_API_KEY;
 
 /**
  * Test if the custom vision server is reachable
  */
 export async function testCustomVisionServer(): Promise<{ isOnline: boolean; details?: any; error?: string }> {
+  // Return offline if service is disabled
+  if (!CUSTOM_VISION_ENABLED || !VISION_SERVER_URL) {
+    return { 
+      isOnline: false, 
+      error: 'Custom Vision service is disabled or not configured' 
+    };
+  }
+  
   try {
+    const headers: any = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Cache-Control': 'max-age=0'
+    };
+    
+    // Add API key if configured
+    if (CUSTOM_VISION_API_KEY) {
+      headers['Authorization'] = `Bearer ${CUSTOM_VISION_API_KEY}`;
+    }
+    
     const response = await axios.get(`${VISION_SERVER_URL}/test`, {
       timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Cache-Control': 'max-age=0'
-      }
+      headers
     });
     
     if (response.status === 200) {
@@ -63,6 +81,11 @@ export async function analyzeImageWithCustomVision(
   imageData: string | Buffer,
   options: CustomVisionOptions = {}
 ): Promise<CustomVisionResult> {
+  // Check if service is enabled
+  if (!CUSTOM_VISION_ENABLED || !VISION_SERVER_URL) {
+    throw new Error('Custom Vision service is disabled or not configured');
+  }
+  
   try {
     // First check if server is online
     const serverStatus = await testCustomVisionServer();
@@ -102,22 +125,29 @@ export async function analyzeImageWithCustomVision(
     
     console.log('🔍 Sending request to Custom Vision server...');
     
+    const headers: any = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'empty',
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Site': 'cross-site',
+      'Cache-Control': 'no-cache'
+    };
+    
+    // Add API key if configured
+    if (CUSTOM_VISION_API_KEY) {
+      headers['Authorization'] = `Bearer ${CUSTOM_VISION_API_KEY}`;
+    }
+    
     // Send request to custom vision server
     const response = await axios.post(`${VISION_SERVER_URL}/analyze`, payload, {
       timeout: 30000, // 30 second timeout for processing
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'cross-site',
-        'Cache-Control': 'no-cache'
-      }
+      headers
     });
     
     if (response.status === 200 && response.data.caption) {

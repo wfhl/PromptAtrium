@@ -3,9 +3,12 @@ import { OAuth2Client } from 'google-auth-library';
 import { Request, Response } from 'express';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
-const REDIRECT_URI = process.env.NODE_ENV === 'production' 
-  ? 'https://promptatrium.replit.app/api/auth/google/callback'
-  : `https://${process.env.REPLIT_DEV_DOMAIN}/api/auth/google/callback`;
+
+// Use environment variable for redirect URI with fallback for backward compatibility
+const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 
+  (process.env.NODE_ENV === 'production' 
+    ? `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}/api/auth/google/callback`
+    : `https://${process.env.REPLIT_DEV_DOMAIN}/api/auth/google/callback`);
 
 // Create OAuth2 client
 export function createOAuthClient(): OAuth2Client {

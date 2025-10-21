@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupOpenGraph } from "./openGraph";
 import { storage } from "./storage";
+import { validateEnvironment, logValidationResults } from "./startup-validation";
 
 const app = express();
 // Increase body size limit to 50MB to handle image data
@@ -40,6 +41,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Validate environment on startup
+  const validationResult = validateEnvironment();
+  logValidationResults(validationResult);
+  
+  // In production, exit if critical errors exist
+  if (process.env.NODE_ENV === 'production' && !validationResult.isValid) {
+    console.error('Exiting due to environment validation errors in production mode.');
+    process.exit(1);
+  }
+  
   // Setup Open Graph middleware before other routes
   setupOpenGraph(app);
   
