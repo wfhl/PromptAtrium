@@ -83,6 +83,61 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
 
   const renderNotificationMessage = (notification: Notification) => {
     const message = notification.message;
+    
+    // First, check if there's a username at the beginning that should be linked
+    // Pattern matches: "Username liked...", "Username started following...", "Username forked...", etc.
+    const usernameMatch = message.match(/^([^\s]+)\s+(liked|started following|forked|contributed|approved|commented|mentioned|created|joined)/);
+    
+    if (usernameMatch && notification.relatedUserId && (notification as any).relatedUser) {
+      const username = usernameMatch[1];
+      const restOfMessage = message.substring(username.length);
+      
+      // Split the rest of the message to find prompt names in quotes
+      const parts = restOfMessage.split(/([""].*?[""])/g);
+      
+      return (
+        <>
+          {/* Render the clickable username */}
+          <Link 
+            href={`/user/${(notification as any).relatedUser.username || username}`}
+            className="font-semibold text-primary hover:underline"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event bubbling
+              onOpenChange(false);
+            }}
+          >
+            {username}
+          </Link>
+          
+          {/* Render the rest of the message with clickable prompt names */}
+          {parts.map((part, index) => {
+            // Check if this part is a quoted prompt name
+            if (part.match(/^[""].*[""]$/)) {
+              const promptName = part.slice(1, -1); // Remove quotes
+              if (notification.relatedPromptId) {
+                return (
+                  <Link 
+                    key={index}
+                    href={`/prompt/${notification.relatedPromptId}`}
+                    className="font-semibold text-primary hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent event bubbling
+                      onOpenChange(false);
+                    }}
+                  >
+                    "{promptName}"
+                  </Link>
+                );
+              }
+              return <span key={index} className="font-semibold">"{promptName}"</span>;
+            }
+            return <span key={index}>{part}</span>;
+          })}
+        </>
+      );
+    }
+    
+    // Fallback to original parsing if no username match at the beginning
     // Parse message to find prompt names in quotes and make them clickable
     const parts = message.split(/([""].*?[""])/g);
     
