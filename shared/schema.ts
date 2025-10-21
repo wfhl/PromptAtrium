@@ -102,7 +102,11 @@ export const userCommunities = pgTable("user_communities", {
   communityId: varchar("community_id").notNull().references(() => communities.id),
   role: varchar("role", { enum: ["member", "admin"] }).default("member"),
   joinedAt: timestamp("joined_at").defaultNow(),
-});
+}, (table) => [
+  // Foreign key indexes
+  index("idx_user_communities_user_id").on(table.userId),
+  index("idx_user_communities_community_id").on(table.communityId),
+]);
 
 // Prompt history table - tracks all generated prompts by users
 export const promptHistory = pgTable("prompt_history", {
@@ -150,7 +154,10 @@ export const collections = pgTable("collections", {
   isPublic: boolean("is_public").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  // Foreign key index
+  index("idx_collections_user_id").on(table.userId),
+]);
 
 // Categories table
 export const categories = pgTable("categories", {
@@ -370,7 +377,15 @@ export const prompts = pgTable("prompts", {
   updatedAt: timestamp("updated_at").defaultNow(),
   promptContent: text("prompt_content").notNull(),
   negativePrompt: text("negative_prompt"),
-});
+}, (table) => [
+  // Foreign key indexes
+  index("idx_prompts_user_id").on(table.userId),
+  index("idx_prompts_collection_id").on(table.collectionId),
+  // Query optimization indexes
+  index("idx_prompts_public_created").on(table.isPublic, table.createdAt),
+  // Partial index for featured prompts
+  index("idx_prompts_featured").on(table.isFeatured).where(sql`${table.isFeatured} = true`),
+]);
 
 // Prompt likes table - tracks individual likes/hearts
 export const promptLikes = pgTable("prompt_likes", {
