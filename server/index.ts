@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { setupOpenGraph } from "./openGraph";
 import { storage } from "./storage";
 import { validateEnvironment, logValidationResults } from "./startup-validation";
+import { errorHandler, notFoundHandler, StructuredLogger } from "./errorHandler";
 
 const app = express();
 // Increase body size limit to 50MB to handle image data
@@ -56,13 +57,8 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Use structured error handler
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -87,11 +83,14 @@ app.use((req, res, next) => {
     
     // Run cleanup of duplicate likes on startup
     try {
-      log("Running duplicate likes cleanup...");
+      StructuredLogger.info("Running duplicate likes cleanup");
       const cleanupResult = await storage.cleanupDuplicateLikes();
-      log(`Cleanup completed: removed ${cleanupResult.duplicatesRemoved} duplicates, fixed ${cleanupResult.promptsFixed} prompts`);
+      StructuredLogger.info("Cleanup completed", {
+        duplicatesRemoved: cleanupResult.duplicatesRemoved,
+        promptsFixed: cleanupResult.promptsFixed
+      });
     } catch (error) {
-      log(`Error during likes cleanup: ${error}`);
+      StructuredLogger.error("Error during likes cleanup", error as Error);
       // Don't crash the server if cleanup fails
     }
   });
