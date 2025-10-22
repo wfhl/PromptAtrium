@@ -1,5 +1,5 @@
-import { useEffect, useCallback } from "react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useCallback, useState } from "react";
+import { X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +16,9 @@ interface ImageLightboxProps {
 }
 
 export function ImageLightbox({ images, currentIndex, open, onClose, onNavigate }: ImageLightboxProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  
   const goToPrevious = useCallback(() => {
     const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
     onNavigate(newIndex);
@@ -45,6 +48,12 @@ export function ImageLightbox({ images, currentIndex, open, onClose, onNavigate 
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open, goToPrevious, goToNext]);
+
+  // Reset loading and error states when image changes
+  useEffect(() => {
+    setIsLoading(true);
+    setImageError(false);
+  }, [currentIndex]);
 
   const currentImage = images[currentIndex];
   
@@ -127,17 +136,45 @@ export function ImageLightbox({ images, currentIndex, open, onClose, onNavigate 
         )}
 
         {/* Image */}
-        <div className="flex items-center justify-center w-full h-[90vh] p-4">
+        <div className="flex items-center justify-center w-full h-[90vh] p-4 relative">
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+          )}
+          
+          {/* Error state */}
+          {imageError && !isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-white">
+                <p className="text-lg mb-2">Failed to load image</p>
+                <p className="text-sm opacity-75">{currentImage}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Image */}
           <img
+            key={`${currentImage}-${currentIndex}`} // Force re-render on image change
             src={getImageSrc(currentImage)}
             alt={`Image ${currentIndex + 1} of ${images.length}`}
-            className="max-w-full max-h-full object-contain"
+            className={`max-w-full max-h-full object-contain ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
             data-testid="lightbox-image"
+            onLoad={() => {
+              setIsLoading(false);
+              setImageError(false);
+            }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
+              // First try with fallback for non-http URLs
               if (!target.dataset.fallbackTried && !currentImage.startsWith('http')) {
                 target.dataset.fallbackTried = 'true';
                 target.src = currentImage;
+              } else {
+                // If fallback also failed, show error state
+                setIsLoading(false);
+                setImageError(true);
               }
             }}
           />
