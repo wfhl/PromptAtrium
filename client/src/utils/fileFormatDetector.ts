@@ -164,29 +164,84 @@ export function extractPromptsFromText(content: string): Array<{
 }> {
   const prompts: Array<{ promptContent: string; name: string }> = [];
   
+  // Normalize content
+  const normalizedContent = content
+    .replace(/\r\n/g, '\n') // Normalize line endings
+    .replace(/\n{3,}/g, '\n\n') // Replace 3+ newlines with exactly 2
+    .trim();
+  
+  // First, check for numbered list format (e.g., "1. Title" or "1) Title")
+  const numberedPattern = /^\s*\d+[\.\)]\s+/gm;
+  const hasNumberedList = numberedPattern.test(normalizedContent);
+  
+  if (hasNumberedList) {
+    // Split by numbered items
+    const parts = normalizedContent.split(/^\s*\d+[\.\)]\s+/gm);
+    const numberLines = normalizedContent.match(/^\s*\d+[\.\)]\s+.*/gm) || [];
+    
+    // Skip the first empty part if it exists
+    const startIndex = parts[0].trim() === '' ? 1 : 0;
+    
+    for (let i = startIndex; i < parts.length && (i - startIndex) < numberLines.length; i++) {
+      const numberLine = numberLines[i - startIndex];
+      const content = parts[i].trim();
+      
+      if (numberLine && content) {
+        // Extract title from the numbered line
+        const title = numberLine.replace(/^\s*\d+[\.\)]\s+/, '').trim();
+        
+        // Check if content starts with the title (title and content on same line)
+        if (content.startsWith(title)) {
+          const actualContent = content.substring(title.length).trim();
+          if (actualContent) {
+            prompts.push({
+              name: title || `Prompt ${prompts.length + 1}`,
+              promptContent: actualContent
+            });
+          } else {
+            // Title only, use title as both name and content
+            prompts.push({
+              name: title || `Prompt ${prompts.length + 1}`,
+              promptContent: title
+            });
+          }
+        } else {
+          // Title and content are separate
+          prompts.push({
+            name: title || `Prompt ${prompts.length + 1}`,
+            promptContent: content
+          });
+        }
+      }
+    }
+    
+    if (prompts.length > 0) {
+      return prompts;
+    }
+  }
+  
   // Try different delimiters for prompt separation
   const delimiters = [
     /^---+$/m, // Horizontal lines
     /^===+$/m, // Double lines
     /^\*\*\*+$/m, // Asterisks
     /^#{2,}/m, // Markdown headers
-    /^Prompt \d+:/im, // Numbered prompts
-    /^\d+\.\s+/m, // Numbered list
+    /^Prompt \d+:/im, // Numbered prompts with "Prompt" prefix
   ];
   
-  let sections: string[] = [content];
+  let sections: string[] = [normalizedContent];
   
   // Try to split by delimiters
   for (const delimiter of delimiters) {
-    if (delimiter.test(content)) {
-      sections = content.split(delimiter).filter(s => s.trim().length > 20);
+    if (delimiter.test(normalizedContent)) {
+      sections = normalizedContent.split(delimiter).filter(s => s.trim().length > 20);
       break;
     }
   }
   
-  // If no clear sections, try paragraph separation
+  // If no clear sections, try double line break (paragraph) separation
   if (sections.length === 1) {
-    sections = content.split(/\n\s*\n/).filter(s => s.trim().length > 20);
+    sections = normalizedContent.split(/\n\s*\n/).filter(s => s.trim().length > 20);
   }
   
   // Process each section as a potential prompt
@@ -199,25 +254,39 @@ export function extractPromptsFromText(content: string): Array<{
       let promptContent = trimmed;
       
       // Check if first line looks like a title
-      if (lines[0].length < 100 && !lines[0].includes('.')) {
-        name = lines[0].trim();
+      // Title criteria: shorter than 100 chars, doesn't end with punctuation, starts with capital
+      const firstLine = lines[0].trim();
+      const looksLikeTitle = firstLine.length > 0 && 
+                            firstLine.length < 100 && 
+                            !firstLine.endsWith('.') && 
+                            !firstLine.endsWith('!') &&
+                            !firstLine.endsWith('?') &&
+                            /^[A-Z]/.test(firstLine);
+      
+      if (lines.length >= 2 && looksLikeTitle) {
+        // Use first line as title, rest as content
+        name = firstLine;
         promptContent = lines.slice(1).join('\n').trim();
       } else {
         // Generate name from first few words
-        const firstWords = trimmed.split(/\s+/).slice(0, 5).join(' ');
+        const words = trimmed.split(/\s+/);
+        const firstWords = words.slice(0, 5).join(' ');
         name = firstWords.length > 50 ? 
           `${firstWords.substring(0, 50)}...` : 
-          `${firstWords}...`;
+          (words.length > 5 ? `${firstWords}...` : firstWords);
       }
       
       if (!name) {
         name = `Prompt ${index + 1}`;
       }
       
-      prompts.push({
-        name,
-        promptContent: promptContent || trimmed
-      });
+      // Only add if we have actual content
+      if (promptContent && promptContent.length > 0) {
+        prompts.push({
+          name,
+          promptContent: promptContent
+        });
+      }
     }
   });
   
