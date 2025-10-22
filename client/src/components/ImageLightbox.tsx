@@ -72,7 +72,7 @@ export function ImageLightbox({ images, currentIndex, open, onClose, onNavigate 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent 
-        className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-0"
+        className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-0 [&>button:first-of-type]:hidden"
         aria-describedby="lightbox-description"
       >
         <DialogTitle className="sr-only">Image Viewer</DialogTitle>
