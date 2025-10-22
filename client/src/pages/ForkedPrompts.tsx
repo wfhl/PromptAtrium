@@ -68,14 +68,15 @@ export default function ForkedPrompts() {
           <p className="text-muted-foreground">Loading your forked prompts...</p>
         </div>
       ) : filteredPrompts.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
           {filteredPrompts.map((prompt) => (
-            <PromptCard
-              key={prompt.id}
-              prompt={prompt}
-              showActions={true}
-              allowInlineEdit={true}
-            />
+            <div key={prompt.id} className="break-inside-avoid">
+              <PromptCard
+                prompt={prompt}
+                showActions={true}
+                allowInlineEdit={true}
+              />
+            </div>
           ))}
         </div>
       ) : searchQuery ? (
