@@ -77,7 +77,10 @@ export default function Community() {
   const savedTab = localStorage.getItem('community-active-tab');
   const initialTab = tabFromUrl || savedTab || 'prompts';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [promptsSubTab, setPromptsSubTab] = useState("featured");
+  
+  // Read promptsSubTab from localStorage with fallback to 'featured'
+  const savedPromptsSubTab = localStorage.getItem('community-prompts-sub-tab');
+  const [promptsSubTab, setPromptsSubTab] = useState(savedPromptsSubTab || "featured");
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
   const [followingCollapsed, setFollowingCollapsed] = useState(true);
 
@@ -95,6 +98,11 @@ export default function Community() {
       return;
     }
   }, [isAuthenticated, isLoading, toast]);
+
+  // Save promptsSubTab to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('community-prompts-sub-tab', promptsSubTab);
+  }, [promptsSubTab]);
 
   // Build query string for prompts
   const buildQuery = (offset = 0) => {
@@ -148,7 +156,7 @@ export default function Community() {
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ["prompts", promptsSubTab, searchQuery, multiSelectFilters, sortBy],
+    queryKey: ["prompts", promptsSubTab, searchQuery, multiSelectFilters],
     queryFn: async ({ pageParam = 0 }) => {
       const response = await fetch(`/api/prompts?${buildQuery(pageParam)}`);
       if (!response.ok) throw new Error("Failed to fetch prompts");
@@ -173,7 +181,7 @@ export default function Community() {
     if (activeTab === "prompts" && isAuthenticated) {
       refetch();
     }
-  }, [promptsSubTab, activeTab, isAuthenticated, multiSelectFilters]);
+  }, [promptsSubTab, activeTab, isAuthenticated, multiSelectFilters, refetch]);
 
   // Intersection observer for infinite scroll
   const observerTarget = useRef<HTMLDivElement>(null);
