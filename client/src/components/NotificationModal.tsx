@@ -249,6 +249,16 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
             </div>
           )}
         </ScrollArea>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => markAllAsReadMutation.mutate()}
+          disabled={markAllAsReadMutation.isPending}
+          data-testid="button-mark-all-read"
+        >
+          <Check className="h-4 w-4 mr-1" />
+          Mark all as read
+        </Button>
       </DialogContent>
     </Dialog>
   );
