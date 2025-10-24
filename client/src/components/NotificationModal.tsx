@@ -183,16 +183,16 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
               )}
             </DialogTitle>
             {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => markAllAsReadMutation.mutate()}
-                disabled={markAllAsReadMutation.isPending}
-                data-testid="button-mark-all-read"
-              >
-                <Check className="h-4 w-4 mr-1" />
-                Mark all as read
-              </Button>
+       <Button
+         variant="ghost"
+         size="sm"
+         onClick={() => markAllAsReadMutation.mutate()}
+         disabled={markAllAsReadMutation.isPending}
+         data-testid="button-mark-all-read"
+       >
+         <Check className="h-4 w-4 mr-1" />
+
+       </Button>
             )}
           </div>
         </DialogHeader>
