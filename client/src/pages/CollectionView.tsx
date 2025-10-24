@@ -366,20 +366,20 @@ export default function CollectionView() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-2 max-w-8xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-1 mb-4">
             <Link href="/library?tab=collections">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to My Collections
+                My Collections
               </Button>
             </Link>
             <Link href="/community?tab=collections">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Community Collections
+                Community Collections
               </Button>
             </Link>
           </div>
@@ -426,11 +426,12 @@ export default function CollectionView() {
             {isOwner && (
               <div className="flex items-center gap-2">
                 <Button 
+                  size="icon"
                   onClick={handleCreatePrompt}
                   data-testid="button-add-prompt"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Prompt
+                  <Plus className="h-6 w-6" />
+                
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

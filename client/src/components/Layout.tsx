@@ -475,7 +475,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   size="icon"
-                  className="items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground hover:bg-primary/90 flex h-8 w-8 bg-indigo-400"
+                  className="items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground hover:bg-primary/90 flex h-8 w-8 bg-gradient-to-br from-indigo-600 to-purple-600"
+                  background="linear-gradient(90deg, #00e1ff 0%, #0000ff 100%)"
                   data-testid="button-new-menu"
                 >
                   <Plus className="h-5 w-5" />
