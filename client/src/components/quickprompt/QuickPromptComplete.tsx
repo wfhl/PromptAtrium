@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ShineBorder } from "@/components/ui/shine-border";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -1085,21 +1086,29 @@ export default function QuickPromptComplete() {
           )}
           
           {/* Generate Button */}
-          <Button
-            onClick={handleGeneratePrompt}
-            disabled={isGenerating}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            size="lg"
-            data-testid="button-generate-prompt"
+          <ShineBorder
+            className="w-full"
+            color={["#a855f7", "#ec4899", "#f97316"]}
+            borderRadius={8}
+            borderWidth={0.5}
+            duration={14}
           >
-            {isGenerating ? (
-              <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Generating...</>
-            ) : template === "Social Media Post Caption" ? (
-              <><Camera className="h-5 w-5 mr-2" /> Generate Caption</>
-            ) : (
-              <><Sparkles className="h-5 w-5 mr-2" /> Generate Prompt</>
-            )}
-          </Button>
+            <Button
+              onClick={handleGeneratePrompt}
+              disabled={isGenerating}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0"
+              size="lg"
+              data-testid="button-generate-prompt"
+            >
+              {isGenerating ? (
+                <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Generating...</>
+              ) : template === "Social Media Post Caption" ? (
+                <><Camera className="h-5 w-5 mr-2" /> Generate Caption</>
+              ) : (
+                <><Sparkles className="h-5 w-5 mr-2" /> Generate Prompt</>
+              )}
+            </Button>
+          </ShineBorder>
         </div>
         
         {/* Results Section */}
