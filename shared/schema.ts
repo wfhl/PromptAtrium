@@ -593,8 +593,69 @@ export const promptImageContributions = pgTable("prompt_image_contributions", {
   index("idx_prompt_contributions_contributor").on(table.contributorId),
 ]);
 
+// Credits System Tables
+
+// User credits table - tracks user credit balances
+export const userCredits = pgTable("user_credits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  balance: integer("balance").notNull().default(0),
+  lifetimeEarned: integer("lifetime_earned").notNull().default(0),
+  lifetimeSpent: integer("lifetime_spent").notNull().default(0),
+  lastActivity: timestamp("last_activity").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Index for quick user lookups
+  index("idx_user_credits_user").on(table.userId),
+]);
+
+// Credit transactions table - logs all credit movements
+export const creditTransactions = pgTable("credit_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type", { 
+    enum: ["earn", "spend", "bonus", "refund", "adjustment"] 
+  }).notNull(),
+  amount: integer("amount").notNull(), // Positive for earn, negative for spend
+  balanceBefore: integer("balance_before").notNull(),
+  balanceAfter: integer("balance_after").notNull(),
+  source: varchar("source", {
+    enum: ["daily_login", "streak_bonus", "prompt_share", "profile_completion", "first_prompt", "purchase", "admin_adjustment", "refund", "other"]
+  }).notNull(),
+  referenceId: varchar("reference_id"), // ID of related entity (prompt, order, etc.)
+  referenceType: varchar("reference_type"), // Type of related entity
+  description: text("description"),
+  metadata: jsonb("metadata").default({}), // Additional transaction data
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  // Index for user transaction history
+  index("idx_credit_transactions_user_created").on(table.userId, table.createdAt),
+  // Index for transaction type queries
+  index("idx_credit_transactions_type").on(table.type),
+  // Index for source tracking
+  index("idx_credit_transactions_source").on(table.source),
+]);
+
+// Daily rewards table - tracks daily login streaks
+export const dailyRewards = pgTable("daily_rewards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  lastClaimDate: timestamp("last_claim_date").notNull(),
+  currentStreak: integer("current_streak").notNull().default(0),
+  longestStreak: integer("longest_streak").notNull().default(0),
+  totalDaysClaimed: integer("total_days_claimed").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Unique constraint to ensure one record per user
+  unique("unique_user_daily_rewards").on(table.userId),
+  // Index for quick user lookups
+  index("idx_daily_rewards_user").on(table.userId),
+]);
+
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   prompts: many(prompts),
   projects: many(projects),
   collections: many(collections),
@@ -608,6 +669,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   activities: many(activities),
   notifications: many(notifications, { relationName: "recipient" }),
   triggeredNotifications: many(notifications, { relationName: "trigger" }),
+  credits: one(userCredits, { fields: [users.id], references: [userCredits.userId] }),
+  creditTransactions: many(creditTransactions),
+  dailyRewards: one(dailyRewards, { fields: [users.id], references: [dailyRewards.userId] }),
 }));
 
 export const communitiesRelations = relations(communities, ({ many }) => ({
@@ -679,6 +743,19 @@ export const communityAdminsRelations = relations(communityAdmins, ({ one }) => 
 export const communityInvitesRelations = relations(communityInvites, ({ one }) => ({
   community: one(communities, { fields: [communityInvites.communityId], references: [communities.id] }),
   createdByUser: one(users, { fields: [communityInvites.createdBy], references: [users.id] }),
+}));
+
+// Credit system relations
+export const userCreditsRelations = relations(userCredits, ({ one }) => ({
+  user: one(users, { fields: [userCredits.userId], references: [users.id] }),
+}));
+
+export const creditTransactionsRelations = relations(creditTransactions, ({ one }) => ({
+  user: one(users, { fields: [creditTransactions.userId], references: [users.id] }),
+}));
+
+export const dailyRewardsRelations = relations(dailyRewards, ({ one }) => ({
+  user: one(users, { fields: [dailyRewards.userId], references: [users.id] }),
 }));
 
 // Insert schemas
@@ -841,6 +918,24 @@ export const insertPromptImageContributionSchema = createInsertSchema(promptImag
   createdAt: true,
 });
 
+// Credit system insert schemas
+export const insertUserCreditsSchema = createInsertSchema(userCredits).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertDailyRewardSchema = createInsertSchema(dailyRewards).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -955,6 +1050,14 @@ export type CodexAssembledString = typeof codexAssembledStrings.$inferSelect;
 // Image contribution types
 export type PromptImageContribution = typeof promptImageContributions.$inferSelect;
 export type InsertPromptImageContribution = z.infer<typeof insertPromptImageContributionSchema>;
+
+// Credit system types
+export type UserCredits = typeof userCredits.$inferSelect;
+export type InsertUserCredits = z.infer<typeof insertUserCreditsSchema>;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+export type DailyReward = typeof dailyRewards.$inferSelect;
+export type InsertDailyReward = z.infer<typeof insertDailyRewardSchema>;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;

@@ -23,6 +23,9 @@ import {
   aesthetics,
   promptHistory,
   promptImageContributions,
+  userCredits,
+  creditTransactions,
+  dailyRewards,
   type User,
   type UpsertUser,
   type Prompt,
@@ -65,6 +68,12 @@ import {
   type InsertPromptHistory,
   type UserRole,
   type CommunityRole,
+  type UserCredits,
+  type InsertUserCredits,
+  type CreditTransaction,
+  type InsertCreditTransaction,
+  type DailyReward,
+  type InsertDailyReward,
   codexCategories,
   codexTerms,
   codexUserLists,
@@ -337,6 +346,18 @@ export interface IStorage {
   updateCharacterPreset(id: string, preset: Partial<InsertCharacterPreset>): Promise<CharacterPreset>;
   deleteCharacterPreset(id: string, userId: string): Promise<void>;
   toggleCharacterPresetFavorite(id: string, userId: string): Promise<CharacterPreset>;
+
+  // Credit system operations
+  getUserCredits(userId: string): Promise<UserCredits>;
+  getCreditBalance(userId: string): Promise<number>;
+  addCredits(userId: string, amount: number, source: string, description?: string, referenceId?: string, referenceType?: string): Promise<CreditTransaction>;
+  spendCredits(userId: string, amount: number, source: string, description?: string, referenceId?: string, referenceType?: string): Promise<CreditTransaction>;
+  getCreditTransactionHistory(userId: string, options?: { limit?: number; offset?: number }): Promise<CreditTransaction[]>;
+  getDailyReward(userId: string): Promise<DailyReward | undefined>;
+  claimDailyReward(userId: string): Promise<{ reward: number; streak: number; streakBonus?: number }>;
+  checkFirstPromptBonus(userId: string): Promise<boolean>;
+  checkProfileCompletionBonus(userId: string): Promise<boolean>;
+  initializeUserCredits(userId: string): Promise<UserCredits>;
 }
 
 function generatePromptId(): string {
@@ -2899,6 +2920,331 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedPreset;
+  }
+
+  // Credit System Operations
+  async initializeUserCredits(userId: string): Promise<UserCredits> {
+    const [existingCredits] = await db.select().from(userCredits).where(eq(userCredits.userId, userId));
+    
+    if (existingCredits) {
+      return existingCredits;
+    }
+    
+    const [newCredits] = await db.insert(userCredits)
+      .values({
+        userId,
+        balance: 0,
+        lifetimeEarned: 0,
+        lifetimeSpent: 0,
+        lastActivity: new Date(),
+      })
+      .returning();
+    
+    return newCredits;
+  }
+
+  async getUserCredits(userId: string): Promise<UserCredits> {
+    const [credits] = await db.select().from(userCredits).where(eq(userCredits.userId, userId));
+    
+    if (!credits) {
+      // Initialize credits for user if not found
+      return await this.initializeUserCredits(userId);
+    }
+    
+    return credits;
+  }
+
+  async getCreditBalance(userId: string): Promise<number> {
+    const credits = await this.getUserCredits(userId);
+    return credits.balance;
+  }
+
+  async addCredits(
+    userId: string,
+    amount: number,
+    source: string,
+    description?: string,
+    referenceId?: string,
+    referenceType?: string
+  ): Promise<CreditTransaction> {
+    return await db.transaction(async (tx) => {
+      // Get current balance
+      const [currentCredits] = await tx.select().from(userCredits).where(eq(userCredits.userId, userId));
+      
+      let balanceBefore = 0;
+      if (!currentCredits) {
+        // Initialize credits if not exists
+        await tx.insert(userCredits).values({
+          userId,
+          balance: 0,
+          lifetimeEarned: 0,
+          lifetimeSpent: 0,
+        });
+      } else {
+        balanceBefore = currentCredits.balance;
+      }
+      
+      const balanceAfter = balanceBefore + amount;
+      
+      // Update user credits
+      await tx.update(userCredits)
+        .set({
+          balance: balanceAfter,
+          lifetimeEarned: sql`${userCredits.lifetimeEarned} + ${amount}`,
+          lastActivity: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(userCredits.userId, userId));
+      
+      // Create transaction record
+      const [transaction] = await tx.insert(creditTransactions)
+        .values({
+          userId,
+          type: amount > 0 ? "earn" : "adjustment",
+          amount,
+          balanceBefore,
+          balanceAfter,
+          source: source as any,
+          referenceId,
+          referenceType,
+          description,
+        })
+        .returning();
+      
+      return transaction;
+    });
+  }
+
+  async spendCredits(
+    userId: string,
+    amount: number,
+    source: string,
+    description?: string,
+    referenceId?: string,
+    referenceType?: string
+  ): Promise<CreditTransaction> {
+    return await db.transaction(async (tx) => {
+      // Get current balance
+      const [currentCredits] = await tx.select().from(userCredits).where(eq(userCredits.userId, userId));
+      
+      if (!currentCredits || currentCredits.balance < amount) {
+        throw new Error("Insufficient credits");
+      }
+      
+      const balanceBefore = currentCredits.balance;
+      const balanceAfter = balanceBefore - amount;
+      
+      // Update user credits
+      await tx.update(userCredits)
+        .set({
+          balance: balanceAfter,
+          lifetimeSpent: sql`${userCredits.lifetimeSpent} + ${amount}`,
+          lastActivity: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(userCredits.userId, userId));
+      
+      // Create transaction record
+      const [transaction] = await tx.insert(creditTransactions)
+        .values({
+          userId,
+          type: "spend",
+          amount: -amount, // Store as negative for spending
+          balanceBefore,
+          balanceAfter,
+          source: source as any,
+          referenceId,
+          referenceType,
+          description,
+        })
+        .returning();
+      
+      return transaction;
+    });
+  }
+
+  async getCreditTransactionHistory(userId: string, options?: { limit?: number; offset?: number }): Promise<CreditTransaction[]> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+    
+    return await db.select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.userId, userId))
+      .orderBy(desc(creditTransactions.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getDailyReward(userId: string): Promise<DailyReward | undefined> {
+    const [reward] = await db.select()
+      .from(dailyRewards)
+      .where(eq(dailyRewards.userId, userId));
+    
+    return reward;
+  }
+
+  async claimDailyReward(userId: string): Promise<{ reward: number; streak: number; streakBonus?: number }> {
+    return await db.transaction(async (tx) => {
+      const [existingReward] = await tx.select()
+        .from(dailyRewards)
+        .where(eq(dailyRewards.userId, userId));
+      
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      let currentStreak = 1;
+      let baseReward = 10;
+      let streakBonus = 0;
+      
+      if (existingReward) {
+        const lastClaim = new Date(existingReward.lastClaimDate);
+        const lastClaimDay = new Date(lastClaim.getFullYear(), lastClaim.getMonth(), lastClaim.getDate());
+        const daysSinceLastClaim = Math.floor((today.getTime() - lastClaimDay.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Check if already claimed today
+        if (daysSinceLastClaim === 0) {
+          throw new Error("Daily reward already claimed");
+        }
+        
+        // Continue streak if claimed yesterday
+        if (daysSinceLastClaim === 1) {
+          currentStreak = existingReward.currentStreak + 1;
+        } else {
+          currentStreak = 1; // Reset streak
+        }
+        
+        // Update existing reward
+        const longestStreak = Math.max(currentStreak, existingReward.longestStreak);
+        
+        await tx.update(dailyRewards)
+          .set({
+            lastClaimDate: now,
+            currentStreak,
+            longestStreak,
+            totalDaysClaimed: existingReward.totalDaysClaimed + 1,
+            updatedAt: now,
+          })
+          .where(eq(dailyRewards.userId, userId));
+      } else {
+        // Create new reward entry
+        await tx.insert(dailyRewards)
+          .values({
+            userId,
+            lastClaimDate: now,
+            currentStreak: 1,
+            longestStreak: 1,
+            totalDaysClaimed: 1,
+          });
+      }
+      
+      // Calculate streak bonuses
+      if (currentStreak >= 30) {
+        streakBonus = 500;
+      } else if (currentStreak >= 7) {
+        streakBonus = 100;
+      }
+      
+      const totalReward = baseReward + streakBonus;
+      
+      // Add credits with the daily reward
+      await this.addCredits(
+        userId,
+        totalReward,
+        "daily_login",
+        `Daily login reward (Day ${currentStreak} streak)`,
+        undefined,
+        undefined
+      );
+      
+      return {
+        reward: totalReward,
+        streak: currentStreak,
+        streakBonus: streakBonus > 0 ? streakBonus : undefined,
+      };
+    });
+  }
+
+  async checkFirstPromptBonus(userId: string): Promise<boolean> {
+    // Check if user has already received first prompt bonus
+    const [existingBonus] = await db.select()
+      .from(creditTransactions)
+      .where(and(
+        eq(creditTransactions.userId, userId),
+        eq(creditTransactions.source, "first_prompt")
+      ));
+    
+    if (existingBonus) {
+      return false; // Already received bonus
+    }
+    
+    // Check if user has any public prompts
+    const [firstPublicPrompt] = await db.select()
+      .from(prompts)
+      .where(and(
+        eq(prompts.userId, userId),
+        eq(prompts.isPublic, true)
+      ))
+      .limit(1);
+    
+    if (!firstPublicPrompt) {
+      return false; // No public prompts yet
+    }
+    
+    // Award first prompt bonus
+    await this.addCredits(
+      userId,
+      500,
+      "first_prompt",
+      "First public prompt bonus",
+      firstPublicPrompt.id,
+      "prompt"
+    );
+    
+    return true;
+  }
+
+  async checkProfileCompletionBonus(userId: string): Promise<boolean> {
+    // Check if user has already received profile completion bonus
+    const [existingBonus] = await db.select()
+      .from(creditTransactions)
+      .where(and(
+        eq(creditTransactions.userId, userId),
+        eq(creditTransactions.source, "profile_completion")
+      ));
+    
+    if (existingBonus) {
+      return false; // Already received bonus
+    }
+    
+    // Check if profile is complete
+    const user = await this.getUser(userId);
+    if (!user) {
+      return false;
+    }
+    
+    // Profile is considered complete if they have username, bio, and at least one social handle
+    const isComplete = !!(
+      user.username &&
+      user.bio &&
+      (user.twitterHandle || user.githubHandle || user.linkedinHandle || 
+       user.instagramHandle || user.deviantartHandle || user.blueskyHandle ||
+       user.tiktokHandle || user.redditHandle || user.patreonHandle ||
+       (user.customSocials && Array.isArray(user.customSocials) && user.customSocials.length > 0))
+    );
+    
+    if (!isComplete) {
+      return false;
+    }
+    
+    // Award profile completion bonus
+    await this.addCredits(
+      userId,
+      100,
+      "profile_completion",
+      "Profile completion bonus"
+    );
+    
+    return true;
   }
 }
 
