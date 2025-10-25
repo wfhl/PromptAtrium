@@ -385,8 +385,26 @@ export interface IStorage {
   createListing(listing: InsertMarketplaceListing): Promise<MarketplaceListing>;
   updateListing(id: string, listing: Partial<InsertMarketplaceListing>, userId: string): Promise<MarketplaceListing>;
   getListingById(id: string): Promise<MarketplaceListing | undefined>;
+  getListingWithDetails(id: string): Promise<any>;
   getListingsByUser(userId: string, options?: { status?: string; limit?: number; offset?: number }): Promise<MarketplaceListing[]>;
   getActiveListings(options?: { category?: string; search?: string; limit?: number; offset?: number }): Promise<MarketplaceListing[]>;
+  getMarketplaceListings(options?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    category?: string;
+    minPriceCents?: number;
+    maxPriceCents?: number;
+    minCredits?: number;
+    maxCredits?: number;
+    sortBy?: 'newest' | 'price_low_high' | 'price_high_low' | 'most_popular';
+    acceptsMoney?: boolean;
+    acceptsCredits?: boolean;
+  }): Promise<{ listings: any[]; total: number }>;
+  getFeaturedListings(limit?: number): Promise<any[]>;
+  getMarketplaceCategories(): Promise<{ category: string; count: number }[]>;
+  getSimilarListings(listingId: string, limit?: number): Promise<any[]>;
+  getListingPreview(promptId: string, previewPercentage: number): Promise<string>;
   deleteListing(id: string, userId: string): Promise<void>;
 }
 
@@ -3530,6 +3548,285 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(marketplaceListings.id, id));
     });
+  }
+
+  // Enhanced marketplace discovery methods
+  async getMarketplaceListings(options?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    category?: string;
+    minPriceCents?: number;
+    maxPriceCents?: number;
+    minCredits?: number;
+    maxCredits?: number;
+    sortBy?: 'newest' | 'price_low_high' | 'price_high_low' | 'most_popular';
+    acceptsMoney?: boolean;
+    acceptsCredits?: boolean;
+  }): Promise<{ listings: any[]; total: number }> {
+    const page = options?.page || 1;
+    const limit = options?.limit || 20;
+    const offset = (page - 1) * limit;
+    
+    const conditions = [eq(marketplaceListings.status, "active")];
+    
+    // Add category filter
+    if (options?.category) {
+      conditions.push(eq(marketplaceListings.category, options.category));
+    }
+    
+    // Add search filter
+    if (options?.search) {
+      conditions.push(
+        or(
+          ilike(marketplaceListings.title, `%${options.search}%`),
+          ilike(marketplaceListings.description, `%${options.search}%`)
+        ) || sql`true`
+      );
+    }
+    
+    // Add price filters for USD
+    if (options?.minPriceCents !== undefined) {
+      conditions.push(gte(marketplaceListings.priceCents, options.minPriceCents));
+    }
+    if (options?.maxPriceCents !== undefined) {
+      conditions.push(sql`${marketplaceListings.priceCents} <= ${options.maxPriceCents}`);
+    }
+    
+    // Add price filters for credits
+    if (options?.minCredits !== undefined) {
+      conditions.push(gte(marketplaceListings.creditPrice, options.minCredits));
+    }
+    if (options?.maxCredits !== undefined) {
+      conditions.push(sql`${marketplaceListings.creditPrice} <= ${options.maxCredits}`);
+    }
+    
+    // Add payment type filters
+    if (options?.acceptsMoney !== undefined) {
+      conditions.push(eq(marketplaceListings.acceptsMoney, options.acceptsMoney));
+    }
+    if (options?.acceptsCredits !== undefined) {
+      conditions.push(eq(marketplaceListings.acceptsCredits, options.acceptsCredits));
+    }
+    
+    // Build query
+    let query = db.select({
+      listing: marketplaceListings,
+      prompt: prompts,
+      seller: users,
+    })
+      .from(marketplaceListings)
+      .innerJoin(prompts, eq(marketplaceListings.promptId, prompts.id))
+      .innerJoin(users, eq(marketplaceListings.sellerId, users.id))
+      .where(and(...conditions));
+    
+    // Apply sorting
+    if (options?.sortBy === 'price_low_high') {
+      query = query.orderBy(sql`COALESCE(${marketplaceListings.priceCents}, ${marketplaceListings.creditPrice} * 100, 999999)`);
+    } else if (options?.sortBy === 'price_high_low') {
+      query = query.orderBy(desc(sql`COALESCE(${marketplaceListings.priceCents}, ${marketplaceListings.creditPrice} * 100, 0)`));
+    } else if (options?.sortBy === 'most_popular') {
+      query = query.orderBy(desc(marketplaceListings.salesCount));
+    } else {
+      // Default to newest
+      query = query.orderBy(desc(marketplaceListings.createdAt));
+    }
+    
+    // Get total count
+    const countResult = await db.select({ count: sql<number>`count(*)` })
+      .from(marketplaceListings)
+      .where(and(...conditions));
+    const total = Number(countResult[0]?.count || 0);
+    
+    // Apply pagination
+    const results = await query.limit(limit).offset(offset);
+    
+    // Format results
+    const listings = results.map(row => ({
+      ...row.listing,
+      prompt: {
+        id: row.prompt.id,
+        name: row.prompt.name,
+        description: row.prompt.description,
+        tags: row.prompt.tags,
+        imageUrl: row.prompt.imageUrl,
+      },
+      seller: {
+        id: row.seller.id,
+        username: row.seller.username,
+        firstName: row.seller.firstName,
+        lastName: row.seller.lastName,
+        profileImageUrl: row.seller.profileImageUrl,
+      }
+    }));
+    
+    return { listings, total };
+  }
+
+  async getFeaturedListings(limit: number = 6): Promise<any[]> {
+    const now = new Date();
+    
+    const results = await db.select({
+      listing: marketplaceListings,
+      prompt: prompts,
+      seller: users,
+    })
+      .from(marketplaceListings)
+      .innerJoin(prompts, eq(marketplaceListings.promptId, prompts.id))
+      .innerJoin(users, eq(marketplaceListings.sellerId, users.id))
+      .where(
+        and(
+          eq(marketplaceListings.status, "active"),
+          // Featured listings logic - could be based on sales, rating, or admin selection
+          // For now, we'll return the most popular active listings
+          sql`1=1`
+        )
+      )
+      .orderBy(desc(marketplaceListings.salesCount), desc(marketplaceListings.averageRating))
+      .limit(limit);
+    
+    return results.map(row => ({
+      ...row.listing,
+      prompt: {
+        id: row.prompt.id,
+        name: row.prompt.name,
+        description: row.prompt.description,
+        tags: row.prompt.tags,
+        imageUrl: row.prompt.imageUrl,
+      },
+      seller: {
+        id: row.seller.id,
+        username: row.seller.username,
+        firstName: row.seller.firstName,
+        lastName: row.seller.lastName,
+        profileImageUrl: row.seller.profileImageUrl,
+      }
+    }));
+  }
+
+  async getMarketplaceCategories(): Promise<{ category: string; count: number }[]> {
+    const results = await db.select({
+      category: marketplaceListings.category,
+      count: sql<number>`count(*)::int`,
+    })
+      .from(marketplaceListings)
+      .where(eq(marketplaceListings.status, "active"))
+      .groupBy(marketplaceListings.category)
+      .orderBy(desc(sql`count(*)`));
+    
+    return results.filter(r => r.category).map(r => ({
+      category: r.category as string,
+      count: r.count
+    }));
+  }
+
+  async getListingWithDetails(id: string): Promise<any> {
+    const results = await db.select({
+      listing: marketplaceListings,
+      prompt: prompts,
+      seller: users,
+      sellerProfile: sellerProfiles,
+    })
+      .from(marketplaceListings)
+      .innerJoin(prompts, eq(marketplaceListings.promptId, prompts.id))
+      .innerJoin(users, eq(marketplaceListings.sellerId, users.id))
+      .leftJoin(sellerProfiles, eq(sellerProfiles.userId, users.id))
+      .where(eq(marketplaceListings.id, id));
+    
+    if (!results[0]) {
+      return undefined;
+    }
+    
+    const row = results[0];
+    return {
+      ...row.listing,
+      prompt: row.prompt,
+      seller: {
+        id: row.seller.id,
+        username: row.seller.username,
+        firstName: row.seller.firstName,
+        lastName: row.seller.lastName,
+        profileImageUrl: row.seller.profileImageUrl,
+        bio: row.seller.bio,
+      },
+      sellerProfile: row.sellerProfile,
+    };
+  }
+
+  async getSimilarListings(listingId: string, limit: number = 4): Promise<any[]> {
+    // First get the current listing to find its category
+    const currentListing = await this.getListingById(listingId);
+    if (!currentListing) {
+      return [];
+    }
+    
+    const results = await db.select({
+      listing: marketplaceListings,
+      prompt: prompts,
+      seller: users,
+    })
+      .from(marketplaceListings)
+      .innerJoin(prompts, eq(marketplaceListings.promptId, prompts.id))
+      .innerJoin(users, eq(marketplaceListings.sellerId, users.id))
+      .where(
+        and(
+          eq(marketplaceListings.status, "active"),
+          eq(marketplaceListings.category, currentListing.category || ""),
+          sql`${marketplaceListings.id} != ${listingId}`
+        )
+      )
+      .orderBy(desc(marketplaceListings.salesCount))
+      .limit(limit);
+    
+    return results.map(row => ({
+      ...row.listing,
+      prompt: {
+        id: row.prompt.id,
+        name: row.prompt.name,
+        description: row.prompt.description,
+        tags: row.prompt.tags,
+        imageUrl: row.prompt.imageUrl,
+      },
+      seller: {
+        id: row.seller.id,
+        username: row.seller.username,
+        firstName: row.seller.firstName,
+        lastName: row.seller.lastName,
+        profileImageUrl: row.seller.profileImageUrl,
+      }
+    }));
+  }
+
+  async getListingPreview(promptId: string, previewPercentage: number): Promise<string> {
+    const [prompt] = await db.select()
+      .from(prompts)
+      .where(eq(prompts.id, promptId));
+    
+    if (!prompt || !prompt.content) {
+      return "";
+    }
+    
+    // Calculate preview length
+    const fullContent = prompt.content;
+    const previewLength = Math.floor(fullContent.length * (previewPercentage / 100));
+    
+    // Create preview, trying to end at a natural break
+    let preview = fullContent.substring(0, previewLength);
+    
+    // Try to end at a sentence or word boundary
+    const lastPeriod = preview.lastIndexOf('.');
+    const lastComma = preview.lastIndexOf(',');
+    const lastSpace = preview.lastIndexOf(' ');
+    
+    if (lastPeriod > previewLength * 0.8) {
+      preview = preview.substring(0, lastPeriod + 1);
+    } else if (lastComma > previewLength * 0.8) {
+      preview = preview.substring(0, lastComma + 1);
+    } else if (lastSpace > previewLength * 0.8) {
+      preview = preview.substring(0, lastSpace);
+    }
+    
+    return preview;
   }
 }
 

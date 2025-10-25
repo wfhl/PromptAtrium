@@ -2678,22 +2678,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all active marketplace listings
+  // Get all active marketplace listings with enhanced filtering and sorting
   app.get('/api/marketplace/listings', async (req, res) => {
     try {
-      const { category, search, limit = 20, offset = 0 } = req.query;
+      const { 
+        page = 1, 
+        limit = 20, 
+        search,
+        category,
+        minPrice,
+        maxPrice,
+        minCredits,
+        maxCredits,
+        sortBy = 'newest',
+        acceptsMoney,
+        acceptsCredits
+      } = req.query;
       
-      const listings = await storage.getActiveListings({
-        category: category as string,
-        search: search as string,
+      const result = await storage.getMarketplaceListings({
+        page: Number(page),
         limit: Number(limit),
-        offset: Number(offset)
+        search: search as string,
+        category: category as string,
+        minPriceCents: minPrice ? Number(minPrice) * 100 : undefined, // Convert dollars to cents
+        maxPriceCents: maxPrice ? Number(maxPrice) * 100 : undefined,
+        minCredits: minCredits ? Number(minCredits) : undefined,
+        maxCredits: maxCredits ? Number(maxCredits) : undefined,
+        sortBy: sortBy as any,
+        acceptsMoney: acceptsMoney === 'true' ? true : acceptsMoney === 'false' ? false : undefined,
+        acceptsCredits: acceptsCredits === 'true' ? true : acceptsCredits === 'false' ? false : undefined,
       });
       
-      res.json(listings);
+      res.json(result);
     } catch (error) {
       console.error("Error fetching marketplace listings:", error);
       res.status(500).json({ message: "Failed to fetch marketplace listings" });
+    }
+  });
+
+  // Get featured marketplace listings
+  app.get('/api/marketplace/featured', async (req, res) => {
+    try {
+      const { limit = 6 } = req.query;
+      const listings = await storage.getFeaturedListings(Number(limit));
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching featured listings:", error);
+      res.status(500).json({ message: "Failed to fetch featured listings" });
+    }
+  });
+
+  // Get marketplace categories with counts
+  app.get('/api/marketplace/categories', async (req, res) => {
+    try {
+      const categories = await storage.getMarketplaceCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching marketplace categories:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace categories" });
     }
   });
   
@@ -2716,19 +2758,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get listing details
+  // Get listing details with preview
   app.get('/api/marketplace/listings/:id', async (req, res) => {
     try {
-      const listing = await storage.getListingById(req.params.id);
+      const listing = await storage.getListingWithDetails(req.params.id);
       
       if (!listing) {
         return res.status(404).json({ message: "Listing not found" });
       }
       
-      res.json(listing);
+      // Add preview of the prompt content
+      const preview = await storage.getListingPreview(listing.promptId, listing.previewPercentage);
+      
+      res.json({
+        ...listing,
+        promptPreview: preview,
+      });
     } catch (error) {
       console.error("Error fetching listing:", error);
       res.status(500).json({ message: "Failed to fetch listing" });
+    }
+  });
+
+  // Get similar listings
+  app.get('/api/marketplace/listings/:id/similar', async (req, res) => {
+    try {
+      const { limit = 4 } = req.query;
+      const listings = await storage.getSimilarListings(req.params.id, Number(limit));
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching similar listings:", error);
+      res.status(500).json({ message: "Failed to fetch similar listings" });
     }
   });
   
