@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShineBorder } from "@/components/ui/shine-border";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -1086,20 +1085,15 @@ export default function QuickPromptComplete() {
           )}
           
           {/* Generate Button */}
-          <ShineBorder
-            className="w-full"
-            color={["#a855f7", "#ec4899", "#f97316"]}
-            borderRadius={8}
-            borderWidth={0.5}
-            duration={14}
+          <Button
+            onClick={handleGeneratePrompt}
+            disabled={isGenerating}
+            className="relative w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border border-purple-500/20 overflow-hidden"
+            size="lg"
+            data-testid="button-generate-prompt"
           >
-            <Button
-              onClick={handleGeneratePrompt}
-              disabled={isGenerating}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0"
-              size="lg"
-              data-testid="button-generate-prompt"
-            >
+            <div className="absolute inset-0 before:content-[''] before:absolute before:inset-0 before:bg-[linear-gradient(90deg,transparent,#a855f7,#ec4899,#f97316,transparent)] before:w-[200%] before:animate-shine before:opacity-30" />
+            <span className="relative z-10 flex items-center justify-center">
               {isGenerating ? (
                 <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Generating...</>
               ) : template === "Social Media Post Caption" ? (
@@ -1107,8 +1101,8 @@ export default function QuickPromptComplete() {
               ) : (
                 <><Sparkles className="h-5 w-5 mr-2" /> Generate Prompt</>
               )}
-            </Button>
-          </ShineBorder>
+            </span>
+          </Button>
         </div>
         
         {/* Results Section */}

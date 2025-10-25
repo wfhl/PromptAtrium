@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ShineBorder } from "@/components/ui/shine-border";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationModal } from "@/components/NotificationModal";
 import {
@@ -472,60 +471,53 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
             {/* Notification Bell */}
             <NotificationBell onClick={() => setNotificationModalOpen(true)} />
 
-            <ShineBorder
-              className="h-8 w-8 p-0"
-              color={["#6366f1", "#a855f7", "#ec4899"]}
-              borderRadius={8}
-              borderWidth={0.5}
-              duration={14}
-            >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="icon"
-                    className="h-full w-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 border-0"
-                    data-testid="button-new-menu"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-new-menu">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  className="relative h-8 w-8 bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 border border-purple-500/20 overflow-hidden"
+                  data-testid="button-new-menu"
+                >
+                  <div className="absolute inset-0 before:content-[''] before:absolute before:inset-0 before:bg-[linear-gradient(90deg,transparent,#6366f1,#a855f7,#ec4899,transparent)] before:w-[200%] before:animate-shine before:opacity-30" />
+                  <Plus className="h-5 w-5 relative z-10" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48" data-testid="dropdown-new-menu">
+                <DropdownMenuItem 
+                  onClick={handleCreatePrompt}
+                  className="cursor-pointer"
+                  data-testid="menu-new-prompt"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Prompt
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleCreateCollection}
+                  className="cursor-pointer"
+                  data-testid="menu-new-collection"
+                >
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  New Collection
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleImportPrompts}
+                  className="cursor-pointer"
+                  data-testid="menu-import-prompts"
+                >
+                  <FileUp className="mr-2 h-4 w-4" />
+                  Import Prompts
+                </DropdownMenuItem>
+                <Link href="/tools/quick-prompter">
                   <DropdownMenuItem 
-                    onClick={handleCreatePrompt}
                     className="cursor-pointer"
-                    data-testid="menu-new-prompt"
+                    data-testid="menu-generate-prompt"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Prompt
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Prompt
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={handleCreateCollection}
-                    className="cursor-pointer"
-                    data-testid="menu-new-collection"
-                  >
-                    <FolderPlus className="mr-2 h-4 w-4" />
-                    New Collection
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={handleImportPrompts}
-                    className="cursor-pointer"
-                    data-testid="menu-import-prompts"
-                  >
-                    <FileUp className="mr-2 h-4 w-4" />
-                    Import Prompts
-                  </DropdownMenuItem>
-                  <Link href="/tools/quick-prompter">
-                    <DropdownMenuItem 
-                      className="cursor-pointer"
-                      data-testid="menu-generate-prompt"
-                    >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Generate Prompt
-                    </DropdownMenuItem>
-                  </Link>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </ShineBorder>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
