@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ShineBorder } from "@/components/ui/shine-border";
-import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus, ImagePlus, Link2 } from "lucide-react";
+import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus, ImagePlus, Link2, DollarSign } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -1285,6 +1285,18 @@ export function PromptCard({
                       data-testid={`button-edit-${prompt.id}`}
                     >
                       <Edit className="h-4 w-4" />
+                    </Button>
+
+                    {/* List for Sale Button - Dollar sign icon */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => window.location.href = '/seller/dashboard'}
+                      className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                      data-testid={`button-list-sale-${prompt.id}`}
+                      title="List this prompt for sale"
+                    >
+                      <DollarSign className="h-4 w-4" />
                     </Button>
                 
                     {/* 3. Collections - Yellow folder with dropdown */}

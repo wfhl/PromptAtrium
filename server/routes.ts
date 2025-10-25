@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema, insertMarketplaceListingSchema, insertSellerProfileSchema } from "@shared/schema";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient, parseObjectPath } from "./objectStorage";
 import { ObjectPermission, getObjectAclPolicy } from "./objectAcl";
@@ -24,6 +24,24 @@ import {
   searchLimiter,
   dataExportLimiter 
 } from "./rateLimit";
+
+// Seller onboarding validation schema
+const sellerOnboardingSchema = z.object({
+  businessType: z.enum(["individual", "business"]),
+  taxInfo: z.object({
+    taxId: z.string().optional(),
+    vatNumber: z.string().optional(),
+    businessName: z.string().optional(),
+    businessAddress: z.string().optional(),
+  }).refine(
+    (data) => {
+      // At least one tax field should be provided
+      return data.taxId || data.vatNumber || data.businessName || data.businessAddress;
+    },
+    { message: "At least one tax information field is required" }
+  ),
+  payoutMethod: z.enum(["stripe", "manual"]),
+});
 
 // Helper function to resolve public image URLs for development
 // ONLY affects development mode - production URLs pass through unchanged
@@ -2551,6 +2569,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error awarding prompt share credits:", error);
       res.status(500).json({ message: "Failed to award credits" });
+    }
+  });
+
+  // Marketplace Routes
+  
+  // Get current user's seller profile
+  app.get('/api/marketplace/seller/profile', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      let profile = await storage.getSellerProfile(userId);
+      
+      // If no profile exists, create a default one
+      if (!profile) {
+        profile = await storage.createSellerProfile({
+          userId,
+          onboardingStatus: 'not_started'
+        });
+      }
+      
+      res.json(profile);
+    } catch (error) {
+      console.error("Error fetching seller profile:", error);
+      res.status(500).json({ message: "Failed to fetch seller profile" });
+    }
+  });
+  
+  // Create or update seller profile (onboarding)
+  app.post('/api/marketplace/seller/onboard', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Validate the onboarding data
+      let validatedData;
+      try {
+        validatedData = sellerOnboardingSchema.parse(req.body);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ 
+            message: "Validation error",
+            errors: error.errors 
+          });
+        }
+        throw error;
+      }
+      
+      // Check if profile exists
+      const existingProfile = await storage.getSellerProfile(userId);
+      
+      if (existingProfile) {
+        // Only allow updating if profile is not yet completed
+        if (existingProfile.onboardingStatus === 'completed') {
+          return res.status(400).json({ 
+            message: "Seller profile already completed. Use the profile update endpoint for changes." 
+          });
+        }
+        
+        const updatedProfile = await storage.completeSellerOnboarding(userId, validatedData);
+        res.json(updatedProfile);
+      } else {
+        // Create new profile with initial pending status
+        const newProfile = await storage.createSellerProfile({
+          userId,
+          onboardingStatus: 'pending'
+        });
+        
+        // Then complete onboarding with validated data
+        const completedProfile = await storage.completeSellerOnboarding(userId, validatedData);
+        res.json(completedProfile);
+      }
+    } catch (error) {
+      console.error("Error onboarding seller:", error);
+      res.status(500).json({ message: "Failed to complete seller onboarding" });
+    }
+  });
+  
+  // Create a new listing
+  app.post('/api/marketplace/listings', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Check if seller profile exists AND is completed
+      const sellerProfile = await storage.getSellerProfile(userId);
+      if (!sellerProfile || sellerProfile.onboardingStatus !== 'completed') {
+        return res.status(403).json({ 
+          message: "Please complete seller onboarding before creating listings" 
+        });
+      }
+      
+      const listingData = insertMarketplaceListingSchema.parse({
+        ...req.body,
+        sellerId: userId
+      });
+      
+      const listing = await storage.createListing(listingData);
+      res.json(listing);
+    } catch (error: any) {
+      console.error("Error creating listing:", error);
+      if (error.message?.includes("You can only list your own prompts")) {
+        res.status(403).json({ message: error.message });
+      } else if (error.message?.includes("already listed")) {
+        res.status(400).json({ message: error.message });
+      } else if (error.message?.includes("Minimum")) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to create listing" });
+      }
+    }
+  });
+  
+  // Get all active marketplace listings
+  app.get('/api/marketplace/listings', async (req, res) => {
+    try {
+      const { category, search, limit = 20, offset = 0 } = req.query;
+      
+      const listings = await storage.getActiveListings({
+        category: category as string,
+        search: search as string,
+        limit: Number(limit),
+        offset: Number(offset)
+      });
+      
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching marketplace listings:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace listings" });
+    }
+  });
+  
+  // Get current user's listings
+  app.get('/api/marketplace/my-listings', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { status, limit = 20, offset = 0 } = req.query;
+      
+      const listings = await storage.getListingsByUser(userId, {
+        status: status as string,
+        limit: Number(limit),
+        offset: Number(offset)
+      });
+      
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching user listings:", error);
+      res.status(500).json({ message: "Failed to fetch your listings" });
+    }
+  });
+  
+  // Get listing details
+  app.get('/api/marketplace/listings/:id', async (req, res) => {
+    try {
+      const listing = await storage.getListingById(req.params.id);
+      
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      
+      res.json(listing);
+    } catch (error) {
+      console.error("Error fetching listing:", error);
+      res.status(500).json({ message: "Failed to fetch listing" });
+    }
+  });
+  
+  // Update a listing
+  app.put('/api/marketplace/listings/:id', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const listingId = req.params.id;
+      const updateData = req.body;
+      
+      const updatedListing = await storage.updateListing(listingId, updateData, userId);
+      res.json(updatedListing);
+    } catch (error: any) {
+      console.error("Error updating listing:", error);
+      if (error.message?.includes("You can only update your own listings")) {
+        res.status(403).json({ message: error.message });
+      } else if (error.message?.includes("not found")) {
+        res.status(404).json({ message: error.message });
+      } else if (error.message?.includes("Minimum")) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to update listing" });
+      }
+    }
+  });
+  
+  // Delete/deactivate a listing
+  app.delete('/api/marketplace/listings/:id', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const listingId = req.params.id;
+      
+      await storage.deleteListing(listingId, userId);
+      res.json({ message: "Listing deactivated successfully" });
+    } catch (error: any) {
+      console.error("Error deleting listing:", error);
+      if (error.message?.includes("You can only delete your own listings")) {
+        res.status(403).json({ message: error.message });
+      } else if (error.message?.includes("not found")) {
+        res.status(404).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to delete listing" });
+      }
     }
   });
 

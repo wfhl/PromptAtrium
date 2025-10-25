@@ -654,6 +654,76 @@ export const dailyRewards = pgTable("daily_rewards", {
   index("idx_daily_rewards_user").on(table.userId),
 ]);
 
+// Marketplace Tables
+
+// Seller profiles table - tracks seller information and stats
+export const sellerProfiles = pgTable("seller_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  stripeAccountId: varchar("stripe_account_id"),
+  onboardingStatus: varchar("onboarding_status", { 
+    enum: ["not_started", "pending", "completed", "rejected"] 
+  }).notNull().default("not_started"),
+  businessType: varchar("business_type", { 
+    enum: ["individual", "business"] 
+  }).default("individual"),
+  taxInfo: jsonb("tax_info").$type<{
+    taxId?: string;
+    vatNumber?: string;
+    businessName?: string;
+    businessAddress?: string;
+  }>(),
+  payoutMethod: varchar("payout_method", {
+    enum: ["stripe", "manual"]
+  }),
+  totalSales: integer("total_sales").notNull().default(0),
+  totalRevenueCents: integer("total_revenue_cents").notNull().default(0),
+  totalCreditsEarned: integer("total_credits_earned").notNull().default(0),
+  averageRating: decimal("average_rating", { precision: 3, scale: 2 }).default("0"),
+  commissionRate: integer("commission_rate").notNull().default(15), // Percentage as integer (15 = 15%)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Index for quick user lookups
+  index("idx_seller_profiles_user").on(table.userId),
+  // Index for onboarding status queries
+  index("idx_seller_profiles_status").on(table.onboardingStatus),
+]);
+
+// Marketplace listings table - tracks prompts listed for sale
+export const marketplaceListings = pgTable("marketplace_listings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id),
+  sellerId: varchar("seller_id").notNull().references(() => users.id),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  priceCents: integer("price_cents"), // Price in cents (null if not accepting money)
+  creditPrice: integer("credit_price"), // Price in credits (null if not accepting credits)
+  acceptsMoney: boolean("accepts_money").notNull().default(true),
+  acceptsCredits: boolean("accepts_credits").notNull().default(true),
+  previewPercentage: integer("preview_percentage").notNull().default(20), // % of prompt shown as preview
+  tags: text().array().default([]),
+  category: varchar("category"),
+  status: varchar("status", { 
+    enum: ["draft", "active", "paused", "sold_out"] 
+  }).notNull().default("draft"),
+  salesCount: integer("sales_count").notNull().default(0),
+  averageRating: decimal("average_rating", { precision: 3, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Index for prompt lookups
+  index("idx_marketplace_listings_prompt").on(table.promptId),
+  // Index for seller's listings
+  index("idx_marketplace_listings_seller").on(table.sellerId),
+  // Index for active listings queries
+  index("idx_marketplace_listings_status").on(table.status),
+  // Index for category queries
+  index("idx_marketplace_listings_category").on(table.category),
+  // Unique constraint - one listing per prompt
+  unique("unique_prompt_listing").on(table.promptId),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   prompts: many(prompts),
@@ -672,6 +742,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   credits: one(userCredits, { fields: [users.id], references: [userCredits.userId] }),
   creditTransactions: many(creditTransactions),
   dailyRewards: one(dailyRewards, { fields: [users.id], references: [dailyRewards.userId] }),
+  sellerProfile: one(sellerProfiles, { fields: [users.id], references: [sellerProfiles.userId] }),
+  marketplaceListings: many(marketplaceListings),
 }));
 
 export const communitiesRelations = relations(communities, ({ many }) => ({
@@ -695,6 +767,7 @@ export const promptsRelations = relations(prompts, ({ one, many }) => ({
   favorites: many(promptFavorites),
   ratings: many(promptRatings),
   likes: many(promptLikes),
+  marketplaceListing: one(marketplaceListings, { fields: [prompts.id], references: [marketplaceListings.promptId] }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -756,6 +829,21 @@ export const creditTransactionsRelations = relations(creditTransactions, ({ one 
 
 export const dailyRewardsRelations = relations(dailyRewards, ({ one }) => ({
   user: one(users, { fields: [dailyRewards.userId], references: [users.id] }),
+}));
+
+// Marketplace relations
+export const sellerProfilesRelations = relations(sellerProfiles, ({ one, many }) => ({
+  user: one(users, { fields: [sellerProfiles.userId], references: [users.id] }),
+  listings: many(marketplaceListings),
+}));
+
+export const marketplaceListingsRelations = relations(marketplaceListings, ({ one }) => ({
+  prompt: one(prompts, { fields: [marketplaceListings.promptId], references: [prompts.id] }),
+  seller: one(users, { fields: [marketplaceListings.sellerId], references: [users.id] }),
+  sellerProfile: one(sellerProfiles, { 
+    fields: [marketplaceListings.sellerId], 
+    references: [sellerProfiles.userId] 
+  }),
 }));
 
 // Insert schemas
@@ -936,6 +1024,25 @@ export const insertDailyRewardSchema = createInsertSchema(dailyRewards).omit({
   updatedAt: true,
 });
 
+// Marketplace insert schemas
+export const insertSellerProfileSchema = createInsertSchema(sellerProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  totalSales: true,
+  totalRevenueCents: true,
+  totalCreditsEarned: true,
+  averageRating: true,
+});
+
+export const insertMarketplaceListingSchema = createInsertSchema(marketplaceListings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  salesCount: true,
+  averageRating: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -1058,6 +1165,12 @@ export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
 export type DailyReward = typeof dailyRewards.$inferSelect;
 export type InsertDailyReward = z.infer<typeof insertDailyRewardSchema>;
+
+// Marketplace types
+export type SellerProfile = typeof sellerProfiles.$inferSelect;
+export type InsertSellerProfile = z.infer<typeof insertSellerProfileSchema>;
+export type MarketplaceListing = typeof marketplaceListings.$inferSelect;
+export type InsertMarketplaceListing = z.infer<typeof insertMarketplaceListingSchema>;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;

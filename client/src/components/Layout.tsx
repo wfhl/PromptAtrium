@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Users, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Sparkles, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2, Wand2, Coins } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Users, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Sparkles, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2, Wand2, Coins, DollarSign } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -610,6 +610,13 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
                     <Settings className="mr-2 h-4 w-4" />
                     Profile Settings
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link href="/seller/dashboard" className="flex items-center cursor-pointer" data-testid="menu-start-selling">
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Start Selling
                   </Link>
                 </DropdownMenuItem>
 

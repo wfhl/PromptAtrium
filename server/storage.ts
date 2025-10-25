@@ -26,6 +26,8 @@ import {
   userCredits,
   creditTransactions,
   dailyRewards,
+  sellerProfiles,
+  marketplaceListings,
   type User,
   type UpsertUser,
   type Prompt,
@@ -100,6 +102,10 @@ import {
   characterPresets,
   type CharacterPreset,
   type InsertCharacterPreset,
+  type SellerProfile,
+  type InsertSellerProfile,
+  type MarketplaceListing,
+  type InsertMarketplaceListing,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray, isNull, gte } from "drizzle-orm";
@@ -359,6 +365,29 @@ export interface IStorage {
   checkFirstPromptBonus(userId: string): Promise<boolean>;
   checkProfileCompletionBonus(userId: string): Promise<boolean>;
   initializeUserCredits(userId: string): Promise<UserCredits>;
+  
+  // Marketplace operations - Seller profiles
+  getSellerProfile(userId: string): Promise<SellerProfile | undefined>;
+  createSellerProfile(profile: InsertSellerProfile): Promise<SellerProfile>;
+  updateSellerProfile(userId: string, profile: Partial<InsertSellerProfile>): Promise<SellerProfile>;
+  completeSellerOnboarding(userId: string, data: {
+    businessType: 'individual' | 'business';
+    taxInfo: {
+      taxId?: string;
+      vatNumber?: string;
+      businessName?: string;
+      businessAddress?: string;
+    };
+    payoutMethod: 'stripe' | 'manual';
+  }): Promise<SellerProfile>;
+  
+  // Marketplace operations - Listings
+  createListing(listing: InsertMarketplaceListing): Promise<MarketplaceListing>;
+  updateListing(id: string, listing: Partial<InsertMarketplaceListing>, userId: string): Promise<MarketplaceListing>;
+  getListingById(id: string): Promise<MarketplaceListing | undefined>;
+  getListingsByUser(userId: string, options?: { status?: string; limit?: number; offset?: number }): Promise<MarketplaceListing[]>;
+  getActiveListings(options?: { category?: string; search?: string; limit?: number; offset?: number }): Promise<MarketplaceListing[]>;
+  deleteListing(id: string, userId: string): Promise<void>;
 }
 
 function generatePromptId(): string {
@@ -3246,6 +3275,261 @@ export class DatabaseStorage implements IStorage {
     );
     
     return true;
+  }
+  
+  // Marketplace operations - Seller profiles
+  async getSellerProfile(userId: string): Promise<SellerProfile | undefined> {
+    const [profile] = await db.select()
+      .from(sellerProfiles)
+      .where(eq(sellerProfiles.userId, userId));
+    return profile;
+  }
+
+  async createSellerProfile(profile: InsertSellerProfile): Promise<SellerProfile> {
+    const [newProfile] = await db.insert(sellerProfiles)
+      .values(profile)
+      .returning();
+    return newProfile;
+  }
+
+  async updateSellerProfile(userId: string, profile: Partial<InsertSellerProfile>): Promise<SellerProfile> {
+    const [updatedProfile] = await db.update(sellerProfiles)
+      .set({
+        ...profile,
+        updatedAt: new Date(),
+      })
+      .where(eq(sellerProfiles.userId, userId))
+      .returning();
+    
+    if (!updatedProfile) {
+      throw new Error("Seller profile not found");
+    }
+    
+    return updatedProfile;
+  }
+
+  async completeSellerOnboarding(userId: string, data: {
+    businessType: 'individual' | 'business';
+    taxInfo: {
+      taxId?: string;
+      vatNumber?: string;
+      businessName?: string;
+      businessAddress?: string;
+    };
+    payoutMethod: 'stripe' | 'manual';
+  }): Promise<SellerProfile> {
+    // Validate that all required fields are present
+    if (!data.businessType || !data.payoutMethod) {
+      throw new Error("Business type and payout method are required");
+    }
+
+    // Validate that at least one tax info field is provided
+    if (!data.taxInfo || (!data.taxInfo.taxId && !data.taxInfo.vatNumber && 
+        !data.taxInfo.businessName && !data.taxInfo.businessAddress)) {
+      throw new Error("At least one tax information field is required");
+    }
+
+    // Update the seller profile with validated data and mark as completed
+    const [updatedProfile] = await db.update(sellerProfiles)
+      .set({
+        businessType: data.businessType,
+        taxInfo: data.taxInfo,
+        payoutMethod: data.payoutMethod,
+        onboardingStatus: 'completed',
+        updatedAt: new Date(),
+      })
+      .where(eq(sellerProfiles.userId, userId))
+      .returning();
+    
+    if (!updatedProfile) {
+      throw new Error("Seller profile not found");
+    }
+    
+    return updatedProfile;
+  }
+
+  // Marketplace operations - Listings
+  async createListing(listing: InsertMarketplaceListing): Promise<MarketplaceListing> {
+    return await db.transaction(async (tx) => {
+      // Validate that the user owns the prompt
+      const [prompt] = await tx.select()
+        .from(prompts)
+        .where(eq(prompts.id, listing.promptId));
+      
+      if (!prompt) {
+        throw new Error("Prompt not found");
+      }
+      
+      if (prompt.userId !== listing.sellerId) {
+        throw new Error("You can only list your own prompts");
+      }
+      
+      // Check if listing already exists for this prompt
+      const [existingListing] = await tx.select()
+        .from(marketplaceListings)
+        .where(eq(marketplaceListings.promptId, listing.promptId));
+      
+      if (existingListing) {
+        throw new Error("This prompt is already listed");
+      }
+      
+      // Validate pricing
+      if (!listing.acceptsMoney && !listing.acceptsCredits) {
+        throw new Error("Listing must accept either money or credits");
+      }
+      
+      if (listing.acceptsMoney && (!listing.priceCents || listing.priceCents < 100)) {
+        throw new Error("Minimum price is $1.00");
+      }
+      
+      if (listing.acceptsCredits && (!listing.creditPrice || listing.creditPrice < 100)) {
+        throw new Error("Minimum credit price is 100 credits");
+      }
+      
+      // Create the listing
+      const [newListing] = await tx.insert(marketplaceListings)
+        .values(listing)
+        .returning();
+      
+      return newListing;
+    });
+  }
+
+  async updateListing(id: string, listing: Partial<InsertMarketplaceListing>, userId: string): Promise<MarketplaceListing> {
+    return await db.transaction(async (tx) => {
+      // Verify ownership
+      const [existingListing] = await tx.select()
+        .from(marketplaceListings)
+        .where(eq(marketplaceListings.id, id));
+      
+      if (!existingListing) {
+        throw new Error("Listing not found");
+      }
+      
+      if (existingListing.sellerId !== userId) {
+        throw new Error("You can only update your own listings");
+      }
+      
+      // Validate pricing if being updated
+      if (listing.acceptsMoney !== undefined || listing.acceptsCredits !== undefined) {
+        const acceptsMoney = listing.acceptsMoney ?? existingListing.acceptsMoney;
+        const acceptsCredits = listing.acceptsCredits ?? existingListing.acceptsCredits;
+        
+        if (!acceptsMoney && !acceptsCredits) {
+          throw new Error("Listing must accept either money or credits");
+        }
+      }
+      
+      if (listing.priceCents !== undefined && listing.priceCents < 100) {
+        throw new Error("Minimum price is $1.00");
+      }
+      
+      if (listing.creditPrice !== undefined && listing.creditPrice < 100) {
+        throw new Error("Minimum credit price is 100 credits");
+      }
+      
+      // Update the listing
+      const [updatedListing] = await tx.update(marketplaceListings)
+        .set({
+          ...listing,
+          updatedAt: new Date(),
+        })
+        .where(eq(marketplaceListings.id, id))
+        .returning();
+      
+      return updatedListing;
+    });
+  }
+
+  async getListingById(id: string): Promise<MarketplaceListing | undefined> {
+    const [listing] = await db.select()
+      .from(marketplaceListings)
+      .where(eq(marketplaceListings.id, id));
+    return listing;
+  }
+
+  async getListingsByUser(userId: string, options?: { status?: string; limit?: number; offset?: number }): Promise<MarketplaceListing[]> {
+    let query = db.select()
+      .from(marketplaceListings)
+      .where(eq(marketplaceListings.sellerId, userId));
+    
+    if (options?.status) {
+      query = query.where(and(
+        eq(marketplaceListings.sellerId, userId),
+        eq(marketplaceListings.status, options.status as any)
+      ));
+    }
+    
+    query = query.orderBy(desc(marketplaceListings.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    const listings = await query;
+    return listings;
+  }
+
+  async getActiveListings(options?: { category?: string; search?: string; limit?: number; offset?: number }): Promise<MarketplaceListing[]> {
+    const conditions = [eq(marketplaceListings.status, "active")];
+    
+    if (options?.category) {
+      conditions.push(eq(marketplaceListings.category, options.category));
+    }
+    
+    if (options?.search) {
+      conditions.push(
+        or(
+          ilike(marketplaceListings.title, `%${options.search}%`),
+          ilike(marketplaceListings.description, `%${options.search}%`)
+        ) || sql`true`
+      );
+    }
+    
+    let query = db.select()
+      .from(marketplaceListings)
+      .where(and(...conditions))
+      .orderBy(desc(marketplaceListings.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    const listings = await query;
+    return listings;
+  }
+
+  async deleteListing(id: string, userId: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Verify ownership
+      const [existingListing] = await tx.select()
+        .from(marketplaceListings)
+        .where(eq(marketplaceListings.id, id));
+      
+      if (!existingListing) {
+        throw new Error("Listing not found");
+      }
+      
+      if (existingListing.sellerId !== userId) {
+        throw new Error("You can only delete your own listings");
+      }
+      
+      // Soft delete by setting status to paused
+      await tx.update(marketplaceListings)
+        .set({
+          status: "paused",
+          updatedAt: new Date(),
+        })
+        .where(eq(marketplaceListings.id, id));
+    });
   }
 }
 

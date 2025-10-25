@@ -34,6 +34,7 @@ import TermsAndConditions from "@/pages/terms";
 import Codex from "@/pages/Codex";
 import Tools from "@/pages/tools";
 import Credits from "@/pages/Credits";
+import SellerDashboard from "@/pages/SellerDashboard";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -146,6 +147,9 @@ function Router() {
             </Route>
             <Route path="/credits">
               {() => <Layout><Credits /></Layout>}
+            </Route>
+            <Route path="/seller/dashboard">
+              {() => <Layout><SellerDashboard /></Layout>}
             </Route>
             <Route path="/admin">
               {() => <Layout><Admin /></Layout>}
