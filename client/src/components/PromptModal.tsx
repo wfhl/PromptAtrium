@@ -447,7 +447,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
       const response = await apiRequest("POST", "/api/prompts", payload);
       return await response.json();
     },
-    onSuccess: (createdPrompt) => {
+    onSuccess: async (createdPrompt) => {
       // Invalidate all prompt-related queries to ensure immediate UI updates
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -460,6 +460,30 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      
+      // Award credits if prompt is public
+      if (createdPrompt.isPublic) {
+        try {
+          const creditResponse = await apiRequest("POST", "/api/credits/earn/prompt-share", {
+            promptId: createdPrompt.id
+          });
+          const creditData = await creditResponse.json();
+          
+          if (creditData.success) {
+            // Invalidate credit balance query to refresh it
+            queryClient.invalidateQueries({ queryKey: ["/api/credits/balance"] });
+            
+            toast({
+              title: "🎉 Credits Earned!",
+              description: creditData.message || `You earned ${creditData.credits} credits for sharing your prompt!`,
+              duration: 5000,
+            });
+          }
+        } catch (error) {
+          // Don't show error for credit earning, just log it
+          console.log('Credit earning skipped:', error);
+        }
+      }
 
       // Call custom onSuccess callback if provided
       if (onSuccess) {

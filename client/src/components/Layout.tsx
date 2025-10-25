@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Users, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Sparkles, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2, Wand2 } from "lucide-react";
+import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIcon, Users, Eye, Menu, X, Settings, FolderPlus, FileUp, BookOpen, GraduationCap, Sparkles, Image, FileSearch, Download, Shield, ScrollText, FileText, Code2, Wand2, Coins } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -102,6 +102,14 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     queryKey: ["/api/collections"],
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  // Fetch user credit balance
+  const { data: creditBalance } = useQuery<{ balance: number }>({
+    queryKey: ["/api/credits/balance"],
+    enabled: isAuthenticated,
+    staleTime: 60 * 1000, // Refresh every minute
     retry: false,
   });
 
@@ -468,6 +476,20 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            {/* Credits Balance */}
+            <Link href="/credits">
+              <Button
+                variant="ghost"
+                className="hidden md:flex items-center gap-2 text-yellow-500 hover:text-yellow-400 px-3 h-8"
+                data-testid="button-credits"
+              >
+                <Coins className="w-4 h-4" />
+                <span className="font-medium">
+                  {creditBalance ? creditBalance.balance.toLocaleString() : '0'} credits
+                </span>
+              </Button>
+            </Link>
+
             {/* Notification Bell */}
             <NotificationBell onClick={() => setNotificationModalOpen(true)} />
 

@@ -33,6 +33,7 @@ import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsAndConditions from "@/pages/terms";
 import Codex from "@/pages/Codex";
 import Tools from "@/pages/tools";
+import Credits from "@/pages/Credits";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -142,6 +143,9 @@ function Router() {
             </Route>
             <Route path="/collection/:id">
               {() => <Layout><CollectionView /></Layout>}
+            </Route>
+            <Route path="/credits">
+              {() => <Layout><Credits /></Layout>}
             </Route>
             <Route path="/admin">
               {() => <Layout><Admin /></Layout>}

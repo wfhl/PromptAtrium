@@ -2414,6 +2414,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Credits API endpoints
+  // Get user's credit balance
+  app.get("/api/credits/balance", isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const userCredits = await storage.getUserCredits(userId);
+      res.json({
+        balance: userCredits.balance,
+        totalEarned: userCredits.totalEarned,
+        totalSpent: userCredits.totalSpent,
+        lastDailyReward: userCredits.lastDailyReward,
+        dailyStreak: userCredits.dailyStreak,
+      });
+    } catch (error) {
+      console.error("Error fetching credit balance:", error);
+      // If user doesn't have credits record, initialize it
+      try {
+        const userId = (req.user as any).claims.sub;
+        const userCredits = await storage.initializeUserCredits(userId);
+        res.json({
+          balance: userCredits.balance,
+          totalEarned: userCredits.totalEarned,
+          totalSpent: userCredits.totalSpent,
+          lastDailyReward: userCredits.lastDailyReward,
+          dailyStreak: userCredits.dailyStreak,
+        });
+      } catch (initError) {
+        res.status(500).json({ message: "Failed to fetch credit balance" });
+      }
+    }
+  });
+
+  // Get transaction history
+  app.get("/api/credits/history", isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const limit = parseInt(req.query.limit) || 20;
+      const offset = parseInt(req.query.offset) || 0;
+      
+      const transactions = await storage.getCreditTransactionHistory(userId, { limit, offset });
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transaction history:", error);
+      res.status(500).json({ message: "Failed to fetch transaction history" });
+    }
+  });
+
+  // Claim daily reward
+  app.post("/api/credits/claim-daily", isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Check if user can claim daily reward
+      const lastReward = await storage.getDailyReward(userId);
+      if (lastReward) {
+        const lastClaim = new Date(lastReward.claimedAt);
+        const now = new Date();
+        const hoursSinceLastClaim = (now.getTime() - lastClaim.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSinceLastClaim < 24) {
+          return res.status(400).json({ 
+            message: "Daily reward already claimed", 
+            nextClaimTime: new Date(lastClaim.getTime() + 24 * 60 * 60 * 1000) 
+          });
+        }
+      }
+      
+      const result = await storage.claimDailyReward(userId);
+      res.json({
+        success: true,
+        reward: result.reward,
+        streak: result.streak,
+        streakBonus: result.streakBonus,
+        message: result.streakBonus 
+          ? `Daily reward claimed! +${result.reward} credits (includes ${result.streakBonus} streak bonus)`
+          : `Daily reward claimed! +${result.reward} credits`
+      });
+    } catch (error) {
+      console.error("Error claiming daily reward:", error);
+      res.status(500).json({ message: "Failed to claim daily reward" });
+    }
+  });
+
+  // Award credits for sharing prompts (making them public)
+  app.post("/api/credits/earn/prompt-share", isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { promptId } = req.body;
+      
+      if (!promptId) {
+        return res.status(400).json({ message: "Prompt ID required" });
+      }
+      
+      // Check if prompt exists and belongs to user
+      const prompt = await storage.getPrompt(promptId);
+      if (!prompt) {
+        return res.status(404).json({ message: "Prompt not found" });
+      }
+      
+      if (prompt.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized to earn credits for this prompt" });
+      }
+      
+      if (!prompt.isPublic) {
+        return res.status(400).json({ message: "Prompt must be public to earn credits" });
+      }
+      
+      // Check if user already earned credits for this prompt
+      const transactions = await storage.getCreditTransactionHistory(userId, { limit: 1000 });
+      const alreadyEarned = transactions.some(
+        t => t.referenceId === promptId && t.source === 'prompt_share'
+      );
+      
+      if (alreadyEarned) {
+        return res.status(400).json({ message: "Credits already earned for this prompt" });
+      }
+      
+      // Award credits for sharing prompt
+      const SHARE_REWARD = 10;
+      const transaction = await storage.addCredits(
+        userId,
+        SHARE_REWARD,
+        'prompt_share',
+        `Shared prompt: ${prompt.name}`,
+        promptId,
+        'prompt'
+      );
+      
+      res.json({
+        success: true,
+        credits: SHARE_REWARD,
+        newBalance: transaction.balanceAfter,
+        message: `+${SHARE_REWARD} credits for sharing your prompt!`
+      });
+    } catch (error) {
+      console.error("Error awarding prompt share credits:", error);
+      res.status(500).json({ message: "Failed to award credits" });
+    }
+  });
+
   // Get all users (for community page)
   app.get('/api/users', isAuthenticated, async (req: any, res) => {
     try {

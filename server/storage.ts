@@ -124,6 +124,7 @@ export interface IStorage {
     limit?: number;
     offset?: number;
     promptIds?: string[];
+    recommendedModels?: string[];
   }): Promise<Prompt[]>;
   getPrompt(id: string): Promise<Prompt | undefined>;
   getPromptWithUser(id: string): Promise<any>;
@@ -2800,10 +2801,10 @@ export class DatabaseStorage implements IStorage {
 
   async createCodexAssembledString(assembledString: InsertCodexAssembledString): Promise<CodexAssembledString> {
     // Ensure we have the correct column names
-    const dataToInsert = {
+    const dataToInsert: any = {
       ...assembledString,
-      content: assembledString.content || assembledString.stringContent, // Handle both property names
-      metadata: assembledString.metadata || { termsUsed: assembledString.termsUsed || [] }
+      content: assembledString.content || (assembledString as any).stringContent, // Handle both property names
+      metadata: assembledString.metadata || { termsUsed: (assembledString as any).termsUsed || [] }
     };
     // Remove the old property names if they exist
     delete dataToInsert.stringContent;
