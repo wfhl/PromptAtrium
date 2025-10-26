@@ -456,6 +456,13 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                       Getting Started
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/docs/sub-communities" className="flex items-center cursor-pointer" data-testid="menu-sub-community-docs">
+                      <Users className="mr-2 h-4 w-4" />
+                      Sub-Communities Guide
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 

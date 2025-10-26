@@ -16,7 +16,8 @@ import {
   Building,
   UserCheck,
   Settings,
-  ChevronRight
+  ChevronRight,
+  HelpCircle
 } from "lucide-react";
 import { SubCommunityList } from "@/components/SubCommunityList";
 import { SubCommunityBrowser } from "@/components/SubCommunityBrowser";
@@ -122,11 +123,19 @@ export default function Communities() {
           </p>
         </div>
         
-        <SubCommunitySelector
-          value={activeSubCommunity}
-          onValueChange={setActiveSubCommunity}
-          className="w-[250px]"
-        />
+        <div className="flex items-center gap-2">
+          <Link href="/docs/sub-communities">
+            <Button variant="outline" size="sm" data-testid="button-help-docs">
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Help Guide
+            </Button>
+          </Link>
+          <SubCommunitySelector
+            value={activeSubCommunity}
+            onValueChange={setActiveSubCommunity}
+            className="w-[250px]"
+          />
+        </div>
       </div>
 
       {/* Stats Cards */}

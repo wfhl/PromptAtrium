@@ -43,6 +43,7 @@ import { PurchaseHistory } from "@/pages/PurchaseHistory";
 import { AdminDisputes } from "@/pages/AdminDisputes";
 import SubCommunityAdminDashboard from "@/pages/SubCommunityAdminDashboard";
 import SubCommunityContent from "@/pages/SubCommunityContent";
+import SubCommunityDocs from "@/pages/SubCommunityDocs";
 import InviteAcceptPage from "@/pages/InviteAccept";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -133,6 +134,9 @@ function Router() {
         </Route>
         <Route path="/terms">
           {() => isAuthenticated ? <Layout><TermsAndConditions /></Layout> : <TermsAndConditions />}
+        </Route>
+        <Route path="/docs/sub-communities">
+          {() => isAuthenticated ? <Layout><SubCommunityDocs /></Layout> : <SubCommunityDocs />}
         </Route>
         <Route path="/invite/sub-community/:code" component={InviteAcceptPage} />
         <Route path="/invite/:code" component={Invite} />
