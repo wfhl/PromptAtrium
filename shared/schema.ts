@@ -709,6 +709,7 @@ export const marketplaceListings = pgTable("marketplace_listings", {
   }).notNull().default("draft"),
   salesCount: integer("sales_count").notNull().default(0),
   averageRating: decimal("average_rating", { precision: 3, scale: 2 }).default("0"),
+  reviewCount: integer("review_count").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -788,6 +789,40 @@ export const digitalLicenses = pgTable("digital_licenses", {
   index("idx_digital_licenses_buyer").on(table.buyerId),
   // Index for prompt licenses
   index("idx_digital_licenses_prompt").on(table.promptId),
+]);
+
+// Marketplace reviews table - tracks reviews for marketplace listings
+export const marketplaceReviews = pgTable("marketplace_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => marketplaceOrders.id),
+  listingId: varchar("listing_id").notNull().references(() => marketplaceListings.id),
+  reviewerId: varchar("reviewer_id").notNull().references(() => users.id),
+  rating: integer("rating").notNull(), // 1-5 stars
+  title: varchar("title"),
+  comment: text("comment").notNull(),
+  verifiedPurchase: boolean("verified_purchase").notNull().default(true),
+  helpfulCount: integer("helpful_count").notNull().default(0),
+  sellerResponse: text("seller_response"),
+  sellerRespondedAt: timestamp("seller_responded_at"),
+  editedAt: timestamp("edited_at"), // Track when review was edited
+  creditsAwarded: boolean("credits_awarded").notNull().default(false), // Track if review credits were given
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Index for listing reviews
+  index("idx_marketplace_reviews_listing").on(table.listingId),
+  // Index for order reviews
+  index("idx_marketplace_reviews_order").on(table.orderId),
+  // Index for reviewer's reviews
+  index("idx_marketplace_reviews_reviewer").on(table.reviewerId),
+  // Index for rating queries
+  index("idx_marketplace_reviews_rating").on(table.rating),
+  // Index for creation date ordering
+  index("idx_marketplace_reviews_created").on(table.createdAt),
+  // Unique constraint - one review per order
+  unique("unique_order_review").on(table.orderId),
+  // Composite unique constraint - one review per user per listing
+  unique("unique_user_listing_review").on(table.reviewerId, table.listingId),
 ]);
 
 // Relations
@@ -903,13 +938,27 @@ export const sellerProfilesRelations = relations(sellerProfiles, ({ one, many })
   listings: many(marketplaceListings),
 }));
 
-export const marketplaceListingsRelations = relations(marketplaceListings, ({ one }) => ({
+export const marketplaceListingsRelations = relations(marketplaceListings, ({ one, many }) => ({
   prompt: one(prompts, { fields: [marketplaceListings.promptId], references: [prompts.id] }),
   seller: one(users, { fields: [marketplaceListings.sellerId], references: [users.id] }),
   sellerProfile: one(sellerProfiles, { 
     fields: [marketplaceListings.sellerId], 
     references: [sellerProfiles.userId] 
   }),
+  reviews: many(marketplaceReviews),
+}));
+
+export const marketplaceOrdersRelations = relations(marketplaceOrders, ({ one }) => ({
+  buyer: one(users, { fields: [marketplaceOrders.buyerId], references: [users.id] }),
+  seller: one(users, { fields: [marketplaceOrders.sellerId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [marketplaceOrders.listingId], references: [marketplaceListings.id] }),
+  review: one(marketplaceReviews, { fields: [marketplaceOrders.id], references: [marketplaceReviews.orderId] }),
+}));
+
+export const marketplaceReviewsRelations = relations(marketplaceReviews, ({ one }) => ({
+  order: one(marketplaceOrders, { fields: [marketplaceReviews.orderId], references: [marketplaceOrders.id] }),
+  listing: one(marketplaceListings, { fields: [marketplaceReviews.listingId], references: [marketplaceListings.id] }),
+  reviewer: one(users, { fields: [marketplaceReviews.reviewerId], references: [users.id] }),
 }));
 
 // Insert schemas
@@ -1122,6 +1171,18 @@ export const insertDigitalLicenseSchema = createInsertSchema(digitalLicenses).om
   createdAt: true,
 });
 
+// Marketplace review insert schemas
+export const insertMarketplaceReviewSchema = createInsertSchema(marketplaceReviews).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  editedAt: true,
+  sellerRespondedAt: true,
+  verifiedPurchase: true,
+  helpfulCount: true,
+  creditsAwarded: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -1254,6 +1315,8 @@ export type MarketplaceOrder = typeof marketplaceOrders.$inferSelect;
 export type InsertMarketplaceOrder = z.infer<typeof insertMarketplaceOrderSchema>;
 export type DigitalLicense = typeof digitalLicenses.$inferSelect;
 export type InsertDigitalLicense = z.infer<typeof insertDigitalLicenseSchema>;
+export type MarketplaceReview = typeof marketplaceReviews.$inferSelect;
+export type InsertMarketplaceReview = z.infer<typeof insertMarketplaceReviewSchema>;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;

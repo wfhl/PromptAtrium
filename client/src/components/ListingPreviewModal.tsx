@@ -30,8 +30,12 @@ import {
   Info,
   Lock,
   Check,
+  MessageSquare,
+  PenLine,
 } from "lucide-react";
 import { CheckoutModal } from "./CheckoutModal";
+import { ReviewForm } from "./ReviewForm";
+import { ReviewsList } from "./ReviewsList";
 import { useAuthState } from "@/hooks/useAuth";
 
 interface ListingPreviewModalProps {
@@ -43,6 +47,8 @@ interface ListingPreviewModalProps {
 export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPreviewModalProps) {
   const [selectedTab, setSelectedTab] = useState("preview");
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const { user } = useAuthState();
   
   // Fetch listing details with preview
@@ -57,8 +63,15 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
     enabled: !!user && open,
   });
   
+  // Check if user can review this listing
+  const { data: reviewStatus } = useQuery({
+    queryKey: [`/api/marketplace/reviews/can-review/${listingId}`],
+    enabled: !!user && !!listingId && open,
+  });
+  
   const hasPurchased = purchases?.some((purchase: any) => purchase.listingId === listingId);
   const isOwnListing = listing?.sellerId === user?.id;
+  const userPurchase = purchases?.find((purchase: any) => purchase.listingId === listingId);
   
   // Format price display
   const formatPrice = (cents: number) => {
@@ -259,7 +272,7 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
               
               {/* Content Tabs */}
               <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="preview">
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
@@ -271,6 +284,10 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
                   <TabsTrigger value="images">
                     <Package className="h-4 w-4 mr-2" />
                     Examples
+                  </TabsTrigger>
+                  <TabsTrigger value="reviews">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Reviews
                   </TabsTrigger>
                 </TabsList>
                 
@@ -375,6 +392,47 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
                     )}
                   </Card>
                 </TabsContent>
+                
+                <TabsContent value="reviews" className="mt-4">
+                  <div className="space-y-4">
+                    {/* Write Review Button */}
+                    {reviewStatus?.canReview && userPurchase && (
+                      <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold mb-1">Share Your Experience</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Help others by reviewing this prompt
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              setSelectedOrderId(userPurchase.id);
+                              setShowReviewForm(true);
+                            }}
+                            data-testid="button-write-review"
+                          >
+                            <PenLine className="h-4 w-4 mr-2" />
+                            Write Review
+                          </Button>
+                        </div>
+                      </Card>
+                    )}
+                    
+                    {/* Already Reviewed Message */}
+                    {reviewStatus?.hasReviewed && (
+                      <Card className="p-4 bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-600" />
+                          <p className="text-sm">You've already reviewed this listing</p>
+                        </div>
+                      </Card>
+                    )}
+                    
+                    {/* Reviews List */}
+                    <ReviewsList listingId={listingId} limit={10} />
+                  </div>
+                </TabsContent>
               </Tabs>
               
               {/* Action Buttons */}
@@ -405,6 +463,21 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
           isOpen={showCheckout}
           onClose={() => setShowCheckout(false)}
           listing={listing}
+        />
+      )}
+      
+      {/* Review Form Modal */}
+      {listing && selectedOrderId && (
+        <ReviewForm
+          orderId={selectedOrderId}
+          listingId={listingId}
+          listingTitle={listing.title}
+          open={showReviewForm}
+          onOpenChange={setShowReviewForm}
+          onSuccess={() => {
+            setShowReviewForm(false);
+            setSelectedOrderId(null);
+          }}
         />
       )}
     </Dialog>

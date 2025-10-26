@@ -9,13 +9,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { DollarSign, TrendingUp, Package, Star, MoreVertical, Plus, Edit, Pause, Play, Trash, CheckCircle, AlertCircle } from "lucide-react";
+import { DollarSign, TrendingUp, Package, Star, MoreVertical, Plus, Edit, Pause, Play, Trash, CheckCircle, AlertCircle, MessageSquare, Reply, User, ThumbsUp } from "lucide-react";
 import { CreateListingModal } from "@/components/CreateListingModal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import type { MarketplaceListing, SellerProfile } from "@shared/schema";
+import { formatDistanceToNow } from "date-fns";
 
 // Onboarding form validation schema
 const onboardingSchema = z.object({
@@ -33,10 +38,17 @@ const onboardingSchema = z.object({
   path: ["taxId"], // Show error on first tax field
 });
 
+// Seller response form validation schema
+const sellerResponseSchema = z.object({
+  response: z.string().min(10, "Response must be at least 10 characters").max(1000, "Response must be less than 1000 characters"),
+});
+
 export default function SellerDashboard() {
   const { toast } = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingListing, setEditingListing] = useState<MarketplaceListing | null>(null);
+  const [respondingToReview, setRespondingToReview] = useState<any>(null);
+  const [showResponseDialog, setShowResponseDialog] = useState(false);
 
   // Fetch seller profile
   const { data: sellerProfile, isLoading: profileLoading } = useQuery({
@@ -47,6 +59,12 @@ export default function SellerDashboard() {
   const { data: myListings = [], isLoading: listingsLoading } = useQuery({
     queryKey: ["/api/marketplace/my-listings"],
   }) as { data: MarketplaceListing[]; isLoading: boolean };
+  
+  // Fetch all reviews for seller's listings
+  const { data: sellerReviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: ["/api/marketplace/reviews/seller"],
+    enabled: !!sellerProfile,
+  });
 
   // Update listing mutation
   const updateListingMutation = useMutation({
@@ -86,6 +104,27 @@ export default function SellerDashboard() {
     },
   });
 
+  // Seller response mutation
+  const addResponseMutation = useMutation({
+    mutationFn: async ({ reviewId, response }: { reviewId: string; response: string }) => {
+      const res = await apiRequest("POST", `/api/marketplace/reviews/${reviewId}/response`, { response });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/marketplace/reviews/seller"] });
+      toast({ title: "Success", description: "Response added successfully" });
+      setShowResponseDialog(false);
+      setRespondingToReview(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to add response",
+        variant: "destructive"
+      });
+    },
+  });
+
   // Onboarding form
   const form = useForm<z.infer<typeof onboardingSchema>>({
     resolver: zodResolver(onboardingSchema),
@@ -96,6 +135,14 @@ export default function SellerDashboard() {
       businessName: "",
       businessAddress: "",
       payoutMethod: "stripe",
+    },
+  });
+  
+  // Response form for reviews
+  const responseForm = useForm<z.infer<typeof sellerResponseSchema>>({
+    resolver: zodResolver(sellerResponseSchema),
+    defaultValues: {
+      response: "",
     },
   });
 
@@ -401,6 +448,10 @@ export default function SellerDashboard() {
           <TabsTrigger value="draft" data-testid="tab-draft">
             Drafts ({draftListings.length})
           </TabsTrigger>
+          <TabsTrigger value="reviews" data-testid="tab-reviews">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Reviews ({sellerReviews.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-4">
@@ -581,7 +632,171 @@ export default function SellerDashboard() {
             ))
           )}
         </TabsContent>
+        
+        <TabsContent value="reviews" className="space-y-4">
+          {reviewsLoading ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-muted-foreground">Loading reviews...</p>
+              </CardContent>
+            </Card>
+          ) : sellerReviews.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-muted-foreground">No reviews yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            sellerReviews.map((review: any) => (
+              <Card key={review.id} data-testid={`card-review-${review.id}`}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={review.reviewer?.profileImageUrl} />
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold">{review.reviewer?.username || "Anonymous"}</p>
+                          {review.verifiedPurchase && (
+                            <Badge variant="secondary" className="text-xs">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Verified Purchase
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-4 w-4 ${star <= review.rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <Badge>{review.listing?.title || "Unknown Listing"}</Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {review.title && <h4 className="font-semibold">{review.title}</h4>}
+                  <p className="text-sm">{review.comment}</p>
+                  
+                  {/* Helpful Count */}
+                  {review.helpfulCount > 0 && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <ThumbsUp className="h-3 w-3" />
+                      <span>{review.helpfulCount} {review.helpfulCount === 1 ? 'person' : 'people'} found this helpful</span>
+                    </div>
+                  )}
+                  
+                  {/* Seller Response */}
+                  {review.sellerResponse ? (
+                    <div className="bg-muted/50 p-3 rounded-lg mt-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Reply className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium">Seller Response</p>
+                      </div>
+                      <p className="text-sm">{review.sellerResponse}</p>
+                      {review.sellerRespondedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Responded {formatDistanceToNow(new Date(review.sellerRespondedAt), { addSuffix: true })}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setRespondingToReview(review);
+                          setShowResponseDialog(true);
+                          responseForm.reset();
+                        }}
+                        data-testid={`button-respond-${review.id}`}
+                      >
+                        <Reply className="h-4 w-4 mr-2" />
+                        Respond to Review
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
       </Tabs>
+      
+      {/* Response Dialog */}
+      <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Respond to Review</DialogTitle>
+            <DialogDescription>
+              Add a response to address the reviewer's feedback
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...responseForm}>
+            <form onSubmit={responseForm.handleSubmit((data) => {
+              if (respondingToReview) {
+                addResponseMutation.mutate({
+                  reviewId: respondingToReview.id,
+                  response: data.response,
+                });
+              }
+            })} className="space-y-4">
+              <FormField
+                control={responseForm.control}
+                name="response"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Your Response</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Thank you for your feedback..."
+                        rows={4}
+                        data-testid="textarea-response"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Be professional and address the customer's concerns
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowResponseDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={addResponseMutation.isPending}
+                  data-testid="button-submit-response"
+                >
+                  {addResponseMutation.isPending ? "Submitting..." : "Submit Response"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Create/Edit Listing Modal */}
       <CreateListingModal 

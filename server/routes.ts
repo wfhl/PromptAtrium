@@ -3184,6 +3184,204 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Marketplace Review Routes
+  // Create a review for a purchased listing
+  app.post('/api/marketplace/reviews', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { orderId, listingId, rating, title, comment } = req.body;
+      
+      // Validate inputs
+      if (!orderId || !listingId || !rating || !comment) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5" });
+      }
+      
+      if (comment.length < 20) {
+        return res.status(400).json({ message: "Review comment must be at least 20 characters" });
+      }
+      
+      // Check if user can review (has purchased and hasn't reviewed yet)
+      const canReview = await storage.canUserReview(userId, listingId);
+      if (!canReview) {
+        return res.status(403).json({ message: "You cannot review this listing. Either you haven't purchased it or you've already reviewed it." });
+      }
+      
+      // Check if this order belongs to the user
+      const order = await storage.getOrder(orderId);
+      if (!order || order.buyerId !== userId) {
+        return res.status(403).json({ message: "Invalid order" });
+      }
+      
+      // Create the review
+      const review = await storage.createReview({
+        orderId,
+        listingId,
+        reviewerId: userId,
+        rating,
+        title: title || null,
+        comment,
+      });
+      
+      res.json({ 
+        success: true, 
+        review,
+        message: "Review submitted successfully! You've earned 10 credits."
+      });
+    } catch (error: any) {
+      console.error("Error creating review:", error);
+      if (error.message?.includes("unique_order_review")) {
+        return res.status(409).json({ message: "You have already reviewed this purchase" });
+      }
+      res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+
+  // Get reviews for a listing
+  app.get('/api/marketplace/listings/:id/reviews', async (req, res) => {
+    try {
+      const listingId = req.params.id;
+      const { limit = 20, offset = 0, sortBy = 'newest' } = req.query;
+      
+      const reviews = await storage.getListingReviews(listingId, {
+        limit: Number(limit),
+        offset: Number(offset),
+        sortBy: sortBy as any,
+      });
+      
+      // Enrich reviews with reviewer information
+      const enrichedReviews = await Promise.all(reviews.map(async (review) => {
+        const reviewer = await storage.getUser(review.reviewerId);
+        return {
+          ...review,
+          reviewer: {
+            id: reviewer?.id,
+            username: reviewer?.username,
+            firstName: reviewer?.firstName,
+            lastName: reviewer?.lastName,
+            profileImageUrl: reviewer?.profileImageUrl,
+          }
+        };
+      }));
+      
+      res.json(enrichedReviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  // Check if user can review a listing
+  app.get('/api/marketplace/reviews/can-review/:listingId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { listingId } = req.params;
+      
+      const canReview = await storage.canUserReview(userId, listingId);
+      const hasPurchased = await storage.checkUserPurchasedListing(userId, listingId);
+      const hasReviewed = await storage.getUserHasReviewed(userId, listingId);
+      
+      res.json({ 
+        canReview,
+        hasPurchased,
+        hasReviewed
+      });
+    } catch (error) {
+      console.error("Error checking review eligibility:", error);
+      res.status(500).json({ message: "Failed to check review eligibility" });
+    }
+  });
+
+  // Mark a review as helpful
+  app.put('/api/marketplace/reviews/:id/helpful', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const reviewId = req.params.id;
+      
+      await storage.markReviewHelpful(reviewId, userId);
+      
+      res.json({ success: true, message: "Review marked as helpful" });
+    } catch (error) {
+      console.error("Error marking review as helpful:", error);
+      res.status(500).json({ message: "Failed to mark review as helpful" });
+    }
+  });
+
+  // Add seller response to a review
+  app.post('/api/marketplace/reviews/:id/response', isAuthenticated, async (req: any, res) => {
+    try {
+      const sellerId = (req.user as any).claims.sub;
+      const reviewId = req.params.id;
+      const { response } = req.body;
+      
+      if (!response || response.length < 10) {
+        return res.status(400).json({ message: "Response must be at least 10 characters" });
+      }
+      
+      const updatedReview = await storage.addSellerResponse(reviewId, sellerId, response);
+      
+      res.json({ 
+        success: true, 
+        review: updatedReview,
+        message: "Response added successfully"
+      });
+    } catch (error: any) {
+      console.error("Error adding seller response:", error);
+      if (error.message?.includes("Unauthorized")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error.message?.includes("already responded")) {
+        return res.status(409).json({ message: error.message });
+      }
+      res.status(500).json({ message: "Failed to add response" });
+    }
+  });
+
+  // Get reviews for seller's listings
+  app.get('/api/marketplace/seller/reviews', isAuthenticated, async (req: any, res) => {
+    try {
+      const sellerId = (req.user as any).claims.sub;
+      const { limit = 20, offset = 0 } = req.query;
+      
+      const reviews = await storage.getSellerReviews(sellerId, {
+        limit: Number(limit),
+        offset: Number(offset),
+      });
+      
+      // Enrich reviews with reviewer and listing information  
+      const enrichedReviews = await Promise.all(reviews.map(async (review) => {
+        const [reviewer, listing] = await Promise.all([
+          storage.getUser(review.reviewerId),
+          storage.getMarketplaceListing(review.listingId),
+        ]);
+        
+        return {
+          ...review,
+          reviewer: {
+            id: reviewer?.id,
+            username: reviewer?.username,
+            firstName: reviewer?.firstName,
+            lastName: reviewer?.lastName,
+            profileImageUrl: reviewer?.profileImageUrl,
+          },
+          listing: {
+            id: listing?.id,
+            title: listing?.title,
+            promptId: listing?.promptId,
+          }
+        };
+      }));
+      
+      res.json(enrichedReviews);
+    } catch (error) {
+      console.error("Error fetching seller reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
   // Get all users (for community page)
   app.get('/api/users', isAuthenticated, async (req: any, res) => {
     try {

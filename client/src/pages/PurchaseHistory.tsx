@@ -41,11 +41,14 @@ import {
   User,
   ArrowUpDown,
   Clock,
+  Star,
+  PenLine,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "@/hooks/useAuth";
 import { Link } from "wouter";
+import { ReviewForm } from "@/components/ReviewForm";
 
 export function PurchaseHistory() {
   const [, navigate] = useNavigate();
@@ -55,10 +58,18 @@ export function PurchaseHistory() {
   const [sortBy, setSortBy] = useState("newest");
   const [filterPaymentMethod, setFilterPaymentMethod] = useState("all");
   const [copiedLicenseId, setCopiedLicenseId] = useState<string | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
   
   // Fetch purchase history
   const { data: purchases, isLoading, error } = useQuery({
     queryKey: ["/api/marketplace/purchases", { limit: 50, offset: 0 }],
+    enabled: !!user,
+  });
+  
+  // Fetch user's reviews to check which purchases have been reviewed
+  const { data: userReviews } = useQuery({
+    queryKey: ["/api/marketplace/reviews/user"],
     enabled: !!user,
   });
   
@@ -368,18 +379,50 @@ export function PurchaseHistory() {
                   )}
                 </CardContent>
                 
-                <CardFooter className="gap-2">
-                  <Link href={`/prompts/${purchase.listing?.promptId}`} className="flex-1">
-                    <Button variant="outline" className="w-full" size="sm" data-testid={`button-view-prompt-${purchase.id}`}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Prompt
-                    </Button>
-                  </Link>
-                  <Link href={`/marketplace/listing/${purchase.listingId}`}>
-                    <Button variant="ghost" size="sm" data-testid={`button-view-listing-${purchase.id}`}>
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                <CardFooter className="flex-col gap-2">
+                  {/* Review Status */}
+                  {(() => {
+                    const hasReviewed = userReviews?.some((review: any) => review.orderId === purchase.id);
+                    return (
+                      <div className="w-full">
+                        {hasReviewed ? (
+                          <Badge variant="secondary" className="w-full justify-center py-1">
+                            <Star className="h-3 w-3 mr-1 fill-current" />
+                            Reviewed
+                          </Badge>
+                        ) : purchase.status === "completed" ? (
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => {
+                              setSelectedPurchase(purchase);
+                              setShowReviewForm(true);
+                            }}
+                            data-testid={`button-leave-review-${purchase.id}`}
+                          >
+                            <PenLine className="h-4 w-4 mr-2" />
+                            Leave Review
+                          </Button>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 w-full">
+                    <Link href={`/prompts/${purchase.listing?.promptId}`} className="flex-1">
+                      <Button variant="outline" className="w-full" size="sm" data-testid={`button-view-prompt-${purchase.id}`}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        View Prompt
+                      </Button>
+                    </Link>
+                    <Link href={`/marketplace/listing/${purchase.listingId}`}>
+                      <Button variant="ghost" size="sm" data-testid={`button-view-listing-${purchase.id}`}>
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
                 </CardFooter>
               </Card>
             ))}
@@ -407,6 +450,21 @@ export function PurchaseHistory() {
           </Card>
         )}
       </div>
+      
+      {/* Review Form Modal */}
+      {selectedPurchase && (
+        <ReviewForm
+          orderId={selectedPurchase.id}
+          listingId={selectedPurchase.listingId}
+          listingTitle={selectedPurchase.listing?.title || "Untitled Listing"}
+          open={showReviewForm}
+          onOpenChange={setShowReviewForm}
+          onSuccess={() => {
+            setShowReviewForm(false);
+            setSelectedPurchase(null);
+          }}
+        />
+      )}
     </div>
   );
 }

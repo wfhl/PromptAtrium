@@ -112,6 +112,9 @@ import {
   digitalLicenses,
   type DigitalLicense,
   type InsertDigitalLicense,
+  marketplaceReviews,
+  type MarketplaceReview,
+  type InsertMarketplaceReview,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray, isNull, gte } from "drizzle-orm";
@@ -430,6 +433,21 @@ export interface IStorage {
   generateLicenseKey(): string;
   getUserLicense(userId: string, promptId: string): Promise<DigitalLicense | undefined>;
   getUserLicenses(userId: string, options?: { limit?: number; offset?: number }): Promise<DigitalLicense[]>;
+  
+  // Marketplace operations - Reviews
+  createReview(review: InsertMarketplaceReview): Promise<MarketplaceReview>;
+  getListingReviews(listingId: string, options?: { 
+    limit?: number; 
+    offset?: number; 
+    sortBy?: 'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful';
+  }): Promise<MarketplaceReview[]>;
+  canUserReview(userId: string, listingId: string): Promise<boolean>;
+  getUserHasReviewed(userId: string, listingId: string): Promise<boolean>;
+  updateListingRating(listingId: string): Promise<void>;
+  markReviewHelpful(reviewId: string, userId: string): Promise<void>;
+  addSellerResponse(reviewId: string, sellerId: string, response: string): Promise<MarketplaceReview>;
+  getReviewByOrderId(orderId: string): Promise<MarketplaceReview | undefined>;
+  getSellerReviews(sellerId: string, options?: { limit?: number; offset?: number }): Promise<MarketplaceReview[]>;
 }
 
 function generatePromptId(): string {
@@ -4026,6 +4044,209 @@ export class DatabaseStorage implements IStorage {
     
     const licenses = await query;
     return licenses;
+  }
+
+  // Marketplace operations - Reviews implementation
+  async createReview(review: InsertMarketplaceReview): Promise<MarketplaceReview> {
+    // Start a transaction to create review and award credits
+    const result = await db.transaction(async (tx) => {
+      // Create the review
+      const [newReview] = await tx.insert(marketplaceReviews)
+        .values({
+          ...review,
+          verifiedPurchase: true,
+          creditsAwarded: true,
+        })
+        .returning();
+      
+      // Award 10 credits to the reviewer
+      const creditReward = 10;
+      await tx.update(userCredits)
+        .set({
+          balance: sql`${userCredits.balance} + ${creditReward}`,
+          totalEarned: sql`${userCredits.totalEarned} + ${creditReward}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(userCredits.userId, review.reviewerId));
+      
+      // Create credit transaction for the reward
+      await tx.insert(creditTransactions)
+        .values({
+          userId: review.reviewerId,
+          type: 'reward' as const,
+          amount: creditReward,
+          description: 'Review submission reward',
+          metadata: { reviewId: newReview.id, listingId: review.listingId },
+        });
+      
+      // Update the listing's average rating and review count
+      await this.updateListingRating(review.listingId);
+      
+      return newReview;
+    });
+    
+    return result;
+  }
+
+  async getListingReviews(
+    listingId: string, 
+    options?: { 
+      limit?: number; 
+      offset?: number; 
+      sortBy?: 'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful';
+    }
+  ): Promise<MarketplaceReview[]> {
+    let query = db.select()
+      .from(marketplaceReviews)
+      .where(eq(marketplaceReviews.listingId, listingId));
+    
+    // Apply sorting
+    switch (options?.sortBy) {
+      case 'oldest':
+        query = query.orderBy(marketplaceReviews.createdAt);
+        break;
+      case 'highest':
+        query = query.orderBy(desc(marketplaceReviews.rating), desc(marketplaceReviews.createdAt));
+        break;
+      case 'lowest':
+        query = query.orderBy(marketplaceReviews.rating, desc(marketplaceReviews.createdAt));
+        break;
+      case 'helpful':
+        query = query.orderBy(desc(marketplaceReviews.helpfulCount), desc(marketplaceReviews.createdAt));
+        break;
+      case 'newest':
+      default:
+        query = query.orderBy(desc(marketplaceReviews.createdAt));
+        break;
+    }
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    const reviews = await query;
+    return reviews;
+  }
+
+  async canUserReview(userId: string, listingId: string): Promise<boolean> {
+    // Check if user has purchased this listing
+    const hasPurchased = await this.checkUserPurchasedListing(userId, listingId);
+    if (!hasPurchased) {
+      return false;
+    }
+    
+    // Check if user has already reviewed this listing
+    const hasReviewed = await this.getUserHasReviewed(userId, listingId);
+    return !hasReviewed;
+  }
+
+  async getUserHasReviewed(userId: string, listingId: string): Promise<boolean> {
+    const [review] = await db.select()
+      .from(marketplaceReviews)
+      .where(
+        and(
+          eq(marketplaceReviews.reviewerId, userId),
+          eq(marketplaceReviews.listingId, listingId)
+        )
+      );
+    
+    return !!review;
+  }
+
+  async updateListingRating(listingId: string): Promise<void> {
+    // Calculate average rating and review count
+    const result = await db.select({
+      avgRating: sql<string>`COALESCE(AVG(${marketplaceReviews.rating}), 0)`,
+      reviewCount: sql<number>`COUNT(*)`,
+    })
+    .from(marketplaceReviews)
+    .where(eq(marketplaceReviews.listingId, listingId));
+    
+    const { avgRating, reviewCount } = result[0] || { avgRating: '0', reviewCount: 0 };
+    
+    // Update the listing with new rating stats
+    await db.update(marketplaceListings)
+      .set({
+        averageRating: avgRating,
+        reviewCount: reviewCount,
+        updatedAt: new Date(),
+      })
+      .where(eq(marketplaceListings.id, listingId));
+  }
+
+  async markReviewHelpful(reviewId: string, userId: string): Promise<void> {
+    // For simplicity, we'll just increment the helpful count
+    // In a real app, you might track who marked it helpful to prevent duplicates
+    await db.update(marketplaceReviews)
+      .set({
+        helpfulCount: sql`${marketplaceReviews.helpfulCount} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(marketplaceReviews.id, reviewId));
+  }
+
+  async addSellerResponse(reviewId: string, sellerId: string, response: string): Promise<MarketplaceReview> {
+    // First check if the seller owns the listing for this review
+    const [review] = await db.select({
+      review: marketplaceReviews,
+      listing: marketplaceListings,
+    })
+    .from(marketplaceReviews)
+    .innerJoin(marketplaceListings, eq(marketplaceReviews.listingId, marketplaceListings.id))
+    .where(eq(marketplaceReviews.id, reviewId));
+    
+    if (!review || review.listing.sellerId !== sellerId) {
+      throw new Error("Unauthorized: You can only respond to reviews on your own listings");
+    }
+    
+    if (review.review.sellerResponse) {
+      throw new Error("You have already responded to this review");
+    }
+    
+    // Add the seller response
+    const [updatedReview] = await db.update(marketplaceReviews)
+      .set({
+        sellerResponse: response,
+        sellerRespondedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(marketplaceReviews.id, reviewId))
+      .returning();
+    
+    return updatedReview;
+  }
+
+  async getReviewByOrderId(orderId: string): Promise<MarketplaceReview | undefined> {
+    const [review] = await db.select()
+      .from(marketplaceReviews)
+      .where(eq(marketplaceReviews.orderId, orderId));
+    
+    return review;
+  }
+
+  async getSellerReviews(sellerId: string, options?: { limit?: number; offset?: number }): Promise<MarketplaceReview[]> {
+    let query = db.select({
+      review: marketplaceReviews,
+    })
+    .from(marketplaceReviews)
+    .innerJoin(marketplaceListings, eq(marketplaceReviews.listingId, marketplaceListings.id))
+    .where(eq(marketplaceListings.sellerId, sellerId))
+    .orderBy(desc(marketplaceReviews.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    const results = await query;
+    return results.map(r => r.review);
   }
 }
 
