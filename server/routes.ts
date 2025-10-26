@@ -5608,6 +5608,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Sub-community Invite Routes ============
+  
+  // Create a sub-community invite (requires sub-community admin)
+  app.post('/api/sub-communities/:id/invites', requireSubCommunityAdmin('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      const userId = (req.user as any).claims.sub;
+      const { maxUses, expiresAt, role } = req.body;
+      
+      // Validate role
+      if (role && !['member', 'admin'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role. Must be 'member' or 'admin'" });
+      }
+      
+      // Create the invite
+      const invite = await storage.createSubCommunityInvite({
+        subCommunityId,
+        createdBy: userId,
+        maxUses: maxUses || 1,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        isActive: true,
+        role: role || 'member',
+        currentUses: 0,
+      });
+      
+      res.status(201).json(invite);
+    } catch (error) {
+      console.error("Error creating sub-community invite:", error);
+      res.status(500).json({ message: "Failed to create invite" });
+    }
+  });
+  
+  // Get all invites for a sub-community (requires sub-community admin)
+  app.get('/api/sub-communities/:id/invites', requireSubCommunityAdmin('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      const { active } = req.query;
+      
+      const options = active !== undefined ? { active: active === 'true' } : undefined;
+      const invites = await storage.getSubCommunityInvites(subCommunityId, options);
+      
+      res.json(invites);
+    } catch (error) {
+      console.error("Error fetching sub-community invites:", error);
+      res.status(500).json({ message: "Failed to fetch invites" });
+    }
+  });
+  
+  // Get sub-community invite details by code (public endpoint)
+  app.get('/api/invites/sub-community/:code', async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      
+      const invite = await storage.getSubCommunityInvite(code);
+      if (!invite) {
+        return res.status(404).json({ message: "Invite not found" });
+      }
+      
+      // Check if invite is still valid
+      if (!invite.isActive) {
+        return res.status(400).json({ message: "Invite is no longer active" });
+      }
+      
+      if (invite.expiresAt && new Date() > new Date(invite.expiresAt)) {
+        return res.status(400).json({ message: "Invite has expired" });
+      }
+      
+      if (invite.currentUses >= invite.maxUses) {
+        return res.status(400).json({ message: "Invite has reached maximum uses" });
+      }
+      
+      // Get sub-community info for the invite
+      const subCommunity = await storage.getCommunity(invite.subCommunityId);
+      
+      res.json({
+        ...invite,
+        subCommunity,
+      });
+    } catch (error) {
+      console.error("Error validating sub-community invite:", error);
+      res.status(500).json({ message: "Failed to validate invite" });
+    }
+  });
+  
+  // Accept a sub-community invite (requires authentication)
+  app.post('/api/invites/sub-community/:code/accept', isAuthenticated, async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      const userId = (req.user as any).claims.sub;
+      
+      const result = await storage.useSubCommunityInvite(code, userId);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+      
+      res.status(201).json({
+        message: result.message,
+        community: result.community,
+      });
+    } catch (error) {
+      console.error("Error accepting sub-community invite:", error);
+      res.status(500).json({ message: "Failed to accept invite" });
+    }
+  });
+  
+  // Deactivate a sub-community invite (requires sub-community admin)
+  app.delete('/api/sub-communities/invites/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = (req.user as any).claims.sub;
+      
+      // Get the invite first to check ownership/permissions
+      const invites = await storage.getSubCommunityInvites('');
+      const invite = invites.find(inv => inv.id === id);
+      
+      if (!invite) {
+        return res.status(404).json({ message: "Invite not found" });
+      }
+      
+      // Check if user is admin of the sub-community or super admin
+      const user = await storage.getUser(userId);
+      const isSubAdmin = await storage.isSubCommunityAdmin(userId, invite.subCommunityId);
+      const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'developer';
+      
+      if (!isSubAdmin && !isSuperAdmin) {
+        return res.status(403).json({ message: "Not authorized to deactivate this invite" });
+      }
+      
+      await storage.deactivateSubCommunityInvite(id);
+      res.json({ message: "Invite deactivated successfully" });
+    } catch (error) {
+      console.error("Error deactivating sub-community invite:", error);
+      res.status(500).json({ message: "Failed to deactivate invite" });
+    }
+  });
+  
+  // Get sub-community invite statistics (requires sub-community admin)
+  app.get('/api/sub-communities/:id/invites/stats', requireSubCommunityAdmin('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      
+      const stats = await storage.getSubCommunityInviteStats(subCommunityId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching sub-community invite stats:", error);
+      res.status(500).json({ message: "Failed to fetch invite statistics" });
+    }
+  });
+
   // Public object serving endpoint for images - ACL-aware with proper streaming
   // NOTE: No isAuthenticated middleware - allows public access but still checks ACL
   app.get('/api/objects/serve/:path(*)', async (req: any, res) => {

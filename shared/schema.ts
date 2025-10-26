@@ -201,6 +201,40 @@ export const communityInvites = pgTable("community_invites", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Sub-community invites table - tracks invite codes for sub-communities
+export const subCommunityInvites = pgTable("sub_community_invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(),
+  subCommunityId: varchar("sub_community_id").notNull().references(() => communities.id),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  maxUses: integer("max_uses").default(1),
+  currentUses: integer("current_uses").default(0),
+  expiresAt: timestamp("expires_at"),
+  isActive: boolean("is_active").default(true),
+  role: varchar("role", { enum: ["member", "admin"] }).default("member"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Index for sub-community lookups
+  index("idx_sub_community_invites_sub_community").on(table.subCommunityId),
+  // Index for code lookups
+  index("idx_sub_community_invites_code").on(table.code),
+  // Index for active invites
+  index("idx_sub_community_invites_active").on(table.isActive),
+  // Index for creator lookups
+  index("idx_sub_community_invites_created_by").on(table.createdBy),
+]);
+
+// Sub-community invites types
+export const insertSubCommunityInviteSchema = createInsertSchema(subCommunityInvites).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSubCommunityInvite = z.infer<typeof insertSubCommunityInviteSchema>;
+export type SubCommunityInvite = typeof subCommunityInvites.$inferSelect;
+
 // Collections table
 export const collections = pgTable("collections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

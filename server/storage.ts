@@ -14,6 +14,7 @@ import {
   communityAdmins,
   subCommunityAdmins,
   communityInvites,
+  subCommunityInvites,
   promptLikes,
   promptFavorites,
   promptRatings,
@@ -61,6 +62,8 @@ import {
   type InsertSubCommunityAdmin,
   type CommunityInvite,
   type InsertCommunityInvite,
+  type SubCommunityInvite,
+  type InsertSubCommunityInvite,
   type PromptRating,
   type InsertPromptRating,
   type PromptLike,
@@ -290,6 +293,19 @@ export interface IStorage {
     offset?: number;
   }): Promise<CommunityInvite[]>;
   deactivateInvite(id: string): Promise<void>;
+
+  // Sub-community invite operations
+  createSubCommunityInvite(data: InsertSubCommunityInvite): Promise<SubCommunityInvite>;
+  getSubCommunityInvite(code: string): Promise<SubCommunityInvite | undefined>;
+  getSubCommunityInvites(subCommunityId: string, options?: { active?: boolean }): Promise<SubCommunityInvite[]>;
+  useSubCommunityInvite(code: string, userId: string): Promise<{ success: boolean; message: string; community?: Community }>;
+  deactivateSubCommunityInvite(inviteId: string): Promise<void>;
+  getSubCommunityInviteStats(subCommunityId: string): Promise<{ 
+    total: number; 
+    active: number; 
+    used: number; 
+    expired: number; 
+  }>;
 
   // Sub-community CRUD operations
   createSubCommunity(parentId: string, subCommunity: InsertCommunity): Promise<Community>;
@@ -2417,6 +2433,217 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(communityInvites.id, id));
+  }
+
+  // Sub-community invite operations
+  async createSubCommunityInvite(data: InsertSubCommunityInvite): Promise<SubCommunityInvite> {
+    // Generate a unique invite code
+    const code = randomBytes(8).toString('hex').toUpperCase();
+    
+    const [newInvite] = await db
+      .insert(subCommunityInvites)
+      .values({
+        ...data,
+        code,
+      })
+      .returning();
+    return newInvite;
+  }
+
+  async getSubCommunityInvite(code: string): Promise<SubCommunityInvite | undefined> {
+    const [invite] = await db
+      .select()
+      .from(subCommunityInvites)
+      .where(eq(subCommunityInvites.code, code));
+    return invite;
+  }
+
+  async getSubCommunityInvites(subCommunityId: string, options?: { active?: boolean }): Promise<SubCommunityInvite[]> {
+    let query = db.select().from(subCommunityInvites).$dynamic();
+    
+    const conditions: any[] = [
+      eq(subCommunityInvites.subCommunityId, subCommunityId)
+    ];
+    
+    if (options?.active !== undefined) {
+      conditions.push(eq(subCommunityInvites.isActive, options.active));
+      
+      // If looking for active invites, also check expiry
+      if (options.active) {
+        conditions.push(
+          or(
+            sql`${subCommunityInvites.expiresAt} IS NULL`,
+            sql`${subCommunityInvites.expiresAt} > NOW()`
+          )
+        );
+      }
+    }
+    
+    query = query.where(and(...conditions));
+    
+    return await query.orderBy(desc(subCommunityInvites.createdAt));
+  }
+
+  async useSubCommunityInvite(code: string, userId: string): Promise<{ success: boolean; message: string; community?: Community }> {
+    // Start a transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      // Get the invite
+      const [invite] = await tx
+        .select()
+        .from(subCommunityInvites)
+        .where(eq(subCommunityInvites.code, code));
+      
+      if (!invite) {
+        return { success: false, message: 'Invalid invite code' };
+      }
+      
+      // Check if invite is active
+      if (!invite.isActive) {
+        return { success: false, message: 'This invite is no longer active' };
+      }
+      
+      // Check if invite has expired
+      if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+        return { success: false, message: 'This invite has expired' };
+      }
+      
+      // Check if max uses reached
+      if (invite.maxUses && invite.currentUses >= invite.maxUses) {
+        return { success: false, message: 'This invite has reached its maximum uses' };
+      }
+      
+      // Check if user is already a member
+      const [existingMembership] = await tx
+        .select()
+        .from(userCommunities)
+        .where(
+          and(
+            eq(userCommunities.userId, userId),
+            eq(userCommunities.subCommunityId, invite.subCommunityId)
+          )
+        );
+      
+      if (existingMembership) {
+        return { success: false, message: 'You are already a member of this sub-community' };
+      }
+      
+      // Get the sub-community
+      const [subCommunity] = await tx
+        .select()
+        .from(communities)
+        .where(eq(communities.id, invite.subCommunityId));
+      
+      if (!subCommunity) {
+        return { success: false, message: 'Sub-community not found' };
+      }
+      
+      // Get the parent community ID
+      const parentCommunityId = subCommunity.parentCommunityId;
+      if (!parentCommunityId) {
+        return { success: false, message: 'Invalid sub-community structure' };
+      }
+      
+      // Add user to the sub-community with the specified role
+      await tx
+        .insert(userCommunities)
+        .values({
+          userId,
+          communityId: parentCommunityId,
+          subCommunityId: invite.subCommunityId,
+          role: invite.role || 'member',
+        })
+        .onConflictDoNothing();
+      
+      // If role is admin, also add to sub-community admins table
+      if (invite.role === 'admin') {
+        await tx
+          .insert(subCommunityAdmins)
+          .values({
+            userId,
+            subCommunityId: invite.subCommunityId,
+            assignedBy: invite.createdBy,
+            permissions: {},
+          })
+          .onConflictDoNothing();
+      }
+      
+      // Increment the current uses
+      await tx
+        .update(subCommunityInvites)
+        .set({
+          currentUses: sql`${subCommunityInvites.currentUses} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(subCommunityInvites.code, code));
+      
+      // Deactivate invite if it reached max uses
+      if (invite.maxUses && invite.currentUses + 1 >= invite.maxUses) {
+        await tx
+          .update(subCommunityInvites)
+          .set({
+            isActive: false,
+            updatedAt: new Date(),
+          })
+          .where(eq(subCommunityInvites.code, code));
+      }
+      
+      return { 
+        success: true, 
+        message: 'Successfully joined the sub-community',
+        community: subCommunity
+      };
+    });
+  }
+
+  async deactivateSubCommunityInvite(inviteId: string): Promise<void> {
+    await db
+      .update(subCommunityInvites)
+      .set({
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(subCommunityInvites.id, inviteId));
+  }
+
+  async getSubCommunityInviteStats(subCommunityId: string): Promise<{ 
+    total: number; 
+    active: number; 
+    used: number; 
+    expired: number; 
+  }> {
+    // Get all invites for the sub-community
+    const invites = await db
+      .select()
+      .from(subCommunityInvites)
+      .where(eq(subCommunityInvites.subCommunityId, subCommunityId));
+    
+    const now = new Date();
+    
+    const stats = {
+      total: invites.length,
+      active: 0,
+      used: 0,
+      expired: 0,
+    };
+    
+    for (const invite of invites) {
+      // Count active invites
+      if (invite.isActive && (!invite.expiresAt || new Date(invite.expiresAt) > now)) {
+        stats.active++;
+      }
+      
+      // Count fully used invites
+      if (invite.maxUses && invite.currentUses >= invite.maxUses) {
+        stats.used++;
+      }
+      
+      // Count expired invites
+      if (invite.expiresAt && new Date(invite.expiresAt) <= now) {
+        stats.expired++;
+      }
+    }
+    
+    return stats;
   }
 
   // Sub-community CRUD operations
