@@ -6462,6 +6462,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sub-community migration endpoints (Super Admin only)
+  app.post('/api/admin/migrate-sub-communities', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // Check if user is super admin
+      if (user?.role !== 'super_admin' && user?.role !== 'developer') {
+        return res.status(403).json({ message: "Only super admins can run migrations" });
+      }
+      
+      // Run the migration
+      const migrationResult = await storage.migrateCommunitiesToHierarchy();
+      
+      // Validate the migration
+      const validation = await storage.validateMigration();
+      
+      // Generate report after migration
+      const report = await storage.generateMigrationReport();
+      
+      res.json({
+        success: validation.isValid,
+        migrated: migrationResult,
+        validation,
+        report,
+      });
+    } catch (error) {
+      console.error("Error running sub-community migration:", error);
+      res.status(500).json({ 
+        message: "Failed to run migration", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Check migration status endpoint (Super Admin only)
+  app.get('/api/admin/migrate-sub-communities/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // Check if user is super admin
+      if (user?.role !== 'super_admin' && user?.role !== 'developer') {
+        return res.status(403).json({ message: "Only super admins can check migration status" });
+      }
+      
+      // Validate current migration status
+      const validation = await storage.validateMigration();
+      
+      res.json({
+        migrationNeeded: !validation.isValid,
+        validation,
+      });
+    } catch (error) {
+      console.error("Error checking migration status:", error);
+      res.status(500).json({ 
+        message: "Failed to check migration status", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Preview migration endpoint (Super Admin only) - dry run
+  app.get('/api/admin/migrate-sub-communities/preview', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // Check if user is super admin
+      if (user?.role !== 'super_admin' && user?.role !== 'developer') {
+        return res.status(403).json({ message: "Only super admins can preview migrations" });
+      }
+      
+      // Get current state without running migration
+      const currentValidation = await storage.validateMigration();
+      
+      // Get communities that would be migrated
+      const communitiesNeedingMigration = currentValidation.statistics.communitiesWithoutPath + 
+                                           currentValidation.statistics.communitiesWithoutLevel;
+      
+      res.json({
+        wouldMigrate: communitiesNeedingMigration,
+        currentState: currentValidation,
+        message: communitiesNeedingMigration > 0 
+          ? `${communitiesNeedingMigration} communities would be migrated to top-level communities`
+          : "No communities need migration"
+      });
+    } catch (error) {
+      console.error("Error previewing migration:", error);
+      res.status(500).json({ 
+        message: "Failed to preview migration", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

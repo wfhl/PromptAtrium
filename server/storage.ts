@@ -6186,6 +6186,232 @@ export class DatabaseStorage implements IStorage {
       count: r.count,
     }));
   }
+
+  // Migration functions for sub-community hierarchy
+  async migrateCommunitiesToHierarchy(): Promise<{
+    success: boolean;
+    communitiesUpdated: number;
+    errors: Array<{ id: string; name: string; error: string }>;
+  }> {
+    const errors: Array<{ id: string; name: string; error: string }> = [];
+    let communitiesUpdated = 0;
+
+    try {
+      // Get all communities that need migration (no path or level set)
+      const communitiesToMigrate = await db
+        .select()
+        .from(communities)
+        .where(
+          or(
+            isNull(communities.level),
+            isNull(communities.path),
+            eq(communities.path, "")
+          )
+        );
+
+      // Migrate each community to be a top-level community
+      for (const community of communitiesToMigrate) {
+        try {
+          await db
+            .update(communities)
+            .set({
+              level: 0,
+              path: `/${community.id}/`,
+              parentCommunityId: null,
+              updatedAt: new Date(),
+            })
+            .where(eq(communities.id, community.id));
+          
+          communitiesUpdated++;
+        } catch (error) {
+          errors.push({
+            id: community.id,
+            name: community.name,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        communitiesUpdated,
+        errors,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        communitiesUpdated: 0,
+        errors: [{
+          id: "migration",
+          name: "Migration Process",
+          error: error instanceof Error ? error.message : String(error),
+        }],
+      };
+    }
+  }
+
+  async validateMigration(): Promise<{
+    isValid: boolean;
+    invalidCommunities: Array<{ id: string; name: string; issues: string[] }>;
+    statistics: {
+      totalCommunities: number;
+      topLevelCommunities: number;
+      subCommunities: number;
+      communitiesWithoutPath: number;
+      communitiesWithoutLevel: number;
+    };
+  }> {
+    const invalidCommunities: Array<{ id: string; name: string; issues: string[] }> = [];
+
+    // Get all communities
+    const allCommunities = await db.select().from(communities);
+    
+    // Check for communities with invalid fields
+    const communitiesWithoutPath = await db
+      .select()
+      .from(communities)
+      .where(or(isNull(communities.path), eq(communities.path, "")));
+    
+    const communitiesWithoutLevel = await db
+      .select()
+      .from(communities)
+      .where(isNull(communities.level));
+    
+    // Count top-level and sub-communities
+    const topLevelCommunities = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(communities)
+      .where(and(eq(communities.level, 0), isNull(communities.parentCommunityId)));
+    
+    const subCommunities = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(communities)
+      .where(sql`${communities.level} > 0`);
+
+    // Identify specific issues
+    for (const community of allCommunities) {
+      const issues: string[] = [];
+      
+      if (!community.level && community.level !== 0) {
+        issues.push("Missing level field");
+      }
+      
+      if (!community.path) {
+        issues.push("Missing path field");
+      }
+      
+      // Check consistency: level 0 should have no parent, level > 0 should have parent
+      if (community.level === 0 && community.parentCommunityId) {
+        issues.push("Top-level community has parent ID");
+      }
+      
+      if (community.level && community.level > 0 && !community.parentCommunityId) {
+        issues.push("Sub-community missing parent ID");
+      }
+      
+      if (issues.length > 0) {
+        invalidCommunities.push({
+          id: community.id,
+          name: community.name,
+          issues,
+        });
+      }
+    }
+
+    return {
+      isValid: invalidCommunities.length === 0,
+      invalidCommunities,
+      statistics: {
+        totalCommunities: allCommunities.length,
+        topLevelCommunities: Number(topLevelCommunities[0]?.count || 0),
+        subCommunities: Number(subCommunities[0]?.count || 0),
+        communitiesWithoutPath: communitiesWithoutPath.length,
+        communitiesWithoutLevel: communitiesWithoutLevel.length,
+      },
+    };
+  }
+
+  async generateMigrationReport(): Promise<{
+    timestamp: string;
+    preCheck: {
+      communitiesNeedingMigration: number;
+      promptsWithoutSubCommunity: number;
+      existingMemberships: number;
+      existingAdmins: number;
+    };
+    results: {
+      communitiesUpdated: number;
+      errors: number;
+      preservedMemberships: number;
+      preservedAdmins: number;
+    };
+    validation: {
+      allFieldsValid: boolean;
+      dataIntegrityMaintained: boolean;
+    };
+  }> {
+    // Pre-migration check
+    const needsMigration = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(communities)
+      .where(
+        or(
+          isNull(communities.level),
+          isNull(communities.path),
+          eq(communities.path, "")
+        )
+      );
+    
+    const promptsWithoutSub = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(prompts)
+      .where(isNull(prompts.subCommunityId));
+    
+    const memberships = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(userCommunities);
+    
+    const admins = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(communityAdmins);
+
+    // Run migration
+    const migrationResult = await this.migrateCommunitiesToHierarchy();
+    
+    // Post-migration check
+    const postMemberships = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(userCommunities);
+    
+    const postAdmins = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(communityAdmins);
+    
+    // Validate migration
+    const validation = await this.validateMigration();
+
+    return {
+      timestamp: new Date().toISOString(),
+      preCheck: {
+        communitiesNeedingMigration: Number(needsMigration[0]?.count || 0),
+        promptsWithoutSubCommunity: Number(promptsWithoutSub[0]?.count || 0),
+        existingMemberships: Number(memberships[0]?.count || 0),
+        existingAdmins: Number(admins[0]?.count || 0),
+      },
+      results: {
+        communitiesUpdated: migrationResult.communitiesUpdated,
+        errors: migrationResult.errors.length,
+        preservedMemberships: Number(postMemberships[0]?.count || 0),
+        preservedAdmins: Number(postAdmins[0]?.count || 0),
+      },
+      validation: {
+        allFieldsValid: validation.isValid,
+        dataIntegrityMaintained: 
+          Number(memberships[0]?.count || 0) === Number(postMemberships[0]?.count || 0) &&
+          Number(admins[0]?.count || 0) === Number(postAdmins[0]?.count || 0),
+      },
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();
