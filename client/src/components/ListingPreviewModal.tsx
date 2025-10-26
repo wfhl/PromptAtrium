@@ -36,7 +36,7 @@ import {
 import { CheckoutModal } from "./CheckoutModal";
 import { ReviewForm } from "./ReviewForm";
 import { ReviewsList } from "./ReviewsList";
-import { useAuthState } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ListingPreviewModalProps {
   listingId: string;
@@ -49,7 +49,7 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
   const [showCheckout, setShowCheckout] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const { user } = useAuthState();
+  const { user } = useAuth();
   
   // Fetch listing details with preview
   const { data: listing, isLoading, error } = useQuery({

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useAuthState } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
 import { Star, ThumbsUp, CheckCircle, User, MessageSquare } from "lucide-react";
 
@@ -49,7 +49,7 @@ interface ReviewsListProps {
 
 export function ReviewsList({ listingId, showSortOptions = true, limit = 20 }: ReviewsListProps) {
   const { toast } = useToast();
-  const { user } = useAuthState();
+  const { user } = useAuth();
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful'>('newest');
   const [offset, setOffset] = useState(0);
 

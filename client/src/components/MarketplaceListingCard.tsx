@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ListingPreviewModal } from "@/components/ListingPreviewModal";
 import { Eye, DollarSign, Coins, Star, TrendingUp, User, Check } from "lucide-react";
-import { useAuthState } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MarketplaceListingCardProps {
   listing: {
@@ -43,7 +43,7 @@ interface MarketplaceListingCardProps {
 
 export function MarketplaceListingCard({ listing }: MarketplaceListingCardProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
-  const { user } = useAuthState();
+  const { user } = useAuth();
   
   // Check if user has already purchased this listing
   const { data: purchases } = useQuery({

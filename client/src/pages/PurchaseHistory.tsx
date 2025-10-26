@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { 
   Card, 
   CardContent, 
@@ -46,13 +46,13 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useAuthState } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { ReviewForm } from "@/components/ReviewForm";
 
 export function PurchaseHistory() {
-  const [, navigate] = useNavigate();
-  const { user } = useAuthState();
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
