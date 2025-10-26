@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MarketplaceListingCard } from "@/components/MarketplaceListingCard";
+import { SubCommunitySelector } from "@/components/SubCommunitySelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -33,14 +34,19 @@ import {
   Package,
   X,
   HelpCircle,
+  Users,
 } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Marketplace() {
+  const { user } = useAuth();
+  
   // Search and filter states
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubCommunity, setSelectedSubCommunity] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [creditsRange, setCreditsRange] = useState<[number, number]>([0, 10000]);
   const [sortBy, setSortBy] = useState<string>("newest");
@@ -75,6 +81,7 @@ export default function Marketplace() {
         limit,
         search,
         category: selectedCategory,
+        subCommunityId: selectedSubCommunity,
         minPrice: priceRange[0],
         maxPrice: priceRange[1],
         minCredits: creditsRange[0],
@@ -91,6 +98,7 @@ export default function Marketplace() {
 
       if (search) params.append("search", search);
       if (selectedCategory) params.append("category", selectedCategory);
+      if (selectedSubCommunity !== "all") params.append("subCommunityId", selectedSubCommunity);
       if (priceRange[0] > 0) params.append("minPrice", priceRange[0].toString());
       if (priceRange[1] < 100) params.append("maxPrice", priceRange[1].toString());
       if (creditsRange[0] > 0) params.append("minCredits", creditsRange[0].toString());
@@ -122,6 +130,7 @@ export default function Marketplace() {
     setSearch("");
     setSearchInput("");
     setSelectedCategory(null);
+    setSelectedSubCommunity("all");
     setPriceRange([0, 100]);
     setCreditsRange([0, 10000]);
     setSortBy("newest");
@@ -131,6 +140,7 @@ export default function Marketplace() {
   const hasActiveFilters =
     search ||
     selectedCategory ||
+    selectedSubCommunity !== "all" ||
     priceRange[0] > 0 ||
     priceRange[1] < 100 ||
     creditsRange[0] > 0 ||
@@ -415,6 +425,28 @@ export default function Marketplace() {
                 </div>
 
                 <Separator />
+
+                {/* Sub-Community Filter */}
+                {user && (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium mb-3 block">
+                        <Users className="inline h-3 w-3 mr-1" />
+                        Sub-Community
+                      </label>
+                      <SubCommunitySelector
+                        value={selectedSubCommunity}
+                        onValueChange={(value) => {
+                          setSelectedSubCommunity(value);
+                          setPage(1);
+                        }}
+                        showAllOption={true}
+                        placeholder="Filter by sub-community"
+                      />
+                    </div>
+                    <Separator />
+                  </>
+                )}
 
                 {/* Price Range */}
                 <div>
