@@ -12,6 +12,7 @@ import {
   communities,
   userCommunities,
   communityAdmins,
+  subCommunityAdmins,
   communityInvites,
   promptLikes,
   promptFavorites,
@@ -56,6 +57,8 @@ import {
   type InsertUserCommunity,
   type CommunityAdmin,
   type InsertCommunityAdmin,
+  type SubCommunityAdmin,
+  type InsertSubCommunityAdmin,
   type CommunityInvite,
   type InsertCommunityInvite,
   type PromptRating,
@@ -266,6 +269,13 @@ export interface IStorage {
   removeCommunityAdmin(userId: string, communityId: string): Promise<void>;
   getCommunityAdmins(communityId: string): Promise<CommunityAdmin[]>;
   getUserCommunityAdminRoles(userId: string): Promise<CommunityAdmin[]>;
+
+  // Sub-community admin operations
+  assignSubCommunityAdmin(data: InsertSubCommunityAdmin): Promise<SubCommunityAdmin>;
+  removeSubCommunityAdmin(userId: string, subCommunityId: string): Promise<void>;
+  getSubCommunityAdmins(subCommunityId: string): Promise<SubCommunityAdmin[]>;
+  getUserSubCommunityAdminRoles(userId: string): Promise<SubCommunityAdmin[]>;
+  isSubCommunityAdmin(userId: string, subCommunityId: string): Promise<boolean>;
 
   // Invite system operations
   createInvite(invite: InsertCommunityInvite): Promise<CommunityInvite>;
@@ -2232,6 +2242,55 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(communityAdmins)
       .where(eq(communityAdmins.userId, userId));
+  }
+
+  // Sub-community admin operations
+  async assignSubCommunityAdmin(data: InsertSubCommunityAdmin): Promise<SubCommunityAdmin> {
+    const [admin] = await db
+      .insert(subCommunityAdmins)
+      .values(data)
+      .returning();
+    return admin;
+  }
+
+  async removeSubCommunityAdmin(userId: string, subCommunityId: string): Promise<void> {
+    await db
+      .delete(subCommunityAdmins)
+      .where(
+        and(
+          eq(subCommunityAdmins.userId, userId),
+          eq(subCommunityAdmins.subCommunityId, subCommunityId)
+        )
+      );
+  }
+
+  async getSubCommunityAdmins(subCommunityId: string): Promise<SubCommunityAdmin[]> {
+    return await db
+      .select()
+      .from(subCommunityAdmins)
+      .where(eq(subCommunityAdmins.subCommunityId, subCommunityId));
+  }
+
+  async getUserSubCommunityAdminRoles(userId: string): Promise<SubCommunityAdmin[]> {
+    return await db
+      .select()
+      .from(subCommunityAdmins)
+      .where(eq(subCommunityAdmins.userId, userId));
+  }
+
+  async isSubCommunityAdmin(userId: string, subCommunityId: string): Promise<boolean> {
+    const adminRecord = await db
+      .select()
+      .from(subCommunityAdmins)
+      .where(
+        and(
+          eq(subCommunityAdmins.userId, userId),
+          eq(subCommunityAdmins.subCommunityId, subCommunityId)
+        )
+      )
+      .limit(1);
+    
+    return adminRecord.length > 0;
   }
 
   // Invite system operations
