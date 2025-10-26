@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "wouter";
+import { useLocation } from "wouter";
 import { DisputesList } from "@/components/marketplace/DisputesList";
 import {
   Card,
@@ -44,11 +44,13 @@ interface DisputeStats {
 
 export function AdminDisputes() {
   const { user, loading } = useAuth();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("all");
   
   // Redirect if not admin
   if (!loading && (!user || (user.role !== 'super_admin' && user.role !== 'community_admin'))) {
-    return <Navigate to="/dashboard" replace />;
+    setLocation("/dashboard");
+    return null;
   }
   
   // Fetch dispute statistics
