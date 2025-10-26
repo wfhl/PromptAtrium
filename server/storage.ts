@@ -2672,7 +2672,7 @@ export class DatabaseStorage implements IStorage {
   } = {}): Promise<Prompt[]> {
     let query = db.select().from(prompts).$dynamic();
 
-    const conditions: any[] = [eq(prompts.communityId, subCommunityId)];
+    const conditions: any[] = [eq(prompts.subCommunityId, subCommunityId)];
 
     if (options.isPublic !== undefined) {
       conditions.push(eq(prompts.isPublic, options.isPublic));
@@ -2713,7 +2713,7 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(prompts)
       .set({ 
-        communityId: subCommunityId,
+        subCommunityId: subCommunityId,
         updatedAt: new Date() 
       })
       .where(eq(prompts.id, promptId))
@@ -2730,13 +2730,30 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(prompts)
       .set({ 
-        communityId: null,
+        subCommunityId: null,
         updatedAt: new Date() 
       })
       .where(and(
         eq(prompts.id, promptId),
-        eq(prompts.communityId, subCommunityId)
+        eq(prompts.subCommunityId, subCommunityId)
       ));
+  }
+  
+  async updateSubCommunityMemberRole(userId: string, subCommunityId: string, role: CommunityRole): Promise<UserCommunity> {
+    const [updated] = await db
+      .update(userCommunities)
+      .set({ role })
+      .where(and(
+        eq(userCommunities.userId, userId),
+        eq(userCommunities.subCommunityId, subCommunityId)
+      ))
+      .returning();
+
+    if (!updated) {
+      throw new Error('User is not a member of this sub-community');
+    }
+
+    return updated;
   }
 
   // Sub-community hierarchy operations

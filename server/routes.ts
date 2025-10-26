@@ -6,7 +6,14 @@ import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insert
 import Stripe from "stripe";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
-import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
+import { 
+  requireSuperAdmin, 
+  requireCommunityAdmin, 
+  requireCommunityAdminRole, 
+  requireCommunityMember,
+  requireSubCommunityAdmin,
+  requireSubCommunityMember
+} from "./rbac";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient, parseObjectPath } from "./objectStorage";
 import { ObjectPermission, getObjectAclPolicy } from "./objectAcl";
 import { File } from "@google-cloud/storage";
@@ -4887,6 +4894,428 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========================
+  // Sub-Community Routes
+  // ========================
+  
+  // Sub-community CRUD routes
+  
+  // Create a sub-community under a parent
+  app.post('/api/communities/:id/sub-communities', requireCommunityAdminRole('id'), async (req: any, res) => {
+    try {
+      const { id: parentId } = req.params;
+      const userId = (req.user as any).claims.sub;
+      
+      // Validate request data
+      const subCommunityData = insertCommunitySchema.parse(req.body);
+      
+      // Create the sub-community
+      const subCommunity = await storage.createSubCommunity(parentId, subCommunityData);
+      
+      // Automatically assign the creator as sub-community admin if they're not super admin
+      const user = await storage.getUser(userId);
+      if (user && user.role !== 'super_admin' && user.role !== 'developer') {
+        await storage.assignSubCommunityAdmin({
+          userId,
+          subCommunityId: subCommunity.id,
+          assignedBy: userId,
+          permissions: {}
+        });
+      }
+      
+      res.status(201).json(subCommunity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid sub-community data", errors: error.errors });
+      }
+      console.error("Error creating sub-community:", error);
+      res.status(500).json({ message: "Failed to create sub-community" });
+    }
+  });
+  
+  // Get all direct sub-communities of a parent
+  app.get('/api/communities/:id/sub-communities', requireCommunityMember('id'), async (req: any, res) => {
+    try {
+      const { id: parentId } = req.params;
+      const subCommunities = await storage.getSubCommunities(parentId);
+      res.json(subCommunities);
+    } catch (error) {
+      console.error("Error fetching sub-communities:", error);
+      res.status(500).json({ message: "Failed to fetch sub-communities" });
+    }
+  });
+  
+  // Get sub-community details
+  app.get('/api/sub-communities/:id', requireSubCommunityMember('id'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const subCommunity = await storage.getCommunity(id);
+      
+      if (!subCommunity) {
+        return res.status(404).json({ message: "Sub-community not found" });
+      }
+      
+      if (!subCommunity.parentCommunityId) {
+        return res.status(400).json({ message: "Not a sub-community" });
+      }
+      
+      res.json(subCommunity);
+    } catch (error) {
+      console.error("Error fetching sub-community:", error);
+      res.status(500).json({ message: "Failed to fetch sub-community" });
+    }
+  });
+  
+  // Update sub-community
+  app.put('/api/sub-communities/:id', requireSubCommunityAdmin('id'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Validate update data
+      const updateData = insertCommunitySchema.partial().parse(req.body);
+      
+      // Don't allow changing parent community or hierarchy
+      delete (updateData as any).parentCommunityId;
+      delete (updateData as any).level;
+      delete (updateData as any).path;
+      
+      const updated = await storage.updateSubCommunity(id, updateData);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+      }
+      console.error("Error updating sub-community:", error);
+      res.status(500).json({ message: "Failed to update sub-community" });
+    }
+  });
+  
+  // Delete sub-community
+  app.delete('/api/sub-communities/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Get the sub-community to check its parent
+      const subCommunity = await storage.getCommunity(id);
+      if (!subCommunity || !subCommunity.parentCommunityId) {
+        return res.status(404).json({ message: "Sub-community not found" });
+      }
+      
+      // Check permissions: super admin, developer, or parent community admin
+      const userRole = user.role as UserRole;
+      let hasPermission = false;
+      
+      if (userRole === 'super_admin' || userRole === 'developer') {
+        hasPermission = true;
+      } else if (userRole === 'community_admin') {
+        const isParentAdmin = await storage.isCommunityAdmin(userId, subCommunity.parentCommunityId);
+        hasPermission = isParentAdmin;
+      }
+      
+      if (!hasPermission) {
+        return res.status(403).json({ message: "Insufficient permissions to delete sub-community" });
+      }
+      
+      await storage.deleteSubCommunity(id);
+      res.json({ message: "Sub-community deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting sub-community:", error);
+      res.status(500).json({ message: "Failed to delete sub-community" });
+    }
+  });
+  
+  // Sub-community membership routes
+  
+  // Join a sub-community
+  app.post('/api/sub-communities/:id/join', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      const userId = (req.user as any).claims.sub;
+      
+      const membership = await storage.joinSubCommunity(userId, subCommunityId);
+      res.status(201).json(membership);
+    } catch (error: any) {
+      if (error.message === 'Sub-community not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      console.error("Error joining sub-community:", error);
+      res.status(500).json({ message: "Failed to join sub-community" });
+    }
+  });
+  
+  // Leave a sub-community
+  app.post('/api/sub-communities/:id/leave', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      const userId = (req.user as any).claims.sub;
+      
+      await storage.leaveSubCommunity(userId, subCommunityId);
+      res.json({ message: "Left sub-community successfully" });
+    } catch (error) {
+      console.error("Error leaving sub-community:", error);
+      res.status(500).json({ message: "Failed to leave sub-community" });
+    }
+  });
+  
+  // Get sub-community members
+  app.get('/api/sub-communities/:id/members', requireSubCommunityMember('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      const memberships = await storage.getSubCommunityMembers(subCommunityId);
+      
+      // Enhance with user details
+      const membersWithDetails = await Promise.all(
+        memberships.map(async (membership) => {
+          const user = await storage.getUser(membership.userId);
+          return {
+            ...membership,
+            user: user ? {
+              id: user.id,
+              username: user.username,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              profileImageUrl: resolvePublicImageUrl(user.profileImageUrl),
+            } : null
+          };
+        })
+      );
+      
+      res.json(membersWithDetails);
+    } catch (error) {
+      console.error("Error fetching sub-community members:", error);
+      res.status(500).json({ message: "Failed to fetch sub-community members" });
+    }
+  });
+  
+  // Update member role in sub-community
+  app.put('/api/sub-communities/:id/members/:userId/role', requireSubCommunityAdmin('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId, userId } = req.params;
+      const { role } = req.body;
+      
+      if (!["member", "admin"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      const membership = await storage.updateSubCommunityMemberRole(userId, subCommunityId, role as CommunityRole);
+      res.json(membership);
+    } catch (error: any) {
+      if (error.message === 'User is not a member of this sub-community') {
+        return res.status(404).json({ message: error.message });
+      }
+      console.error("Error updating member role:", error);
+      res.status(500).json({ message: "Failed to update member role" });
+    }
+  });
+  
+  // Sub-community admin routes
+  
+  // Assign a sub-community admin
+  app.post('/api/sub-communities/:id/admins', requireSubCommunityAdmin('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      const { userId, permissions = {} } = req.body;
+      const assignedBy = (req.user as any).claims.sub;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID required" });
+      }
+      
+      // Check if user is a member of the sub-community
+      const isMember = await storage.isSubCommunityMember(userId, subCommunityId);
+      if (!isMember) {
+        return res.status(400).json({ message: "User must be a member of the sub-community" });
+      }
+      
+      // Check if already admin
+      const isAlreadyAdmin = await storage.isSubCommunityAdmin(userId, subCommunityId);
+      if (isAlreadyAdmin) {
+        return res.status(400).json({ message: "User is already a sub-community admin" });
+      }
+      
+      const admin = await storage.assignSubCommunityAdmin({
+        userId,
+        subCommunityId,
+        assignedBy,
+        permissions
+      });
+      
+      res.status(201).json(admin);
+    } catch (error) {
+      console.error("Error assigning sub-community admin:", error);
+      res.status(500).json({ message: "Failed to assign sub-community admin" });
+    }
+  });
+  
+  // Remove a sub-community admin
+  app.delete('/api/sub-communities/:id/admins/:userId', requireSubCommunityAdmin('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId, userId } = req.params;
+      
+      await storage.removeSubCommunityAdmin(userId, subCommunityId);
+      res.json({ message: "Admin removed successfully" });
+    } catch (error) {
+      console.error("Error removing sub-community admin:", error);
+      res.status(500).json({ message: "Failed to remove sub-community admin" });
+    }
+  });
+  
+  // Get list of sub-community admins
+  app.get('/api/sub-communities/:id/admins', requireSubCommunityMember('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      const admins = await storage.getSubCommunityAdmins(subCommunityId);
+      
+      // Enhance with user details
+      const adminsWithDetails = await Promise.all(
+        admins.map(async (admin) => {
+          const user = await storage.getUser(admin.userId);
+          const assignedByUser = await storage.getUser(admin.assignedBy);
+          return {
+            ...admin,
+            user: user ? {
+              id: user.id,
+              username: user.username,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              profileImageUrl: resolvePublicImageUrl(user.profileImageUrl),
+            } : null,
+            assignedByUser: assignedByUser ? {
+              id: assignedByUser.id,
+              username: assignedByUser.username,
+              firstName: assignedByUser.firstName,
+              lastName: assignedByUser.lastName,
+            } : null
+          };
+        })
+      );
+      
+      res.json(adminsWithDetails);
+    } catch (error) {
+      console.error("Error fetching sub-community admins:", error);
+      res.status(500).json({ message: "Failed to fetch sub-community admins" });
+    }
+  });
+  
+  // Sub-community content routes
+  
+  // Get prompts shared to sub-community
+  app.get('/api/sub-communities/:id/prompts', requireSubCommunityMember('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId } = req.params;
+      const { limit, offset, search, isPublic } = req.query;
+      
+      const options: any = {};
+      if (limit) options.limit = parseInt(limit as string, 10);
+      if (offset) options.offset = parseInt(offset as string, 10);
+      if (search) options.search = search as string;
+      if (isPublic !== undefined) options.isPublic = isPublic === 'true';
+      
+      const prompts = await storage.getSubCommunityPrompts(subCommunityId, options);
+      res.json(prompts);
+    } catch (error) {
+      console.error("Error fetching sub-community prompts:", error);
+      res.status(500).json({ message: "Failed to fetch sub-community prompts" });
+    }
+  });
+  
+  // Share a prompt to sub-community
+  app.post('/api/prompts/:promptId/share-to-sub-community', isAuthenticated, async (req: any, res) => {
+    try {
+      const { promptId } = req.params;
+      const { subCommunityId } = req.body;
+      const userId = (req.user as any).claims.sub;
+      
+      if (!subCommunityId) {
+        return res.status(400).json({ message: "Sub-community ID required" });
+      }
+      
+      // Check if user can share to this sub-community (must be member or admin)
+      const isMember = await storage.isSubCommunityMember(userId, subCommunityId);
+      const isAdmin = await storage.isSubCommunityAdmin(userId, subCommunityId);
+      
+      if (!isMember && !isAdmin) {
+        return res.status(403).json({ message: "Must be a member of the sub-community to share prompts" });
+      }
+      
+      // Check if user owns the prompt or it's public
+      const prompt = await storage.getPrompt(promptId);
+      if (!prompt) {
+        return res.status(404).json({ message: "Prompt not found" });
+      }
+      
+      if (prompt.userId !== userId && !prompt.isPublic) {
+        return res.status(403).json({ message: "Can only share your own prompts or public prompts" });
+      }
+      
+      const updated = await storage.sharePromptToSubCommunity(promptId, subCommunityId);
+      res.json(updated);
+    } catch (error: any) {
+      if (error.message === 'Sub-community not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message === 'Prompt not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      console.error("Error sharing prompt to sub-community:", error);
+      res.status(500).json({ message: "Failed to share prompt to sub-community" });
+    }
+  });
+  
+  // Remove prompt from sub-community
+  app.delete('/api/sub-communities/:id/prompts/:promptId', requireSubCommunityAdmin('id'), async (req: any, res) => {
+    try {
+      const { id: subCommunityId, promptId } = req.params;
+      
+      await storage.removePromptFromSubCommunity(promptId, subCommunityId);
+      res.json({ message: "Prompt removed from sub-community successfully" });
+    } catch (error) {
+      console.error("Error removing prompt from sub-community:", error);
+      res.status(500).json({ message: "Failed to remove prompt from sub-community" });
+    }
+  });
+  
+  // User's sub-communities route
+  
+  // Get all sub-communities the current user belongs to
+  app.get('/api/user/sub-communities', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const subCommunities = await storage.getUserSubCommunities(userId);
+      
+      // Enhance with parent community info
+      const subCommunitiesWithParents = await Promise.all(
+        subCommunities.map(async (subComm) => {
+          const parent = subComm.parentCommunityId ? 
+            await storage.getCommunity(subComm.parentCommunityId) : null;
+          return {
+            ...subComm,
+            parentCommunity: parent ? {
+              id: parent.id,
+              name: parent.name,
+              slug: parent.slug,
+            } : null
+          };
+        })
+      );
+      
+      res.json(subCommunitiesWithParents);
+    } catch (error) {
+      console.error("Error fetching user sub-communities:", error);
+      res.status(500).json({ message: "Failed to fetch user sub-communities" });
+    }
+  });
+
+  // ========================
+  // End Sub-Community Routes
+  // ========================
+  
   // User management routes (Super Admin only)
   app.get('/api/users', requireSuperAdmin, async (req: any, res) => {
     try {
