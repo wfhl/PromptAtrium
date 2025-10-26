@@ -37,6 +37,7 @@ import Credits from "@/pages/Credits";
 import SellerDashboard from "@/pages/SellerDashboard";
 import Marketplace from "@/pages/Marketplace";
 import ListingDetail from "@/pages/ListingDetail";
+import MarketplaceDocs from "@/pages/MarketplaceDocs";
 import { PurchaseHistory } from "@/pages/PurchaseHistory";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,6 +110,9 @@ function Router() {
         </Route>
         <Route path="/marketplace/listing/:id">
           {() => isAuthenticated ? <Layout><ListingDetail /></Layout> : <ListingDetail />}
+        </Route>
+        <Route path="/marketplace/help">
+          {() => isAuthenticated ? <Layout><MarketplaceDocs /></Layout> : <MarketplaceDocs />}
         </Route>
         <Route path="/prompting-guides">
           {() => isAuthenticated ? <Layout><PromptingGuides /></Layout> : <PromptingGuides />}

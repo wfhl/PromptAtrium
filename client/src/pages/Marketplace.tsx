@@ -32,7 +32,9 @@ import {
   TrendingUp,
   Package,
   X,
+  HelpCircle,
 } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Marketplace() {
   // Search and filter states
@@ -149,7 +151,7 @@ export default function Marketplace() {
             </p>
 
             {/* Search Bar */}
-            <div className="flex gap-2 max-w-2xl mx-auto">
+            <div className="flex gap-2 max-w-2xl mx-auto mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -164,6 +166,16 @@ export default function Marketplace() {
               <Button onClick={handleSearch} data-testid="button-search">
                 Search
               </Button>
+            </div>
+            
+            {/* Help Link */}
+            <div className="flex justify-center">
+              <Link href="/marketplace/help">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  How does the marketplace work?
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

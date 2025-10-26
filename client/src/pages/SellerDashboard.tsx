@@ -14,13 +14,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { DollarSign, TrendingUp, Package, Star, MoreVertical, Plus, Edit, Pause, Play, Trash, CheckCircle, AlertCircle, MessageSquare, Reply, User, ThumbsUp } from "lucide-react";
+import { DollarSign, TrendingUp, Package, Star, MoreVertical, Plus, Edit, Pause, Play, Trash, CheckCircle, AlertCircle, MessageSquare, Reply, User, ThumbsUp, HelpCircle } from "lucide-react";
 import { CreateListingModal } from "@/components/CreateListingModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import type { MarketplaceListing, SellerProfile } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
+import { Link } from "wouter";
 
 // Onboarding form validation schema
 const onboardingSchema = z.object({
@@ -368,8 +369,18 @@ export default function SellerDashboard() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Seller Dashboard</h1>
-        <p className="text-muted-foreground">Manage your marketplace listings and track your sales</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Seller Dashboard</h1>
+            <p className="text-muted-foreground">Manage your marketplace listings and track your sales</p>
+          </div>
+          <Link href="/marketplace/help">
+            <Button variant="outline" size="sm">
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Marketplace Guide
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}
