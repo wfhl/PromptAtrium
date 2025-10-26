@@ -15,6 +15,7 @@ A comprehensive platform for managing, sharing, and generating AI prompts. Featu
 - **Admin Dashboard**: Dedicated dashboard for sub-community administrators with member management
 - **Data Migration**: Safe migration system for existing communities to adopt hierarchy structure
 - **Test Coverage**: 100% test pass rate on permission and access control scenarios
+- **User Documentation**: Comprehensive guide at /docs/sub-communities explaining features for both members and administrators
 
 ## Recent Updates (October 19, 2025)
 
