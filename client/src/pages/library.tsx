@@ -619,10 +619,10 @@ export default function Library() {
       
       switch (activity.targetType) {
         case "prompt":
-          return targetEntity.isPublic ? (
-            <span className="font-semibold">{targetEntity.name}</span>
-          ) : (
-            <span className="font-semibold">{targetEntity.name}</span>
+          return (
+            <Link href={`/prompt/${targetEntity.id}`}>
+              <span className="font-semibold hover:underline cursor-pointer">{targetEntity.name}</span>
+            </Link>
           );
         case "user":
           return (
