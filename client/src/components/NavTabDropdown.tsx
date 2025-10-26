@@ -147,7 +147,7 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
               width: `${Math.max(position.width, 180)}px`,
             }}
           >
-            <div className="bg-gray-900/95 backdrop-blur-lg rounded-lg shadow-xl border border-gray-800 overflow-hidden">
+            <div className="bg-gray-900/95 backdrop-blur-lg rounded-lg shadow-xl border border-gray-800 overflow-hidden select-none">
               {/* Header */}
               <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-800/50">
                 <Icon className="h-4 w-4 text-white/80" />
