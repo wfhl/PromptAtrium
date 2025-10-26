@@ -16,8 +16,10 @@ export function useLongPress({
   const startPos = useRef<{ x: number; y: number } | null>(null);
 
   const start = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-    // Prevent default to avoid text selection on long press
-    e.preventDefault();
+    // Only prevent default on touch to avoid text selection, not on mouse events
+    if ('touches' in e) {
+      e.preventDefault();
+    }
     
     // Record start position
     if ('touches' in e) {
