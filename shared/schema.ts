@@ -466,6 +466,9 @@ export const prompts = pgTable("prompts", {
   lastUsedAt: timestamp("last_used_at"),
   userId: varchar("user_id").notNull().references(() => users.id),
   subCommunityId: varchar("sub_community_id").references(() => communities.id),
+  subCommunityVisibility: varchar("sub_community_visibility", {
+    enum: ["private", "parent_community", "public"]
+  }).default("private"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   promptContent: text("prompt_content").notNull(),

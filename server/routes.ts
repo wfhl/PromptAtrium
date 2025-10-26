@@ -792,7 +792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         search,
         sortBy,
         limit,
-        offset = "0"
+        offset = "0",
+        subCommunityId
       } = req.query;
 
       // Get the current user's NSFW preference if authenticated
@@ -814,6 +815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit: limit ? parseInt(limit as string) : undefined,
         offset: parseInt(offset as string),
         showNsfw: showNsfw,
+        subCommunityId: subCommunityId as string,
       };
       
       // Handle multi-select filters (arrays)
@@ -897,6 +899,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestBody = { ...req.body, userId };
       if (requestBody.collectionId === "" || requestBody.collectionId === undefined) {
         requestBody.collectionId = null;
+      }
+      
+      // Handle sub-community and visibility
+      if (requestBody.subCommunityId) {
+        // Validate user is a member of the sub-community
+        const isMember = await storage.isSubCommunityMember(userId, requestBody.subCommunityId);
+        const isAdmin = await storage.isSubCommunityAdmin(userId, requestBody.subCommunityId);
+        
+        if (!isMember && !isAdmin) {
+          return res.status(403).json({ message: "Must be a member of the sub-community to create prompts for it" });
+        }
+        
+        // Set default visibility for sub-community prompts
+        if (!requestBody.subCommunityVisibility) {
+          requestBody.subCommunityVisibility = 'private';
+        }
+        
+        // Validate visibility value
+        if (!['private', 'parent_community', 'public'].includes(requestBody.subCommunityVisibility)) {
+          return res.status(400).json({ message: "Invalid visibility setting" });
+        }
       }
       
       const promptData = insertPromptSchema.parse(requestBody);
@@ -5205,19 +5228,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Sub-community content routes
   
-  // Get prompts shared to sub-community
-  app.get('/api/sub-communities/:id/prompts', requireSubCommunityMember('id'), async (req: any, res) => {
+  // Get prompts shared to sub-community with visibility controls
+  app.get('/api/sub-communities/:id/prompts', async (req: any, res) => {
     try {
       const { id: subCommunityId } = req.params;
-      const { limit, offset, search, isPublic } = req.query;
+      const { limit, offset, search } = req.query;
+      const userId = req.user?.claims?.sub;
       
-      const options: any = {};
-      if (limit) options.limit = parseInt(limit as string, 10);
-      if (offset) options.offset = parseInt(offset as string, 10);
-      if (search) options.search = search as string;
-      if (isPublic !== undefined) options.isPublic = isPublic === 'true';
+      const options: any = {
+        userId: userId,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
+        offset: offset ? parseInt(offset as string, 10) : undefined,
+        search: search as string,
+      };
       
-      const prompts = await storage.getSubCommunityPrompts(subCommunityId, options);
+      const prompts = await storage.getPromptsForSubCommunity(subCommunityId, options);
       res.json(prompts);
     } catch (error) {
       console.error("Error fetching sub-community prompts:", error);
@@ -5225,15 +5250,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Share a prompt to sub-community
+  // Share a prompt to sub-community with visibility settings
   app.post('/api/prompts/:promptId/share-to-sub-community', isAuthenticated, async (req: any, res) => {
     try {
       const { promptId } = req.params;
-      const { subCommunityId } = req.body;
+      const { subCommunityId, visibility = 'private' } = req.body;
       const userId = (req.user as any).claims.sub;
       
       if (!subCommunityId) {
         return res.status(400).json({ message: "Sub-community ID required" });
+      }
+      
+      // Validate visibility value
+      if (!['private', 'parent_community', 'public'].includes(visibility)) {
+        return res.status(400).json({ message: "Invalid visibility setting" });
       }
       
       // Check if user can share to this sub-community (must be member or admin)
@@ -5254,7 +5284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Can only share your own prompts or public prompts" });
       }
       
-      const updated = await storage.sharePromptToSubCommunity(promptId, subCommunityId);
+      const updated = await storage.sharePromptToSubCommunity(promptId, subCommunityId, visibility);
       res.json(updated);
     } catch (error: any) {
       if (error.message === 'Sub-community not found') {
@@ -5265,6 +5295,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error sharing prompt to sub-community:", error);
       res.status(500).json({ message: "Failed to share prompt to sub-community" });
+    }
+  });
+  
+  // Update prompt sub-community visibility
+  app.post('/api/prompts/:id/sub-community-visibility', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: promptId } = req.params;
+      const { visibility } = req.body;
+      const userId = (req.user as any).claims.sub;
+      
+      // Validate visibility value
+      if (!visibility || !['private', 'parent_community', 'public'].includes(visibility)) {
+        return res.status(400).json({ message: "Invalid visibility setting. Must be 'private', 'parent_community', or 'public'" });
+      }
+      
+      const updated = await storage.updatePromptSubCommunityVisibility(promptId, visibility, userId);
+      res.json(updated);
+    } catch (error: any) {
+      if (error.message === 'Prompt not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message === 'Prompt is not associated with a sub-community') {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error.message === 'Insufficient permissions to change prompt visibility') {
+        return res.status(403).json({ message: error.message });
+      }
+      console.error("Error updating prompt sub-community visibility:", error);
+      res.status(500).json({ message: "Failed to update prompt visibility" });
     }
   });
   

@@ -158,6 +158,7 @@ export interface IStorage {
     offset?: number;
     promptIds?: string[];
     recommendedModels?: string[];
+    subCommunityId?: string;
   }): Promise<Prompt[]>;
   getPrompt(id: string): Promise<Prompt | undefined>;
   getPromptWithUser(id: string): Promise<any>;
@@ -329,8 +330,16 @@ export interface IStorage {
     isPublic?: boolean;
     search?: string;
   }): Promise<Prompt[]>;
-  sharePromptToSubCommunity(promptId: string, subCommunityId: string): Promise<Prompt>;
+  sharePromptToSubCommunity(promptId: string, subCommunityId: string, visibility?: "private" | "parent_community" | "public"): Promise<Prompt>;
   removePromptFromSubCommunity(promptId: string, subCommunityId: string): Promise<void>;
+  getPromptsForSubCommunity(subCommunityId: string, options?: {
+    userId?: string;
+    limit?: number;
+    offset?: number;
+    search?: string;
+  }): Promise<Prompt[]>;
+  canUserAccessPromptInSubCommunity(userId: string, promptId: string, subCommunityId: string): Promise<boolean>;
+  updatePromptSubCommunityVisibility(promptId: string, visibility: "private" | "parent_community" | "public", userId: string): Promise<Prompt>;
 
   // Sub-community hierarchy operations
   getSubCommunityPath(communityId: string): Promise<string>;
@@ -764,6 +773,11 @@ export class DatabaseStorage implements IStorage {
       conditions.push(inArray(prompts.id, options.promptIds));
     }
     
+    // Filter by sub-community
+    if (options.subCommunityId) {
+      conditions.push(eq(prompts.subCommunityId, options.subCommunityId));
+    }
+    
     // Filter NSFW content based on user preference
     if (options.showNsfw === false) {
       conditions.push(eq(prompts.isNsfw, false));
@@ -807,6 +821,8 @@ export class DatabaseStorage implements IStorage {
       license: prompts.license,
       lastUsedAt: prompts.lastUsedAt,
       userId: prompts.userId,
+      subCommunityId: prompts.subCommunityId,
+      subCommunityVisibility: prompts.subCommunityVisibility,
       createdAt: prompts.createdAt,
       updatedAt: prompts.updatedAt,
       promptContent: prompts.promptContent,
@@ -2929,18 +2945,19 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async sharePromptToSubCommunity(promptId: string, subCommunityId: string): Promise<Prompt> {
+  async sharePromptToSubCommunity(promptId: string, subCommunityId: string, visibility: "private" | "parent_community" | "public" = "private"): Promise<Prompt> {
     // Verify sub-community exists
     const subCommunity = await this.getCommunity(subCommunityId);
     if (!subCommunity || !subCommunity.parentCommunityId) {
       throw new Error('Sub-community not found');
     }
 
-    // Update prompt to associate with sub-community
+    // Update prompt to associate with sub-community and set visibility
     const [updated] = await db
       .update(prompts)
       .set({ 
         subCommunityId: subCommunityId,
+        subCommunityVisibility: visibility,
         updatedAt: new Date() 
       })
       .where(eq(prompts.id, promptId))
@@ -2958,12 +2975,179 @@ export class DatabaseStorage implements IStorage {
       .update(prompts)
       .set({ 
         subCommunityId: null,
+        subCommunityVisibility: null,
         updatedAt: new Date() 
       })
       .where(and(
         eq(prompts.id, promptId),
         eq(prompts.subCommunityId, subCommunityId)
       ));
+  }
+
+  async getPromptsForSubCommunity(subCommunityId: string, options: {
+    userId?: string;
+    limit?: number;
+    offset?: number;
+    search?: string;
+  } = {}): Promise<Prompt[]> {
+    // Get sub-community and parent community info
+    const subCommunity = await this.getCommunity(subCommunityId);
+    if (!subCommunity || !subCommunity.parentCommunityId) {
+      throw new Error('Sub-community not found');
+    }
+
+    let query = db.select().from(prompts).$dynamic();
+    const conditions: any[] = [eq(prompts.subCommunityId, subCommunityId)];
+
+    // Apply visibility filters based on user membership
+    if (options.userId) {
+      const user = await this.getUser(options.userId);
+      const isSubCommunityMember = await this.isSubCommunityMember(options.userId, subCommunityId);
+      const isParentCommunityMember = await this.isCommunityMember(options.userId, subCommunity.parentCommunityId);
+      const isSubCommunityAdmin = await this.isSubCommunityAdmin(options.userId, subCommunityId);
+      const isParentCommunityAdmin = await this.isCommunityAdmin(options.userId, subCommunity.parentCommunityId);
+      const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'developer';
+
+      // Build visibility conditions
+      const visibilityConditions = [];
+
+      // Always show public prompts
+      visibilityConditions.push(eq(prompts.subCommunityVisibility, 'public'));
+      
+      // Show user's own prompts
+      visibilityConditions.push(eq(prompts.userId, options.userId));
+
+      // If user is admin or member, show all prompts accordingly
+      if (isSuperAdmin || isSubCommunityAdmin || isParentCommunityAdmin) {
+        // Admins can see all prompts
+        // No additional condition needed
+      } else if (isSubCommunityMember) {
+        // Sub-community members can see private and parent_community prompts
+        visibilityConditions.push(eq(prompts.subCommunityVisibility, 'private'));
+        visibilityConditions.push(eq(prompts.subCommunityVisibility, 'parent_community'));
+      } else if (isParentCommunityMember) {
+        // Parent community members can only see parent_community and public prompts
+        visibilityConditions.push(eq(prompts.subCommunityVisibility, 'parent_community'));
+      }
+
+      // Apply visibility conditions
+      if (!isSuperAdmin && !isSubCommunityAdmin && !isParentCommunityAdmin) {
+        conditions.push(or(...visibilityConditions));
+      }
+    } else {
+      // No user specified, only show public prompts
+      conditions.push(eq(prompts.subCommunityVisibility, 'public'));
+    }
+
+    // Apply search filter
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(prompts.name, `%${options.search}%`),
+          ilike(prompts.description, `%${options.search}%`)
+        )
+      );
+    }
+
+    query = query.where(and(...conditions));
+    query = query.orderBy(desc(prompts.createdAt));
+
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+
+    return await query;
+  }
+
+  async canUserAccessPromptInSubCommunity(userId: string, promptId: string, subCommunityId: string): Promise<boolean> {
+    // Get the prompt
+    const [prompt] = await db.select().from(prompts).where(eq(prompts.id, promptId));
+    if (!prompt || prompt.subCommunityId !== subCommunityId) {
+      return false;
+    }
+
+    // If prompt owner, always has access
+    if (prompt.userId === userId) {
+      return true;
+    }
+
+    // Get user role
+    const user = await this.getUser(userId);
+    if (user?.role === 'super_admin' || user?.role === 'developer') {
+      return true;
+    }
+
+    // Get sub-community info
+    const subCommunity = await this.getCommunity(subCommunityId);
+    if (!subCommunity || !subCommunity.parentCommunityId) {
+      return false;
+    }
+
+    // Check admin status
+    const isSubCommunityAdmin = await this.isSubCommunityAdmin(userId, subCommunityId);
+    const isParentCommunityAdmin = await this.isCommunityAdmin(userId, subCommunity.parentCommunityId);
+    if (isSubCommunityAdmin || isParentCommunityAdmin) {
+      return true;
+    }
+
+    // Check visibility rules
+    const visibility = prompt.subCommunityVisibility || 'private';
+
+    switch (visibility) {
+      case 'public':
+        return true;
+      case 'parent_community':
+        const isParentMember = await this.isCommunityMember(userId, subCommunity.parentCommunityId);
+        const isSubMember = await this.isSubCommunityMember(userId, subCommunityId);
+        return isParentMember || isSubMember;
+      case 'private':
+        return await this.isSubCommunityMember(userId, subCommunityId);
+      default:
+        return false;
+    }
+  }
+
+  async updatePromptSubCommunityVisibility(promptId: string, visibility: "private" | "parent_community" | "public", userId: string): Promise<Prompt> {
+    // Get the prompt
+    const [prompt] = await db.select().from(prompts).where(eq(prompts.id, promptId));
+    if (!prompt) {
+      throw new Error('Prompt not found');
+    }
+
+    if (!prompt.subCommunityId) {
+      throw new Error('Prompt is not associated with a sub-community');
+    }
+
+    // Check permissions
+    const user = await this.getUser(userId);
+    const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'developer';
+    const isOwner = prompt.userId === userId;
+    const isSubCommunityAdmin = await this.isSubCommunityAdmin(userId, prompt.subCommunityId);
+    
+    // Get parent community to check parent admin status
+    const subCommunity = await this.getCommunity(prompt.subCommunityId);
+    const isParentCommunityAdmin = subCommunity?.parentCommunityId ? 
+      await this.isCommunityAdmin(userId, subCommunity.parentCommunityId) : false;
+
+    if (!isSuperAdmin && !isOwner && !isSubCommunityAdmin && !isParentCommunityAdmin) {
+      throw new Error('Insufficient permissions to change prompt visibility');
+    }
+
+    // Update visibility
+    const [updated] = await db
+      .update(prompts)
+      .set({
+        subCommunityVisibility: visibility,
+        updatedAt: new Date()
+      })
+      .where(eq(prompts.id, promptId))
+      .returning();
+
+    return updated;
   }
   
   async updateSubCommunityMemberRole(userId: string, subCommunityId: string, role: CommunityRole): Promise<UserCommunity> {
