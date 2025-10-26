@@ -255,6 +255,36 @@
   color: white !important;
 }
 
+.button-gradient-marketplace {
+  background: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #10b981 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 0px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  transition: all 0.3s ease;
+  font-weight: 700;
+}
+
+.button-gradient-marketplace:hover {
+  background: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #10b981 100%);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  color: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0px rgba(59, 130, 246, 0.3);
+}
+
+.button-gradient-marketplace:hover * {
+  color: white !important;
+}
+
+.nav-gradient-marketplace {
+  background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Semi-transparent purple toast styles */
 [data-sonner-toaster] [data-sonner-toast] {
   background: linear-gradient(135deg, rgb(2, 142, 198, 0.3) 0%, rgb(104, 81, 200, 0.3) 50%, rgba(255, 200, 2, 0.3) 100%) !important;

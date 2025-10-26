@@ -350,7 +350,7 @@ export function SubCommunityCard({
 
       {/* Members List Dialog */}
       <Dialog open={showMembersDialog} onOpenChange={setShowMembersDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>{subCommunity.name} Members</DialogTitle>
           </DialogHeader>

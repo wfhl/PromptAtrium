@@ -932,27 +932,28 @@ export default function AdminPage() {
 
         {/* Member Management Modal */}
         <Dialog open={memberModalOpen} onOpenChange={setMemberModalOpen}>
-          <DialogContent className="sm:max-w-4xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-base sm:text-lg pr-8">
                 Manage Members - {selectedCommunityForMembers?.name}
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="relative flex-1 sm:flex-none">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search members..."
                     value={memberSearchTerm}
                     onChange={(e) => setMemberSearchTerm(e.target.value)}
-                    className="pl-10 w-64"
+                    className="pl-10 w-full sm:w-64"
                     data-testid="input-member-search"
                   />
                 </div>
                 <Button 
                   size="sm"
+                  className="w-full sm:w-auto"
                   data-testid="button-invite-new-member"
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
@@ -960,14 +961,14 @@ export default function AdminPage() {
                 </Button>
               </div>
 
-              <div className="bg-white rounded-lg border max-h-96 overflow-y-auto">
-                <div className="p-4 border-b">
-                  <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
-                    <span className="w-8">#</span>
+              <div className="bg-white rounded-lg border max-h-[60vh] sm:max-h-96 overflow-y-auto">
+                <div className="p-2 sm:p-4 border-b hidden sm:block">
+                  <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm font-medium text-muted-foreground">
+                    <span className="w-6 sm:w-8">#</span>
                     <span className="flex-1">Member</span>
-                    <span className="w-32">Role</span>
-                    <span className="w-32">Joined</span>
-                    <span className="w-24">Actions</span>
+                    <span className="w-20 sm:w-32">Role</span>
+                    <span className="w-20 sm:w-32 hidden md:block">Joined</span>
+                    <span className="w-16 sm:w-24">Actions</span>
                   </div>
                 </div>
                 
@@ -992,18 +993,42 @@ export default function AdminPage() {
                         member.user?.lastName?.toLowerCase().includes(memberSearchTerm.toLowerCase())
                       )
                       .map((member: any, index: number) => (
-                        <div key={member.id} className="p-4 hover:bg-accent/50">
-                          <div className="flex items-center gap-4">
-                            <span className="w-8 text-sm text-muted-foreground">{index + 1}</span>
+                        <div key={member.id} className="p-3 sm:p-4 hover:bg-accent/50">
+                          {/* Mobile Layout */}
+                          <div className="block sm:hidden space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">
+                                  {member.user?.firstName} {member.user?.lastName}
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {member.user?.email}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant={member.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                                    {member.role || 'member'}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    Joined {new Date(member.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">{/* Actions will be added here */}</div>
+                            </div>
+                          </div>
+                          
+                          {/* Desktop Layout */}
+                          <div className="hidden sm:flex items-center gap-2 sm:gap-4">
+                            <span className="w-6 sm:w-8 text-xs sm:text-sm text-muted-foreground">{index + 1}</span>
                             <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                <span className="font-medium text-sm">
                                   {member.user?.firstName} {member.user?.lastName}
                                 </span>
-                                <span className="text-sm text-muted-foreground">({member.user?.email})</span>
+                                <span className="text-xs sm:text-sm text-muted-foreground">({member.user?.email})</span>
                               </div>
                             </div>
-                            <div className="w-32">
+                            <div className="w-20 sm:w-32">
                               <Select
                                 value={member.role || "member"}
                                 onValueChange={(role: string) => {
@@ -1060,22 +1085,22 @@ export default function AdminPage() {
 
         {/* Collections Management Modal */}
         <Dialog open={collectionsModalOpen} onOpenChange={setCollectionsModalOpen}>
-          <DialogContent className="sm:max-w-4xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-base sm:text-lg pr-8">
                 Manage Collections - {selectedCommunityForCollections?.name}
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-none">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search collections..."
                     value={collectionSearchTerm}
                     onChange={(e) => setCollectionSearchTerm(e.target.value)}
-                    className="pl-10 w-64"
+                    className="pl-10 w-full sm:w-64"
                     data-testid="input-collection-search"
                   />
                 </div>

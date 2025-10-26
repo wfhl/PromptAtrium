@@ -737,6 +737,14 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               >
                 Community
               </Link>
+              <Link 
+                href="/marketplace" 
+                className={isActiveRoute("/marketplace") ? "nav-gradient-marketplace font-medium py-2" : "nav-gradient-marketplace transition-colors py-2"} 
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="mobile-nav-marketplace"
+              >
+                Marketplace
+              </Link>
 
               {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer") && (
                 <Link 
