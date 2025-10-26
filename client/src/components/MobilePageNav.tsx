@@ -53,7 +53,7 @@ export function MobilePageNav() {
             <Button 
               ref={libraryButtonRef}
               variant="outline"
-              className={`w-full relative group px-2 py-2 h-auto ${isLibraryPage ? 'button-gradient-library hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
+              className={`w-full relative group px-2 py-2 h-auto select-none ${isLibraryPage ? 'button-gradient-library hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
               data-testid="button-my-prompts"
               {...libraryLongPress}
             >
@@ -72,7 +72,7 @@ export function MobilePageNav() {
             <Button 
               ref={toolsButtonRef}
               variant="outline"
-              className={`w-full relative group px-2 py-2 h-auto ${isToolsPage ? 'button-gradient-tools hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
+              className={`w-full relative group px-2 py-2 h-auto select-none ${isToolsPage ? 'button-gradient-tools hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
               data-testid="button-tools"
               {...toolsLongPress}
             >
@@ -91,7 +91,7 @@ export function MobilePageNav() {
             <Button 
               ref={communityButtonRef}
               variant="outline"
-              className={`w-full relative group px-2 py-2 h-auto ${isCommunityPage ? 'button-gradient-community hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
+              className={`w-full relative group px-2 py-2 h-auto select-none ${isCommunityPage ? 'button-gradient-community hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
               data-testid="button-community-prompts"
               {...communityLongPress}
             >
@@ -110,7 +110,7 @@ export function MobilePageNav() {
             <Button 
               ref={marketplaceButtonRef}
               variant="outline"
-              className={`w-full relative group px-2 py-2 h-auto ${isMarketplacePage ? 'button-gradient-marketplace hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
+              className={`w-full relative group px-2 py-2 h-auto select-none ${isMarketplacePage ? 'button-gradient-marketplace hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
               data-testid="button-marketplace"
               {...marketplaceLongPress}
             >
