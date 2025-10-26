@@ -621,7 +621,7 @@ export const creditTransactions = pgTable("credit_transactions", {
   balanceBefore: integer("balance_before").notNull(),
   balanceAfter: integer("balance_after").notNull(),
   source: varchar("source", {
-    enum: ["daily_login", "streak_bonus", "prompt_share", "profile_completion", "first_prompt", "purchase", "admin_adjustment", "refund", "other"]
+    enum: ["daily_login", "streak_bonus", "prompt_share", "profile_completion", "first_prompt", "purchase", "admin_adjustment", "refund", "review", "achievement", "helpful_vote", "public_prompt", "other"]
   }).notNull(),
   referenceId: varchar("reference_id"), // ID of related entity (prompt, order, etc.)
   referenceType: varchar("reference_type"), // Type of related entity
@@ -652,6 +652,49 @@ export const dailyRewards = pgTable("daily_rewards", {
   unique("unique_user_daily_rewards").on(table.userId),
   // Index for quick user lookups
   index("idx_daily_rewards_user").on(table.userId),
+]);
+
+// Achievement definitions table
+export const achievements = pgTable("achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(), // Unique code for achievement (e.g., "first_steps")
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  creditReward: integer("credit_reward").notNull(),
+  iconName: varchar("icon_name"), // Icon identifier for UI
+  category: varchar("category", { 
+    enum: ["content", "social", "commerce", "community", "special"] 
+  }).notNull(),
+  requiredCount: integer("required_count").notNull().default(1),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Index for category queries
+  index("idx_achievements_category").on(table.category),
+  // Index for active achievements
+  index("idx_achievements_active").on(table.isActive),
+]);
+
+// User achievement progress table
+export const userAchievements = pgTable("user_achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  achievementId: varchar("achievement_id").notNull().references(() => achievements.id),
+  progress: integer("progress").notNull().default(0),
+  isCompleted: boolean("is_completed").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  creditsClaimed: boolean("credits_claimed").notNull().default(false),
+  claimedAt: timestamp("claimed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Unique constraint - one record per user per achievement
+  unique("unique_user_achievement").on(table.userId, table.achievementId),
+  // Index for user's achievements
+  index("idx_user_achievements_user").on(table.userId),
+  // Index for completed achievements
+  index("idx_user_achievements_completed").on(table.isCompleted),
 ]);
 
 // Marketplace Tables
@@ -825,6 +868,69 @@ export const marketplaceReviews = pgTable("marketplace_reviews", {
   unique("unique_user_listing_review").on(table.reviewerId, table.listingId),
 ]);
 
+// Marketplace disputes table - tracks disputes between buyers and sellers
+export const marketplaceDisputes = pgTable("marketplace_disputes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => marketplaceOrders.id),
+  initiatedBy: varchar("initiated_by", {
+    enum: ["buyer", "seller"]
+  }).notNull(),
+  initiatorId: varchar("initiator_id").notNull().references(() => users.id),
+  respondentId: varchar("respondent_id").notNull().references(() => users.id),
+  status: varchar("status", {
+    enum: ["open", "in_progress", "resolved", "closed"]
+  }).notNull().default("open"),
+  reason: varchar("reason", {
+    enum: ["item_not_as_described", "quality_issue", "not_received", "other"]
+  }).notNull(),
+  description: text("description").notNull(),
+  resolution: text("resolution"),
+  refundAmountCents: integer("refund_amount_cents"),
+  creditRefundAmount: integer("credit_refund_amount"),
+  escalatedAt: timestamp("escalated_at"),
+  lastRespondedAt: timestamp("last_responded_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+}, (table) => [
+  // Index for order disputes
+  index("idx_marketplace_disputes_order").on(table.orderId),
+  // Index for initiator's disputes
+  index("idx_marketplace_disputes_initiator").on(table.initiatorId),
+  // Index for respondent's disputes
+  index("idx_marketplace_disputes_respondent").on(table.respondentId),
+  // Index for status queries
+  index("idx_marketplace_disputes_status").on(table.status),
+  // Index for escalation checks
+  index("idx_marketplace_disputes_escalated").on(table.escalatedAt),
+  // Unique constraint - one dispute per order
+  unique("unique_order_dispute").on(table.orderId),
+]);
+
+// Dispute messages table - tracks communication within disputes
+export const disputeMessages = pgTable("dispute_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  disputeId: varchar("dispute_id").notNull().references(() => marketplaceDisputes.id),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  isAdminMessage: boolean("is_admin_message").notNull().default(false),
+  attachments: jsonb("attachments").$type<{
+    url: string;
+    type: string;
+    name: string;
+  }[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  // Index for dispute messages
+  index("idx_dispute_messages_dispute").on(table.disputeId),
+  // Index for sender's messages
+  index("idx_dispute_messages_sender").on(table.senderId),
+  // Index for admin messages
+  index("idx_dispute_messages_admin").on(table.isAdminMessage),
+  // Index for creation date ordering
+  index("idx_dispute_messages_created").on(table.createdAt),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   prompts: many(prompts),
@@ -959,6 +1065,19 @@ export const marketplaceReviewsRelations = relations(marketplaceReviews, ({ one 
   order: one(marketplaceOrders, { fields: [marketplaceReviews.orderId], references: [marketplaceOrders.id] }),
   listing: one(marketplaceListings, { fields: [marketplaceReviews.listingId], references: [marketplaceListings.id] }),
   reviewer: one(users, { fields: [marketplaceReviews.reviewerId], references: [users.id] }),
+}));
+
+// Dispute relations
+export const marketplaceDisputesRelations = relations(marketplaceDisputes, ({ one, many }) => ({
+  order: one(marketplaceOrders, { fields: [marketplaceDisputes.orderId], references: [marketplaceOrders.id] }),
+  initiator: one(users, { fields: [marketplaceDisputes.initiatorId], references: [users.id] }),
+  respondent: one(users, { fields: [marketplaceDisputes.respondentId], references: [users.id] }),
+  messages: many(disputeMessages),
+}));
+
+export const disputeMessagesRelations = relations(disputeMessages, ({ one }) => ({
+  dispute: one(marketplaceDisputes, { fields: [disputeMessages.disputeId], references: [marketplaceDisputes.id] }),
+  sender: one(users, { fields: [disputeMessages.senderId], references: [users.id] }),
 }));
 
 // Insert schemas
@@ -1139,6 +1258,21 @@ export const insertDailyRewardSchema = createInsertSchema(dailyRewards).omit({
   updatedAt: true,
 });
 
+// Achievement insert schemas
+export const insertAchievementSchema = createInsertSchema(achievements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserAchievementSchema = createInsertSchema(userAchievements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+  claimedAt: true,
+});
+
 // Marketplace insert schemas
 export const insertSellerProfileSchema = createInsertSchema(sellerProfiles).omit({
   id: true,
@@ -1181,6 +1315,21 @@ export const insertMarketplaceReviewSchema = createInsertSchema(marketplaceRevie
   verifiedPurchase: true,
   helpfulCount: true,
   creditsAwarded: true,
+});
+
+// Dispute insert schemas
+export const insertMarketplaceDisputeSchema = createInsertSchema(marketplaceDisputes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  resolvedAt: true,
+  escalatedAt: true,
+  lastRespondedAt: true,
+});
+
+export const insertDisputeMessageSchema = createInsertSchema(disputeMessages).omit({
+  id: true,
+  createdAt: true,
 });
 
 // Bulk edit schemas - only fields that can be bulk edited
@@ -1305,6 +1454,10 @@ export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
 export type DailyReward = typeof dailyRewards.$inferSelect;
 export type InsertDailyReward = z.infer<typeof insertDailyRewardSchema>;
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
 
 // Marketplace types
 export type SellerProfile = typeof sellerProfiles.$inferSelect;
@@ -1317,6 +1470,10 @@ export type DigitalLicense = typeof digitalLicenses.$inferSelect;
 export type InsertDigitalLicense = z.infer<typeof insertDigitalLicenseSchema>;
 export type MarketplaceReview = typeof marketplaceReviews.$inferSelect;
 export type InsertMarketplaceReview = z.infer<typeof insertMarketplaceReviewSchema>;
+export type MarketplaceDispute = typeof marketplaceDisputes.$inferSelect;
+export type InsertMarketplaceDispute = z.infer<typeof insertMarketplaceDisputeSchema>;
+export type DisputeMessage = typeof disputeMessages.$inferSelect;
+export type InsertDisputeMessage = z.infer<typeof insertDisputeMessageSchema>;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;

@@ -26,6 +26,8 @@ import {
   userCredits,
   creditTransactions,
   dailyRewards,
+  achievements,
+  userAchievements,
   sellerProfiles,
   marketplaceListings,
   type User,
@@ -76,6 +78,10 @@ import {
   type InsertCreditTransaction,
   type DailyReward,
   type InsertDailyReward,
+  type Achievement,
+  type InsertAchievement,
+  type UserAchievement,
+  type InsertUserAchievement,
   codexCategories,
   codexTerms,
   codexUserLists,
@@ -115,6 +121,12 @@ import {
   marketplaceReviews,
   type MarketplaceReview,
   type InsertMarketplaceReview,
+  marketplaceDisputes,
+  type MarketplaceDispute,
+  type InsertMarketplaceDispute,
+  disputeMessages,
+  type DisputeMessage,
+  type InsertDisputeMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray, isNull, gte } from "drizzle-orm";
@@ -375,6 +387,17 @@ export interface IStorage {
   checkProfileCompletionBonus(userId: string): Promise<boolean>;
   initializeUserCredits(userId: string): Promise<UserCredits>;
   
+  // Achievement operations
+  getAchievements(): Promise<Achievement[]>;
+  getAchievement(id: string): Promise<Achievement | undefined>;
+  createAchievement(achievement: InsertAchievement): Promise<Achievement>;
+  getUserAchievements(userId: string): Promise<UserAchievement[]>;
+  getUserAchievement(userId: string, achievementId: string): Promise<UserAchievement | undefined>;
+  checkAchievementProgress(userId: string, achievementCode: string): Promise<UserAchievement>;
+  updateAchievementProgress(userId: string, achievementCode: string, increment?: number): Promise<UserAchievement>;
+  markAchievementClaimed(userId: string, achievementId: string): Promise<void>;
+  seedInitialAchievements(): Promise<void>;
+  
   // Marketplace operations - Seller profiles
   getSellerProfile(userId: string): Promise<SellerProfile | undefined>;
   createSellerProfile(profile: InsertSellerProfile): Promise<SellerProfile>;
@@ -448,6 +471,44 @@ export interface IStorage {
   addSellerResponse(reviewId: string, sellerId: string, response: string): Promise<MarketplaceReview>;
   getReviewByOrderId(orderId: string): Promise<MarketplaceReview | undefined>;
   getSellerReviews(sellerId: string, options?: { limit?: number; offset?: number }): Promise<MarketplaceReview[]>;
+  
+  // Dispute operations
+  createDispute(dispute: InsertMarketplaceDispute): Promise<MarketplaceDispute>;
+  getDisputeById(id: string): Promise<MarketplaceDispute | undefined>;
+  getDisputeByOrderId(orderId: string): Promise<MarketplaceDispute | undefined>;
+  getUserDisputes(userId: string, options?: { 
+    role?: 'initiator' | 'respondent' | 'all';
+    status?: string;
+    limit?: number; 
+    offset?: number;
+  }): Promise<MarketplaceDispute[]>;
+  getAdminDisputes(options?: {
+    status?: string;
+    escalatedOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<MarketplaceDispute[]>;
+  updateDispute(id: string, updates: Partial<MarketplaceDispute>): Promise<MarketplaceDispute>;
+  resolveDispute(id: string, resolution: {
+    resolution: string;
+    refundAmountCents?: number;
+    creditRefundAmount?: number;
+  }): Promise<MarketplaceDispute>;
+  closeDispute(id: string): Promise<MarketplaceDispute>;
+  canCreateDispute(orderId: string, userId: string): Promise<{ canCreate: boolean; reason?: string }>;
+  escalateDisputeIfNeeded(disputeId: string): Promise<MarketplaceDispute | undefined>;
+  
+  // Dispute message operations
+  createDisputeMessage(message: InsertDisputeMessage): Promise<DisputeMessage>;
+  getDisputeMessages(disputeId: string, options?: { limit?: number; offset?: number }): Promise<DisputeMessage[]>;
+  canSendDisputeMessage(disputeId: string, userId: string): Promise<boolean>;
+  
+  // Refund operations
+  processRefund(orderId: string, refund: {
+    amountCents?: number;
+    creditAmount?: number;
+    reason?: string;
+  }): Promise<{ success: boolean; message: string }>;
 }
 
 function generatePromptId(): string {
@@ -3337,6 +3398,317 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
   
+  // Achievement operations
+  async getAchievements(): Promise<Achievement[]> {
+    const allAchievements = await db.select()
+      .from(achievements)
+      .where(eq(achievements.isActive, true))
+      .orderBy(achievements.category, achievements.creditReward);
+    return allAchievements;
+  }
+
+  async getAchievement(id: string): Promise<Achievement | undefined> {
+    const [achievement] = await db.select()
+      .from(achievements)
+      .where(eq(achievements.id, id));
+    return achievement;
+  }
+
+  async createAchievement(achievement: InsertAchievement): Promise<Achievement> {
+    const [newAchievement] = await db.insert(achievements)
+      .values(achievement)
+      .returning();
+    return newAchievement;
+  }
+
+  async getUserAchievements(userId: string): Promise<UserAchievement[]> {
+    const userAchievementList = await db.select()
+      .from(userAchievements)
+      .where(eq(userAchievements.userId, userId));
+    return userAchievementList;
+  }
+
+  async getUserAchievement(userId: string, achievementId: string): Promise<UserAchievement | undefined> {
+    const [userAchievement] = await db.select()
+      .from(userAchievements)
+      .where(and(
+        eq(userAchievements.userId, userId),
+        eq(userAchievements.achievementId, achievementId)
+      ));
+    return userAchievement;
+  }
+
+  async checkAchievementProgress(userId: string, achievementCode: string): Promise<UserAchievement> {
+    // Get achievement by code
+    const [achievement] = await db.select()
+      .from(achievements)
+      .where(eq(achievements.code, achievementCode));
+    
+    if (!achievement) {
+      throw new Error(`Achievement with code ${achievementCode} not found`);
+    }
+
+    // Get or create user achievement progress
+    let [userAchievement] = await db.select()
+      .from(userAchievements)
+      .where(and(
+        eq(userAchievements.userId, userId),
+        eq(userAchievements.achievementId, achievement.id)
+      ));
+
+    if (!userAchievement) {
+      // Create new progress record
+      [userAchievement] = await db.insert(userAchievements)
+        .values({
+          userId,
+          achievementId: achievement.id,
+          progress: 0,
+          isCompleted: false,
+          creditsClaimed: false,
+        })
+        .returning();
+    }
+
+    // Auto-check progress based on achievement code
+    let currentProgress = userAchievement.progress;
+    
+    switch (achievementCode) {
+      case 'first_steps':
+        // Check if user has shared at least 1 public prompt
+        const publicPrompts = await db.select({ count: sql<number>`count(*)` })
+          .from(prompts)
+          .where(and(
+            eq(prompts.userId, userId),
+            eq(prompts.isPublic, true)
+          ));
+        currentProgress = Number(publicPrompts[0]?.count || 0);
+        break;
+        
+      case 'contributor':
+        // Check if user has shared at least 5 public prompts
+        const contributorPrompts = await db.select({ count: sql<number>`count(*)` })
+          .from(prompts)
+          .where(and(
+            eq(prompts.userId, userId),
+            eq(prompts.isPublic, true)
+          ));
+        currentProgress = Number(contributorPrompts[0]?.count || 0);
+        break;
+        
+      case 'expert':
+        // Check if user has shared at least 20 public prompts
+        const expertPrompts = await db.select({ count: sql<number>`count(*)` })
+          .from(prompts)
+          .where(and(
+            eq(prompts.userId, userId),
+            eq(prompts.isPublic, true)
+          ));
+        currentProgress = Number(expertPrompts[0]?.count || 0);
+        break;
+        
+      case 'reviewer':
+        // Check if user has written at least 5 reviews
+        const reviews = await db.select({ count: sql<number>`count(*)` })
+          .from(marketplaceReviews)
+          .where(eq(marketplaceReviews.reviewerId, userId));
+        currentProgress = Number(reviews[0]?.count || 0);
+        break;
+        
+      case 'seller_star':
+        // Check if user has made at least 10 sales
+        const sellerProfile = await this.getSellerProfile(userId);
+        currentProgress = sellerProfile?.totalSales || 0;
+        break;
+        
+      case 'community_builder':
+        // Check if user has at least 50 followers
+        const followerCount = await this.getFollowerCount(userId);
+        currentProgress = followerCount;
+        break;
+        
+      case 'helper':
+        // Check total helpful votes on user's reviews
+        const helpfulVotes = await db.select({ 
+          total: sql<number>`COALESCE(SUM(helpful_count), 0)` 
+        })
+          .from(marketplaceReviews)
+          .where(eq(marketplaceReviews.reviewerId, userId));
+        currentProgress = Number(helpfulVotes[0]?.total || 0);
+        break;
+    }
+
+    // Update progress if changed
+    if (currentProgress !== userAchievement.progress) {
+      const isCompleted = currentProgress >= achievement.requiredCount;
+      
+      [userAchievement] = await db.update(userAchievements)
+        .set({
+          progress: currentProgress,
+          isCompleted,
+          completedAt: isCompleted && !userAchievement.isCompleted ? new Date() : userAchievement.completedAt,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(userAchievements.userId, userId),
+          eq(userAchievements.achievementId, achievement.id)
+        ))
+        .returning();
+    }
+
+    return userAchievement;
+  }
+
+  async updateAchievementProgress(userId: string, achievementCode: string, increment: number = 1): Promise<UserAchievement> {
+    // Get achievement by code
+    const [achievement] = await db.select()
+      .from(achievements)
+      .where(eq(achievements.code, achievementCode));
+    
+    if (!achievement) {
+      throw new Error(`Achievement with code ${achievementCode} not found`);
+    }
+
+    // Get or create user achievement progress
+    let [userAchievement] = await db.select()
+      .from(userAchievements)
+      .where(and(
+        eq(userAchievements.userId, userId),
+        eq(userAchievements.achievementId, achievement.id)
+      ));
+
+    if (!userAchievement) {
+      // Create new progress record
+      [userAchievement] = await db.insert(userAchievements)
+        .values({
+          userId,
+          achievementId: achievement.id,
+          progress: increment,
+          isCompleted: increment >= achievement.requiredCount,
+          creditsClaimed: false,
+          completedAt: increment >= achievement.requiredCount ? new Date() : null,
+        })
+        .returning();
+    } else {
+      // Update existing progress
+      const newProgress = userAchievement.progress + increment;
+      const isCompleted = newProgress >= achievement.requiredCount;
+      
+      [userAchievement] = await db.update(userAchievements)
+        .set({
+          progress: newProgress,
+          isCompleted,
+          completedAt: isCompleted && !userAchievement.isCompleted ? new Date() : userAchievement.completedAt,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(userAchievements.userId, userId),
+          eq(userAchievements.achievementId, achievement.id)
+        ))
+        .returning();
+    }
+
+    return userAchievement;
+  }
+
+  async markAchievementClaimed(userId: string, achievementId: string): Promise<void> {
+    await db.update(userAchievements)
+      .set({
+        creditsClaimed: true,
+        claimedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(userAchievements.userId, userId),
+        eq(userAchievements.achievementId, achievementId)
+      ));
+  }
+
+  async seedInitialAchievements(): Promise<void> {
+    const initialAchievements = [
+      {
+        code: 'first_steps',
+        name: 'First Steps',
+        description: 'Share your first prompt publicly',
+        creditReward: 100,
+        iconName: 'rocket',
+        category: 'content' as const,
+        requiredCount: 1,
+        isActive: true,
+      },
+      {
+        code: 'contributor',
+        name: 'Contributor',
+        description: 'Share 5 prompts publicly',
+        creditReward: 250,
+        iconName: 'star',
+        category: 'content' as const,
+        requiredCount: 5,
+        isActive: true,
+      },
+      {
+        code: 'expert',
+        name: 'Expert',
+        description: 'Share 20 prompts publicly',
+        creditReward: 500,
+        iconName: 'trophy',
+        category: 'content' as const,
+        requiredCount: 20,
+        isActive: true,
+      },
+      {
+        code: 'reviewer',
+        name: 'Reviewer',
+        description: 'Write 5 product reviews',
+        creditReward: 150,
+        iconName: 'message-square',
+        category: 'commerce' as const,
+        requiredCount: 5,
+        isActive: true,
+      },
+      {
+        code: 'helper',
+        name: 'Helper',
+        description: 'Get 10 helpful votes on your reviews',
+        creditReward: 200,
+        iconName: 'thumbs-up',
+        category: 'social' as const,
+        requiredCount: 10,
+        isActive: true,
+      },
+      {
+        code: 'seller_star',
+        name: 'Seller Star',
+        description: 'Make 10 sales in the marketplace',
+        creditReward: 500,
+        iconName: 'shopping-bag',
+        category: 'commerce' as const,
+        requiredCount: 10,
+        isActive: true,
+      },
+      {
+        code: 'community_builder',
+        name: 'Community Builder',
+        description: 'Get 50 followers',
+        creditReward: 300,
+        iconName: 'users',
+        category: 'social' as const,
+        requiredCount: 50,
+        isActive: true,
+      },
+    ];
+
+    for (const achievement of initialAchievements) {
+      // Check if achievement already exists
+      const existing = await db.select()
+        .from(achievements)
+        .where(eq(achievements.code, achievement.code));
+      
+      if (existing.length === 0) {
+        await db.insert(achievements).values(achievement);
+      }
+    }
+  }
+  
   // Marketplace operations - Seller profiles
   async getSellerProfile(userId: string): Promise<SellerProfile | undefined> {
     const [profile] = await db.select()
@@ -4247,6 +4619,710 @@ export class DatabaseStorage implements IStorage {
     
     const results = await query;
     return results.map(r => r.review);
+  }
+  
+  // Dispute operations
+  async createDispute(dispute: InsertMarketplaceDispute): Promise<MarketplaceDispute> {
+    const [newDispute] = await db
+      .insert(marketplaceDisputes)
+      .values(dispute)
+      .returning();
+    
+    // Create notification for respondent
+    const order = await this.getOrderById(dispute.orderId);
+    if (order) {
+      const respondentId = dispute.initiatedBy === 'buyer' ? order.sellerId : order.buyerId;
+      await this.createNotification({
+        userId: respondentId,
+        type: 'marketplace_dispute',
+        title: 'New Dispute Created',
+        message: `A dispute has been opened for order #${order.orderNumber}`,
+        relatedUserId: dispute.initiatorId,
+        metadata: { disputeId: newDispute.id, orderId: dispute.orderId },
+      });
+    }
+    
+    return newDispute;
+  }
+  
+  async getDisputeById(id: string): Promise<MarketplaceDispute | undefined> {
+    const [dispute] = await db.select()
+      .from(marketplaceDisputes)
+      .where(eq(marketplaceDisputes.id, id));
+    return dispute;
+  }
+  
+  async getDisputeByOrderId(orderId: string): Promise<MarketplaceDispute | undefined> {
+    const [dispute] = await db.select()
+      .from(marketplaceDisputes)
+      .where(eq(marketplaceDisputes.orderId, orderId));
+    return dispute;
+  }
+  
+  async getUserDisputes(userId: string, options?: {
+    role?: 'initiator' | 'respondent' | 'all';
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<MarketplaceDispute[]> {
+    let conditions = [];
+    
+    if (!options?.role || options.role === 'all') {
+      conditions.push(or(
+        eq(marketplaceDisputes.initiatorId, userId),
+        eq(marketplaceDisputes.respondentId, userId)
+      ));
+    } else if (options.role === 'initiator') {
+      conditions.push(eq(marketplaceDisputes.initiatorId, userId));
+    } else if (options.role === 'respondent') {
+      conditions.push(eq(marketplaceDisputes.respondentId, userId));
+    }
+    
+    if (options?.status) {
+      conditions.push(eq(marketplaceDisputes.status, options.status as any));
+    }
+    
+    let query = db.select()
+      .from(marketplaceDisputes)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(marketplaceDisputes.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+  
+  async getAdminDisputes(options?: {
+    status?: string;
+    escalatedOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<MarketplaceDispute[]> {
+    let conditions = [];
+    
+    if (options?.status) {
+      conditions.push(eq(marketplaceDisputes.status, options.status as any));
+    }
+    
+    if (options?.escalatedOnly) {
+      conditions.push(sql`${marketplaceDisputes.escalatedAt} IS NOT NULL`);
+    }
+    
+    let query = db.select()
+      .from(marketplaceDisputes)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(marketplaceDisputes.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+  
+  async updateDispute(id: string, updates: Partial<MarketplaceDispute>): Promise<MarketplaceDispute> {
+    const [updated] = await db
+      .update(marketplaceDisputes)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+        lastRespondedAt: updates.lastRespondedAt || new Date(),
+      })
+      .where(eq(marketplaceDisputes.id, id))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('Dispute not found');
+    }
+    
+    return updated;
+  }
+  
+  async resolveDispute(id: string, resolution: {
+    resolution: string;
+    refundAmountCents?: number;
+    creditRefundAmount?: number;
+  }): Promise<MarketplaceDispute> {
+    const [resolved] = await db
+      .update(marketplaceDisputes)
+      .set({
+        status: 'resolved',
+        resolution: resolution.resolution,
+        refundAmountCents: resolution.refundAmountCents,
+        creditRefundAmount: resolution.creditRefundAmount,
+        resolvedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(marketplaceDisputes.id, id))
+      .returning();
+    
+    if (!resolved) {
+      throw new Error('Dispute not found');
+    }
+    
+    // Notify both parties
+    await this.createNotification({
+      userId: resolved.initiatorId,
+      type: 'marketplace_dispute',
+      title: 'Dispute Resolved',
+      message: 'Your dispute has been resolved',
+      metadata: { disputeId: id },
+    });
+    
+    await this.createNotification({
+      userId: resolved.respondentId,
+      type: 'marketplace_dispute',
+      title: 'Dispute Resolved',
+      message: 'A dispute involving you has been resolved',
+      metadata: { disputeId: id },
+    });
+    
+    return resolved;
+  }
+  
+  async closeDispute(id: string): Promise<MarketplaceDispute> {
+    const [closed] = await db
+      .update(marketplaceDisputes)
+      .set({
+        status: 'closed',
+        updatedAt: new Date(),
+      })
+      .where(eq(marketplaceDisputes.id, id))
+      .returning();
+    
+    if (!closed) {
+      throw new Error('Dispute not found');
+    }
+    
+    return closed;
+  }
+  
+  async canCreateDispute(orderId: string, userId: string): Promise<{ canCreate: boolean; reason?: string }> {
+    // Check if order exists
+    const order = await this.getOrderById(orderId);
+    if (!order) {
+      return { canCreate: false, reason: 'Order not found' };
+    }
+    
+    // Check if user is involved in the order
+    if (order.buyerId !== userId && order.sellerId !== userId) {
+      return { canCreate: false, reason: 'You are not involved in this order' };
+    }
+    
+    // Check if order is within 30 days
+    const orderDate = new Date(order.createdAt);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    if (orderDate < thirtyDaysAgo) {
+      return { canCreate: false, reason: 'Dispute window has expired (30 days)' };
+    }
+    
+    // Check if dispute already exists
+    const existingDispute = await this.getDisputeByOrderId(orderId);
+    if (existingDispute) {
+      return { canCreate: false, reason: 'A dispute already exists for this order' };
+    }
+    
+    // Check if order is completed
+    if (order.status !== 'completed') {
+      return { canCreate: false, reason: 'Can only dispute completed orders' };
+    }
+    
+    return { canCreate: true };
+  }
+  
+  async escalateDisputeIfNeeded(disputeId: string): Promise<MarketplaceDispute | undefined> {
+    const dispute = await this.getDisputeById(disputeId);
+    if (!dispute) return undefined;
+    
+    // Check if already escalated
+    if (dispute.escalatedAt) {
+      return dispute;
+    }
+    
+    // Check if 72 hours have passed since creation
+    const createdAt = new Date(dispute.createdAt);
+    const now = new Date();
+    const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursSinceCreation >= 72) {
+      const [escalated] = await db
+        .update(marketplaceDisputes)
+        .set({
+          escalatedAt: new Date(),
+          status: 'in_progress',
+          updatedAt: new Date(),
+        })
+        .where(eq(marketplaceDisputes.id, disputeId))
+        .returning();
+      
+      // Notify admin
+      // In a real system, we'd notify all admins
+      await this.createNotification({
+        userId: 'admin', // You'd need to get actual admin IDs
+        type: 'marketplace_dispute',
+        title: 'Dispute Escalated',
+        message: `Dispute #${disputeId} has been escalated for admin review`,
+        metadata: { disputeId },
+      });
+      
+      return escalated;
+    }
+    
+    // Check if seller hasn't responded in 48 hours (for buyer-initiated disputes)
+    if (dispute.initiatedBy === 'buyer' && !dispute.lastRespondedAt) {
+      const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursSinceCreation >= 48) {
+        const [escalated] = await db
+          .update(marketplaceDisputes)
+          .set({
+            escalatedAt: new Date(),
+            status: 'in_progress',
+            updatedAt: new Date(),
+          })
+          .where(eq(marketplaceDisputes.id, disputeId))
+          .returning();
+        
+        return escalated;
+      }
+    }
+    
+    return dispute;
+  }
+  
+  // Dispute message operations
+  async createDisputeMessage(message: InsertDisputeMessage): Promise<DisputeMessage> {
+    const [newMessage] = await db
+      .insert(disputeMessages)
+      .values(message)
+      .returning();
+    
+    // Update dispute's lastRespondedAt
+    await db
+      .update(marketplaceDisputes)
+      .set({
+        lastRespondedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(marketplaceDisputes.id, message.disputeId));
+    
+    // Notify the other party
+    const dispute = await this.getDisputeById(message.disputeId);
+    if (dispute) {
+      const recipientId = message.senderId === dispute.initiatorId 
+        ? dispute.respondentId 
+        : dispute.initiatorId;
+      
+      await this.createNotification({
+        userId: recipientId,
+        type: 'marketplace_dispute',
+        title: 'New Dispute Message',
+        message: 'You have a new message in your dispute',
+        relatedUserId: message.senderId,
+        metadata: { disputeId: message.disputeId },
+      });
+    }
+    
+    return newMessage;
+  }
+  
+  async getDisputeMessages(disputeId: string, options?: { limit?: number; offset?: number }): Promise<DisputeMessage[]> {
+    let query = db.select()
+      .from(disputeMessages)
+      .where(eq(disputeMessages.disputeId, disputeId))
+      .orderBy(desc(disputeMessages.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    return await query;
+  }
+  
+  async canSendDisputeMessage(disputeId: string, userId: string): Promise<boolean> {
+    const dispute = await this.getDisputeById(disputeId);
+    if (!dispute) return false;
+    
+    // Check if user is part of dispute or is admin
+    const user = await this.getUser(userId);
+    if (!user) return false;
+    
+    const isParticipant = userId === dispute.initiatorId || userId === dispute.respondentId;
+    const isAdmin = user.role === 'super_admin' || user.role === 'community_admin';
+    
+    // Can send if participant or admin, and dispute is not closed
+    return (isParticipant || isAdmin) && dispute.status !== 'closed';
+  }
+  
+  // Refund operations
+  async processRefund(orderId: string, refund: {
+    amountCents?: number;
+    creditAmount?: number;
+    reason?: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const order = await this.getOrderById(orderId);
+    if (!order) {
+      return { success: false, message: 'Order not found' };
+    }
+    
+    if (order.status === 'refunded') {
+      return { success: false, message: 'Order already refunded' };
+    }
+    
+    try {
+      // Process credit refund if applicable
+      if (refund.creditAmount && refund.creditAmount > 0) {
+        await this.addCredits(
+          order.buyerId,
+          refund.creditAmount,
+          'marketplace_refund',
+          `Refund for order #${order.orderNumber}`,
+          orderId,
+          'order'
+        );
+        
+        // Deduct from seller's earned credits
+        const sellerProfile = await this.getSellerProfile(order.sellerId);
+        if (sellerProfile) {
+          await db
+            .update(sellerProfiles)
+            .set({
+              totalCreditsEarned: sql`${sellerProfiles.totalCreditsEarned} - ${refund.creditAmount}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(sellerProfiles.userId, order.sellerId));
+        }
+      }
+      
+      // Process USD refund if applicable (Stripe refund would go here)
+      if (refund.amountCents && refund.amountCents > 0 && order.stripePaymentIntentId) {
+        // In a real system, you'd process Stripe refund here
+        // For now, we'll just update the seller's revenue
+        const sellerProfile = await this.getSellerProfile(order.sellerId);
+        if (sellerProfile) {
+          await db
+            .update(sellerProfiles)
+            .set({
+              totalRevenueCents: sql`${sellerProfiles.totalRevenueCents} - ${refund.amountCents}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(sellerProfiles.userId, order.sellerId));
+        }
+      }
+      
+      // Update order status
+      await db
+        .update(marketplaceOrders)
+        .set({
+          status: 'refunded',
+        })
+        .where(eq(marketplaceOrders.id, orderId));
+      
+      // Update listing sales count
+      await db
+        .update(marketplaceListings)
+        .set({
+          salesCount: sql`${marketplaceListings.salesCount} - 1`,
+        })
+        .where(eq(marketplaceListings.id, order.listingId));
+      
+      // Notify buyer
+      await this.createNotification({
+        userId: order.buyerId,
+        type: 'marketplace_order',
+        title: 'Order Refunded',
+        message: `Your order #${order.orderNumber} has been refunded`,
+        metadata: { orderId, refundAmount: refund.amountCents || refund.creditAmount },
+      });
+      
+      // Notify seller
+      await this.createNotification({
+        userId: order.sellerId,
+        type: 'marketplace_order',
+        title: 'Order Refunded',
+        message: `Order #${order.orderNumber} has been refunded`,
+        metadata: { orderId, refundAmount: refund.amountCents || refund.creditAmount },
+      });
+      
+      return { success: true, message: 'Refund processed successfully' };
+    } catch (error: any) {
+      console.error('Refund processing error:', error);
+      return { success: false, message: error.message || 'Failed to process refund' };
+    }
+  }
+
+  // Seller Analytics Methods
+  async getSellerAnalytics(sellerId: string, dateRange?: { start: Date; end: Date }) {
+    // Get orders for this seller
+    const ordersQuery = db.select({
+      id: marketplaceOrders.id,
+      buyerId: marketplaceOrders.buyerId,
+      listingId: marketplaceOrders.listingId,
+      paymentType: marketplaceOrders.paymentType,
+      priceCents: marketplaceOrders.priceCents,
+      creditPrice: marketplaceOrders.creditPrice,
+      status: marketplaceOrders.status,
+      createdAt: marketplaceOrders.createdAt,
+      listing: marketplaceListings,
+    })
+    .from(marketplaceOrders)
+    .innerJoin(marketplaceListings, eq(marketplaceOrders.listingId, marketplaceListings.id))
+    .where(
+      and(
+        eq(marketplaceListings.sellerId, sellerId),
+        eq(marketplaceOrders.status, 'completed'),
+        dateRange ? and(
+          gte(marketplaceOrders.createdAt, dateRange.start),
+          sql`${marketplaceOrders.createdAt} <= ${dateRange.end}`
+        ) : undefined
+      )
+    );
+    
+    const orders = await ordersQuery;
+    
+    // Calculate metrics
+    let totalSales = 0;
+    let totalRevenueUSD = 0;
+    let totalCreditsEarned = 0;
+    const uniqueBuyers = new Set<string>();
+    const salesByDate = new Map<string, { revenue: number; sales: number }>();
+    
+    for (const order of orders) {
+      totalSales++;
+      uniqueBuyers.add(order.buyerId);
+      
+      if (order.paymentType === 'money' && order.priceCents) {
+        totalRevenueUSD += order.priceCents / 100;
+      } else if (order.paymentType === 'credits' && order.creditPrice) {
+        totalCreditsEarned += order.creditPrice;
+        // Convert credits to USD for combined revenue (1 credit = $0.01)
+        totalRevenueUSD += order.creditPrice * 0.01;
+      }
+      
+      // Group by date for chart data
+      const dateKey = new Date(order.createdAt).toISOString().split('T')[0];
+      const existing = salesByDate.get(dateKey) || { revenue: 0, sales: 0 };
+      existing.sales++;
+      if (order.paymentType === 'money' && order.priceCents) {
+        existing.revenue += order.priceCents / 100;
+      } else if (order.paymentType === 'credits' && order.creditPrice) {
+        existing.revenue += order.creditPrice * 0.01;
+      }
+      salesByDate.set(dateKey, existing);
+    }
+    
+    // Get seller's listings for views data
+    const listings = await db.select({
+      id: marketplaceListings.id,
+      views: marketplaceListings.views,
+    })
+    .from(marketplaceListings)
+    .where(eq(marketplaceListings.sellerId, sellerId));
+    
+    const totalViews = listings.reduce((sum, listing) => sum + (listing.views || 0), 0);
+    const conversionRate = totalViews > 0 ? (totalSales / totalViews) * 100 : 0;
+    
+    // Get average rating from reviews
+    const reviews = await db.select({
+      rating: marketplaceReviews.rating,
+    })
+    .from(marketplaceReviews)
+    .innerJoin(marketplaceListings, eq(marketplaceReviews.listingId, marketplaceListings.id))
+    .where(eq(marketplaceListings.sellerId, sellerId));
+    
+    const averageRating = reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+    
+    // Calculate growth (compare to previous period)
+    let growthPercentage = 0;
+    if (dateRange) {
+      const periodLength = dateRange.end.getTime() - dateRange.start.getTime();
+      const previousStart = new Date(dateRange.start.getTime() - periodLength);
+      const previousEnd = dateRange.start;
+      
+      const previousOrders = await db.select({
+        paymentType: marketplaceOrders.paymentType,
+        priceCents: marketplaceOrders.priceCents,
+        creditPrice: marketplaceOrders.creditPrice,
+      })
+      .from(marketplaceOrders)
+      .innerJoin(marketplaceListings, eq(marketplaceOrders.listingId, marketplaceListings.id))
+      .where(
+        and(
+          eq(marketplaceListings.sellerId, sellerId),
+          eq(marketplaceOrders.status, 'completed'),
+          gte(marketplaceOrders.createdAt, previousStart),
+          sql`${marketplaceOrders.createdAt} < ${previousEnd}`
+        )
+      );
+      
+      let previousRevenue = 0;
+      for (const order of previousOrders) {
+        if (order.paymentType === 'money' && order.priceCents) {
+          previousRevenue += order.priceCents / 100;
+        } else if (order.paymentType === 'credits' && order.creditPrice) {
+          previousRevenue += order.creditPrice * 0.01;
+        }
+      }
+      
+      if (previousRevenue > 0) {
+        growthPercentage = ((totalRevenueUSD - previousRevenue) / previousRevenue) * 100;
+      } else if (totalRevenueUSD > 0) {
+        growthPercentage = 100;
+      }
+    }
+    
+    return {
+      totalSales,
+      totalRevenueUSD,
+      totalCreditsEarned,
+      averageOrderValue: totalSales > 0 ? totalRevenueUSD / totalSales : 0,
+      uniqueCustomers: uniqueBuyers.size,
+      conversionRate,
+      averageRating,
+      growthPercentage,
+      repeatCustomerRate: totalSales > 0 ? ((totalSales - uniqueBuyers.size) / totalSales) * 100 : 0,
+      totalViews,
+    };
+  }
+
+  async getTopListings(sellerId: string, limit: number = 5) {
+    const result = await db.select({
+      listing: marketplaceListings,
+      orderCount: sql<number>`COUNT(DISTINCT ${marketplaceOrders.id})`,
+      totalRevenue: sql<number>`
+        SUM(CASE 
+          WHEN ${marketplaceOrders.paymentType} = 'money' THEN ${marketplaceOrders.priceCents} / 100.0
+          WHEN ${marketplaceOrders.paymentType} = 'credits' THEN ${marketplaceOrders.creditPrice} * 0.01
+          ELSE 0
+        END)
+      `,
+    })
+    .from(marketplaceListings)
+    .leftJoin(
+      marketplaceOrders,
+      and(
+        eq(marketplaceOrders.listingId, marketplaceListings.id),
+        eq(marketplaceOrders.status, 'completed')
+      )
+    )
+    .where(eq(marketplaceListings.sellerId, sellerId))
+    .groupBy(marketplaceListings.id)
+    .orderBy(desc(sql`COUNT(DISTINCT ${marketplaceOrders.id})`))
+    .limit(limit);
+    
+    return result.map(r => ({
+      ...r.listing,
+      salesCount: r.orderCount,
+      revenue: r.totalRevenue || 0,
+      conversionRate: r.listing.views > 0 ? (r.orderCount / r.listing.views) * 100 : 0,
+    }));
+  }
+
+  async getSalesChartData(sellerId: string, period: 'day' | 'week' | 'month', dateRange?: { start: Date; end: Date }) {
+    const orders = await db.select({
+      createdAt: marketplaceOrders.createdAt,
+      paymentType: marketplaceOrders.paymentType,
+      priceCents: marketplaceOrders.priceCents,
+      creditPrice: marketplaceOrders.creditPrice,
+    })
+    .from(marketplaceOrders)
+    .innerJoin(marketplaceListings, eq(marketplaceOrders.listingId, marketplaceListings.id))
+    .where(
+      and(
+        eq(marketplaceListings.sellerId, sellerId),
+        eq(marketplaceOrders.status, 'completed'),
+        dateRange ? and(
+          gte(marketplaceOrders.createdAt, dateRange.start),
+          sql`${marketplaceOrders.createdAt} <= ${dateRange.end}`
+        ) : undefined
+      )
+    )
+    .orderBy(marketplaceOrders.createdAt);
+    
+    const chartData: { date: string; revenue: number; sales: number; usdRevenue: number; creditRevenue: number }[] = [];
+    const dataMap = new Map<string, { revenue: number; sales: number; usdRevenue: number; creditRevenue: number }>();
+    
+    for (const order of orders) {
+      let dateKey: string;
+      const date = new Date(order.createdAt);
+      
+      switch (period) {
+        case 'day':
+          dateKey = date.toISOString().split('T')[0];
+          break;
+        case 'week':
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          dateKey = weekStart.toISOString().split('T')[0];
+          break;
+        case 'month':
+          dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          break;
+      }
+      
+      const existing = dataMap.get(dateKey) || { revenue: 0, sales: 0, usdRevenue: 0, creditRevenue: 0 };
+      existing.sales++;
+      
+      if (order.paymentType === 'money' && order.priceCents) {
+        const usdAmount = order.priceCents / 100;
+        existing.usdRevenue += usdAmount;
+        existing.revenue += usdAmount;
+      } else if (order.paymentType === 'credits' && order.creditPrice) {
+        const creditAmount = order.creditPrice * 0.01;
+        existing.creditRevenue += creditAmount;
+        existing.revenue += creditAmount;
+      }
+      
+      dataMap.set(dateKey, existing);
+    }
+    
+    // Convert map to sorted array
+    const sortedDates = Array.from(dataMap.keys()).sort();
+    for (const date of sortedDates) {
+      const data = dataMap.get(date)!;
+      chartData.push({
+        date,
+        revenue: Math.round(data.revenue * 100) / 100,
+        sales: data.sales,
+        usdRevenue: Math.round(data.usdRevenue * 100) / 100,
+        creditRevenue: Math.round(data.creditRevenue * 100) / 100,
+      });
+    }
+    
+    return chartData;
+  }
+
+  async getMarketplaceCategories() {
+    const result = await db.select({
+      category: marketplaceListings.category,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(marketplaceListings)
+    .where(eq(marketplaceListings.status, 'active'))
+    .groupBy(marketplaceListings.category);
+    
+    return result.map(r => ({
+      category: r.category,
+      count: r.count,
+    }));
   }
 }
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,14 +14,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { DollarSign, TrendingUp, Package, Star, MoreVertical, Plus, Edit, Pause, Play, Trash, CheckCircle, AlertCircle, MessageSquare, Reply, User, ThumbsUp, HelpCircle } from "lucide-react";
+import { DollarSign, TrendingUp, Package, Star, MoreVertical, Plus, Edit, Pause, Play, Trash, CheckCircle, AlertCircle, MessageSquare, Reply, User, ThumbsUp, HelpCircle, CreditCard, Wallet, ArrowUpRight, RefreshCw, ExternalLink, Clock, BarChart3 } from "lucide-react";
 import { CreateListingModal } from "@/components/CreateListingModal";
+import SellerAnalytics from "@/components/SellerAnalytics";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { MarketplaceListing, SellerProfile } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 // Onboarding form validation schema
 const onboardingSchema = z.object({
@@ -46,10 +49,33 @@ const sellerResponseSchema = z.object({
 
 export default function SellerDashboard() {
   const { toast } = useToast();
+  const [location, navigate] = useLocation();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingListing, setEditingListing] = useState<MarketplaceListing | null>(null);
   const [respondingToReview, setRespondingToReview] = useState<any>(null);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
+  
+  // Check URL params for Stripe redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      toast({
+        title: "Stripe Connect Setup Complete!",
+        description: "Your Stripe account has been successfully connected. You can now receive payments.",
+        duration: 5000,
+      });
+      // Remove URL parameters
+      navigate('/seller-dashboard', { replace: true });
+    } else if (urlParams.get('refresh') === 'true') {
+      toast({
+        title: "Stripe Connect Setup Incomplete",
+        description: "Please complete your Stripe account setup to receive payments.",
+        variant: "destructive",
+      });
+      // Remove URL parameters
+      navigate('/seller-dashboard', { replace: true });
+    }
+  }, []);
 
   // Fetch seller profile
   const { data: sellerProfile, isLoading: profileLoading } = useQuery({
@@ -65,6 +91,18 @@ export default function SellerDashboard() {
   const { data: sellerReviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ["/api/marketplace/reviews/seller"],
     enabled: !!sellerProfile,
+  });
+  
+  // Fetch Stripe balance
+  const { data: stripeBalance, isLoading: balanceLoading } = useQuery({
+    queryKey: ["/api/marketplace/seller/balance"],
+    enabled: !!sellerProfile?.stripeAccountId && sellerProfile.onboardingStatus === 'completed',
+  });
+  
+  // Fetch Stripe payouts
+  const { data: stripePayouts = [], isLoading: payoutsLoading } = useQuery({
+    queryKey: ["/api/marketplace/seller/payouts"],
+    enabled: !!sellerProfile?.stripeAccountId && sellerProfile.onboardingStatus === 'completed',
   });
 
   // Update listing mutation
@@ -147,7 +185,7 @@ export default function SellerDashboard() {
     },
   });
 
-  // Seller onboarding mutation
+  // Seller onboarding mutation with Stripe Connect
   const onboardingMutation = useMutation({
     mutationFn: async (data: z.infer<typeof onboardingSchema>) => {
       const response = await apiRequest("POST", "/api/marketplace/seller/onboard", {
@@ -160,20 +198,54 @@ export default function SellerDashboard() {
         },
         payoutMethod: data.payoutMethod,
       });
-      return response.json();
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/marketplace/seller/profile"] });
-      toast({ 
-        title: "Success", 
-        description: "Seller profile completed successfully! You can now create listings.",
-        duration: 5000,
-      });
+      
+      // If Stripe onboarding URL is provided, redirect to it
+      if (data.stripeOnboardingUrl) {
+        toast({ 
+          title: "Redirecting to Stripe", 
+          description: "Complete your Stripe account setup to receive payments.",
+          duration: 3000,
+        });
+        // Redirect to Stripe Connect onboarding
+        setTimeout(() => {
+          window.location.href = data.stripeOnboardingUrl;
+        }, 1500);
+      } else {
+        toast({ 
+          title: "Success", 
+          description: "Seller profile completed successfully! You can now create listings.",
+          duration: 5000,
+        });
+      }
     },
     onError: (error: any) => {
       toast({ 
         title: "Error", 
         description: error.message || "Failed to complete seller onboarding",
+        variant: "destructive"
+      });
+    },
+  });
+  
+  // Refresh Stripe onboarding link mutation
+  const refreshOnboardingMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/marketplace/seller/refresh-onboarding");
+      return response;
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to refresh onboarding link",
         variant: "destructive"
       });
     },
@@ -383,6 +455,65 @@ export default function SellerDashboard() {
         </div>
       </div>
 
+      {/* Stripe Connect Status */}
+      {sellerProfile && (
+        <div className="mb-8">
+          {sellerProfile.stripeAccountId ? (
+            sellerProfile.onboardingStatus === 'completed' ? (
+              <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertTitle>Stripe Connected</AlertTitle>
+                <AlertDescription>
+                  Your Stripe account is connected and ready to receive payments. You'll receive automatic payouts according to your Stripe payout schedule.
+                </AlertDescription>
+              </Alert>
+            ) : sellerProfile.onboardingStatus === 'pending' ? (
+              <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
+                <Clock className="h-4 w-4 text-yellow-600" />
+                <AlertTitle>Stripe Setup Incomplete</AlertTitle>
+                <AlertDescription className="flex items-center justify-between">
+                  <span>Please complete your Stripe account setup to receive payments from sales.</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => refreshOnboardingMutation.mutate()}
+                    disabled={refreshOnboardingMutation.isPending}
+                  >
+                    {refreshOnboardingMutation.isPending ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Continue Setup
+                      </>
+                    )}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="border-red-200 bg-red-50 dark:bg-red-900/20">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertTitle>Stripe Account Issue</AlertTitle>
+                <AlertDescription>
+                  There was an issue with your Stripe account setup. Please contact support for assistance.
+                </AlertDescription>
+              </Alert>
+            )
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Payment Setup Required</AlertTitle>
+              <AlertDescription>
+                To receive USD payments, you need to connect a Stripe account. This will be set up automatically when you complete seller onboarding.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
@@ -450,6 +581,10 @@ export default function SellerDashboard() {
       {/* Listings Tabs */}
       <Tabs defaultValue="active" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="analytics" data-testid="tab-analytics">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="active" data-testid="tab-active">
             Active ({activeListings.length})
           </TabsTrigger>
@@ -463,7 +598,17 @@ export default function SellerDashboard() {
             <MessageSquare className="h-4 w-4 mr-2" />
             Reviews ({sellerReviews.length})
           </TabsTrigger>
+          {sellerProfile?.stripeAccountId && sellerProfile.onboardingStatus === 'completed' && (
+            <TabsTrigger value="payouts" data-testid="tab-payouts">
+              <Wallet className="h-4 w-4 mr-2" />
+              Payouts
+            </TabsTrigger>
+          )}
         </TabsList>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <SellerAnalytics />
+        </TabsContent>
 
         <TabsContent value="active" className="space-y-4">
           {activeListings.length === 0 ? (
@@ -747,6 +892,115 @@ export default function SellerDashboard() {
             ))
           )}
         </TabsContent>
+
+        {/* Payouts Tab */}
+        {sellerProfile?.stripeAccountId && sellerProfile.onboardingStatus === 'completed' && (
+          <TabsContent value="payouts" className="space-y-4">
+            {/* Balance Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Available Balance</CardTitle>
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {balanceLoading ? (
+                    <Skeleton className="h-8 w-32" />
+                  ) : stripeBalance?.available ? (
+                    <div>
+                      {stripeBalance.available.map((balance: any) => (
+                        <div key={balance.currency} className="text-2xl font-bold">
+                          {balance.currency.toUpperCase()} {(balance.amount / 100).toFixed(2)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-2xl font-bold">$0.00</div>
+                  )}
+                  <p className="text-xs text-muted-foreground">Ready for payout</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pending Balance</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {balanceLoading ? (
+                    <Skeleton className="h-8 w-32" />
+                  ) : stripeBalance?.pending ? (
+                    <div>
+                      {stripeBalance.pending.map((balance: any) => (
+                        <div key={balance.currency} className="text-2xl font-bold">
+                          {balance.currency.toUpperCase()} {(balance.amount / 100).toFixed(2)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-2xl font-bold">$0.00</div>
+                  )}
+                  <p className="text-xs text-muted-foreground">Processing</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Payout History */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Payout History</CardTitle>
+                <CardDescription>
+                  Your recent payouts from Stripe. Payouts are sent automatically according to your payout schedule.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {payoutsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : stripePayouts && stripePayouts.length > 0 ? (
+                  <div className="space-y-2">
+                    {stripePayouts.map((payout: any) => (
+                      <div key={payout.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            {payout.status === 'paid' ? (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            ) : payout.status === 'pending' ? (
+                              <Clock className="h-4 w-4 text-yellow-500" />
+                            ) : (
+                              <AlertCircle className="h-4 w-4 text-gray-500" />
+                            )}
+                            <span className="font-medium">
+                              {payout.currency.toUpperCase()} {(payout.amount / 100).toFixed(2)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {payout.status === 'paid' ? 'Paid' : payout.status === 'pending' ? 'Pending' : payout.status}
+                            {payout.arrival_date && ` • Expected ${new Date(payout.arrival_date * 1000).toLocaleDateString()}`}
+                          </p>
+                        </div>
+                        <Badge variant={
+                          payout.status === 'paid' ? 'default' :
+                          payout.status === 'pending' ? 'secondary' :
+                          'outline'
+                        }>
+                          {payout.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    No payouts yet. Your first payout will appear here after your first sale.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
       
       {/* Response Dialog */}

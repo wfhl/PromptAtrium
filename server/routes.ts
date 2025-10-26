@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema, insertMarketplaceListingSchema, insertSellerProfileSchema, insertMarketplaceOrderSchema, insertDigitalLicenseSchema, marketplaceOrders, digitalLicenses, marketplaceListings } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema, insertMarketplaceListingSchema, insertSellerProfileSchema, insertMarketplaceOrderSchema, insertDigitalLicenseSchema, marketplaceOrders, digitalLicenses, marketplaceListings, insertMarketplaceDisputeSchema, insertDisputeMessageSchema } from "@shared/schema";
 import Stripe from "stripe";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
@@ -2555,20 +2555,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user already earned credits for this prompt
       const transactions = await storage.getCreditTransactionHistory(userId, { limit: 1000 });
       const alreadyEarned = transactions.some(
-        t => t.referenceId === promptId && t.source === 'prompt_share'
+        t => t.referenceId === promptId && (t.source === 'prompt_share' || t.source === 'public_prompt')
       );
       
       if (alreadyEarned) {
         return res.status(400).json({ message: "Credits already earned for this prompt" });
       }
       
-      // Award credits for sharing prompt
-      const SHARE_REWARD = 10;
+      // Validate prompt has quality content (min 100 chars)
+      if (!prompt.promptContent || prompt.promptContent.length < 100) {
+        return res.status(400).json({ message: "Prompt must have at least 100 characters of content to earn credits" });
+      }
+      
+      // Award credits for sharing prompt  
+      const SHARE_REWARD = 50;
       const transaction = await storage.addCredits(
         userId,
         SHARE_REWARD,
-        'prompt_share',
-        `Shared prompt: ${prompt.name}`,
+        'public_prompt',
+        `Made prompt public: ${prompt.name}`,
         promptId,
         'prompt'
       );
@@ -2582,6 +2587,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error awarding prompt share credits:", error);
       res.status(500).json({ message: "Failed to award credits" });
+    }
+  });
+
+  // Achievement Routes
+  
+  // Get all achievements with user progress
+  app.get("/api/achievements", isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Get all active achievements
+      const achievements = await storage.getAchievements();
+      
+      // Get user's achievement progress
+      const userProgress = await storage.getUserAchievements(userId);
+      
+      // Merge achievements with user progress
+      const achievementsWithProgress = achievements.map(achievement => {
+        const progress = userProgress.find(p => p.achievementId === achievement.id);
+        return {
+          ...achievement,
+          progress: progress?.progress || 0,
+          isCompleted: progress?.isCompleted || false,
+          completedAt: progress?.completedAt || null,
+          creditsClaimed: progress?.creditsClaimed || false,
+        };
+      });
+      
+      res.json(achievementsWithProgress);
+    } catch (error) {
+      console.error("Error fetching achievements:", error);
+      res.status(500).json({ message: "Failed to fetch achievements" });
+    }
+  });
+  
+  // Check and update achievement progress
+  app.post("/api/achievements/check", isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { achievementCode } = req.body;
+      
+      if (!achievementCode) {
+        return res.status(400).json({ message: "Achievement code required" });
+      }
+      
+      const progress = await storage.checkAchievementProgress(userId, achievementCode);
+      
+      res.json({
+        success: true,
+        progress,
+        message: progress.isCompleted 
+          ? "Achievement completed! You can now claim your reward."
+          : `Progress: ${progress.progress}/${progress.requiredCount}`
+      });
+    } catch (error) {
+      console.error("Error checking achievement progress:", error);
+      res.status(500).json({ message: "Failed to check achievement progress" });
+    }
+  });
+  
+  // Claim achievement reward
+  app.post("/api/achievements/claim/:id", isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const achievementId = req.params.id;
+      
+      // Get achievement and user progress
+      const achievement = await storage.getAchievement(achievementId);
+      if (!achievement) {
+        return res.status(404).json({ message: "Achievement not found" });
+      }
+      
+      const userAchievement = await storage.getUserAchievement(userId, achievementId);
+      if (!userAchievement) {
+        return res.status(404).json({ message: "Achievement progress not found" });
+      }
+      
+      if (!userAchievement.isCompleted) {
+        return res.status(400).json({ message: "Achievement not completed yet" });
+      }
+      
+      if (userAchievement.creditsClaimed) {
+        return res.status(400).json({ message: "Achievement reward already claimed" });
+      }
+      
+      // Award credits for achievement
+      const transaction = await storage.addCredits(
+        userId,
+        achievement.creditReward,
+        'achievement',
+        `Achievement completed: ${achievement.name}`,
+        achievementId,
+        'achievement'
+      );
+      
+      // Mark achievement as claimed
+      await storage.markAchievementClaimed(userId, achievementId);
+      
+      res.json({
+        success: true,
+        creditsEarned: achievement.creditReward,
+        newBalance: transaction.balanceAfter,
+        message: `Congratulations! You've earned ${achievement.creditReward} credits for completing "${achievement.name}"!`
+      });
+    } catch (error) {
+      console.error("Error claiming achievement reward:", error);
+      res.status(500).json({ message: "Failed to claim achievement reward" });
     }
   });
 
@@ -2608,7 +2720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create or update seller profile (onboarding)
+  // Create or update seller profile with Stripe Connect onboarding
   app.post('/api/marketplace/seller/onboard', isAuthenticated, apiLimiter, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
@@ -2630,26 +2742,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if profile exists
       const existingProfile = await storage.getSellerProfile(userId);
       
-      if (existingProfile) {
-        // Only allow updating if profile is not yet completed
-        if (existingProfile.onboardingStatus === 'completed') {
-          return res.status(400).json({ 
-            message: "Seller profile already completed. Use the profile update endpoint for changes." 
+      // Check if Stripe is configured
+      if (!stripe) {
+        // Fallback to non-Stripe onboarding if Stripe is not configured
+        if (existingProfile) {
+          // Only allow updating if profile is not yet completed
+          if (existingProfile.onboardingStatus === 'completed') {
+            return res.status(400).json({ 
+              message: "Seller profile already completed. Use the profile update endpoint for changes." 
+            });
+          }
+          
+          const updatedProfile = await storage.completeSellerOnboarding(userId, validatedData);
+          res.json(updatedProfile);
+        } else {
+          // Create new profile with initial pending status
+          const newProfile = await storage.createSellerProfile({
+            userId,
+            onboardingStatus: 'pending'
           });
+          
+          // Then complete onboarding with validated data
+          const completedProfile = await storage.completeSellerOnboarding(userId, validatedData);
+          res.json(completedProfile);
         }
-        
-        const updatedProfile = await storage.completeSellerOnboarding(userId, validatedData);
-        res.json(updatedProfile);
+        return;
+      }
+      
+      // Get user details
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Create or retrieve Stripe Connect account
+      let stripeAccountId: string;
+      
+      if (existingProfile?.stripeAccountId) {
+        // Use existing Stripe account
+        stripeAccountId = existingProfile.stripeAccountId;
       } else {
-        // Create new profile with initial pending status
+        // Create new Stripe Connect Standard account
+        const account = await stripe.accounts.create({
+          type: 'standard',
+          email: user.email || undefined,
+          metadata: {
+            userId: userId,
+            businessType: validatedData.businessType
+          }
+        });
+        stripeAccountId = account.id;
+      }
+      
+      // Generate Stripe Connect onboarding link
+      const accountLink = await stripe.accountLinks.create({
+        account: stripeAccountId,
+        refresh_url: `${req.protocol}://${req.get('host')}/seller-dashboard?refresh=true`,
+        return_url: `${req.protocol}://${req.get('host')}/seller-dashboard?success=true`,
+        type: 'account_onboarding',
+      });
+      
+      // Save or update seller profile with Stripe account ID
+      if (existingProfile) {
+        // Update existing profile with Stripe account ID
+        await db.update(sellerProfiles)
+          .set({
+            stripeAccountId: stripeAccountId,
+            businessType: validatedData.businessType,
+            taxInfo: validatedData.taxInfo,
+            payoutMethod: 'stripe', // Force Stripe payouts when using Connect
+            onboardingStatus: 'pending',
+            updatedAt: new Date()
+          })
+          .where(eq(sellerProfiles.userId, userId));
+          
+        const updatedProfile = await storage.getSellerProfile(userId);
+        
+        res.json({
+          ...updatedProfile,
+          stripeOnboardingUrl: accountLink.url
+        });
+      } else {
+        // Create new profile with Stripe account ID
         const newProfile = await storage.createSellerProfile({
           userId,
+          stripeAccountId: stripeAccountId,
+          businessType: validatedData.businessType,
+          taxInfo: validatedData.taxInfo,
+          payoutMethod: 'stripe', // Force Stripe payouts when using Connect
           onboardingStatus: 'pending'
         });
         
-        // Then complete onboarding with validated data
-        const completedProfile = await storage.completeSellerOnboarding(userId, validatedData);
-        res.json(completedProfile);
+        res.json({
+          ...newProfile,
+          stripeOnboardingUrl: accountLink.url
+        });
       }
     } catch (error) {
       console.error("Error onboarding seller:", error);
@@ -2848,6 +3035,337 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Stripe Connect Webhook Handler ============
+  
+  // Stripe webhook endpoint for Connect events
+  app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+    try {
+      // Get webhook signature from headers
+      const signature = req.headers['stripe-signature'] as string;
+      
+      if (!stripe) {
+        return res.status(503).json({ message: "Stripe is not configured" });
+      }
+      
+      // Verify webhook signature if secret is configured
+      let event: Stripe.Event;
+      if (process.env.STRIPE_WEBHOOK_SECRET) {
+        try {
+          event = stripe.webhooks.constructEvent(
+            req.body,
+            signature,
+            process.env.STRIPE_WEBHOOK_SECRET
+          );
+        } catch (err: any) {
+          console.error('Webhook signature verification failed:', err.message);
+          return res.status(400).json({ message: `Webhook Error: ${err.message}` });
+        }
+      } else {
+        // In development/testing, accept webhooks without signature verification
+        console.warn('STRIPE_WEBHOOK_SECRET not configured - accepting webhook without verification');
+        event = req.body as Stripe.Event;
+      }
+      
+      // Handle different event types
+      switch (event.type) {
+        case 'account.updated': {
+          const account = event.data.object as Stripe.Account;
+          
+          // Find seller profile by Stripe account ID
+          const [sellerProfile] = await db.select()
+            .from(sellerProfiles)
+            .where(eq(sellerProfiles.stripeAccountId, account.id))
+            .limit(1);
+            
+          if (sellerProfile) {
+            // Update onboarding status based on account status
+            let onboardingStatus: 'pending' | 'completed' | 'rejected' = 'pending';
+            
+            if (account.charges_enabled && account.payouts_enabled) {
+              onboardingStatus = 'completed';
+            } else if (account.requirements?.disabled_reason) {
+              onboardingStatus = 'rejected';
+            }
+            
+            await db.update(sellerProfiles)
+              .set({
+                onboardingStatus: onboardingStatus,
+                updatedAt: new Date()
+              })
+              .where(eq(sellerProfiles.stripeAccountId, account.id));
+              
+            console.log(`Updated seller profile for Stripe account ${account.id}: status = ${onboardingStatus}`);
+          }
+          break;
+        }
+        
+        case 'account.application.deauthorized': {
+          const account = event.data.object as Stripe.Account;
+          
+          // Handle account disconnection
+          const [sellerProfile] = await db.select()
+            .from(sellerProfiles)
+            .where(eq(sellerProfiles.stripeAccountId, account.id))
+            .limit(1);
+            
+          if (sellerProfile) {
+            await db.update(sellerProfiles)
+              .set({
+                stripeAccountId: null,
+                onboardingStatus: 'not_started',
+                payoutMethod: null,
+                updatedAt: new Date()
+              })
+              .where(eq(sellerProfiles.stripeAccountId, account.id));
+              
+            console.log(`Stripe account ${account.id} was deauthorized`);
+          }
+          break;
+        }
+        
+        case 'payment_intent.succeeded': {
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          
+          // Mark order as completed when payment succeeds
+          if (paymentIntent.metadata?.orderId) {
+            await db.update(marketplaceOrders)
+              .set({
+                status: 'completed',
+                deliveredAt: new Date(),
+                updatedAt: new Date()
+              })
+              .where(eq(marketplaceOrders.id, paymentIntent.metadata.orderId));
+              
+            // Create digital license for the buyer
+            const order = await db.select()
+              .from(marketplaceOrders)
+              .where(eq(marketplaceOrders.id, paymentIntent.metadata.orderId))
+              .limit(1);
+              
+            if (order[0]) {
+              const licenseKey = `LIC-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+              await db.insert(digitalLicenses)
+                .values({
+                  orderId: order[0].id,
+                  buyerId: order[0].buyerId,
+                  listingId: order[0].listingId,
+                  licenseKey: licenseKey,
+                  licenseType: 'commercial',
+                  isActive: true
+                });
+                
+              console.log(`Created digital license for order ${order[0].id}`);
+            }
+          }
+          break;
+        }
+        
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Webhook error:", error);
+      res.status(500).json({ message: "Webhook processing failed" });
+    }
+  });
+  
+  // ============ Seller Payout Management Endpoints ============
+  
+  // Get seller's Stripe balance
+  app.get('/api/marketplace/seller/balance', isAuthenticated, async (req: any, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ message: "Stripe is not configured" });
+      }
+      
+      const userId = (req.user as any).claims.sub;
+      
+      // Get seller profile
+      const sellerProfile = await storage.getSellerProfile(userId);
+      if (!sellerProfile) {
+        return res.status(404).json({ message: "Seller profile not found" });
+      }
+      
+      if (!sellerProfile.stripeAccountId) {
+        return res.status(400).json({ message: "Stripe account not connected" });
+      }
+      
+      // Get balance from Stripe
+      const balance = await stripe.balance.retrieve({
+        stripeAccount: sellerProfile.stripeAccountId
+      });
+      
+      res.json({
+        available: balance.available,
+        pending: balance.pending,
+        instantAvailable: balance.instant_available || []
+      });
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      res.status(500).json({ message: "Failed to fetch balance" });
+    }
+  });
+  
+  // Get seller's payout history
+  app.get('/api/marketplace/seller/payouts', isAuthenticated, async (req: any, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ message: "Stripe is not configured" });
+      }
+      
+      const userId = (req.user as any).claims.sub;
+      
+      // Get seller profile
+      const sellerProfile = await storage.getSellerProfile(userId);
+      if (!sellerProfile) {
+        return res.status(404).json({ message: "Seller profile not found" });
+      }
+      
+      if (!sellerProfile.stripeAccountId) {
+        return res.status(400).json({ message: "Stripe account not connected" });
+      }
+      
+      // Get payouts from Stripe
+      const payouts = await stripe.payouts.list({
+        limit: 100
+      }, {
+        stripeAccount: sellerProfile.stripeAccountId
+      });
+      
+      res.json(payouts.data);
+    } catch (error) {
+      console.error("Error fetching payouts:", error);
+      res.status(500).json({ message: "Failed to fetch payouts" });
+    }
+  });
+  
+  // Refresh Stripe onboarding link
+  app.post('/api/marketplace/seller/refresh-onboarding', isAuthenticated, async (req: any, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ message: "Stripe is not configured" });
+      }
+      
+      const userId = (req.user as any).claims.sub;
+      
+      // Get seller profile
+      const sellerProfile = await storage.getSellerProfile(userId);
+      if (!sellerProfile) {
+        return res.status(404).json({ message: "Seller profile not found" });
+      }
+      
+      if (!sellerProfile.stripeAccountId) {
+        return res.status(400).json({ message: "No Stripe account found. Please start onboarding first." });
+      }
+      
+      // Generate new onboarding link
+      const accountLink = await stripe.accountLinks.create({
+        account: sellerProfile.stripeAccountId,
+        refresh_url: `${req.protocol}://${req.get('host')}/seller-dashboard?refresh=true`,
+        return_url: `${req.protocol}://${req.get('host')}/seller-dashboard?success=true`,
+        type: 'account_onboarding',
+      });
+      
+      res.json({ url: accountLink.url });
+    } catch (error) {
+      console.error("Error refreshing onboarding link:", error);
+      res.status(500).json({ message: "Failed to refresh onboarding link" });
+    }
+  });
+  
+  // ============ Seller Analytics Endpoints ============
+  
+  // Get seller analytics dashboard data
+  app.get('/api/marketplace/seller/analytics', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Get seller profile
+      const sellerProfile = await storage.getSellerProfile(userId);
+      if (!sellerProfile) {
+        return res.status(404).json({ message: "Seller profile not found" });
+      }
+      
+      // Parse date range from query params
+      const { startDate, endDate } = req.query;
+      let dateRange: { start: Date; end: Date } | undefined;
+      
+      if (startDate && endDate) {
+        dateRange = {
+          start: new Date(startDate as string),
+          end: new Date(endDate as string),
+        };
+      } else {
+        // Default to last 30 days
+        const end = new Date();
+        const start = new Date();
+        start.setDate(start.getDate() - 30);
+        dateRange = { start, end };
+      }
+      
+      // Get analytics data
+      const analytics = await storage.getSellerAnalytics(userId, dateRange);
+      const topListings = await storage.getTopListings(userId, 5);
+      
+      res.json({
+        metrics: analytics,
+        topListings,
+      });
+    } catch (error) {
+      console.error("Error fetching seller analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+  
+  // Get seller analytics chart data
+  app.get('/api/marketplace/seller/analytics/chart', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Get seller profile
+      const sellerProfile = await storage.getSellerProfile(userId);
+      if (!sellerProfile) {
+        return res.status(404).json({ message: "Seller profile not found" });
+      }
+      
+      // Parse query params
+      const { startDate, endDate, period = 'day' } = req.query;
+      let dateRange: { start: Date; end: Date } | undefined;
+      
+      if (startDate && endDate) {
+        dateRange = {
+          start: new Date(startDate as string),
+          end: new Date(endDate as string),
+        };
+      } else {
+        // Default to last 30 days
+        const end = new Date();
+        const start = new Date();
+        start.setDate(start.getDate() - 30);
+        dateRange = { start, end };
+      }
+      
+      // Validate period
+      if (!['day', 'week', 'month'].includes(period as string)) {
+        return res.status(400).json({ message: "Invalid period. Must be 'day', 'week', or 'month'" });
+      }
+      
+      // Get chart data
+      const chartData = await storage.getSalesChartData(
+        userId, 
+        period as 'day' | 'week' | 'month', 
+        dateRange
+      );
+      
+      res.json(chartData);
+    } catch (error) {
+      console.error("Error fetching chart data:", error);
+      res.status(500).json({ message: "Failed to fetch chart data" });
+    }
+  });
+
   // ============ Marketplace Purchase Flow Endpoints ============
   
   // Create Stripe payment intent for a listing
@@ -2907,8 +3425,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'pending'
       });
       
-      // Create Stripe payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
+      // Get seller's Stripe account ID if they have one
+      const sellerProfile = await storage.getSellerProfile(listing.sellerId);
+      
+      // Create Stripe payment intent with Connect
+      let paymentIntentOptions: Stripe.PaymentIntentCreateParams = {
         amount: listing.priceCents,
         currency: 'usd',
         metadata: {
@@ -2917,7 +3438,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           buyerId: userId,
           sellerId: listing.sellerId
         }
-      });
+      };
+      
+      // If seller has a connected Stripe account, use Stripe Connect
+      if (sellerProfile?.stripeAccountId && sellerProfile.onboardingStatus === 'completed') {
+        // Use Stripe Connect with platform fee
+        paymentIntentOptions = {
+          ...paymentIntentOptions,
+          application_fee_amount: platformFeeCents,
+          transfer_data: {
+            destination: sellerProfile.stripeAccountId,
+          },
+        };
+      } else {
+        // Fallback: Regular payment without Connect (platform keeps all funds temporarily)
+        console.warn(`Seller ${listing.sellerId} doesn't have completed Stripe Connect account - payment will be held`);
+      }
+      
+      const paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
       
       // Update order with payment intent ID
       await db.update(marketplaceOrders)
@@ -3226,9 +3764,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         comment,
       });
       
+      // Award credits for the review (only for first review per order)
+      try {
+        await storage.addCredits(
+          userId,
+          10, // Award 10 credits for review
+          "review",
+          "Earned credits for writing a product review",
+          review.id,
+          "review"
+        );
+        
+        // Check achievement progress for review count
+        await storage.checkAchievementProgress(userId, "reviewer");
+      } catch (creditError) {
+        console.error("Error awarding credits for review:", creditError);
+        // Continue even if credit awarding fails
+      }
+      
       res.json({ 
         success: true, 
         review,
+        creditsEarned: 10,
         message: "Review submitted successfully! You've earned 10 credits."
       });
     } catch (error: any) {
@@ -3379,6 +3936,398 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching seller reviews:", error);
       res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+  
+  // ==============================
+  // MARKETPLACE DISPUTE ENDPOINTS
+  // ==============================
+  
+  // Create new dispute
+  app.post('/api/marketplace/disputes', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const disputeData = insertMarketplaceDisputeSchema.parse(req.body);
+      
+      // Validate that user can create dispute
+      const canCreate = await storage.canCreateDispute(disputeData.orderId, userId);
+      if (!canCreate.canCreate) {
+        return res.status(400).json({ message: canCreate.reason });
+      }
+      
+      // Get order details to determine initiator and respondent
+      const order = await storage.getOrderById(disputeData.orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Determine roles
+      const initiatedBy = userId === order.buyerId ? 'buyer' : 'seller';
+      const respondentId = userId === order.buyerId ? order.sellerId : order.buyerId;
+      
+      // Create dispute
+      const dispute = await storage.createDispute({
+        ...disputeData,
+        initiatedBy,
+        initiatorId: userId,
+        respondentId,
+      });
+      
+      res.status(201).json(dispute);
+    } catch (error: any) {
+      console.error("Error creating dispute:", error);
+      if (error.issues) {
+        return res.status(400).json({ message: "Invalid dispute data", errors: error.issues });
+      }
+      res.status(500).json({ message: "Failed to create dispute" });
+    }
+  });
+  
+  // Get user's disputes
+  app.get('/api/marketplace/disputes', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { role = 'all', status, limit = 20, offset = 0 } = req.query;
+      
+      const disputes = await storage.getUserDisputes(userId, {
+        role: role as 'initiator' | 'respondent' | 'all',
+        status: status as string | undefined,
+        limit: Number(limit),
+        offset: Number(offset),
+      });
+      
+      // Enrich disputes with order and user details
+      const enrichedDisputes = await Promise.all(disputes.map(async (dispute) => {
+        const [order, initiator, respondent] = await Promise.all([
+          storage.getOrderById(dispute.orderId),
+          storage.getUser(dispute.initiatorId),
+          storage.getUser(dispute.respondentId),
+        ]);
+        
+        let listing = null;
+        if (order) {
+          listing = await storage.getListingById(order.listingId);
+        }
+        
+        return {
+          ...dispute,
+          order: {
+            id: order?.id,
+            orderNumber: order?.orderNumber,
+            amountCents: order?.amountCents,
+            creditAmount: order?.creditAmount,
+            createdAt: order?.createdAt,
+          },
+          listing: {
+            id: listing?.id,
+            title: listing?.title,
+            promptId: listing?.promptId,
+          },
+          initiator: {
+            id: initiator?.id,
+            username: initiator?.username,
+            profileImageUrl: initiator?.profileImageUrl,
+          },
+          respondent: {
+            id: respondent?.id,
+            username: respondent?.username,
+            profileImageUrl: respondent?.profileImageUrl,
+          },
+        };
+      }));
+      
+      res.json(enrichedDisputes);
+    } catch (error) {
+      console.error("Error fetching disputes:", error);
+      res.status(500).json({ message: "Failed to fetch disputes" });
+    }
+  });
+  
+  // Get dispute details
+  app.get('/api/marketplace/disputes/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      const disputeId = req.params.id;
+      
+      const dispute = await storage.getDisputeById(disputeId);
+      if (!dispute) {
+        return res.status(404).json({ message: "Dispute not found" });
+      }
+      
+      // Check if user can view the dispute (participant or admin)
+      const isParticipant = userId === dispute.initiatorId || userId === dispute.respondentId;
+      const isAdmin = user?.role === 'super_admin' || user?.role === 'community_admin';
+      
+      if (!isParticipant && !isAdmin) {
+        return res.status(403).json({ message: "You don't have permission to view this dispute" });
+      }
+      
+      // Get messages
+      const messages = await storage.getDisputeMessages(disputeId);
+      
+      // Get order and listing details
+      const [order, initiator, respondent] = await Promise.all([
+        storage.getOrderById(dispute.orderId),
+        storage.getUser(dispute.initiatorId),
+        storage.getUser(dispute.respondentId),
+      ]);
+      
+      let listing = null;
+      if (order) {
+        listing = await storage.getListingById(order.listingId);
+      }
+      
+      // Enrich messages with sender information
+      const enrichedMessages = await Promise.all(messages.map(async (message) => {
+        const sender = await storage.getUser(message.senderId);
+        return {
+          ...message,
+          sender: {
+            id: sender?.id,
+            username: sender?.username,
+            profileImageUrl: sender?.profileImageUrl,
+            role: sender?.role,
+          }
+        };
+      }));
+      
+      res.json({
+        ...dispute,
+        messages: enrichedMessages,
+        order: order ? {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          buyerId: order.buyerId,
+          sellerId: order.sellerId,
+          amountCents: order.amountCents,
+          creditAmount: order.creditAmount,
+          status: order.status,
+          createdAt: order.createdAt,
+        } : null,
+        listing: listing ? {
+          id: listing.id,
+          title: listing.title,
+          promptId: listing.promptId,
+          priceCents: listing.priceCents,
+          creditPrice: listing.creditPrice,
+        } : null,
+        initiator: {
+          id: initiator?.id,
+          username: initiator?.username,
+          profileImageUrl: initiator?.profileImageUrl,
+        },
+        respondent: {
+          id: respondent?.id,
+          username: respondent?.username,
+          profileImageUrl: respondent?.profileImageUrl,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching dispute details:", error);
+      res.status(500).json({ message: "Failed to fetch dispute details" });
+    }
+  });
+  
+  // Add message to dispute
+  app.post('/api/marketplace/disputes/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      const disputeId = req.params.id;
+      const { message } = req.body;
+      
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      
+      // Check if user can send message
+      const canSend = await storage.canSendDisputeMessage(disputeId, userId);
+      if (!canSend) {
+        return res.status(403).json({ message: "You don't have permission to send messages in this dispute" });
+      }
+      
+      // Determine if this is an admin message
+      const isAdminMessage = user?.role === 'super_admin' || user?.role === 'community_admin';
+      
+      // Create message
+      const newMessage = await storage.createDisputeMessage({
+        disputeId,
+        senderId: userId,
+        message: message.trim(),
+        isAdminMessage,
+      });
+      
+      // Get sender info for response
+      const sender = await storage.getUser(userId);
+      
+      res.status(201).json({
+        ...newMessage,
+        sender: {
+          id: sender?.id,
+          username: sender?.username,
+          profileImageUrl: sender?.profileImageUrl,
+          role: sender?.role,
+        }
+      });
+    } catch (error) {
+      console.error("Error sending dispute message:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+  
+  // Resolve dispute (admin only)
+  app.put('/api/marketplace/disputes/:id/resolve', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const disputeId = req.params.id;
+      const { resolution, refundAmountCents, creditRefundAmount } = req.body;
+      
+      if (!resolution || resolution.trim().length === 0) {
+        return res.status(400).json({ message: "Resolution description is required" });
+      }
+      
+      const dispute = await storage.getDisputeById(disputeId);
+      if (!dispute) {
+        return res.status(404).json({ message: "Dispute not found" });
+      }
+      
+      // Process refund if specified
+      if ((refundAmountCents && refundAmountCents > 0) || (creditRefundAmount && creditRefundAmount > 0)) {
+        const refundResult = await storage.processRefund(dispute.orderId, {
+          amountCents: refundAmountCents,
+          creditAmount: creditRefundAmount,
+          reason: `Dispute resolution: ${resolution}`,
+        });
+        
+        if (!refundResult.success) {
+          return res.status(500).json({ message: refundResult.message });
+        }
+      }
+      
+      // Resolve dispute
+      const resolved = await storage.resolveDispute(disputeId, {
+        resolution: resolution.trim(),
+        refundAmountCents,
+        creditRefundAmount,
+      });
+      
+      res.json(resolved);
+    } catch (error) {
+      console.error("Error resolving dispute:", error);
+      res.status(500).json({ message: "Failed to resolve dispute" });
+    }
+  });
+  
+  // Close dispute
+  app.put('/api/marketplace/disputes/:id/close', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      const disputeId = req.params.id;
+      
+      const dispute = await storage.getDisputeById(disputeId);
+      if (!dispute) {
+        return res.status(404).json({ message: "Dispute not found" });
+      }
+      
+      // Check if user can close the dispute
+      const isInitiator = userId === dispute.initiatorId;
+      const isAdmin = user?.role === 'super_admin' || user?.role === 'community_admin';
+      
+      if (!isInitiator && !isAdmin) {
+        return res.status(403).json({ message: "Only the dispute initiator or admins can close disputes" });
+      }
+      
+      const closed = await storage.closeDispute(disputeId);
+      res.json(closed);
+    } catch (error) {
+      console.error("Error closing dispute:", error);
+      res.status(500).json({ message: "Failed to close dispute" });
+    }
+  });
+  
+  // Admin: Get all disputes
+  app.get('/api/marketplace/admin/disputes', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { status, escalatedOnly, limit = 20, offset = 0 } = req.query;
+      
+      const disputes = await storage.getAdminDisputes({
+        status: status as string | undefined,
+        escalatedOnly: escalatedOnly === 'true',
+        limit: Number(limit),
+        offset: Number(offset),
+      });
+      
+      // Enrich disputes
+      const enrichedDisputes = await Promise.all(disputes.map(async (dispute) => {
+        const [order, initiator, respondent] = await Promise.all([
+          storage.getOrderById(dispute.orderId),
+          storage.getUser(dispute.initiatorId),
+          storage.getUser(dispute.respondentId),
+        ]);
+        
+        return {
+          ...dispute,
+          order: {
+            orderNumber: order?.orderNumber,
+            amountCents: order?.amountCents,
+            creditAmount: order?.creditAmount,
+          },
+          initiator: {
+            username: initiator?.username,
+            email: initiator?.email,
+          },
+          respondent: {
+            username: respondent?.username,
+            email: respondent?.email,
+          },
+        };
+      }));
+      
+      res.json(enrichedDisputes);
+    } catch (error) {
+      console.error("Error fetching admin disputes:", error);
+      res.status(500).json({ message: "Failed to fetch disputes" });
+    }
+  });
+  
+  // Refund endpoint
+  app.post('/api/marketplace/orders/:id/refund', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      const orderId = req.params.id;
+      const { amountCents, creditAmount, reason } = req.body;
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Check permissions (seller or admin can refund)
+      const isSeller = userId === order.sellerId;
+      const isAdmin = user?.role === 'super_admin' || user?.role === 'community_admin';
+      
+      if (!isSeller && !isAdmin) {
+        return res.status(403).json({ message: "You don't have permission to refund this order" });
+      }
+      
+      // Process refund
+      const result = await storage.processRefund(orderId, {
+        amountCents,
+        creditAmount,
+        reason: reason || 'Manual refund',
+      });
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(500).json(result);
+      }
+    } catch (error) {
+      console.error("Error processing refund:", error);
+      res.status(500).json({ message: "Failed to process refund" });
     }
   });
 

@@ -39,6 +39,7 @@ import Marketplace from "@/pages/Marketplace";
 import ListingDetail from "@/pages/ListingDetail";
 import MarketplaceDocs from "@/pages/MarketplaceDocs";
 import { PurchaseHistory } from "@/pages/PurchaseHistory";
+import { AdminDisputes } from "@/pages/AdminDisputes";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -166,6 +167,9 @@ function Router() {
             </Route>
             <Route path="/admin">
               {() => <Layout><Admin /></Layout>}
+            </Route>
+            <Route path="/admin/disputes">
+              {() => <Layout><AdminDisputes /></Layout>}
             </Route>
             <Route path="/dev">
               {() => <Layout><Dev /></Layout>}

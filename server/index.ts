@@ -93,5 +93,15 @@ app.use((req, res, next) => {
       StructuredLogger.error("Error during likes cleanup", error as Error);
       // Don't crash the server if cleanup fails
     }
+    
+    // Seed initial achievements if needed
+    try {
+      StructuredLogger.info("Seeding initial achievements");
+      await storage.seedInitialAchievements();
+      StructuredLogger.info("Achievement seeding completed");
+    } catch (error) {
+      StructuredLogger.error("Error seeding achievements", error as Error);
+      // Don't crash the server if seeding fails
+    }
   });
 })();

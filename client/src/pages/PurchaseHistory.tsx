@@ -24,6 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ShoppingBag,
   Package,
   Download,
@@ -43,23 +49,33 @@ import {
   Clock,
   Star,
   PenLine,
+  MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { ReviewForm } from "@/components/ReviewForm";
+import { DisputeButton } from "@/components/marketplace/DisputeButton";
+import { DisputeModal } from "@/components/marketplace/DisputeModal";
+import { DisputeChat } from "@/components/marketplace/DisputeChat";
+import { DisputesList } from "@/components/marketplace/DisputesList";
 
 export function PurchaseHistory() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("purchases");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [filterPaymentMethod, setFilterPaymentMethod] = useState("all");
   const [copiedLicenseId, setCopiedLicenseId] = useState<string | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [selectedDisputeOrder, setSelectedDisputeOrder] = useState<any>(null);
+  const [viewDisputeId, setViewDisputeId] = useState<string | null>(null);
   
   // Fetch purchase history
   const { data: purchases, isLoading, error } = useQuery({
@@ -70,6 +86,12 @@ export function PurchaseHistory() {
   // Fetch user's reviews to check which purchases have been reviewed
   const { data: userReviews } = useQuery({
     queryKey: ["/api/marketplace/reviews/user"],
+    enabled: !!user,
+  });
+  
+  // Fetch disputes to check dispute status for orders
+  const { data: disputes } = useQuery({
+    queryKey: ["/api/marketplace/disputes"],
     enabled: !!user,
   });
   
@@ -115,6 +137,14 @@ export function PurchaseHistory() {
       default:
         return 0;
     }
+  }).map((purchase: any) => {
+    // Add dispute information to each purchase
+    const dispute = disputes?.find((d: any) => d.orderId === purchase.id);
+    return {
+      ...purchase,
+      disputeId: dispute?.id,
+      disputeStatus: dispute?.status,
+    };
   });
   
   // Format price display
@@ -182,12 +212,28 @@ export function PurchaseHistory() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <ShoppingBag className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Purchase History</h1>
+            <h1 className="text-3xl font-bold">Purchase History & Disputes</h1>
           </div>
           <p className="text-muted-foreground">
-            View and manage all your marketplace purchases
+            View and manage your marketplace purchases and dispute resolutions
           </p>
         </div>
+        
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="purchases" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              Purchases
+            </TabsTrigger>
+            <TabsTrigger value="disputes" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Disputes
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Purchases Tab */}
+          <TabsContent value="purchases" className="space-y-6">
         
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -380,6 +426,16 @@ export function PurchaseHistory() {
                 </CardContent>
                 
                 <CardFooter className="flex-col gap-2">
+                  {/* Dispute Status/Button */}
+                  <DisputeButton
+                    order={purchase}
+                    onOpenDispute={() => {
+                      setSelectedDisputeOrder(purchase);
+                      setShowDisputeModal(true);
+                    }}
+                    onViewDispute={(disputeId) => setViewDisputeId(disputeId)}
+                  />
+                  
                   {/* Review Status */}
                   {(() => {
                     const hasReviewed = userReviews?.some((review: any) => review.orderId === purchase.id);
@@ -390,7 +446,7 @@ export function PurchaseHistory() {
                             <Star className="h-3 w-3 mr-1 fill-current" />
                             Reviewed
                           </Badge>
-                        ) : purchase.status === "completed" ? (
+                        ) : purchase.status === "completed" && !purchase.disputeId ? (
                           <Button 
                             variant="default" 
                             size="sm" 
@@ -449,6 +505,13 @@ export function PurchaseHistory() {
             </div>
           </Card>
         )}
+          </TabsContent>
+          
+          {/* Disputes Tab */}
+          <TabsContent value="disputes">
+            {user && <DisputesList userId={user.id} />}
+          </TabsContent>
+        </Tabs>
       </div>
       
       {/* Review Form Modal */}
@@ -464,6 +527,43 @@ export function PurchaseHistory() {
             setSelectedPurchase(null);
           }}
         />
+      )}
+      
+      {/* Dispute Modal */}
+      {selectedDisputeOrder && (
+        <DisputeModal
+          isOpen={showDisputeModal}
+          onClose={() => {
+            setShowDisputeModal(false);
+            setSelectedDisputeOrder(null);
+          }}
+          order={{
+            ...selectedDisputeOrder,
+            listingTitle: selectedDisputeOrder.listing?.title
+          }}
+          onSuccess={() => {
+            setActiveTab("disputes");
+          }}
+        />
+      )}
+      
+      {/* Dispute Chat Dialog */}
+      {viewDisputeId && (
+        <Dialog 
+          open={!!viewDisputeId} 
+          onOpenChange={(open) => !open && setViewDisputeId(null)}
+        >
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Dispute Details</DialogTitle>
+            </DialogHeader>
+            <DisputeChat
+              disputeId={viewDisputeId}
+              currentUserId={user?.id || ""}
+              onClose={() => setViewDisputeId(null)}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

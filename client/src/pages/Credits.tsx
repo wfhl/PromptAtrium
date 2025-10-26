@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, TrendingUp, Gift, Calendar, ArrowUp, ArrowDown, Clock } from "lucide-react";
+import { Coins, TrendingUp, Gift, Calendar, ArrowUp, ArrowDown, Clock, Trophy, MessageSquare, Share2, Users, Star } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
+import { AchievementBadges } from "@/components/AchievementBadges";
 
 interface CreditBalance {
   balance: number;
@@ -36,11 +37,18 @@ function getSourceIcon(source: string): React.ReactNode {
   switch (source) {
     case 'signup_bonus':
     case 'first_prompt':
-    case 'profile_complete':
+    case 'profile_completion':
       return <Gift className="w-4 h-4" />;
     case 'daily_login':
       return <Calendar className="w-4 h-4" />;
+    case 'prompt':
     case 'prompt_share':
+      return <Share2 className="w-4 h-4" />;
+    case 'review':
+      return <MessageSquare className="w-4 h-4" />;
+    case 'achievement':
+      return <Trophy className="w-4 h-4" />;
+    case 'streak':
       return <TrendingUp className="w-4 h-4" />;
     default:
       return <Coins className="w-4 h-4" />;
@@ -53,12 +61,19 @@ function getSourceLabel(source: string): string {
       return 'Welcome Bonus';
     case 'daily_login':
       return 'Daily Reward';
+    case 'prompt':
     case 'prompt_share':
       return 'Prompt Shared';
     case 'first_prompt':
       return 'First Prompt Bonus';
-    case 'profile_complete':
+    case 'profile_completion':
       return 'Profile Completion';
+    case 'review':
+      return 'Review Reward';
+    case 'achievement':
+      return 'Achievement Unlocked';
+    case 'streak':
+      return 'Streak Bonus';
     default:
       return source.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
   }
@@ -349,7 +364,7 @@ export default function Credits() {
           <CardHeader>
             <CardTitle>How to Earn Credits</CardTitle>
             <CardDescription>
-              Multiple ways to boost your credit balance
+              Multiple ways to boost your credit balance - NO purchasing required!
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -359,21 +374,30 @@ export default function Credits() {
                 <div>
                   <p className="font-medium">Daily Login</p>
                   <p className="text-sm text-muted-foreground">
-                    Login every day to earn 50 credits
+                    Login every day to earn 10 credits base
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <TrendingUp className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <Share2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Share Prompts</p>
                   <p className="text-sm text-muted-foreground">
-                    Make your prompts public to earn 10 credits each
+                    Make prompts public to earn 50 credits each
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <Gift className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <MessageSquare className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Write Reviews</p>
+                  <p className="text-sm text-muted-foreground">
+                    Earn 10 credits for each marketplace review
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Gift className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Streak Bonuses</p>
                   <p className="text-sm text-muted-foreground">
@@ -382,15 +406,47 @@ export default function Credits() {
                 </div>
               </div>
               <div className="flex gap-3">
-                <Coins className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
+                <Trophy className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Achievements</p>
+                  <p className="text-sm text-muted-foreground">
+                    Complete achievements for 100-500 credits
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Coins className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Complete Profile</p>
                   <p className="text-sm text-muted-foreground">
-                    One-time 200 credit bonus for completing your profile
+                    One-time 100 credit bonus for completing your profile
                   </p>
                 </div>
               </div>
             </div>
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                <strong>Important:</strong> Credits are earned only through platform activities. 
+                No purchasing required! Daily earning cap: 500 credits (excluding achievements).
+                Credits expire after 12 months of inactivity.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Achievements Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              Your Achievements
+            </CardTitle>
+            <CardDescription>
+              Complete achievements to earn bonus credits and show off your accomplishments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AchievementBadges showProgress={true} showCompact={false} />
           </CardContent>
         </Card>
       </div>
