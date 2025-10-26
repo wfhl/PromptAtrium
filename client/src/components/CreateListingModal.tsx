@@ -58,10 +58,11 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
   const [tagInput, setTagInput] = useState("");
 
   // Fetch seller profile to check onboarding status
-  const { data: sellerProfile, isLoading: profileLoading } = useQuery({
+  const { data: sellerProfile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ["/api/marketplace/seller/profile"],
     enabled: open,
-  }) as { data: SellerProfile | undefined; isLoading: boolean };
+    retry: false, // Don't retry on failure, show onboarding prompt instead
+  }) as { data: SellerProfile | undefined; isLoading: boolean; error: any };
 
   // Fetch user's prompts
   const { data: userPrompts = [], isLoading: promptsLoading } = useQuery({
@@ -181,7 +182,12 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
   const isSubmitting = createListingMutation.isPending || updateListingMutation.isPending;
 
   // Check if seller profile is not completed and not editing
-  const isOnboardingIncomplete = !editingListing && sellerProfile && sellerProfile.onboardingStatus !== 'completed';
+  // This includes: profile doesn't exist, error fetching profile, or profile exists but onboarding incomplete
+  const isOnboardingIncomplete = !editingListing && (
+    !sellerProfile || 
+    profileError || 
+    (sellerProfile && sellerProfile.onboardingStatus !== 'completed')
+  );
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
@@ -200,11 +206,17 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
         {/* Show alert if onboarding is incomplete */}
         {isOnboardingIncomplete ? (
           <>
-            <Alert className="border-yellow-500/50 bg-yellow-50/50">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <Alert className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-900/20 dark:border-yellow-500/30">
+              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
               <AlertTitle>Complete Seller Profile Required</AlertTitle>
-              <AlertDescription>
-                Before you can create marketplace listings, you need to complete your seller profile with required business and tax information. This is necessary for payment processing and compliance.
+              <AlertDescription className="text-muted-foreground">
+                Before you can create marketplace listings, you need to complete your seller profile. This includes:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Business type (Individual or Business)</li>
+                  <li>Tax information for compliance</li>
+                  <li>Stripe Connect account for payment processing</li>
+                </ul>
+                <p className="mt-2">Click below to complete your seller onboarding.</p>
               </AlertDescription>
             </Alert>
             
