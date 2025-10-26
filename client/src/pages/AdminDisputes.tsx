@@ -48,7 +48,7 @@ export function AdminDisputes() {
   const [activeTab, setActiveTab] = useState("all");
   
   // Redirect if not admin
-  if (!loading && (!user || (user.role !== 'super_admin' && user.role !== 'community_admin'))) {
+  if (!loading && (!user || (user.role !== 'super_admin' && user.role !== 'community_admin' && user.role !== 'developer'))) {
     setLocation("/dashboard");
     return null;
   }
@@ -56,13 +56,13 @@ export function AdminDisputes() {
   // Fetch dispute statistics
   const { data: stats, isLoading: statsLoading } = useQuery<DisputeStats>({
     queryKey: ["/api/marketplace/admin/disputes/stats"],
-    enabled: !!user && (user.role === 'super_admin' || user.role === 'community_admin'),
+    enabled: !!user && (user.role === 'super_admin' || user.role === 'community_admin' || user.role === 'developer'),
   });
   
   // Fetch recent disputes for quick overview
   const { data: recentDisputes } = useQuery({
     queryKey: ["/api/marketplace/admin/disputes", { limit: 5, status: "open", escalatedOnly: true }],
-    enabled: !!user && (user.role === 'super_admin' || user.role === 'community_admin'),
+    enabled: !!user && (user.role === 'super_admin' || user.role === 'community_admin' || user.role === 'developer'),
   });
   
   if (loading || statsLoading) {
