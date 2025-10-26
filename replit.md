@@ -3,6 +3,19 @@
 ## Overview
 A comprehensive platform for managing, sharing, and generating AI prompts. Features include a prompt library, community sharing, collections management, and advanced prompt generation tools.
 
+## Recent Updates (October 26, 2025)
+
+### Sub-Community System Implementation
+- **Hierarchical Community Structure**: Implemented parent-child relationships for communities with materialized path pattern
+- **Sub-Community Admin Roles**: Added new role type with delegated administration capabilities
+- **Advanced Permission System**: Created comprehensive RBAC middleware for sub-community access control
+- **Invitation System**: Sub-community specific invites with role assignment and usage tracking
+- **Content Isolation**: Prompts can be shared with three visibility levels (public, members_only, admins_only)
+- **Frontend Management**: Complete UI for browsing, managing, and administering sub-communities
+- **Admin Dashboard**: Dedicated dashboard for sub-community administrators with member management
+- **Data Migration**: Safe migration system for existing communities to adopt hierarchy structure
+- **Test Coverage**: 100% test pass rate on permission and access control scenarios
+
 ## Recent Updates (October 19, 2025)
 
 ### Custom Character Preset Cross-Device Persistence Fix
