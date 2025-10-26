@@ -99,28 +99,28 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] p-0 overflow-hidden">
         {isLoading ? (
-          <div className="p-6 space-y-4">
-            <Skeleton className="h-8 w-3/4" />
+          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+            <Skeleton className="h-6 sm:h-8 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
-            <div className="flex gap-4">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
+            <div className="flex gap-3 sm:gap-4">
+              <Skeleton className="h-16 sm:h-20 w-full" />
+              <Skeleton className="h-16 sm:h-20 w-full" />
             </div>
-            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-32 sm:h-40 w-full" />
           </div>
         ) : error ? (
-          <div className="p-6 text-center">
-            <p className="text-red-500">Failed to load listing details</p>
+          <div className="p-4 sm:p-6 text-center">
+            <p className="text-red-500 text-sm sm:text-base">Failed to load listing details</p>
           </div>
         ) : listing ? (
           <>
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle className="text-2xl flex items-start justify-between">
-                <span className="flex-1 pr-4">{listing.title}</span>
+            <DialogHeader className="p-4 sm:p-6 pb-0">
+              <DialogTitle className="text-lg sm:text-2xl flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                <span className="flex-1 pr-2 sm:pr-4">{listing.title}</span>
                 {listing.category && (
-                  <Badge variant="outline" className="ml-auto">
+                  <Badge variant="outline" className="w-fit text-xs sm:text-sm">
                     {listing.category}
                   </Badge>
                 )}

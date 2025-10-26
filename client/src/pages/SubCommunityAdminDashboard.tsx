@@ -179,106 +179,107 @@ export default function SubCommunityAdminDashboard() {
   };
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
+      {/* Header - Mobile optimized */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
           <Button 
             variant="ghost" 
             size="sm"
             onClick={() => setLocation(`/communities`)}
             data-testid="button-back"
+            className="w-fit"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
             Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Shield className="h-8 w-8" />
-              {subCommunity.name} Admin
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2">
+              <Shield className="h-6 w-6 sm:h-8 sm:w-8" />
+              <span className="truncate">{subCommunity.name} Admin</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your sub-community settings and members
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              Manage your sub-community
             </p>
           </div>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-5 w-full lg:w-auto">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="invites">Invites</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 sm:space-y-4">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full h-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-4 py-2">Overview</TabsTrigger>
+          <TabsTrigger value="members" className="text-xs sm:text-sm px-2 sm:px-4 py-2">Members</TabsTrigger>
+          <TabsTrigger value="invites" className="text-xs sm:text-sm px-2 sm:px-4 py-2">Invites</TabsTrigger>
+          <TabsTrigger value="content" className="text-xs sm:text-sm px-2 sm:px-4 py-2">Content</TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs sm:text-sm px-2 sm:px-4 py-2 col-span-2 sm:col-span-1">Settings</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
+          {/* Stats Cards - Mobile responsive grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Total Members
+              <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+                <CardTitle className="text-[10px] sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate">Total Members</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalMembers}</div>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-lg sm:text-2xl font-bold">{stats.totalMembers}</div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Admins
+              <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+                <CardTitle className="text-[10px] sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate">Admins</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalAdmins}</div>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-lg sm:text-2xl font-bold">{stats.totalAdmins}</div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Prompts Shared
+              <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+                <CardTitle className="text-[10px] sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate">Prompts</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalPrompts}</div>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-lg sm:text-2xl font-bold">{stats.totalPrompts}</div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Ticket className="h-4 w-4" />
-                  Active Invites
+              <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+                <CardTitle className="text-[10px] sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <Ticket className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate">Active Invites</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.activeInvites}</div>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-lg sm:text-2xl font-bold">{stats.activeInvites}</div>
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
-                  Activity (7d)
+            <Card className="col-span-2 sm:col-span-1">
+              <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+                <CardTitle className="text-[10px] sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate">Activity (7d)</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.recentActivity}</div>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-lg sm:text-2xl font-bold">{stats.recentActivity}</div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
             {/* Recent Activity */}
             <Card>
               <CardHeader>

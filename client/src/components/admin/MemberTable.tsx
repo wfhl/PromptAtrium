@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { UserCommunity, User } from "@shared/schema";
+import { MemberTableMobile } from "./MemberTableMobile";
 
 interface MemberTableProps {
   members: (UserCommunity & { user: User })[];
@@ -64,6 +65,23 @@ export function MemberTable({ members, subCommunityId, currentUserId }: MemberTa
     type: "promote" | "demote" | "remove";
     member: UserCommunity & { user: User };
   } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // Render mobile version on small screens
+  if (isMobile) {
+    return <MemberTableMobile members={members} subCommunityId={subCommunityId} currentUserId={currentUserId} />;
+  }
 
   // Filter and sort members
   const filteredMembers = members

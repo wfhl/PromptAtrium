@@ -240,13 +240,13 @@ export function CheckoutModal({ isOpen, onClose, listing }: CheckoutModalProps) 
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl" data-testid="dialog-checkout">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl" data-testid="dialog-checkout">
+        <DialogHeader className="p-0">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
             Complete Your Purchase
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             Choose your payment method to purchase this prompt
           </DialogDescription>
         </DialogHeader>

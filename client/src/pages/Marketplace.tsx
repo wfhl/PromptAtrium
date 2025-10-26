@@ -148,20 +148,20 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
+      {/* Hero Section - Mobile optimized */}
       <div className="bg-gradient-to-b from-indigo-900/20 to-background border-b">
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-12">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl font-bold mb-4">
-              <ShoppingBag className="inline h-10 w-10 mr-3 text-indigo-500" />
-              Prompt Marketplace
+            <h1 className="text-2xl sm:text-4xl font-bold mb-3 sm:mb-4 flex items-center justify-center">
+              <ShoppingBag className="h-8 w-8 sm:h-10 sm:w-10 mr-2 sm:mr-3 text-indigo-500" />
+              <span>Prompt Marketplace</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
+            <p className="text-sm sm:text-lg text-muted-foreground mb-4 sm:mb-8 px-2">
               Discover and purchase high-quality prompts from our community of creators
             </p>
 
-            {/* Search Bar */}
-            <div className="flex gap-2 max-w-2xl mx-auto mb-4">
+            {/* Search Bar - Mobile responsive */}
+            <div className="flex flex-col sm:flex-row gap-2 max-w-2xl mx-auto mb-3 sm:mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -169,20 +169,24 @@ export default function Marketplace() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="pl-10 pr-4"
+                  className="pl-10 pr-4 text-sm sm:text-base"
                   data-testid="input-marketplace-search"
                 />
               </div>
-              <Button onClick={handleSearch} data-testid="button-search">
+              <Button 
+                onClick={handleSearch} 
+                data-testid="button-search"
+                className="w-full sm:w-auto"
+              >
                 Search
               </Button>
             </div>
             
-            {/* Help Link */}
+            {/* Help Link - Mobile responsive */}
             <div className="flex justify-center">
               <Link href="/marketplace/help">
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                  <HelpCircle className="h-4 w-4 mr-2" />
+                <Button variant="ghost" size="sm" className="text-xs sm:text-sm text-muted-foreground hover:text-foreground">
+                  <HelpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   How does the marketplace work?
                 </Button>
               </Link>
@@ -191,23 +195,23 @@ export default function Marketplace() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Featured Listings */}
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Featured Listings - Mobile responsive grid */}
         {!hasActiveFilters && featuredListings.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold">
-                <TrendingUp className="inline h-6 w-6 mr-2 text-yellow-500" />
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-2xl font-semibold flex items-center">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 mr-1.5 sm:mr-2 text-yellow-500" />
                 Featured Prompts
               </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {featuredLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
                     <Card key={i}>
                       <CardContent className="p-0">
-                        <Skeleton className="h-48 w-full" />
-                        <div className="p-4 space-y-2">
+                        <Skeleton className="h-32 sm:h-48 w-full" />
+                        <div className="p-3 sm:p-4 space-y-2">
                           <Skeleton className="h-4 w-3/4" />
                           <Skeleton className="h-3 w-1/2" />
                           <Skeleton className="h-6 w-20" />
@@ -221,7 +225,7 @@ export default function Marketplace() {
                       <MarketplaceListingCard key={listing.id} listing={listing} />
                     ))}
             </div>
-            <Separator className="mt-8" />
+            <Separator className="mt-6 sm:mt-8" />
           </div>
         )}
 
