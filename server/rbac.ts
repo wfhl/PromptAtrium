@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import type { UserRole, CommunityRole } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
-import { subCommunityAdmins, communities } from "@shared/schema";
+import { subCommunityAdmins, communities, prompts } from "@shared/schema";
 
 // Role-based access control middleware
 export const requireRole = (requiredRole: UserRole): RequestHandler => {
@@ -484,4 +484,468 @@ export const hasParentCommunityAccess = async (userId: string, subCommunityId: s
     console.error("Error checking parent community access:", error);
     return false;
   }
+};
+
+// Middleware to check if user can access prompts in a sub-community
+export const requireSubCommunityPromptAccess = (promptIdParam = "promptId"): RequestHandler => {
+  return async (req: any, res, next) => {
+    if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      const userRole = user.role as UserRole;
+      
+      // Super admin and developer can access everything
+      if (userRole === "super_admin" || userRole === "developer") {
+        req.userRole = userRole;
+        return next();
+      }
+
+      // Get prompt ID from request params
+      const promptId = req.params[promptIdParam] || req.body.promptId;
+      
+      if (!promptId) {
+        return res.status(400).json({ message: "Prompt ID required" });
+      }
+
+      // Get prompt details to check subCommunityId
+      const prompt = await storage.getPrompt(promptId);
+      
+      if (!prompt) {
+        return res.status(404).json({ message: "Prompt not found" });
+      }
+
+      // If prompt doesn't have a subCommunityId, no sub-community access control needed
+      if (!prompt.subCommunityId) {
+        // Check regular community access if communityId exists
+        if (prompt.communityId) {
+          const isMember = await storage.isCommunityMember(userId, prompt.communityId);
+          if (isMember || prompt.isPublic) {
+            req.userRole = userRole;
+            return next();
+          }
+        } else if (prompt.isPublic || prompt.userId === userId) {
+          req.userRole = userRole;
+          return next();
+        }
+        return res.status(403).json({ message: "Access denied to this prompt" });
+      }
+
+      // Check sub-community access
+      const hasAccess = await canAccessSubCommunityContent(userId, prompt.subCommunityId);
+      
+      if (hasAccess || prompt.userId === userId) {
+        req.userRole = userRole;
+        req.subCommunityId = prompt.subCommunityId;
+        return next();
+      }
+
+      return res.status(403).json({ message: "Not authorized to access this sub-community prompt" });
+    } catch (error) {
+      console.error("Error checking sub-community prompt access:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
+};
+
+// Middleware to check if user can moderate content in a sub-community
+export const requireSubCommunityModerator = (subCommunityIdParam = "subCommunityId"): RequestHandler => {
+  return async (req: any, res, next) => {
+    if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      const userRole = user.role as UserRole;
+      
+      // Super admin and developer can moderate everything
+      if (userRole === "super_admin" || userRole === "developer") {
+        req.userRole = userRole;
+        return next();
+      }
+
+      // Get sub-community ID from request params or body
+      const subCommunityId = req.params[subCommunityIdParam] || req.body.subCommunityId;
+      
+      if (!subCommunityId) {
+        return res.status(400).json({ message: "Sub-community ID required" });
+      }
+
+      // Check if user is a sub-community admin
+      if (userRole === "sub_community_admin" && await isSubCommunityAdmin(userId, subCommunityId)) {
+        req.userRole = userRole;
+        req.subCommunityId = subCommunityId;
+        return next();
+      }
+
+      // Check if user is a community admin with parent access
+      if (userRole === "community_admin" && await hasParentCommunityAccess(userId, subCommunityId)) {
+        req.userRole = userRole;
+        req.subCommunityId = subCommunityId;
+        return next();
+      }
+
+      // Check if user is explicitly assigned as moderator (if we have a moderator role)
+      const subCommunity = await db.select()
+        .from(communities)
+        .where(eq(communities.id, subCommunityId))
+        .limit(1);
+
+      if (subCommunity.length && subCommunity[0].parentCommunityId) {
+        // Check if user is admin of the parent community
+        const isParentAdmin = await storage.isCommunityAdmin(userId, subCommunity[0].parentCommunityId);
+        if (isParentAdmin) {
+          req.userRole = userRole;
+          req.subCommunityId = subCommunityId;
+          return next();
+        }
+      }
+
+      return res.status(403).json({ message: "Not authorized to moderate this sub-community" });
+    } catch (error) {
+      console.error("Error checking sub-community moderator permissions:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
+};
+
+// Middleware to check if user can create invites for a sub-community
+export const requireSubCommunityInvitePermission = (subCommunityIdParam = "subCommunityId"): RequestHandler => {
+  return async (req: any, res, next) => {
+    if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      const userRole = user.role as UserRole;
+      
+      // Super admin and developer can create invites for any sub-community
+      if (userRole === "super_admin" || userRole === "developer") {
+        req.userRole = userRole;
+        return next();
+      }
+
+      // Get sub-community ID from request params or body
+      const subCommunityId = req.params[subCommunityIdParam] || req.body.subCommunityId;
+      
+      if (!subCommunityId) {
+        return res.status(400).json({ message: "Sub-community ID required" });
+      }
+
+      // Check if user is a sub-community admin for this specific sub-community
+      if (userRole === "sub_community_admin" && await isSubCommunityAdmin(userId, subCommunityId)) {
+        req.userRole = userRole;
+        req.subCommunityId = subCommunityId;
+        return next();
+      }
+
+      // Check if user is a community admin with parent access
+      if (userRole === "community_admin" && await hasParentCommunityAccess(userId, subCommunityId)) {
+        req.userRole = userRole;
+        req.subCommunityId = subCommunityId;
+        return next();
+      }
+
+      return res.status(403).json({ message: "Not authorized to create invites for this sub-community" });
+    } catch (error) {
+      console.error("Error checking sub-community invite permissions:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
+};
+
+// Helper function to check if user can access content in a sub-community
+export const canAccessSubCommunityContent = async (userId: string, subCommunityId: string): Promise<boolean> => {
+  try {
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return false;
+    }
+
+    const userRole = user.role as UserRole;
+    
+    // Super admin and developer can access everything
+    if (userRole === "super_admin" || userRole === "developer") {
+      return true;
+    }
+
+    // Check if user is a sub-community admin for this specific sub-community
+    if (userRole === "sub_community_admin" && await isSubCommunityAdmin(userId, subCommunityId)) {
+      return true;
+    }
+
+    // Check if user is a community admin with parent access
+    if (userRole === "community_admin" && await hasParentCommunityAccess(userId, subCommunityId)) {
+      return true;
+    }
+
+    // Get the sub-community details
+    const subCommunity = await db.select()
+      .from(communities)
+      .where(eq(communities.id, subCommunityId))
+      .limit(1);
+
+    if (!subCommunity.length) {
+      return false;
+    }
+
+    const subCommData = subCommunity[0];
+
+    // Check if user is a member of the sub-community directly
+    const userCommunities = await storage.getUserCommunities(userId);
+    const hasDirectAccess = userCommunities.some(
+      uc => uc.subCommunityId === subCommunityId
+    );
+    
+    if (hasDirectAccess) {
+      return true;
+    }
+
+    // Check if user is a member of the parent community (for limited access to public content)
+    if (subCommData.parentCommunityId) {
+      const isParentMember = await storage.isCommunityMember(userId, subCommData.parentCommunityId);
+      
+      // Parent community members can access public sub-community content
+      if (isParentMember && subCommData.isPublic) {
+        return true;
+      }
+
+      // Check all ancestors in the hierarchy using the path
+      if (subCommData.path) {
+        const pathParts = subCommData.path.split('/').filter(p => p);
+        for (const ancestorId of pathParts) {
+          if (ancestorId !== subCommunityId) {
+            const isAncestorMember = await storage.isCommunityMember(userId, ancestorId);
+            if (isAncestorMember && subCommData.isPublic) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error checking sub-community content access:", error);
+    return false;
+  }
+};
+
+// Comprehensive permission check function for sub-communities
+export const checkSubCommunityPermission = async (
+  userId: string, 
+  subCommunityId: string, 
+  permission: 'read' | 'write' | 'moderate' | 'admin' | 'invite'
+): Promise<boolean> => {
+  try {
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return false;
+    }
+
+    const userRole = user.role as UserRole;
+    
+    // Super admin and developer have all permissions
+    if (userRole === "super_admin" || userRole === "developer") {
+      return true;
+    }
+
+    // Get sub-community details
+    const subCommunity = await db.select()
+      .from(communities)
+      .where(eq(communities.id, subCommunityId))
+      .limit(1);
+
+    if (!subCommunity.length) {
+      return false;
+    }
+
+    const subCommData = subCommunity[0];
+
+    // Check permission levels
+    switch (permission) {
+      case 'read':
+        // Most permissive - members, parent members (for public), admins
+        if (await canAccessSubCommunityContent(userId, subCommunityId)) {
+          return true;
+        }
+        // Check if it's a public sub-community and user is authenticated
+        return subCommData.isPublic;
+
+      case 'write':
+        // Members, sub-community admins, parent admins
+        // Check direct membership
+        const userCommunities = await storage.getUserCommunities(userId);
+        const hasDirectMembership = userCommunities.some(
+          uc => uc.subCommunityId === subCommunityId
+        );
+        
+        if (hasDirectMembership) {
+          return true;
+        }
+        
+        // Check admin privileges
+        if (userRole === "sub_community_admin" && await isSubCommunityAdmin(userId, subCommunityId)) {
+          return true;
+        }
+        
+        if (userRole === "community_admin" && await hasParentCommunityAccess(userId, subCommunityId)) {
+          return true;
+        }
+        
+        return false;
+
+      case 'moderate':
+        // Sub-community admins and parent community admins
+        if (userRole === "sub_community_admin" && await isSubCommunityAdmin(userId, subCommunityId)) {
+          return true;
+        }
+        
+        if (userRole === "community_admin" && await hasParentCommunityAccess(userId, subCommunityId)) {
+          return true;
+        }
+        
+        // Check if user is admin of parent community directly
+        if (subCommData.parentCommunityId) {
+          return await storage.isCommunityAdmin(userId, subCommData.parentCommunityId);
+        }
+        
+        return false;
+
+      case 'admin':
+      case 'invite':
+        // Only sub-community admins and parent community admins
+        if (userRole === "sub_community_admin" && await isSubCommunityAdmin(userId, subCommunityId)) {
+          return true;
+        }
+        
+        if (userRole === "community_admin" && await hasParentCommunityAccess(userId, subCommunityId)) {
+          return true;
+        }
+        
+        return false;
+
+      default:
+        return false;
+    }
+  } catch (error) {
+    console.error(`Error checking sub-community permission '${permission}':`, error);
+    return false;
+  }
+};
+
+// Enhanced version of requireSubCommunityMember with parent community support
+export const requireSubCommunityMemberEnhanced = (subCommunityIdParam = "subCommunityId"): RequestHandler => {
+  return async (req: any, res, next) => {
+    if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      const userRole = user.role as UserRole;
+      
+      // Super admin and developer can access everything
+      if (userRole === "super_admin" || userRole === "developer") {
+        req.userRole = userRole;
+        return next();
+      }
+
+      // Get sub-community ID from request params or body
+      const subCommunityId = req.params[subCommunityIdParam] || req.body.subCommunityId;
+      
+      if (!subCommunityId) {
+        return res.status(400).json({ message: "Sub-community ID required" });
+      }
+
+      // Get the sub-community to check its visibility and parent
+      const subCommunity = await db.select()
+        .from(communities)
+        .where(eq(communities.id, subCommunityId))
+        .limit(1);
+
+      if (!subCommunity.length) {
+        return res.status(404).json({ message: "Sub-community not found" });
+      }
+
+      const subCommData = subCommunity[0];
+
+      // Check direct sub-community membership
+      const userCommunities = await storage.getUserCommunities(userId);
+      const hasDirectAccess = userCommunities.some(
+        uc => uc.subCommunityId === subCommunityId
+      );
+      
+      if (hasDirectAccess) {
+        req.userRole = userRole;
+        req.subCommunityId = subCommunityId;
+        req.accessLevel = 'member';
+        return next();
+      }
+
+      // Check if user is a sub-community admin
+      if (userRole === "sub_community_admin" && await isSubCommunityAdmin(userId, subCommunityId)) {
+        req.userRole = userRole;
+        req.subCommunityId = subCommunityId;
+        req.accessLevel = 'admin';
+        return next();
+      }
+
+      // Check if user is a community admin with parent access
+      if (userRole === "community_admin" && await hasParentCommunityAccess(userId, subCommunityId)) {
+        req.userRole = userRole;
+        req.subCommunityId = subCommunityId;
+        req.accessLevel = 'parent_admin';
+        return next();
+      }
+
+      // Check if user is a member of the parent community (limited access for public sub-communities)
+      if (subCommData.parentCommunityId && subCommData.isPublic) {
+        const isParentMember = await storage.isCommunityMember(userId, subCommData.parentCommunityId);
+        
+        if (isParentMember) {
+          req.userRole = userRole;
+          req.subCommunityId = subCommunityId;
+          req.accessLevel = 'parent_member';
+          req.limitedAccess = true; // Flag for limited access
+          return next();
+        }
+      }
+
+      return res.status(403).json({ message: "Not a member of this sub-community" });
+    } catch (error) {
+      console.error("Error checking enhanced sub-community membership:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
 };
