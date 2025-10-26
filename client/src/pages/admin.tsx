@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Settings, Users, Shield, Crown, Folder, Mail, UserPlus, Search } from "lucide-react";
+import { Plus, Settings, Users, Shield, Crown, Folder, Mail, UserPlus, Search, Copy, Link2, CheckCircle } from "lucide-react";
 import type { Community, User, UserRole, CommunityInvite } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +31,12 @@ const inviteSchema = z.object({
   expiresAt: z.string().optional(),
 });
 
+const memberInviteSchema = z.object({
+  maxUses: z.number().min(1, "Max uses must be at least 1").max(100, "Max uses cannot exceed 100").optional(),
+  expiresIn: z.enum(["1h", "24h", "7d", "30d", "never"]).default("7d"),
+  role: z.enum(["member", "admin"]).default("member"),
+});
+
 const collectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
@@ -40,6 +46,7 @@ const collectionSchema = z.object({
 
 type CommunityFormData = z.infer<typeof communitySchema>;
 type InviteFormData = z.infer<typeof inviteSchema>;
+type MemberInviteFormData = z.infer<typeof memberInviteSchema>;
 type CollectionFormData = z.infer<typeof collectionSchema>;
 
 export default function AdminPage() {
@@ -52,6 +59,9 @@ export default function AdminPage() {
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<Community | null>(null);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
+  const [memberInviteModalOpen, setMemberInviteModalOpen] = useState(false);
+  const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const [collectionsModalOpen, setCollectionsModalOpen] = useState(false);
   const [selectedCommunityForCollections, setSelectedCommunityForCollections] = useState<Community | null>(null);
   const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
@@ -93,6 +103,15 @@ export default function AdminPage() {
       communityId: "",
       maxUses: 1,
       expiresAt: "",
+    },
+  });
+
+  const memberInviteForm = useForm<MemberInviteFormData>({
+    resolver: zodResolver(memberInviteSchema),
+    defaultValues: {
+      maxUses: 10,
+      expiresIn: "7d",
+      role: "member",
     },
   });
 
@@ -284,6 +303,70 @@ export default function AdminPage() {
     },
   });
 
+  const createMemberInviteMutation = useMutation({
+    mutationFn: async (data: MemberInviteFormData) => {
+      if (!selectedCommunityForMembers) {
+        throw new Error("No community selected");
+      }
+      
+      // Calculate expiry date based on expiresIn
+      let expiresAt: Date | null = null;
+      if (data.expiresIn !== "never") {
+        const now = new Date();
+        switch (data.expiresIn) {
+          case "1h":
+            expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
+            break;
+          case "24h":
+            expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            break;
+          case "7d":
+            expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            break;
+          case "30d":
+            expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            break;
+        }
+      }
+      
+      // Check if this is a sub-community
+      const isSubCommunity = selectedCommunityForMembers.parentCommunityId !== null;
+      
+      if (isSubCommunity) {
+        // Use sub-community invite endpoint
+        return await apiRequest("POST", `/api/sub-communities/${selectedCommunityForMembers.id}/invites`, {
+          maxUses: data.maxUses || 10,
+          expiresAt: expiresAt?.toISOString(),
+          role: data.role,
+        });
+      } else {
+        // Use regular community invite endpoint
+        return await apiRequest("POST", `/api/communities/${selectedCommunityForMembers.id}/invites`, {
+          maxUses: data.maxUses || 10,
+          expiresAt: expiresAt?.toISOString(),
+        });
+      }
+    },
+    onSuccess: (data) => {
+      // Generate the invite link
+      const baseUrl = window.location.origin;
+      const inviteLink = `${baseUrl}/invite/${data.code}`;
+      setGeneratedInviteLink(inviteLink);
+      
+      toast({
+        title: "Success",
+        description: "Invite link created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create invite link",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: CommunityFormData) => {
     if (selectedCommunity) {
       updateCommunityMutation.mutate({ id: selectedCommunity.id, data });
@@ -294,6 +377,22 @@ export default function AdminPage() {
 
   const onInviteSubmit = (data: InviteFormData) => {
     createInviteMutation.mutate(data);
+  };
+
+  const onMemberInviteSubmit = (data: MemberInviteFormData) => {
+    createMemberInviteMutation.mutate(data);
+  };
+
+  const copyInviteLink = () => {
+    if (generatedInviteLink) {
+      navigator.clipboard.writeText(generatedInviteLink);
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+      toast({
+        title: "Copied!",
+        description: "Invite link copied to clipboard",
+      });
+    }
   };
 
   const openEditModal = (community: Community) => {
@@ -954,6 +1053,12 @@ export default function AdminPage() {
                 <Button 
                   size="sm"
                   className="w-full sm:w-auto"
+                  onClick={() => {
+                    setGeneratedInviteLink(null);
+                    setInviteCopied(false);
+                    memberInviteForm.reset();
+                    setMemberInviteModalOpen(true);
+                  }}
                   data-testid="button-invite-new-member"
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
@@ -1080,6 +1185,175 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Member Invite Modal */}
+        <Dialog open={memberInviteModalOpen} onOpenChange={setMemberInviteModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {generatedInviteLink ? "Invite Link Created" : "Create Invite Link"}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {!generatedInviteLink ? (
+              <Form {...memberInviteForm}>
+                <form onSubmit={memberInviteForm.handleSubmit(onMemberInviteSubmit)} className="space-y-4">
+                  <FormField
+                    control={memberInviteForm.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Role</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger data-testid="select-invite-role">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="member">Member</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={memberInviteForm.control}
+                    name="maxUses"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Uses (Optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="100"
+                            placeholder="10"
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                            data-testid="input-member-invite-max-uses"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={memberInviteForm.control}
+                    name="expiresIn"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Expires After</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger data-testid="select-invite-expires">
+                              <SelectValue placeholder="Select expiry" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1h">1 hour</SelectItem>
+                              <SelectItem value="24h">24 hours</SelectItem>
+                              <SelectItem value="7d">7 days</SelectItem>
+                              <SelectItem value="30d">30 days</SelectItem>
+                              <SelectItem value="never">Never</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setMemberInviteModalOpen(false)}
+                      data-testid="button-cancel-member-invite"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createMemberInviteMutation.isPending}
+                      data-testid="button-create-member-invite"
+                    >
+                      {createMemberInviteMutation.isPending ? (
+                        <>Creating...</>
+                      ) : (
+                        <>
+                          <Link2 className="h-4 w-4 mr-2" />
+                          Create Link
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-accent/50 rounded-lg p-4">
+                  <Label className="text-sm text-muted-foreground">Invite Link</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Input
+                      value={generatedInviteLink}
+                      readOnly
+                      className="font-mono text-sm"
+                      data-testid="input-generated-invite-link"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={copyInviteLink}
+                      data-testid="button-copy-invite-link"
+                    >
+                      {inviteCopied ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                <p className="text-sm text-muted-foreground">
+                  Share this link with people you want to invite to {selectedCommunityForMembers?.name}. 
+                  {memberInviteForm.getValues("maxUses") && (
+                    <> This link can be used {memberInviteForm.getValues("maxUses")} times.</>
+                  )}
+                  {memberInviteForm.getValues("expiresIn") !== "never" && (
+                    <> It will expire in {memberInviteForm.getValues("expiresIn")}.</>
+                  )}
+                </p>
+                
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setGeneratedInviteLink(null);
+                      memberInviteForm.reset();
+                    }}
+                    data-testid="button-create-another-invite"
+                  >
+                    Create Another
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setMemberInviteModalOpen(false);
+                      setGeneratedInviteLink(null);
+                    }}
+                    data-testid="button-done-invite"
+                  >
+                    Done
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
