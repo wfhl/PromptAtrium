@@ -4,15 +4,8 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
-import { Eye, DollarSign, Coins, ShoppingCart, Star, TrendingUp, User } from "lucide-react";
+import { ListingPreviewModal } from "@/components/ListingPreviewModal";
+import { Eye, DollarSign, Coins, Star, TrendingUp, User } from "lucide-react";
 
 interface MarketplaceListingCardProps {
   listing: {
@@ -48,8 +41,6 @@ interface MarketplaceListingCardProps {
 
 export function MarketplaceListingCard({ listing }: MarketplaceListingCardProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [promptPreview, setPromptPreview] = useState<string>("");
-  const [loadingPreview, setLoadingPreview] = useState(false);
 
   // Format price display
   const formatPrice = (cents: number) => {
@@ -65,26 +56,6 @@ export function MarketplaceListingCard({ listing }: MarketplaceListingCardProps)
     (listing.seller.firstName && listing.seller.lastName 
       ? `${listing.seller.firstName} ${listing.seller.lastName}` 
       : 'Anonymous Seller');
-
-  // Handle preview
-  const handlePreview = async () => {
-    setLoadingPreview(true);
-    setPreviewOpen(true);
-    
-    try {
-      const response = await fetch(`/api/marketplace/listings/${listing.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPromptPreview(data.promptPreview || "Preview not available");
-      } else {
-        setPromptPreview("Failed to load preview");
-      }
-    } catch (error) {
-      setPromptPreview("Error loading preview");
-    } finally {
-      setLoadingPreview(false);
-    }
-  };
 
   return (
     <>
@@ -193,7 +164,7 @@ export function MarketplaceListingCard({ listing }: MarketplaceListingCardProps)
             variant="outline" 
             size="sm"
             className="flex-1"
-            onClick={handlePreview}
+            onClick={() => setPreviewOpen(true)}
             data-testid={`button-preview-${listing.id}`}
           >
             <Eye className="h-4 w-4 mr-1" />
@@ -211,54 +182,12 @@ export function MarketplaceListingCard({ listing }: MarketplaceListingCardProps)
         </CardFooter>
       </Card>
 
-      {/* Preview Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Prompt Preview</DialogTitle>
-            <DialogDescription>
-              This is a {listing.previewPercentage}% preview of the full prompt
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Separator />
-          
-          <div className="space-y-4 py-4">
-            {loadingPreview ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <>
-                <div className="bg-muted rounded-lg p-4">
-                  <pre className="whitespace-pre-wrap text-sm font-mono">
-                    {promptPreview}
-                    {promptPreview && promptPreview.length > 50 && "..."}
-                  </pre>
-                </div>
-                
-                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                  <p className="text-sm text-amber-800 dark:text-amber-200">
-                    <ShoppingCart className="inline h-4 w-4 mr-1" />
-                    Purchase this listing to see the full prompt content
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setPreviewOpen(false)}>
-                    Close
-                  </Button>
-                  <Link href={`/marketplace/listing/${listing.id}`}>
-                    <Button>
-                      View Full Details
-                    </Button>
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Preview Modal */}
+      <ListingPreviewModal 
+        listingId={listing.id}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
     </>
   );
 }

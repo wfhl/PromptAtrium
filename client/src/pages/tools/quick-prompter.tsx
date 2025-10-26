@@ -24,5 +24,7 @@ export default function QuickPrompterPage() {
         <QuickPromptComplete />
       </div>
     </div>
+    
   );
+  
 }

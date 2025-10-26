@@ -14,13 +14,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Heart, Folder, GitBranch, Plus, ChevronDown, ChevronUp, BookOpen, Share2, Star, UserPlus, Users, Activity } from "lucide-react";
+import { FileText, Heart, Folder, GitBranch, Plus, ChevronDown, ChevronUp, BookOpen, Share2, Star, UserPlus, Users, Activity, ShoppingBag, TrendingUp } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { QuickActions } from "@/components/QuickActions";
 import { BulkImportModal } from "@/components/BulkImportModal";
 import { StatsCard } from "@/components/StatsCard";
 import { CollectionItem } from "@/components/CollectionItem";
+import { MarketplaceListingCard } from "@/components/MarketplaceListingCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -185,6 +186,14 @@ export default function Dashboard() {
     queryKey: ["/api/user/favorites"],
     enabled: isAuthenticated,
     staleTime: 3 * 60 * 1000, // 3 minutes
+    retry: false,
+  });
+
+  // Fetch featured marketplace listings
+  const { data: featuredListings = [] } = useQuery({
+    queryKey: ["/api/marketplace/featured?limit=4"],
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
   });
 
@@ -590,6 +599,29 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
+
+            {/* Featured Marketplace Listings */}
+            {featuredListings.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3 md:mb-4">
+                  <h2 className="text-lg md:text-xl font-semibold text-purple-600 dark:text-purple-400">
+                    <TrendingUp className="inline h-5 w-5 mr-2" />
+                    Featured in Marketplace
+                  </h2>
+                  <Link href="/marketplace">
+                    <Button variant="link" className="text-purple-600 hover:text-purple-500" data-testid="link-view-marketplace">
+                      <ShoppingBag className="h-4 w-4 mr-1" />
+                      Browse All
+                    </Button>
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="section-featured-marketplace">
+                  {featuredListings.slice(0, 4).map((listing: any) => (
+                    <MarketplaceListingCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Community Highlights */}
             <div>

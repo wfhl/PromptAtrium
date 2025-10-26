@@ -187,6 +187,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     // Determine gradient based on path
     let gradient = 'default';
     if (path === '/library') gradient = 'library';
+    else if (path === '/marketplace') gradient = 'marketplace';
     else if (path === '/community') gradient = 'community';
     else if (path === '/admin') gradient = 'admin';
     else if (path === '/dev') gradient = 'dev';
@@ -202,7 +203,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   // Update underline position on route change
   useEffect(() => {
     const activeKey = location.startsWith('/community') ? '/community' 
-      : location.startsWith('/library') ? '/library' 
+      : location.startsWith('/library') ? '/library'
+      : location.startsWith('/marketplace') ? '/marketplace' 
       : location.startsWith('/admin') ? '/admin'
       : location.startsWith('/dev') ? '/dev'
       : '/';
@@ -213,7 +215,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   useEffect(() => {
     const onResize = () => {
       const activeKey = location.startsWith('/community') ? '/community' 
-        : location.startsWith('/library') ? '/library' 
+        : location.startsWith('/library') ? '/library'
+        : location.startsWith('/marketplace') ? '/marketplace' 
         : location.startsWith('/admin') ? '/admin'
         : location.startsWith('/dev') ? '/dev'
         : '/';
@@ -285,7 +288,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
               className="hidden md:flex items-center space-x-1 relative"
               onMouseLeave={() => {
                 const activeKey = location.startsWith('/community') ? '/community' 
-                  : location.startsWith('/library') ? '/library' 
+                  : location.startsWith('/library') ? '/library'
+                  : location.startsWith('/marketplace') ? '/marketplace' 
                   : location.startsWith('/admin') ? '/admin' 
                   : '/';
                 positionTo(linkRefs.current[activeKey], activeKey);
@@ -313,6 +317,18 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   data-testid="nav-library"
                 >
                   My Library
+                </Link>
+              </div>
+              <div 
+                ref={setLinkRef('/marketplace')}
+                onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/marketplace')}
+              >
+                <Link 
+                  href="/marketplace" 
+                  className={isActiveRoute("/marketplace") ? "nav-gradient-marketplace px-4 py-2 rounded-md bg-purple-400/10 border border-transparent inline-block whitespace-nowrap" : "text-gray-300 px-4 py-2 rounded-md transition-all duration-200 inline-block hover:bg-purple-400/00 whitespace-nowrap"} 
+                  data-testid="nav-marketplace"
+                >
+                  Marketplace
                 </Link>
               </div>
               <div 
@@ -369,6 +385,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   opacity: underline.opacity,
                   background: underline.gradient === 'library' 
                     ? 'linear-gradient(135deg, #028ec6 0%, #9175ff 30%, #9175ff 70%, #028ec6 100%)'
+                    : underline.gradient === 'marketplace'
+                    ? 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #8b5cf6 100%)'
                     : underline.gradient === 'community'
                     ? 'linear-gradient(135deg, #ffc800 0%, #ff7300 50%, #ffc802 100%)'
                     : underline.gradient === 'admin'
