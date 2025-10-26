@@ -56,8 +56,8 @@ export default function AdminPage() {
   const [selectedCommunityForCollections, setSelectedCommunityForCollections] = useState<Community | null>(null);
   const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
 
-  // Check if user is admin (super admin or community admin)
-  if (!authLoading && (!user || !["super_admin", "community_admin"].includes((user as any).role))) {
+  // Check if user is admin (super admin, community admin, or developer)
+  if (!authLoading && (!user || !["super_admin", "community_admin", "developer"].includes((user as any).role))) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-96">
@@ -75,7 +75,7 @@ export default function AdminPage() {
     );
   }
 
-  const isSuperAdmin = (user as any)?.role === "super_admin";
+  const isSuperAdmin = (user as any)?.role === "super_admin" || (user as any)?.role === "developer";
   const isCommunityAdmin = (user as any)?.role === "community_admin";
 
   const form = useForm<CommunityFormData>({
