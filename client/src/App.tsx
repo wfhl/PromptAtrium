@@ -42,6 +42,7 @@ import MarketplaceDocs from "@/pages/MarketplaceDocs";
 import { PurchaseHistory } from "@/pages/PurchaseHistory";
 import { AdminDisputes } from "@/pages/AdminDisputes";
 import SubCommunityAdminDashboard from "@/pages/SubCommunityAdminDashboard";
+import InviteAcceptPage from "@/pages/InviteAccept";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -132,6 +133,7 @@ function Router() {
         <Route path="/terms">
           {() => isAuthenticated ? <Layout><TermsAndConditions /></Layout> : <TermsAndConditions />}
         </Route>
+        <Route path="/invite/sub-community/:code" component={InviteAcceptPage} />
         <Route path="/invite/:code" component={Invite} />
         <Route path="/invite" component={Invite} />
         
