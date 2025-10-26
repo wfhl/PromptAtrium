@@ -724,6 +724,72 @@ export const marketplaceListings = pgTable("marketplace_listings", {
   unique("unique_prompt_listing").on(table.promptId),
 ]);
 
+// Marketplace orders table - tracks all purchases in the marketplace
+export const marketplaceOrders = pgTable("marketplace_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderNumber: varchar("order_number").notNull().unique(), // Human-readable order ID
+  buyerId: varchar("buyer_id").notNull().references(() => users.id),
+  sellerId: varchar("seller_id").notNull().references(() => users.id),
+  listingId: varchar("listing_id").notNull().references(() => marketplaceListings.id),
+  paymentMethod: varchar("payment_method", { 
+    enum: ["stripe", "credits"] 
+  }).notNull(),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"), // For Stripe payments
+  amountCents: integer("amount_cents"), // Total amount in cents (for money transactions)
+  creditAmount: integer("credit_amount"), // Total amount in credits (for credit transactions)
+  platformFeeCents: integer("platform_fee_cents"), // Platform fee in cents
+  platformFeeCredits: integer("platform_fee_credits"), // Platform fee in credits
+  sellerPayoutCents: integer("seller_payout_cents"), // Amount seller receives in cents
+  sellerPayoutCredits: integer("seller_payout_credits"), // Amount seller receives in credits
+  status: varchar("status", { 
+    enum: ["pending", "completed", "failed", "refunded"] 
+  }).notNull().default("pending"),
+  deliveredAt: timestamp("delivered_at"), // When the content was delivered
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  // Index for buyer's orders
+  index("idx_marketplace_orders_buyer").on(table.buyerId),
+  // Index for seller's orders
+  index("idx_marketplace_orders_seller").on(table.sellerId),
+  // Index for listing orders
+  index("idx_marketplace_orders_listing").on(table.listingId),
+  // Index for order status
+  index("idx_marketplace_orders_status").on(table.status),
+  // Index for Stripe payment intent lookups
+  index("idx_marketplace_orders_stripe").on(table.stripePaymentIntentId),
+]);
+
+// Digital licenses table - stores licenses for purchased digital content
+export const digitalLicenses = pgTable("digital_licenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => marketplaceOrders.id),
+  promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id),
+  buyerId: varchar("buyer_id").notNull().references(() => users.id),
+  licenseKey: varchar("license_key").notNull().unique(), // Unique license identifier
+  usageRights: jsonb("usage_rights").$type<{
+    personal: boolean;
+    commercial: boolean;
+    resale: boolean;
+    modification: boolean;
+    attribution: boolean;
+  }>().default({
+    personal: true,
+    commercial: true,
+    resale: false,
+    modification: true,
+    attribution: false,
+  }),
+  commercialUse: boolean("commercial_use").notNull().default(true), // Simplified flag
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  // Index for order lookups
+  index("idx_digital_licenses_order").on(table.orderId),
+  // Index for buyer's licenses
+  index("idx_digital_licenses_buyer").on(table.buyerId),
+  // Index for prompt licenses
+  index("idx_digital_licenses_prompt").on(table.promptId),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   prompts: many(prompts),
@@ -1043,6 +1109,19 @@ export const insertMarketplaceListingSchema = createInsertSchema(marketplaceList
   averageRating: true,
 });
 
+// Marketplace order insert schemas
+export const insertMarketplaceOrderSchema = createInsertSchema(marketplaceOrders).omit({
+  id: true,
+  createdAt: true,
+  deliveredAt: true,
+});
+
+// Digital license insert schemas
+export const insertDigitalLicenseSchema = createInsertSchema(digitalLicenses).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -1171,6 +1250,10 @@ export type SellerProfile = typeof sellerProfiles.$inferSelect;
 export type InsertSellerProfile = z.infer<typeof insertSellerProfileSchema>;
 export type MarketplaceListing = typeof marketplaceListings.$inferSelect;
 export type InsertMarketplaceListing = z.infer<typeof insertMarketplaceListingSchema>;
+export type MarketplaceOrder = typeof marketplaceOrders.$inferSelect;
+export type InsertMarketplaceOrder = z.infer<typeof insertMarketplaceOrderSchema>;
+export type DigitalLicense = typeof digitalLicenses.$inferSelect;
+export type InsertDigitalLicense = z.infer<typeof insertDigitalLicenseSchema>;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;

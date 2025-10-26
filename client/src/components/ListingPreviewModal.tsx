@@ -29,7 +29,10 @@ import {
   ExternalLink,
   Info,
   Lock,
+  Check,
 } from "lucide-react";
+import { CheckoutModal } from "./CheckoutModal";
+import { useAuthState } from "@/hooks/useAuth";
 
 interface ListingPreviewModalProps {
   listingId: string;
@@ -39,12 +42,23 @@ interface ListingPreviewModalProps {
 
 export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPreviewModalProps) {
   const [selectedTab, setSelectedTab] = useState("preview");
+  const [showCheckout, setShowCheckout] = useState(false);
+  const { user } = useAuthState();
   
   // Fetch listing details with preview
   const { data: listing, isLoading, error } = useQuery({
     queryKey: [`/api/marketplace/listings/${listingId}`],
     enabled: open && !!listingId,
   });
+  
+  // Check if user has already purchased this listing
+  const { data: purchases } = useQuery({
+    queryKey: ["/api/marketplace/purchases"],
+    enabled: !!user && open,
+  });
+  
+  const hasPurchased = purchases?.some((purchase: any) => purchase.listingId === listingId);
+  const isOwnListing = listing?.sellerId === user?.id;
   
   // Format price display
   const formatPrice = (cents: number) => {
@@ -155,13 +169,34 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
                           {formatPrice(listing.priceCents).replace('$', '')}
                         </p>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        disabled
-                        data-testid="button-buy-usd"
-                      >
-                        Buy with USD
-                      </Button>
+                      {hasPurchased ? (
+                        <Button 
+                          variant="secondary" 
+                          disabled
+                          data-testid="button-purchased"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Purchased
+                        </Button>
+                      ) : isOwnListing ? (
+                        <Button 
+                          variant="outline" 
+                          disabled
+                          data-testid="button-own-listing"
+                        >
+                          Your Listing
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          onClick={() => setShowCheckout(true)}
+                          disabled={!user}
+                          data-testid="button-buy-usd"
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Buy with USD
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 )}
@@ -175,17 +210,52 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
                           {formatCredits(listing.creditPrice)}
                         </p>
                       </div>
-                      <Button 
-                        variant="outline"
-                        disabled
-                        data-testid="button-buy-credits"
-                      >
-                        Buy with Credits
-                      </Button>
+                      {hasPurchased ? (
+                        <Button 
+                          variant="secondary" 
+                          disabled
+                          data-testid="button-purchased"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Purchased
+                        </Button>
+                      ) : isOwnListing ? (
+                        <Button 
+                          variant="outline" 
+                          disabled
+                          data-testid="button-own-listing"
+                        >
+                          Your Listing
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          onClick={() => setShowCheckout(true)}
+                          disabled={!user}
+                          data-testid="button-buy-credits"
+                        >
+                          <Coins className="h-4 w-4 mr-2" />
+                          Buy with Credits
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 )}
               </div>
+              
+              {/* Show login prompt if user is not authenticated */}
+              {!user && (
+                <div className="bg-muted p-4 rounded-lg text-center mb-6">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Please log in to purchase this prompt
+                  </p>
+                  <Link href="/login">
+                    <Button size="sm">
+                      Sign In to Purchase
+                    </Button>
+                  </Link>
+                </div>
+              )}
               
               {/* Content Tabs */}
               <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
@@ -328,6 +398,15 @@ export function ListingPreviewModal({ listingId, open, onOpenChange }: ListingPr
           </>
         ) : null}
       </DialogContent>
+      
+      {/* Checkout Modal */}
+      {listing && (
+        <CheckoutModal 
+          isOpen={showCheckout}
+          onClose={() => setShowCheckout(false)}
+          listing={listing}
+        />
+      )}
     </Dialog>
   );
 }

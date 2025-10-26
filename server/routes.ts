@@ -2,7 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema, insertMarketplaceListingSchema, insertSellerProfileSchema } from "@shared/schema";
+import { insertPromptSchema, insertProjectSchema, insertCollectionSchema, insertPromptRatingSchema, insertCommunitySchema, insertUserCommunitySchema, insertUserSchema, bulkOperationSchema, bulkOperationResultSchema, insertCategorySchema, insertPromptTypeSchema, insertPromptStyleSchema, insertPromptStyleRuleTemplateSchema, insertIntendedGeneratorSchema, insertRecommendedModelSchema, insertMarketplaceListingSchema, insertSellerProfileSchema, insertMarketplaceOrderSchema, insertDigitalLicenseSchema, marketplaceOrders, digitalLicenses, marketplaceListings } from "@shared/schema";
+import Stripe from "stripe";
+import { eq, sql } from "drizzle-orm";
+import { db } from "./db";
 import { requireSuperAdmin, requireCommunityAdmin, requireCommunityAdminRole, requireCommunityMember } from "./rbac";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient, parseObjectPath } from "./objectStorage";
 import { ObjectPermission, getObjectAclPolicy } from "./objectAcl";
@@ -24,6 +27,16 @@ import {
   searchLimiter,
   dataExportLimiter 
 } from "./rateLimit";
+
+// Initialize Stripe if key is available
+let stripe: Stripe | null = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2023-10-16",
+  });
+} else {
+  console.warn("STRIPE_SECRET_KEY not set - Stripe payments will be disabled");
+}
 
 // Seller onboarding validation schema
 const sellerOnboardingSchema = z.object({
@@ -2832,6 +2845,342 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Failed to delete listing" });
       }
+    }
+  });
+
+  // ============ Marketplace Purchase Flow Endpoints ============
+  
+  // Create Stripe payment intent for a listing
+  app.post('/api/marketplace/checkout/stripe', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ message: "Stripe payments are not configured" });
+      }
+      
+      const userId = (req.user as any).claims.sub;
+      const { listingId } = req.body;
+      
+      if (!listingId) {
+        return res.status(400).json({ message: "Listing ID is required" });
+      }
+      
+      // Get listing details
+      const listing = await storage.getListingWithDetails(listingId);
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      
+      if (listing.status !== 'active') {
+        return res.status(400).json({ message: "Listing is not available for purchase" });
+      }
+      
+      if (!listing.acceptsMoney || !listing.priceCents) {
+        return res.status(400).json({ message: "This listing does not accept money payments" });
+      }
+      
+      // Check if user already purchased this listing
+      const alreadyPurchased = await storage.checkUserPurchasedListing(userId, listingId);
+      if (alreadyPurchased) {
+        return res.status(400).json({ message: "You have already purchased this listing" });
+      }
+      
+      // Check if seller is trying to purchase their own listing
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ message: "You cannot purchase your own listing" });
+      }
+      
+      // Calculate platform fee (15%)
+      const platformFeeCents = Math.floor(listing.priceCents * 0.15);
+      const sellerPayoutCents = listing.priceCents - platformFeeCents;
+      
+      // Create pending order
+      const orderNumber = storage.generateOrderNumber();
+      const order = await storage.createOrder({
+        orderNumber,
+        buyerId: userId,
+        sellerId: listing.sellerId,
+        listingId: listingId,
+        paymentMethod: 'stripe',
+        amountCents: listing.priceCents,
+        platformFeeCents,
+        sellerPayoutCents,
+        status: 'pending'
+      });
+      
+      // Create Stripe payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: listing.priceCents,
+        currency: 'usd',
+        metadata: {
+          orderId: order.id,
+          listingId: listingId,
+          buyerId: userId,
+          sellerId: listing.sellerId
+        }
+      });
+      
+      // Update order with payment intent ID
+      await db.update(marketplaceOrders)
+        .set({ stripePaymentIntentId: paymentIntent.id })
+        .where(eq(marketplaceOrders.id, order.id));
+      
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        orderId: order.id,
+        amount: listing.priceCents
+      });
+    } catch (error) {
+      console.error("Error creating Stripe checkout:", error);
+      res.status(500).json({ message: "Failed to create payment intent" });
+    }
+  });
+  
+  // Purchase with credits
+  app.post('/api/marketplace/checkout/credits', isAuthenticated, apiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { listingId } = req.body;
+      
+      if (!listingId) {
+        return res.status(400).json({ message: "Listing ID is required" });
+      }
+      
+      // Get listing details
+      const listing = await storage.getListingWithDetails(listingId);
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      
+      if (listing.status !== 'active') {
+        return res.status(400).json({ message: "Listing is not available for purchase" });
+      }
+      
+      if (!listing.acceptsCredits || !listing.creditPrice) {
+        return res.status(400).json({ message: "This listing does not accept credit payments" });
+      }
+      
+      // Check if user already purchased this listing
+      const alreadyPurchased = await storage.checkUserPurchasedListing(userId, listingId);
+      if (alreadyPurchased) {
+        return res.status(400).json({ message: "You have already purchased this listing" });
+      }
+      
+      // Check if seller is trying to purchase their own listing
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ message: "You cannot purchase your own listing" });
+      }
+      
+      // Check user's credit balance
+      const userCredits = await storage.getUserCredits(userId);
+      if (!userCredits || userCredits.balance < listing.creditPrice) {
+        return res.status(400).json({ 
+          message: "Insufficient credits",
+          required: listing.creditPrice,
+          available: userCredits?.balance || 0
+        });
+      }
+      
+      // Calculate platform fee (15%)
+      const platformFeeCredits = Math.floor(listing.creditPrice * 0.15);
+      const sellerPayoutCredits = listing.creditPrice - platformFeeCredits;
+      
+      // Create atomic transaction for credit transfer
+      await db.transaction(async (tx) => {
+        // Create order
+        const orderNumber = storage.generateOrderNumber();
+        const [order] = await tx.insert(marketplaceOrders)
+          .values({
+            orderNumber,
+            buyerId: userId,
+            sellerId: listing.sellerId,
+            listingId: listingId,
+            paymentMethod: 'credits',
+            creditAmount: listing.creditPrice,
+            platformFeeCredits,
+            sellerPayoutCredits,
+            status: 'completed',
+            deliveredAt: new Date()
+          })
+          .returning();
+        
+        // Deduct credits from buyer
+        await storage.spendCredits(
+          userId,
+          listing.creditPrice,
+          'marketplace_purchase',
+          `Purchased "${listing.title}"`,
+          order.id,
+          'marketplace_order'
+        );
+        
+        // Add credits to seller (minus platform fee)
+        await storage.addCredits(
+          listing.sellerId,
+          sellerPayoutCredits,
+          'marketplace_sale',
+          `Sale of "${listing.title}"`,
+          order.id,
+          'marketplace_order'
+        );
+        
+        // Create digital license
+        const licenseKey = storage.generateLicenseKey();
+        await tx.insert(digitalLicenses)
+          .values({
+            orderId: order.id,
+            promptId: listing.promptId,
+            buyerId: userId,
+            licenseKey,
+            commercialUse: true
+          });
+        
+        // Update listing sales count
+        await tx.update(marketplaceListings)
+          .set({ 
+            salesCount: sql`${marketplaceListings.salesCount} + 1`,
+            updatedAt: new Date()
+          })
+          .where(eq(marketplaceListings.id, listingId));
+        
+        // Create activity for the purchase
+        await storage.createActivity({
+          userId,
+          actionType: 'created_prompt', // We'll use this to show in feed
+          targetId: listing.promptId,
+          targetType: 'prompt',
+          metadata: { purchaseType: 'credits', listingId }
+        });
+        
+        res.json({
+          success: true,
+          order,
+          licenseKey,
+          creditsSpent: listing.creditPrice,
+          remainingCredits: userCredits.balance - listing.creditPrice
+        });
+      });
+    } catch (error: any) {
+      console.error("Error processing credit purchase:", error);
+      if (error.message?.includes("Insufficient credits")) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to process credit purchase" });
+      }
+    }
+  });
+  
+  // Complete order (webhook callback from Stripe)
+  app.post('/api/marketplace/orders/:id/complete', async (req, res) => {
+    try {
+      const orderId = req.params.id;
+      const { paymentIntentId } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: "Payment intent ID is required" });
+      }
+      
+      // Verify the payment intent with Stripe
+      if (stripe) {
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (paymentIntent.status !== 'succeeded') {
+          return res.status(400).json({ message: "Payment not successful" });
+        }
+      }
+      
+      // Get the order
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      if (order.status === 'completed') {
+        return res.json({ message: "Order already completed", order });
+      }
+      
+      // Complete the order
+      await db.transaction(async (tx) => {
+        // Update order status
+        const [completedOrder] = await tx.update(marketplaceOrders)
+          .set({
+            status: 'completed',
+            deliveredAt: new Date()
+          })
+          .where(eq(marketplaceOrders.id, orderId))
+          .returning();
+        
+        // Get listing details
+        const [listing] = await tx.select()
+          .from(marketplaceListings)
+          .where(eq(marketplaceListings.id, order.listingId));
+        
+        // Create digital license
+        const licenseKey = storage.generateLicenseKey();
+        await tx.insert(digitalLicenses)
+          .values({
+            orderId: orderId,
+            promptId: listing.promptId,
+            buyerId: order.buyerId,
+            licenseKey,
+            commercialUse: true
+          });
+        
+        // Update listing sales count
+        await tx.update(marketplaceListings)
+          .set({ 
+            salesCount: sql`${marketplaceListings.salesCount} + 1`,
+            updatedAt: new Date()
+          })
+          .where(eq(marketplaceListings.id, order.listingId));
+        
+        // Create activity
+        await storage.createActivity({
+          userId: order.buyerId,
+          actionType: 'created_prompt',
+          targetId: listing.promptId,
+          targetType: 'prompt',
+          metadata: { purchaseType: 'stripe', listingId: order.listingId }
+        });
+        
+        res.json({
+          success: true,
+          order: completedOrder,
+          licenseKey
+        });
+      });
+    } catch (error) {
+      console.error("Error completing order:", error);
+      res.status(500).json({ message: "Failed to complete order" });
+    }
+  });
+  
+  // Get user's purchase history
+  app.get('/api/marketplace/purchases', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { limit = 20, offset = 0 } = req.query;
+      
+      // Get user's orders
+      const orders = await storage.getUserPurchases(userId, {
+        limit: Number(limit),
+        offset: Number(offset)
+      });
+      
+      // Enrich orders with listing and prompt details
+      const enrichedOrders = await Promise.all(orders.map(async (order) => {
+        const listing = await storage.getListingWithDetails(order.listingId);
+        const license = await storage.getUserLicense(userId, listing?.promptId || '');
+        
+        return {
+          ...order,
+          listing,
+          license
+        };
+      }));
+      
+      res.json(enrichedOrders);
+    } catch (error) {
+      console.error("Error fetching purchase history:", error);
+      res.status(500).json({ message: "Failed to fetch purchase history" });
     }
   });
 

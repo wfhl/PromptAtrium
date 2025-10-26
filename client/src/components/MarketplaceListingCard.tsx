@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ListingPreviewModal } from "@/components/ListingPreviewModal";
-import { Eye, DollarSign, Coins, Star, TrendingUp, User } from "lucide-react";
+import { Eye, DollarSign, Coins, Star, TrendingUp, User, Check } from "lucide-react";
+import { useAuthState } from "@/hooks/useAuth";
 
 interface MarketplaceListingCardProps {
   listing: {
@@ -41,6 +43,16 @@ interface MarketplaceListingCardProps {
 
 export function MarketplaceListingCard({ listing }: MarketplaceListingCardProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const { user } = useAuthState();
+  
+  // Check if user has already purchased this listing
+  const { data: purchases } = useQuery({
+    queryKey: ["/api/marketplace/purchases"],
+    enabled: !!user,
+  });
+  
+  const hasPurchased = purchases?.some((purchase: any) => purchase.listingId === listing.id);
+  const isOwnListing = listing.seller.id === user?.id;
 
   // Format price display
   const formatPrice = (cents: number) => {
@@ -68,15 +80,35 @@ export function MarketplaceListingCard({ listing }: MarketplaceListingCardProps)
               alt={listing.title}
               className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
             />
-            {listing.salesCount > 0 && (
-              <Badge 
-                variant="secondary" 
-                className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
-              >
-                <TrendingUp className="h-3 w-3 mr-1" />
-                {listing.salesCount} sold
-              </Badge>
-            )}
+            {/* Badges */}
+            <div className="absolute top-2 right-2 flex flex-col gap-2">
+              {hasPurchased && (
+                <Badge 
+                  variant="default" 
+                  className="bg-green-600 text-white"
+                >
+                  <Check className="h-3 w-3 mr-1" />
+                  Purchased
+                </Badge>
+              )}
+              {isOwnListing && (
+                <Badge 
+                  variant="default" 
+                  className="bg-blue-600 text-white"
+                >
+                  Your Listing
+                </Badge>
+              )}
+              {listing.salesCount > 0 && !hasPurchased && !isOwnListing && (
+                <Badge 
+                  variant="secondary" 
+                  className="bg-background/80 backdrop-blur-sm"
+                >
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  {listing.salesCount} sold
+                </Badge>
+              )}
+            </div>
           </div>
         )}
 

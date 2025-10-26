@@ -37,6 +37,7 @@ import Credits from "@/pages/Credits";
 import SellerDashboard from "@/pages/SellerDashboard";
 import Marketplace from "@/pages/Marketplace";
 import ListingDetail from "@/pages/ListingDetail";
+import { PurchaseHistory } from "@/pages/PurchaseHistory";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -182,6 +183,9 @@ function Router() {
             </Route>
             <Route path="/prompt-history">
               {() => <Layout><PromptHistoryPage /></Layout>}
+            </Route>
+            <Route path="/purchases">
+              {() => <Layout><PurchaseHistory /></Layout>}
             </Route>
           </>
         )}

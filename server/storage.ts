@@ -106,6 +106,12 @@ import {
   type InsertSellerProfile,
   type MarketplaceListing,
   type InsertMarketplaceListing,
+  marketplaceOrders,
+  type MarketplaceOrder,
+  type InsertMarketplaceOrder,
+  digitalLicenses,
+  type DigitalLicense,
+  type InsertDigitalLicense,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray, isNull, gte } from "drizzle-orm";
@@ -406,6 +412,24 @@ export interface IStorage {
   getSimilarListings(listingId: string, limit?: number): Promise<any[]>;
   getListingPreview(promptId: string, previewPercentage: number): Promise<string>;
   deleteListing(id: string, userId: string): Promise<void>;
+  
+  // Marketplace operations - Orders
+  createOrder(order: InsertMarketplaceOrder): Promise<MarketplaceOrder>;
+  completeOrder(orderId: string, deliveredAt?: Date): Promise<MarketplaceOrder>;
+  failOrder(orderId: string): Promise<MarketplaceOrder>;
+  refundOrder(orderId: string): Promise<MarketplaceOrder>;
+  getOrderById(id: string): Promise<MarketplaceOrder | undefined>;
+  getOrderByStripePaymentIntent(paymentIntentId: string): Promise<MarketplaceOrder | undefined>;
+  getUserPurchases(userId: string, options?: { limit?: number; offset?: number }): Promise<MarketplaceOrder[]>;
+  getSellerOrders(sellerId: string, options?: { limit?: number; offset?: number; status?: string }): Promise<MarketplaceOrder[]>;
+  checkUserPurchasedListing(userId: string, listingId: string): Promise<boolean>;
+  generateOrderNumber(): string;
+  
+  // Marketplace operations - Digital Licenses  
+  createDigitalLicense(license: InsertDigitalLicense): Promise<DigitalLicense>;
+  generateLicenseKey(): string;
+  getUserLicense(userId: string, promptId: string): Promise<DigitalLicense | undefined>;
+  getUserLicenses(userId: string, options?: { limit?: number; offset?: number }): Promise<DigitalLicense[]>;
 }
 
 function generatePromptId(): string {
@@ -3827,6 +3851,181 @@ export class DatabaseStorage implements IStorage {
     }
     
     return preview;
+  }
+
+  // Marketplace operations - Orders implementation
+  async createOrder(order: InsertMarketplaceOrder): Promise<MarketplaceOrder> {
+    const [newOrder] = await db.insert(marketplaceOrders)
+      .values(order)
+      .returning();
+    return newOrder;
+  }
+
+  async completeOrder(orderId: string, deliveredAt?: Date): Promise<MarketplaceOrder> {
+    const [updatedOrder] = await db.update(marketplaceOrders)
+      .set({
+        status: "completed",
+        deliveredAt: deliveredAt || new Date(),
+      })
+      .where(eq(marketplaceOrders.id, orderId))
+      .returning();
+    
+    if (!updatedOrder) {
+      throw new Error("Order not found");
+    }
+    
+    return updatedOrder;
+  }
+
+  async failOrder(orderId: string): Promise<MarketplaceOrder> {
+    const [updatedOrder] = await db.update(marketplaceOrders)
+      .set({
+        status: "failed",
+      })
+      .where(eq(marketplaceOrders.id, orderId))
+      .returning();
+    
+    if (!updatedOrder) {
+      throw new Error("Order not found");
+    }
+    
+    return updatedOrder;
+  }
+
+  async refundOrder(orderId: string): Promise<MarketplaceOrder> {
+    const [updatedOrder] = await db.update(marketplaceOrders)
+      .set({
+        status: "refunded",
+      })
+      .where(eq(marketplaceOrders.id, orderId))
+      .returning();
+    
+    if (!updatedOrder) {
+      throw new Error("Order not found");
+    }
+    
+    return updatedOrder;
+  }
+
+  async getOrderById(id: string): Promise<MarketplaceOrder | undefined> {
+    const [order] = await db.select()
+      .from(marketplaceOrders)
+      .where(eq(marketplaceOrders.id, id));
+    return order;
+  }
+
+  async getOrderByStripePaymentIntent(paymentIntentId: string): Promise<MarketplaceOrder | undefined> {
+    const [order] = await db.select()
+      .from(marketplaceOrders)
+      .where(eq(marketplaceOrders.stripePaymentIntentId, paymentIntentId));
+    return order;
+  }
+
+  async getUserPurchases(userId: string, options?: { limit?: number; offset?: number }): Promise<MarketplaceOrder[]> {
+    let query = db.select()
+      .from(marketplaceOrders)
+      .where(eq(marketplaceOrders.buyerId, userId))
+      .orderBy(desc(marketplaceOrders.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    const orders = await query;
+    return orders;
+  }
+
+  async getSellerOrders(sellerId: string, options?: { limit?: number; offset?: number; status?: string }): Promise<MarketplaceOrder[]> {
+    let conditions = [eq(marketplaceOrders.sellerId, sellerId)];
+    
+    if (options?.status) {
+      conditions.push(eq(marketplaceOrders.status, options.status as any));
+    }
+    
+    let query = db.select()
+      .from(marketplaceOrders)
+      .where(and(...conditions))
+      .orderBy(desc(marketplaceOrders.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    const orders = await query;
+    return orders;
+  }
+
+  async checkUserPurchasedListing(userId: string, listingId: string): Promise<boolean> {
+    const [order] = await db.select()
+      .from(marketplaceOrders)
+      .where(
+        and(
+          eq(marketplaceOrders.buyerId, userId),
+          eq(marketplaceOrders.listingId, listingId),
+          eq(marketplaceOrders.status, "completed")
+        )
+      );
+    
+    return !!order;
+  }
+
+  generateOrderNumber(): string {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = randomBytes(3).toString('hex').toUpperCase();
+    return `ORD-${timestamp}-${random}`;
+  }
+
+  // Marketplace operations - Digital Licenses implementation
+  async createDigitalLicense(license: InsertDigitalLicense): Promise<DigitalLicense> {
+    const [newLicense] = await db.insert(digitalLicenses)
+      .values(license)
+      .returning();
+    return newLicense;
+  }
+
+  generateLicenseKey(): string {
+    const prefix = 'LIC';
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = randomBytes(8).toString('hex').toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+  }
+
+  async getUserLicense(userId: string, promptId: string): Promise<DigitalLicense | undefined> {
+    const [license] = await db.select()
+      .from(digitalLicenses)
+      .where(
+        and(
+          eq(digitalLicenses.buyerId, userId),
+          eq(digitalLicenses.promptId, promptId)
+        )
+      );
+    return license;
+  }
+
+  async getUserLicenses(userId: string, options?: { limit?: number; offset?: number }): Promise<DigitalLicense[]> {
+    let query = db.select()
+      .from(digitalLicenses)
+      .where(eq(digitalLicenses.buyerId, userId))
+      .orderBy(desc(digitalLicenses.createdAt));
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options?.offset) {
+      query = query.offset(options.offset);
+    }
+    
+    const licenses = await query;
+    return licenses;
   }
 }
 
