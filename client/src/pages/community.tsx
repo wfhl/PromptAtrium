@@ -74,13 +74,15 @@ export default function Community() {
   // Read tab from URL query parameter, fallback to localStorage, then default
   const urlParams = new URLSearchParams(window.location.search);
   const tabFromUrl = urlParams.get('tab');
+  const subTabFromUrl = urlParams.get('sub');
   const savedTab = localStorage.getItem('community-active-tab');
   const initialTab = tabFromUrl || savedTab || 'prompts';
   const [activeTab, setActiveTab] = useState(initialTab);
   
-  // Read promptsSubTab from localStorage with fallback to 'featured'
+  // Read promptsSubTab from URL parameter, then localStorage, with fallback to 'featured'
   const savedPromptsSubTab = localStorage.getItem('community-prompts-sub-tab');
-  const [promptsSubTab, setPromptsSubTab] = useState(savedPromptsSubTab || "featured");
+  const initialSubTab = subTabFromUrl || savedPromptsSubTab || "featured";
+  const [promptsSubTab, setPromptsSubTab] = useState(initialSubTab);
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
   const [followingCollapsed, setFollowingCollapsed] = useState(true);
 
