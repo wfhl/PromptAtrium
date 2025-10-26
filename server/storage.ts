@@ -291,6 +291,36 @@ export interface IStorage {
   }): Promise<CommunityInvite[]>;
   deactivateInvite(id: string): Promise<void>;
 
+  // Sub-community CRUD operations
+  createSubCommunity(parentId: string, subCommunity: InsertCommunity): Promise<Community>;
+  getSubCommunities(parentId: string): Promise<Community[]>;
+  getAllSubCommunities(parentId: string): Promise<Community[]>;
+  getSubCommunityBySlug(slug: string): Promise<Community | undefined>;
+  updateSubCommunity(id: string, data: Partial<InsertCommunity>): Promise<Community>;
+  deleteSubCommunity(id: string): Promise<void>;
+
+  // Sub-community membership operations
+  joinSubCommunity(userId: string, subCommunityId: string): Promise<UserCommunity>;
+  leaveSubCommunity(userId: string, subCommunityId: string): Promise<void>;
+  getSubCommunityMembers(subCommunityId: string): Promise<UserCommunity[]>;
+  isSubCommunityMember(userId: string, subCommunityId: string): Promise<boolean>;
+  getUserSubCommunities(userId: string): Promise<Community[]>;
+
+  // Sub-community prompt operations
+  getSubCommunityPrompts(subCommunityId: string, options?: {
+    limit?: number;
+    offset?: number;
+    isPublic?: boolean;
+    search?: string;
+  }): Promise<Prompt[]>;
+  sharePromptToSubCommunity(promptId: string, subCommunityId: string): Promise<Prompt>;
+  removePromptFromSubCommunity(promptId: string, subCommunityId: string): Promise<void>;
+
+  // Sub-community hierarchy operations
+  getSubCommunityPath(communityId: string): Promise<string>;
+  getParentCommunity(subCommunityId: string): Promise<Community | undefined>;
+  getSubCommunityLevel(communityId: string): Promise<number>;
+
   // Category operations
   getCategories(options?: { userId?: string; type?: string; isActive?: boolean }): Promise<Category[]>;
   getCategory(id: string): Promise<Category | undefined>;
@@ -2387,6 +2417,351 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(communityInvites.id, id));
+  }
+
+  // Sub-community CRUD operations
+  async createSubCommunity(parentId: string, subCommunity: InsertCommunity): Promise<Community> {
+    // Get parent community to build path and level
+    const parent = await this.getCommunity(parentId);
+    if (!parent) {
+      throw new Error('Parent community not found');
+    }
+
+    // Generate ID for new sub-community
+    const subCommunityId = sql`gen_random_uuid()`;
+    
+    // Build path: parent path + "/" + new sub-community id
+    const parentPath = parent.path || parent.id;
+    const newPath = `${parentPath}/${subCommunityId}`;
+    const newLevel = (parent.level || 0) + 1;
+
+    const [newSubCommunity] = await db
+      .insert(communities)
+      .values({
+        ...subCommunity,
+        parentCommunityId: parentId,
+        path: newPath,
+        level: newLevel,
+      })
+      .returning();
+
+    // Update the path with the actual ID
+    const [updated] = await db
+      .update(communities)
+      .set({ path: `${parentPath}/${newSubCommunity.id}` })
+      .where(eq(communities.id, newSubCommunity.id))
+      .returning();
+
+    return updated;
+  }
+
+  async getSubCommunities(parentId: string): Promise<Community[]> {
+    return await db
+      .select()
+      .from(communities)
+      .where(eq(communities.parentCommunityId, parentId))
+      .orderBy(communities.name);
+  }
+
+  async getAllSubCommunities(parentId: string): Promise<Community[]> {
+    // Get parent community path
+    const parent = await this.getCommunity(parentId);
+    if (!parent) {
+      return [];
+    }
+
+    const parentPath = parent.path || parent.id;
+
+    // Get all communities whose path starts with parent path
+    return await db
+      .select()
+      .from(communities)
+      .where(sql`${communities.path} LIKE ${parentPath + '/%'}`)
+      .orderBy(communities.level, communities.name);
+  }
+
+  async getSubCommunityBySlug(slug: string): Promise<Community | undefined> {
+    const [community] = await db
+      .select()
+      .from(communities)
+      .where(and(
+        eq(communities.slug, slug),
+        sql`${communities.parentCommunityId} IS NOT NULL`
+      ));
+    return community;
+  }
+
+  async updateSubCommunity(id: string, data: Partial<InsertCommunity>): Promise<Community> {
+    const [updated] = await db
+      .update(communities)
+      .set({ 
+        ...data, 
+        updatedAt: new Date() 
+      })
+      .where(eq(communities.id, id))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('Sub-community not found');
+    }
+
+    return updated;
+  }
+
+  async deleteSubCommunity(id: string): Promise<void> {
+    // Get all sub-communities under this one (recursive)
+    const subCommunities = await this.getAllSubCommunities(id);
+    const subCommunityIds = subCommunities.map(sc => sc.id);
+    const allIds = [id, ...subCommunityIds];
+
+    // Delete in transaction to ensure consistency
+    await db.transaction(async (tx) => {
+      // Delete all user memberships
+      await tx
+        .delete(userCommunities)
+        .where(inArray(userCommunities.communityId, allIds));
+
+      // Delete all admin roles
+      await tx
+        .delete(communityAdmins)
+        .where(inArray(communityAdmins.communityId, allIds));
+
+      await tx
+        .delete(subCommunityAdmins)
+        .where(inArray(subCommunityAdmins.subCommunityId, allIds));
+
+      // Delete all invites
+      await tx
+        .delete(communityInvites)
+        .where(inArray(communityInvites.communityId, allIds));
+
+      // Delete all collections
+      await tx
+        .delete(collections)
+        .where(inArray(collections.communityId, allIds));
+
+      // Update prompts to remove community association
+      await tx
+        .update(prompts)
+        .set({ communityId: null })
+        .where(inArray(prompts.communityId, allIds));
+
+      // Finally, delete all communities (children first due to foreign key)
+      if (subCommunityIds.length > 0) {
+        await tx
+          .delete(communities)
+          .where(inArray(communities.id, subCommunityIds));
+      }
+
+      await tx
+        .delete(communities)
+        .where(eq(communities.id, id));
+    });
+  }
+
+  // Sub-community membership operations
+  async joinSubCommunity(userId: string, subCommunityId: string): Promise<UserCommunity> {
+    // Verify sub-community exists and get its parent
+    const subCommunity = await this.getCommunity(subCommunityId);
+    if (!subCommunity || !subCommunity.parentCommunityId) {
+      throw new Error('Sub-community not found');
+    }
+
+    // Check if user is already a member
+    const existingMembership = await db
+      .select()
+      .from(userCommunities)
+      .where(and(
+        eq(userCommunities.userId, userId),
+        eq(userCommunities.subCommunityId, subCommunityId)
+      ))
+      .limit(1);
+
+    if (existingMembership.length > 0) {
+      return existingMembership[0];
+    }
+
+    // Add user to sub-community
+    const [membership] = await db
+      .insert(userCommunities)
+      .values({
+        userId,
+        communityId: subCommunity.parentCommunityId,
+        subCommunityId,
+        role: 'member' as CommunityRole,
+      })
+      .returning();
+
+    return membership;
+  }
+
+  async leaveSubCommunity(userId: string, subCommunityId: string): Promise<void> {
+    await db
+      .delete(userCommunities)
+      .where(and(
+        eq(userCommunities.userId, userId),
+        eq(userCommunities.subCommunityId, subCommunityId)
+      ));
+
+    // Also remove any admin roles
+    await db
+      .delete(subCommunityAdmins)
+      .where(and(
+        eq(subCommunityAdmins.userId, userId),
+        eq(subCommunityAdmins.subCommunityId, subCommunityId)
+      ));
+  }
+
+  async getSubCommunityMembers(subCommunityId: string): Promise<UserCommunity[]> {
+    return await db
+      .select()
+      .from(userCommunities)
+      .where(eq(userCommunities.subCommunityId, subCommunityId))
+      .orderBy(userCommunities.joinedAt);
+  }
+
+  async isSubCommunityMember(userId: string, subCommunityId: string): Promise<boolean> {
+    const membership = await db
+      .select()
+      .from(userCommunities)
+      .where(and(
+        eq(userCommunities.userId, userId),
+        eq(userCommunities.subCommunityId, subCommunityId)
+      ))
+      .limit(1);
+
+    return membership.length > 0;
+  }
+
+  async getUserSubCommunities(userId: string): Promise<Community[]> {
+    // Get all sub-community IDs the user is a member of
+    const memberships = await db
+      .select({ subCommunityId: userCommunities.subCommunityId })
+      .from(userCommunities)
+      .where(and(
+        eq(userCommunities.userId, userId),
+        sql`${userCommunities.subCommunityId} IS NOT NULL`
+      ));
+
+    if (memberships.length === 0) {
+      return [];
+    }
+
+    const subCommunityIds = memberships
+      .map(m => m.subCommunityId)
+      .filter((id): id is string => id !== null);
+
+    if (subCommunityIds.length === 0) {
+      return [];
+    }
+
+    // Get the communities
+    return await db
+      .select()
+      .from(communities)
+      .where(inArray(communities.id, subCommunityIds))
+      .orderBy(communities.name);
+  }
+
+  // Sub-community prompt operations
+  async getSubCommunityPrompts(subCommunityId: string, options: {
+    limit?: number;
+    offset?: number;
+    isPublic?: boolean;
+    search?: string;
+  } = {}): Promise<Prompt[]> {
+    let query = db.select().from(prompts).$dynamic();
+
+    const conditions: any[] = [eq(prompts.communityId, subCommunityId)];
+
+    if (options.isPublic !== undefined) {
+      conditions.push(eq(prompts.isPublic, options.isPublic));
+    }
+
+    if (options.search) {
+      conditions.push(
+        or(
+          ilike(prompts.name, `%${options.search}%`),
+          ilike(prompts.description, `%${options.search}%`),
+          sql`EXISTS (SELECT 1 FROM unnest(${prompts.tags}) AS tag WHERE tag ILIKE ${`%${options.search}%`})`
+        )
+      );
+    }
+
+    query = query.where(and(...conditions));
+    query = query.orderBy(desc(prompts.createdAt));
+
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+
+    if (options.offset) {
+      query = query.offset(options.offset);
+    }
+
+    return await query;
+  }
+
+  async sharePromptToSubCommunity(promptId: string, subCommunityId: string): Promise<Prompt> {
+    // Verify sub-community exists
+    const subCommunity = await this.getCommunity(subCommunityId);
+    if (!subCommunity || !subCommunity.parentCommunityId) {
+      throw new Error('Sub-community not found');
+    }
+
+    // Update prompt to associate with sub-community
+    const [updated] = await db
+      .update(prompts)
+      .set({ 
+        communityId: subCommunityId,
+        updatedAt: new Date() 
+      })
+      .where(eq(prompts.id, promptId))
+      .returning();
+
+    if (!updated) {
+      throw new Error('Prompt not found');
+    }
+
+    return updated;
+  }
+
+  async removePromptFromSubCommunity(promptId: string, subCommunityId: string): Promise<void> {
+    await db
+      .update(prompts)
+      .set({ 
+        communityId: null,
+        updatedAt: new Date() 
+      })
+      .where(and(
+        eq(prompts.id, promptId),
+        eq(prompts.communityId, subCommunityId)
+      ));
+  }
+
+  // Sub-community hierarchy operations
+  async getSubCommunityPath(communityId: string): Promise<string> {
+    const community = await this.getCommunity(communityId);
+    if (!community) {
+      throw new Error('Community not found');
+    }
+    return community.path || community.id;
+  }
+
+  async getParentCommunity(subCommunityId: string): Promise<Community | undefined> {
+    const subCommunity = await this.getCommunity(subCommunityId);
+    if (!subCommunity || !subCommunity.parentCommunityId) {
+      return undefined;
+    }
+    return await this.getCommunity(subCommunity.parentCommunityId);
+  }
+
+  async getSubCommunityLevel(communityId: string): Promise<number> {
+    const community = await this.getCommunity(communityId);
+    if (!community) {
+      throw new Error('Community not found');
+    }
+    return community.level || 0;
   }
 
   // Category operations
