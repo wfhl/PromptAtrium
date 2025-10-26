@@ -91,22 +91,54 @@ export const communities = pgTable("communities", {
   slug: varchar("slug").notNull().unique(),
   imageUrl: varchar("image_url"),
   isActive: boolean("is_active").default(true),
+  // Sub-communities hierarchy fields
+  parentCommunityId: varchar("parent_community_id").references(() => communities.id),
+  level: integer("level").default(0),
+  path: text("path"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Index for sub-communities lookup
+  index("idx_communities_parent").on(table.parentCommunityId),
+  // Index for efficient path-based queries
+  index("idx_communities_path").on(table.path),
+  // Index for level-based queries
+  index("idx_communities_level").on(table.level),
+]);
+
+// Communities types
+export const insertCommunitySchema = createInsertSchema(communities).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
+
+export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
+export type Community = typeof communities.$inferSelect;
 
 // User communities membership table
 export const userCommunities = pgTable("user_communities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   communityId: varchar("community_id").notNull().references(() => communities.id),
+  subCommunityId: varchar("sub_community_id").references(() => communities.id),
   role: varchar("role", { enum: ["member", "admin"] }).default("member"),
   joinedAt: timestamp("joined_at").defaultNow(),
 }, (table) => [
   // Foreign key indexes
   index("idx_user_communities_user_id").on(table.userId),
   index("idx_user_communities_community_id").on(table.communityId),
+  index("idx_user_communities_sub_community_id").on(table.subCommunityId),
 ]);
+
+// User communities types
+export const insertUserCommunitySchema = createInsertSchema(userCommunities).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export type InsertUserCommunity = z.infer<typeof insertUserCommunitySchema>;
+export type UserCommunity = typeof userCommunities.$inferSelect;
 
 // Prompt history table - tracks all generated prompts by users
 export const promptHistory = pgTable("prompt_history", {
@@ -128,6 +160,32 @@ export const communityAdmins = pgTable("community_admins", {
   assignedBy: varchar("assigned_by").notNull().references(() => users.id),
   assignedAt: timestamp("assigned_at").defaultNow(),
 });
+
+// Sub-community admins table - tracks admin permissions for sub-communities
+export const subCommunityAdmins = pgTable("sub_community_admins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  subCommunityId: varchar("sub_community_id").notNull().references(() => communities.id),
+  assignedBy: varchar("assigned_by").notNull().references(() => users.id),
+  permissions: jsonb("permissions").default({}),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+}, (table) => [
+  // Index for user lookups
+  index("idx_sub_community_admins_user").on(table.userId),
+  // Index for sub-community lookups
+  index("idx_sub_community_admins_sub_community").on(table.subCommunityId),
+  // Composite index for unique constraint
+  index("idx_sub_community_admins_user_sub_community").on(table.userId, table.subCommunityId),
+]);
+
+// Sub-community admins types
+export const insertSubCommunityAdminSchema = createInsertSchema(subCommunityAdmins).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export type InsertSubCommunityAdmin = z.infer<typeof insertSubCommunityAdminSchema>;
+export type SubCommunityAdmin = typeof subCommunityAdmins.$inferSelect;
 
 // Community invites table - tracks invite codes and their usage
 export const communityInvites = pgTable("community_invites", {
@@ -373,6 +431,7 @@ export const prompts = pgTable("prompts", {
   license: varchar("license"),
   lastUsedAt: timestamp("last_used_at"),
   userId: varchar("user_id").notNull().references(() => users.id),
+  subCommunityId: varchar("sub_community_id").references(() => communities.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   promptContent: text("prompt_content").notNull(),
@@ -381,6 +440,7 @@ export const prompts = pgTable("prompts", {
   // Foreign key indexes
   index("idx_prompts_user_id").on(table.userId),
   index("idx_prompts_collection_id").on(table.collectionId),
+  index("idx_prompts_sub_community_id").on(table.subCommunityId),
   // Query optimization indexes
   index("idx_prompts_public_created").on(table.isPublic, table.createdAt),
   // Partial index for featured prompts
@@ -1136,17 +1196,6 @@ export const insertRecommendedModelSchema = createInsertSchema(recommendedModels
   id: true,
   createdAt: true,
   updatedAt: true,
-});
-
-export const insertCommunitySchema = createInsertSchema(communities).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertUserCommunitySchema = createInsertSchema(userCommunities).omit({
-  id: true,
-  joinedAt: true,
 });
 
 export const insertPromptHistorySchema = createInsertSchema(promptHistory).omit({
