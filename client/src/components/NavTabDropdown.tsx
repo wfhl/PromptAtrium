@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Wrench, Users, ShoppingBag, ChevronRight, Sparkles, TrendingUp, Clock, Heart } from 'lucide-react';
+import { FileText, Wrench, Users, ShoppingBag, ChevronRight, Sparkles, TrendingUp, Clock, Heart, FileSearch, FolderPlus, RatioIcon, BookOpen, Plus, FileUp } from 'lucide-react';
 
 interface TabOption {
   label: string;
@@ -32,7 +32,16 @@ const PAGE_CONFIGS = {
     path: '/tools',
     icon: Wrench,
     title: 'Tools',
-    tabs: [] // Tools page doesn't have tabs
+    tabs: [
+      { label: 'Add Prompt', tab: 'add-prompt', icon: Plus },
+      { label: 'Generate Prompt', tab: 'quick-prompter', icon: Sparkles },
+      { label: 'Import Prompts', tab: 'import', icon: FileUp },
+      { label: 'Metadata Extract', tab: 'metadata-analyzer', icon: FileSearch },
+      { label: 'Collections', tab: 'collections', icon: FolderPlus },
+      { label: 'Aspect Ratio Calc', tab: 'aspect-ratio-calculator', icon: RatioIcon },
+      { label: 'Wordsmith Codex', tab: 'codex', icon: BookOpen },
+      { label: 'Prompting Guides', tab: 'prompting-guides', icon: BookOpen },
+    ]
   },
   community: {
     path: '/community',
@@ -149,10 +158,48 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
               <div className="py-1 max-h-[60vh] overflow-y-auto">
                 {config.tabs.map((tab) => {
                   const TabIcon = tab.icon;
+                  
+                  // Generate the appropriate href based on the page type
+                  let href = '';
+                  if (page === 'tools') {
+                    // Tools have specific routing patterns
+                    switch (tab.tab) {
+                      case 'add-prompt':
+                        href = '/library?action=new-prompt';
+                        break;
+                      case 'quick-prompter':
+                        href = '/tools/quick-prompter';
+                        break;
+                      case 'import':
+                        href = '/library?action=import';
+                        break;
+                      case 'metadata-analyzer':
+                        href = '/tools/metadata-analyzer';
+                        break;
+                      case 'collections':
+                        href = '/collections';
+                        break;
+                      case 'aspect-ratio-calculator':
+                        href = '/tools/aspect-ratio-calculator';
+                        break;
+                      case 'codex':
+                        href = '/codex';
+                        break;
+                      case 'prompting-guides':
+                        href = '/prompting-guides';
+                        break;
+                      default:
+                        href = '/tools';
+                    }
+                  } else {
+                    // Other pages use tab parameters
+                    href = `${config.path}?tab=${tab.tab}`;
+                  }
+                  
                   return (
                     <Link
                       key={tab.tab}
-                      href={`${config.path}?tab=${tab.tab}`}
+                      href={href}
                       onClick={() => {
                         // For community page prompts sub-tabs, save to localStorage
                         if (page === 'community' && tab.tab.startsWith('prompts&sub=')) {
