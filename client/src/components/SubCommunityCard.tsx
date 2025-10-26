@@ -148,15 +148,16 @@ export function SubCommunityCard({
         </Link>
         {showActions && (
           <div className="flex items-center gap-2">
-            {isAdmin && onManage && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={onManage}
-                data-testid={`button-manage-${subCommunity.id}`}
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
+            {isAdmin && (
+              <Link href={`/sub-community/${subCommunity.id}/admin`}>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  data-testid={`button-admin-${subCommunity.id}`}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </Link>
             )}
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -229,16 +230,17 @@ export function SubCommunityCard({
           
           {showActions && (
             <div className="flex items-center gap-2">
-              {isAdmin && onManage && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={onManage}
-                  data-testid={`button-manage-${subCommunity.id}`}
-                >
-                  <Settings className="h-4 w-4 mr-1" />
-                  Manage
-                </Button>
+              {isAdmin && (
+                <Link href={`/sub-community/${subCommunity.id}/admin`}>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    data-testid={`button-admin-${subCommunity.id}`}
+                  >
+                    <Settings className="h-4 w-4 mr-1" />
+                    Admin Dashboard
+                  </Button>
+                </Link>
               )}
               <Button
                 variant={isMember ? "outline" : "default"}

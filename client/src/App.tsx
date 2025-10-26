@@ -41,6 +41,7 @@ import ListingDetail from "@/pages/ListingDetail";
 import MarketplaceDocs from "@/pages/MarketplaceDocs";
 import { PurchaseHistory } from "@/pages/PurchaseHistory";
 import { AdminDisputes } from "@/pages/AdminDisputes";
+import SubCommunityAdminDashboard from "@/pages/SubCommunityAdminDashboard";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -150,6 +151,9 @@ function Router() {
             </Route>
             <Route path="/communities">
               {() => <Layout><Communities /></Layout>}
+            </Route>
+            <Route path="/sub-community/:id/admin">
+              {() => <Layout><SubCommunityAdminDashboard /></Layout>}
             </Route>
             <Route path="/tools">
               {() => <Layout><Tools /></Layout>}
