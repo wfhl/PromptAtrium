@@ -5,6 +5,13 @@ A comprehensive platform for managing, sharing, and generating AI prompts. Featu
 
 ## Recent Updates (October 26, 2025)
 
+### My Activity Tab - Prompt Links Fix
+- **Fixed Prompt Name Links**: Made prompt names in the My Activity tab clickable and linked to their respective prompt detail pages at `/prompt/{id}`
+- **Consistent Navigation**: Aligned prompt link behavior with user and collection links for consistent user experience
+- **Visual Feedback**: Added hover effects to prompt links (underline on hover) for better interactivity
+
+## Recent Updates (October 26, 2025)
+
 ### Sub-Community System Implementation
 - **Hierarchical Community Structure**: Implemented parent-child relationships for communities with materialized path pattern
 - **Sub-Community Admin Roles**: Added new role type with delegated administration capabilities
