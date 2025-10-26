@@ -32,21 +32,7 @@ export function MobilePageNav() {
             </Button>
           </Link>
           
-          <Link href="/marketplace" className="flex-1">
-            <Button 
-              variant="outline"
-              className={`w-full relative group px-2 py-2 h-auto ${isMarketplacePage ? 'button-gradient-marketplace hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
-              data-testid="button-marketplace"
-            >
-              <div className="flex flex-col items-center gap-0.5">
-                <ShoppingBag className={`h-4 w-4 text-white transition-all ${!isMarketplacePage ? 'group-hover:scale-110 group-hover:brightness-150' : ''}`} />
-                <span className={`text-[10px] ${!isMarketplacePage ? 'nav-gradient-marketplace' : ''}`}>Market</span>
-              </div>
-              {isMarketplacePage && (
-                <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
-              )}
-            </Button>
-          </Link>
+
           
           <Link href="/tools" className="flex-1">
             <Button 
@@ -79,6 +65,23 @@ export function MobilePageNav() {
               )}
             </Button>
           </Link>
+
+          <Link href="/marketplace" className="flex-1">
+            <Button 
+              variant="outline"
+              className={`w-full relative group px-2 py-2 h-auto ${isMarketplacePage ? 'button-gradient-marketplace hover:color-white' : 'bg-gray-900/70 hover:bg-white/5'}`}
+              data-testid="button-marketplace"
+            >
+              <div className="flex flex-col items-center gap-0.5">
+                <ShoppingBag className={`h-4 w-4 text-white transition-all ${!isMarketplacePage ? 'group-hover:scale-110 group-hover:brightness-150' : ''}`} />
+                <span className={`text-[10px] ${!isMarketplacePage ? 'nav-gradient-marketplace' : ''}`}>Market</span>
+              </div>
+              {isMarketplacePage && (
+                <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
+              )}
+            </Button>
+          </Link>
+          
         </div>
       </div>
     </>
