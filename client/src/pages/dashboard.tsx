@@ -75,23 +75,47 @@ export default function Dashboard() {
 
   // Initialize collapsible state from localStorage for the specific user
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
+  const [isCollectionsCollapsed, setIsCollectionsCollapsed] = useState(false);
+  const [isActivityCollapsed, setIsActivityCollapsed] = useState(false);
 
-  // Load collapsed state from localStorage once user is available
+  // Load collapsed states from localStorage once user is available
   useEffect(() => {
     if (user?.id) {
-      const stored = localStorage.getItem(`statsCollapsed_${user.id}`);
-      if (stored !== null) {
-        setIsStatsCollapsed(stored === 'true');
+      const statsStored = localStorage.getItem(`statsCollapsed_${user.id}`);
+      if (statsStored !== null) {
+        setIsStatsCollapsed(statsStored === 'true');
+      }
+      
+      const collectionsStored = localStorage.getItem(`collectionsCollapsed_${user.id}`);
+      if (collectionsStored !== null) {
+        setIsCollectionsCollapsed(collectionsStored === 'true');
+      }
+      
+      const activityStored = localStorage.getItem(`activityCollapsed_${user.id}`);
+      if (activityStored !== null) {
+        setIsActivityCollapsed(activityStored === 'true');
       }
     }
   }, [user?.id]);
 
-  // Update localStorage when the collapsed state changes
+  // Update localStorage when the collapsed states change
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`statsCollapsed_${user.id}`, isStatsCollapsed.toString());
     }
   }, [isStatsCollapsed, user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`collectionsCollapsed_${user.id}`, isCollectionsCollapsed.toString());
+    }
+  }, [isCollectionsCollapsed, user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`activityCollapsed_${user.id}`, isActivityCollapsed.toString());
+    }
+  }, [isActivityCollapsed, user?.id]);
 
   // Prefetch common data for faster navigation
   useEffect(() => {
@@ -533,6 +557,116 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Collections and Activity Cards for Mobile/Tablet - Show above recent prompts */}
+        <div className="block lg:hidden space-y-4 mb-6">
+          {/* Collections - Collapsible on mobile/tablet */}
+          <Card data-testid="card-collections-mobile">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>My Collections</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Link href="/library?tab=collections">
+                    <Button variant="link" className="text-primary hover:underline p-0 text-sm" data-testid="link-view-all-collections-mobile">
+                      View all
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCollectionsCollapsed(!isCollectionsCollapsed)}
+                    data-testid="button-toggle-collections"
+                  >
+                    {isCollectionsCollapsed ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <Collapsible open={!isCollectionsCollapsed}>
+              <CollapsibleContent>
+                <CardContent className="space-y-3">
+                  {collections.length > 0 ? (
+                    collections.slice(0, 10).map((collection) => (
+                      <CollectionItem key={collection.id} collection={collection} />
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No collections yet. Create one to organize your prompts.
+                    </p>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+
+          {/* Community Activity - Collapsible on mobile/tablet */}
+          <Card data-testid="card-activity-mobile">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Community Activity</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Link href="/community?tab=activity">
+                    <Button variant="link" className="text-primary hover:underline p-0 text-sm" data-testid="link-view-all-activity-mobile">
+                      View all
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsActivityCollapsed(!isActivityCollapsed)}
+                    data-testid="button-toggle-activity"
+                  >
+                    {isActivityCollapsed ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <Collapsible open={!isActivityCollapsed}>
+              <CollapsibleContent>
+                <CardContent>
+                  {recentActivities.length > 0 ? (
+                    <div className="space-y-4">
+                      {recentActivities.slice(0, 5).map((activity) => (
+                        <div key={activity.id} className="flex items-start gap-3 pb-4 border-b last:border-0">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={activity.user?.profileImageUrl || undefined} />
+                            <AvatarFallback>
+                              {activity.user?.firstName?.[0]?.toUpperCase() || activity.user?.username?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              {getActivityIcon(activity.actionType)}
+                              <p className="text-sm">
+                                {getActivityDescription(activity)}
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {activity.createdAt ? formatDate(activity.createdAt) : 'recently'}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10">
+                      <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+                      <p className="text-sm text-muted-foreground">No recent activity yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4 lg:gap-8">
           <div className="lg:col-span-2">
             {/* Recent Prompts */}
@@ -714,8 +848,8 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Collections */}
-            <Card data-testid="card-collections">
+            {/* Collections - Hidden on mobile/tablet, shown on desktop */}
+            <Card data-testid="card-collections" className="hidden lg:block">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>My Collections</CardTitle>
@@ -739,8 +873,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Community Activity */}
-            <Card data-testid="card-activity">
+            {/* Community Activity - Hidden on mobile/tablet, shown on desktop */}
+            <Card data-testid="card-activity" className="hidden lg:block">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Community Activity</CardTitle>
