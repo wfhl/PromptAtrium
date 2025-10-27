@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'wouter';
+import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Wrench, Users, ShoppingBag, ChevronRight, Sparkles, TrendingUp, Clock, Heart, FileSearch, FolderPlus, RatioIcon, BookOpen, Plus, FileUp } from 'lucide-react';
 
@@ -71,6 +71,7 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
     left: 0,
     width: 0
   });
+  const [, setLocation] = useLocation();
 
   const config = PAGE_CONFIGS[page];
   const Icon = config.icon;
@@ -209,8 +210,8 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
                         if (page === 'library' && tab.tab) {
                           localStorage.setItem('library-active-tab', tab.tab);
                         }
-                        // Navigate to the appropriate URL
-                        window.location.href = href;
+                        // Navigate to the appropriate URL using client-side routing
+                        setLocation(href);
                         // Close dropdown immediately
                         onClose();
                       }}
