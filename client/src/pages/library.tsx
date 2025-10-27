@@ -41,7 +41,7 @@ export default function Library() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,8 +68,8 @@ export default function Library() {
   
   const [statusFilter, setStatusFilter] = useState("");
   
-  // Parse query parameters to get the tab, fallback to localStorage, then default
-  const queryParams = new URLSearchParams(window.location.search);
+  // Parse query parameters reactively from wouter's location
+  const queryParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
   const tabFromQuery = queryParams.get('tab');
   const savedTab = localStorage.getItem('library-active-tab');
   const [activeTab, setActiveTab] = useState<string>(tabFromQuery || savedTab || "prompts");
@@ -82,7 +82,7 @@ export default function Library() {
   
   // Update tab when query parameter changes and handle action parameters
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
     const tab = params.get('tab');
     const action = params.get('action');
     
@@ -94,27 +94,27 @@ export default function Library() {
     if (action === 'new-prompt') {
       setPromptModalOpen(true);
       // Clear the action param after handling
-      const newParams = new URLSearchParams(window.location.search);
+      const newParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
       newParams.delete('action');
-      const newUrl = window.location.pathname + (newParams.toString() ? '?' + newParams.toString() : '');
-      window.history.replaceState({}, '', newUrl);
+      const newUrl = '/library' + (newParams.toString() ? '?' + newParams.toString() : '');
+      setLocation(newUrl);
     } else if (action === 'new-collection') {
       setActiveTab('collections');
       setCreateCollectionModalOpen(true);
       // Clear the action param after handling
-      const newParams = new URLSearchParams(window.location.search);
+      const newParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
       newParams.delete('action');
-      const newUrl = window.location.pathname + (newParams.toString() ? '?' + newParams.toString() : '');
-      window.history.replaceState({}, '', newUrl);
+      const newUrl = '/library' + (newParams.toString() ? '?' + newParams.toString() : '');
+      setLocation(newUrl);
     } else if (action === 'import') {
       setBulkImportModalOpen(true);
       // Clear the action param after handling
-      const newParams = new URLSearchParams(window.location.search);
+      const newParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
       newParams.delete('action');
-      const newUrl = window.location.pathname + (newParams.toString() ? '?' + newParams.toString() : '');
-      window.history.replaceState({}, '', newUrl);
+      const newUrl = '/library' + (newParams.toString() ? '?' + newParams.toString() : '');
+      setLocation(newUrl);
     }
-  }, [location]);
+  }, [location, setLocation]);
   
   // Bulk editing state
   const [isBulkMode, setIsBulkMode] = useState(false);
@@ -757,6 +757,8 @@ export default function Library() {
         <Tabs value={activeTab} onValueChange={(value) => {
           setActiveTab(value);
           localStorage.setItem('library-active-tab', value);
+          // Update URL with the new tab
+          setLocation(`/library?tab=${value}`);
         }} className="space-y-3 md:space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-my-prompts">

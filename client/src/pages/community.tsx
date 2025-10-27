@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ export default function Community() {
   const currentUserId = (user as any)?.id;
   const isSuperAdmin = (user as any)?.role === "super_admin";
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -71,8 +72,8 @@ export default function Community() {
   });
   const [sortBy, setSortBy] = useState("featured");
   
-  // Read tab from URL query parameter, fallback to localStorage, then default
-  const urlParams = new URLSearchParams(window.location.search);
+  // Parse URL parameters reactively from wouter's location
+  const urlParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
   const tabFromUrl = urlParams.get('tab');
   const subTabFromUrl = urlParams.get('sub');
   const savedTab = localStorage.getItem('community-active-tab');
@@ -100,6 +101,21 @@ export default function Community() {
       return;
     }
   }, [isAuthenticated, isLoading, toast]);
+
+  // React to URL changes and update tabs
+  useEffect(() => {
+    const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+    const tab = params.get('tab');
+    const sub = params.get('sub');
+    
+    if (tab && ['prompts', 'collections', 'followed'].includes(tab)) {
+      setActiveTab(tab);
+    }
+    
+    if (sub && ['featured', 'all', 'trending', 'recent'].includes(sub)) {
+      setPromptsSubTab(sub);
+    }
+  }, [location]);
 
   // Save promptsSubTab to localStorage when it changes
   useEffect(() => {
@@ -400,6 +416,16 @@ export default function Community() {
       <Tabs value={activeTab} onValueChange={(value) => {
         setActiveTab(value);
         localStorage.setItem('community-active-tab', value);
+        // Update URL with the new tab
+        const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+        params.set('tab', value);
+        // Keep sub parameter if on prompts tab
+        if (value === 'prompts' && promptsSubTab) {
+          params.set('sub', promptsSubTab);
+        } else {
+          params.delete('sub');
+        }
+        setLocation(`/community?${params.toString()}`);
       }} className="space-y-1 md:space-y-2">
         <TabsList className="grid grid-cols-3">
           <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
@@ -454,7 +480,14 @@ export default function Community() {
           </div>
 
           {/* Sub-tabs styled like dashboard */}
-          <Tabs value={promptsSubTab} onValueChange={setPromptsSubTab} className="mb-2">
+          <Tabs value={promptsSubTab} onValueChange={(value) => {
+            setPromptsSubTab(value);
+            // Update URL with new sub-tab
+            const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+            params.set('tab', 'prompts');
+            params.set('sub', value);
+            setLocation(`/community?${params.toString()}`);
+          }} className="mb-2">
             <TabsList className="inline-flex w-auto">
               <TabsTrigger value="featured" className="text-xs px-3" data-testid="filter-featured">
                 Featured
