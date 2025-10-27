@@ -148,10 +148,20 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
               width: `${Math.max(position.width, 180)}px`,
             }}
           >
-            <div className="bg-gray-900/95 backdrop-blur-lg rounded-lg shadow-xl border border-gray-800 overflow-hidden select-none">
+            <div className={`backdrop-blur-xl rounded-lg shadow-2xl overflow-hidden select-none border-2 ${
+              page === 'library' ? 'bg-gradient-to-br from-purple-600/95 to-pink-600/95 border-purple-400/40 shadow-purple-500/50' :
+              page === 'tools' ? 'bg-gradient-to-br from-blue-600/95 to-cyan-600/95 border-blue-400/40 shadow-blue-500/50' :
+              page === 'community' ? 'bg-gradient-to-br from-purple-600/95 to-indigo-600/95 border-purple-400/40 shadow-purple-500/50' :
+              'bg-gradient-to-br from-orange-600/95 to-red-600/95 border-orange-400/40 shadow-orange-500/50'
+            }`}>
               {/* Header */}
-              <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-800/50">
-                <Icon className="h-4 w-4 text-white/80" />
+              <div className={`flex items-center gap-2 px-3 py-2 border-b ${
+                page === 'library' ? 'border-purple-400/20 bg-purple-900/30' :
+                page === 'tools' ? 'border-blue-400/20 bg-blue-900/30' :
+                page === 'community' ? 'border-purple-400/20 bg-purple-900/30' :
+                'border-orange-400/20 bg-orange-900/30'
+              }`}>
+                <Icon className="h-4 w-4 text-white/90" />
                 <span className="text-sm font-medium text-white">{config.title} - Quick Jump</span>
               </div>
               
@@ -226,15 +236,15 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
                         // Close dropdown immediately
                         onClose();
                       }}
-                      className="flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors cursor-pointer group"
+                      className="flex items-center justify-between px-3 py-2.5 hover:bg-white/20 transition-all duration-200 cursor-pointer group"
                     >
                       <div className="flex items-center gap-2">
-                        {TabIcon && <TabIcon className="h-3 w-3 text-white/60 group-hover:text-white/80" />}
-                        <span className="text-sm text-white/90 group-hover:text-white">
+                        {TabIcon && <TabIcon className="h-3 w-3 text-white/70 group-hover:text-white" />}
+                        <span className="text-sm text-white group-hover:text-white font-medium">
                           {tab.label}
                         </span>
                       </div>
-                      <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-white/60" />
+                      <ChevronRight className="h-3 w-3 text-white/50 group-hover:text-white/80 transition-all duration-200" />
                     </div>
                   );
                 })}
