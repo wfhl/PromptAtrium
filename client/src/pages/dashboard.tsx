@@ -558,9 +558,9 @@ export default function Dashboard() {
         </div>
 
         {/* Collections and Activity Cards for Mobile/Tablet - Show above recent prompts */}
-        <div className="block lg:hidden space-y-4 mb-6">
+        <div className="block lg:hidden space-y-4 mb-6 border-transparent">
           {/* Collections - Collapsible on mobile/tablet */}
-          <Card data-testid="card-collections-mobile">
+          <Card data-testid="card-collections-mobile border-transparent">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>My Collections</CardTitle>
