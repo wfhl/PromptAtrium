@@ -797,12 +797,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Quick Actions for Mobile - Show at top on mobile */}
+        {/* Quick Actions for Mobile and Tablet - Show at top on mobile and tablet */}
         {isToolsVisible && (
           <Collapsible
             open={!isToolsCollapsed}
             onOpenChange={(open) => setIsToolsCollapsed(!open)}
-            className="block md:hidden mb-3"
+            className="block lg:hidden mb-3 md:mb-6"
           >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-base md:text-xl font-semibold">Tools</h3>
@@ -857,16 +857,16 @@ export default function Dashboard() {
             </div>
             <CollapsibleContent>
               <Card data-testid="card-collections-mobile">
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-2 pt-3 px-3 md:pb-3 md:pt-6 md:px-6">
                   <CardTitle className="sr-only">Collections Content</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-2 px-3 pb-3 md:space-y-3 md:px-6 md:pb-6">
                   {collections.length > 0 ? (
                     collections.slice(0, 10).map((collection) => (
                       <CollectionItem key={collection.id} collection={collection} />
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
+                    <p className="text-sm text-muted-foreground text-center py-3 md:py-4">
                       No collections yet. Create one to organize your prompts.
                     </p>
                   )}
@@ -1189,12 +1189,12 @@ export default function Dashboard() {
               </Link>
             </div>
 
-            {/* Quick Actions - Hidden on mobile (shown at top) */}
+            {/* Quick Actions - Hidden on mobile/tablet (shown at top) */}
             {isToolsVisible && (
               <Collapsible
                 open={!isToolsCollapsed}
                 onOpenChange={(open) => setIsToolsCollapsed(!open)}
-                className="hidden md:block"
+                className="hidden lg:block"
               >
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-base md:text-xl font-semibold">Tools</h3>
