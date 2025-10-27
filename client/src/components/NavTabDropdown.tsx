@@ -210,8 +210,19 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
                         if (page === 'library' && tab.tab) {
                           localStorage.setItem('library-active-tab', tab.tab);
                         }
-                        // Navigate to the appropriate URL using client-side routing
-                        setLocation(href);
+                        
+                        // Check if we're navigating within the same page (just changing tabs)
+                        const currentPath = window.location.pathname;
+                        const targetPath = href.split('?')[0];
+                        
+                        if (currentPath === targetPath) {
+                          // Same page, different tab - force a refresh to trigger tab change
+                          window.location.href = href;
+                        } else {
+                          // Different page - use client-side routing
+                          setLocation(href);
+                        }
+                        
                         // Close dropdown immediately
                         onClose();
                       }}
