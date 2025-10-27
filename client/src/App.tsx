@@ -45,6 +45,7 @@ import SubCommunityAdminDashboard from "@/pages/SubCommunityAdminDashboard";
 import SubCommunityContent from "@/pages/SubCommunityContent";
 import SubCommunityDocs from "@/pages/SubCommunityDocs";
 import InviteAcceptPage from "@/pages/InviteAccept";
+import BlankPage from "@/pages/blank";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDynamicManifest } from "@/hooks/useDynamicManifest";
@@ -215,6 +216,9 @@ function Router() {
             </Route>
           </>
         )}
+        
+        {/* Blank page - accessible to all */}
+        <Route path="/blank" component={BlankPage} />
         
         {/* 404 fallback - must be last */}
         <Route component={NotFound} />
