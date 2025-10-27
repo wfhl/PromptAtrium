@@ -77,6 +77,10 @@ export default function Dashboard() {
   const [isStatsCollapsed, setIsStatsCollapsed] = useState(false);
   const [isCollectionsCollapsed, setIsCollectionsCollapsed] = useState(false);
   const [isActivityCollapsed, setIsActivityCollapsed] = useState(false);
+  const [isRecentPromptsCollapsed, setIsRecentPromptsCollapsed] = useState(false);
+  const [isBookmarkedPromptsCollapsed, setIsBookmarkedPromptsCollapsed] = useState(false);
+  const [isMarketplaceCollapsed, setIsMarketplaceCollapsed] = useState(false);
+  const [isCommunityHighlightsCollapsed, setIsCommunityHighlightsCollapsed] = useState(false);
 
   // Load collapsed states from localStorage once user is available
   useEffect(() => {
@@ -94,6 +98,26 @@ export default function Dashboard() {
       const activityStored = localStorage.getItem(`activityCollapsed_${user.id}`);
       if (activityStored !== null) {
         setIsActivityCollapsed(activityStored === 'true');
+      }
+
+      const recentPromptsStored = localStorage.getItem(`recentPromptsCollapsed_${user.id}`);
+      if (recentPromptsStored !== null) {
+        setIsRecentPromptsCollapsed(recentPromptsStored === 'true');
+      }
+
+      const bookmarkedPromptsStored = localStorage.getItem(`bookmarkedPromptsCollapsed_${user.id}`);
+      if (bookmarkedPromptsStored !== null) {
+        setIsBookmarkedPromptsCollapsed(bookmarkedPromptsStored === 'true');
+      }
+
+      const marketplaceStored = localStorage.getItem(`marketplaceCollapsed_${user.id}`);
+      if (marketplaceStored !== null) {
+        setIsMarketplaceCollapsed(marketplaceStored === 'true');
+      }
+
+      const communityHighlightsStored = localStorage.getItem(`communityHighlightsCollapsed_${user.id}`);
+      if (communityHighlightsStored !== null) {
+        setIsCommunityHighlightsCollapsed(communityHighlightsStored === 'true');
       }
     }
   }, [user?.id]);
@@ -116,6 +140,30 @@ export default function Dashboard() {
       localStorage.setItem(`activityCollapsed_${user.id}`, isActivityCollapsed.toString());
     }
   }, [isActivityCollapsed, user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`recentPromptsCollapsed_${user.id}`, isRecentPromptsCollapsed.toString());
+    }
+  }, [isRecentPromptsCollapsed, user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`bookmarkedPromptsCollapsed_${user.id}`, isBookmarkedPromptsCollapsed.toString());
+    }
+  }, [isBookmarkedPromptsCollapsed, user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`marketplaceCollapsed_${user.id}`, isMarketplaceCollapsed.toString());
+    }
+  }, [isMarketplaceCollapsed, user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`communityHighlightsCollapsed_${user.id}`, isCommunityHighlightsCollapsed.toString());
+    }
+  }, [isCommunityHighlightsCollapsed, user?.id]);
 
   // Prefetch common data for faster navigation
   useEffect(() => {
@@ -674,95 +722,150 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4 lg:gap-8">
           <div className="lg:col-span-2">
             {/* Recent Prompts */}
-            <div className="mb-6 md:mb-8">
+            <Collapsible
+              open={!isRecentPromptsCollapsed}
+              onOpenChange={(open) => setIsRecentPromptsCollapsed(!open)}
+              className="mb-6 md:mb-8"
+            >
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-foreground">Recent Prompts</h2>
-                <Link href="/library">
-                  <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-prompts">
-                    View all
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/library">
+                    <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-prompts">
+                      View all
+                    </Button>
+                  </Link>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" data-testid="button-toggle-recent-prompts">
+                      {isRecentPromptsCollapsed ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronUp className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
               </div>
 
-              <div className="space-y-4" data-testid="section-recent-prompts">
-                {userPrompts.length > 0 ? (
-                  userPrompts.map((prompt) => (
-                    <PromptCard
-                      key={prompt.id}
-                      prompt={prompt}
-                      showActions={true}
-                      onEdit={handleEditPrompt}
-                    />
-                  ))
-                ) : (
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <p className="text-muted-foreground mb-4">You haven't created any prompts yet.</p>
-                      <Button onClick={handleCreatePrompt} data-testid="button-create-first-prompt">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Prompt
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
+              <CollapsibleContent>
+                <div className="space-y-4" data-testid="section-recent-prompts">
+                  {userPrompts.length > 0 ? (
+                    userPrompts.map((prompt) => (
+                      <PromptCard
+                        key={prompt.id}
+                        prompt={prompt}
+                        showActions={true}
+                        onEdit={handleEditPrompt}
+                      />
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="p-6 text-center">
+                        <p className="text-muted-foreground mb-4">You haven't created any prompts yet.</p>
+                        <Button onClick={handleCreatePrompt} data-testid="button-create-first-prompt">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Your First Prompt
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Bookmarked Prompts */}
-            <div className="mb-6 md:mb-8">
+            <Collapsible
+              open={!isBookmarkedPromptsCollapsed}
+              onOpenChange={(open) => setIsBookmarkedPromptsCollapsed(!open)}
+              className="mb-6 md:mb-8"
+            >
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-[#005eff]">Bookmarked Prompts</h2>
-                <Link href="/library?section=favorites">
-                  <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-favorites">
-                    View all
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/library?section=favorites">
+                    <Button variant="link" className="text-primary hover:underline p-0" data-testid="link-view-all-favorites">
+                      View all
+                    </Button>
+                  </Link>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" data-testid="button-toggle-bookmarked-prompts">
+                      {isBookmarkedPromptsCollapsed ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronUp className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
               </div>
 
-              <div className="space-y-4" data-testid="section-favorite-prompts">
-                {favoritePrompts.length > 0 ? (
-                  favoritePrompts.slice(0, 3).map((prompt) => (
-                    <PromptCard
-                      key={prompt.id}
-                      prompt={prompt}
-                    />
-                  ))
-                ) : (
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <p className="text-muted-foreground mb-4">You haven't bookmarked any prompts yet.</p>
-                      <p className="text-sm text-muted-foreground">Click the star icon on any prompt to add it to your favorites!</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
+              <CollapsibleContent>
+                <div className="space-y-4" data-testid="section-favorite-prompts">
+                  {favoritePrompts.length > 0 ? (
+                    favoritePrompts.slice(0, 3).map((prompt) => (
+                      <PromptCard
+                        key={prompt.id}
+                        prompt={prompt}
+                      />
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="p-6 text-center">
+                        <p className="text-muted-foreground mb-4">You haven't bookmarked any prompts yet.</p>
+                        <p className="text-sm text-muted-foreground">Click the star icon on any prompt to add it to your favorites!</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Featured Marketplace Listings */}
             {featuredListings.length > 0 && (
-              <div>
+              <Collapsible
+                open={!isMarketplaceCollapsed}
+                onOpenChange={(open) => setIsMarketplaceCollapsed(!open)}
+                className="mb-6 md:mb-8"
+              >
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <h2 className="text-lg md:text-xl font-semibold text-purple-600 dark:text-purple-400">
                     <TrendingUp className="inline h-5 w-5 mr-2" />
                     Featured in Marketplace
                   </h2>
-                  <Link href="/marketplace">
-                    <Button variant="link" className="text-purple-600 hover:text-purple-500" data-testid="link-view-marketplace">
-                      <ShoppingBag className="h-4 w-4 mr-1" />
-                      Browse All
-                    </Button>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link href="/marketplace">
+                      <Button variant="link" className="text-purple-600 hover:text-purple-500" data-testid="link-view-marketplace">
+                        <ShoppingBag className="h-4 w-4 mr-1" />
+                        Browse All
+                      </Button>
+                    </Link>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" data-testid="button-toggle-marketplace">
+                        {isMarketplaceCollapsed ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronUp className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="section-featured-marketplace">
-                  {featuredListings.slice(0, 4).map((listing: any) => (
-                    <MarketplaceListingCard key={listing.id} listing={listing} />
-                  ))}
-                </div>
-              </div>
+                <CollapsibleContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="section-featured-marketplace">
+                    {featuredListings.slice(0, 4).map((listing: any) => (
+                      <MarketplaceListingCard key={listing.id} listing={listing} />
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
 
             {/* Community Highlights */}
-            <div>
+            <Collapsible
+              open={!isCommunityHighlightsCollapsed}
+              onOpenChange={(open) => setIsCommunityHighlightsCollapsed(!open)}
+              className="mb-6 md:mb-8"
+            >
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-[#a328c9]">Community Highlights</h2>
                 <div className="flex items-center gap-2">
@@ -792,36 +895,48 @@ export default function Dashboard() {
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>
+
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" data-testid="button-toggle-community-highlights">
+                      {isCommunityHighlightsCollapsed ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronUp className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
                 </div>
               </div>
 
-              {/* Multi-Select Filter Tabs - Show below headers */}
-              <MultiSelectFilters
-                onFiltersChange={(filters) => {
-                  setMultiSelectFilters(filters);
-                }}
-                onEnabledFiltersChange={setEnabledFilters}
-                enabledFilters={enabledFilters}
-                selectedFilters={multiSelectFilters}
-                sortBy={communityTab}
-                showButton={false}
-                showTabs={true}
-              />
+              <CollapsibleContent>
+                {/* Multi-Select Filter Tabs - Show below headers */}
+                <MultiSelectFilters
+                  onFiltersChange={(filters) => {
+                    setMultiSelectFilters(filters);
+                  }}
+                  onEnabledFiltersChange={setEnabledFilters}
+                  enabledFilters={enabledFilters}
+                  selectedFilters={multiSelectFilters}
+                  sortBy={communityTab}
+                  showButton={false}
+                  showTabs={true}
+                />
 
-              <div className="space-y-4 mt-4" data-testid="section-community-highlights">
-                {communityPrompts.length > 0 ? (
-                  communityPrompts.map((prompt) => (
-                    <PromptCard key={prompt.id} prompt={prompt} isCommunityPage={true} />
-                  ))
-                ) : (
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <p className="text-muted-foreground">No featured prompts available.</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
+                <div className="space-y-4 mt-4" data-testid="section-community-highlights">
+                  {communityPrompts.length > 0 ? (
+                    communityPrompts.map((prompt) => (
+                      <PromptCard key={prompt.id} prompt={prompt} isCommunityPage={true} />
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="p-6 text-center">
+                        <p className="text-muted-foreground">No featured prompts available.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Sidebar */}
