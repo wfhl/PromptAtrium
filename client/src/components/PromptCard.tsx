@@ -1498,10 +1498,10 @@ export function PromptCard({
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                            data-testid={`button-more-actions-community-${prompt.id}`}
+                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                            data-testid={`button-delete-community-${prompt.id}`}
                           >
-                            <MoreVertical className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
