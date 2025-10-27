@@ -692,11 +692,12 @@ export default function Dashboard() {
           </div>
 
           {/* Stats Cards - Collapsible, Hidden on mobile */}
-          <Collapsible
-            open={!isStatsCollapsed}
-            onOpenChange={(open) => setIsStatsCollapsed(!open)}
-            className="hidden md:block mb-6"
-          >
+          {isStatsVisible && (
+            <Collapsible
+              open={!isStatsCollapsed}
+              onOpenChange={(open) => setIsStatsCollapsed(!open)}
+              className="hidden md:block mb-6"
+            >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Your Statistics</h2>
               <CollapsibleTrigger asChild>
@@ -756,6 +757,7 @@ export default function Dashboard() {
               </div>
             </CollapsibleContent>
           </Collapsible>
+          )}
         </div>
 
         {/* Search Results Section - Positioned directly below search field */}
@@ -796,11 +798,12 @@ export default function Dashboard() {
         )}
 
         {/* Quick Actions for Mobile - Show at top on mobile */}
-        <Collapsible
-          open={!isToolsCollapsed}
-          onOpenChange={(open) => setIsToolsCollapsed(!open)}
-          className="block md:hidden mb-3"
-        >
+        {isToolsVisible && (
+          <Collapsible
+            open={!isToolsCollapsed}
+            onOpenChange={(open) => setIsToolsCollapsed(!open)}
+            className="block md:hidden mb-3"
+          >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-base md:text-xl font-semibold">Tools</h3>
             <CollapsibleTrigger asChild>
@@ -822,15 +825,17 @@ export default function Dashboard() {
             />
           </CollapsibleContent>
         </Collapsible>
+        )}
 
         {/* Collections and Activity Cards for Mobile/Tablet - Show above recent prompts */}
         <div className="block lg:hidden space-y-4 mb-6">
           {/* My Collections - Collapsible on mobile/tablet */}
-          <Collapsible
-            open={!isCollectionsCollapsed}
-            onOpenChange={(open) => setIsCollectionsCollapsed(!open)}
-            className="mb-6"
-          >
+          {isCollectionsVisible && (
+            <Collapsible
+              open={!isCollectionsCollapsed}
+              onOpenChange={(open) => setIsCollectionsCollapsed(!open)}
+              className="mb-6"
+            >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">My Collections</h2>
               <div className="flex items-center gap-2">
@@ -869,13 +874,15 @@ export default function Dashboard() {
               </Card>
             </CollapsibleContent>
           </Collapsible>
+          )}
 
           {/* Community Activity - Collapsible on mobile/tablet */}
-          <Collapsible
-            open={!isActivityCollapsed}
-            onOpenChange={(open) => setIsActivityCollapsed(!open)}
-            className="mb-6"
-          >
+          {isActivityVisible && (
+            <Collapsible
+              open={!isActivityCollapsed}
+              onOpenChange={(open) => setIsActivityCollapsed(!open)}
+              className="mb-6"
+            >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Community Activity</h2>
               <div className="flex items-center gap-2">
@@ -935,16 +942,18 @@ export default function Dashboard() {
               </Card>
             </CollapsibleContent>
           </Collapsible>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4 lg:gap-8">
           <div className="lg:col-span-2">
             {/* Recent Prompts */}
-            <Collapsible
-              open={!isRecentPromptsCollapsed}
-              onOpenChange={(open) => setIsRecentPromptsCollapsed(!open)}
-              className="mb-6 md:mb-8"
-            >
+            {isRecentPromptsVisible && (
+              <Collapsible
+                open={!isRecentPromptsCollapsed}
+                onOpenChange={(open) => setIsRecentPromptsCollapsed(!open)}
+                className="mb-6 md:mb-8"
+              >
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-foreground">Recent Prompts</h2>
                 <div className="flex items-center gap-2">
@@ -990,13 +999,15 @@ export default function Dashboard() {
                 </div>
               </CollapsibleContent>
             </Collapsible>
+            )}
 
             {/* Bookmarked Prompts */}
-            <Collapsible
-              open={!isBookmarkedPromptsCollapsed}
-              onOpenChange={(open) => setIsBookmarkedPromptsCollapsed(!open)}
-              className="mb-6 md:mb-8"
-            >
+            {isBookmarkedPromptsVisible && (
+              <Collapsible
+                open={!isBookmarkedPromptsCollapsed}
+                onOpenChange={(open) => setIsBookmarkedPromptsCollapsed(!open)}
+                className="mb-6 md:mb-8"
+              >
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-[#005eff]">Bookmarked Prompts</h2>
                 <div className="flex items-center gap-2">
@@ -1037,9 +1048,10 @@ export default function Dashboard() {
                 </div>
               </CollapsibleContent>
             </Collapsible>
+            )}
 
             {/* Featured Marketplace Listings */}
-            {featuredListings.length > 0 && (
+            {isMarketplaceVisible && featuredListings.length > 0 && (
               <Collapsible
                 open={!isMarketplaceCollapsed}
                 onOpenChange={(open) => setIsMarketplaceCollapsed(!open)}
@@ -1079,11 +1091,12 @@ export default function Dashboard() {
             )}
 
             {/* Community Highlights */}
-            <Collapsible
-              open={!isCommunityHighlightsCollapsed}
-              onOpenChange={(open) => setIsCommunityHighlightsCollapsed(!open)}
-              className="mb-6 md:mb-8"
-            >
+            {isCommunityHighlightsVisible && (
+              <Collapsible
+                open={!isCommunityHighlightsCollapsed}
+                onOpenChange={(open) => setIsCommunityHighlightsCollapsed(!open)}
+                className="mb-6 md:mb-8"
+              >
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-[#a328c9]">Community Highlights</h2>
                 <div className="flex items-center gap-2">
@@ -1155,6 +1168,7 @@ export default function Dashboard() {
                 </div>
               </CollapsibleContent>
             </Collapsible>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -1176,11 +1190,12 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Actions - Hidden on mobile (shown at top) */}
-            <Collapsible
-              open={!isToolsCollapsed}
-              onOpenChange={(open) => setIsToolsCollapsed(!open)}
-              className="hidden md:block"
-            >
+            {isToolsVisible && (
+              <Collapsible
+                open={!isToolsCollapsed}
+                onOpenChange={(open) => setIsToolsCollapsed(!open)}
+                className="hidden md:block"
+              >
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-base md:text-xl font-semibold">Tools</h3>
                 <CollapsibleTrigger asChild>
@@ -1202,13 +1217,15 @@ export default function Dashboard() {
                 />
               </CollapsibleContent>
             </Collapsible>
+            )}
 
             {/* My Collections - Hidden on mobile/tablet, shown on desktop */}
-            <Collapsible
-              open={!isCollectionsCollapsed}
-              onOpenChange={(open) => setIsCollectionsCollapsed(!open)}
-              className="hidden lg:block mb-6"
-            >
+            {isCollectionsVisible && (
+              <Collapsible
+                open={!isCollectionsCollapsed}
+                onOpenChange={(open) => setIsCollectionsCollapsed(!open)}
+                className="hidden lg:block mb-6"
+              >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">My Collections</h2>
                 <div className="flex items-center gap-2">
@@ -1247,13 +1264,15 @@ export default function Dashboard() {
                 </Card>
               </CollapsibleContent>
             </Collapsible>
+            )}
 
             {/* Community Activity - Hidden on mobile/tablet, shown on desktop */}
-            <Collapsible
-              open={!isActivityCollapsed}
-              onOpenChange={(open) => setIsActivityCollapsed(!open)}
-              className="hidden lg:block mb-6"
-            >
+            {isActivityVisible && (
+              <Collapsible
+                open={!isActivityCollapsed}
+                onOpenChange={(open) => setIsActivityCollapsed(!open)}
+                className="hidden lg:block mb-6"
+              >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Community Activity</h2>
                 <div className="flex items-center gap-2">
@@ -1313,6 +1332,7 @@ export default function Dashboard() {
                 </Card>
               </CollapsibleContent>
             </Collapsible>
+            )}
           </div>
         </div>
       </div>
