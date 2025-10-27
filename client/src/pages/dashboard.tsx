@@ -12,9 +12,10 @@ import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } fro
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Heart, Folder, GitBranch, Plus, ChevronDown, ChevronUp, BookOpen, Share2, Star, UserPlus, Users, Activity, ShoppingBag, TrendingUp } from "lucide-react";
+import { FileText, Heart, Folder, GitBranch, Plus, ChevronDown, ChevronUp, BookOpen, Share2, Star, UserPlus, Users, Activity, ShoppingBag, TrendingUp, Settings, Eye, EyeOff } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { PromptModal } from "@/components/PromptModal";
 import { QuickActions } from "@/components/QuickActions";
@@ -81,6 +82,7 @@ export default function Dashboard() {
   const [isBookmarkedPromptsCollapsed, setIsBookmarkedPromptsCollapsed] = useState(false);
   const [isMarketplaceCollapsed, setIsMarketplaceCollapsed] = useState(false);
   const [isCommunityHighlightsCollapsed, setIsCommunityHighlightsCollapsed] = useState(false);
+  const [isToolsCollapsed, setIsToolsCollapsed] = useState(false);
 
   // Load collapsed states from localStorage once user is available
   useEffect(() => {
@@ -118,6 +120,11 @@ export default function Dashboard() {
       const communityHighlightsStored = localStorage.getItem(`communityHighlightsCollapsed_${user.id}`);
       if (communityHighlightsStored !== null) {
         setIsCommunityHighlightsCollapsed(communityHighlightsStored === 'true');
+      }
+
+      const toolsStored = localStorage.getItem(`toolsCollapsed_${user.id}`);
+      if (toolsStored !== null) {
+        setIsToolsCollapsed(toolsStored === 'true');
       }
     }
   }, [user?.id]);
@@ -164,6 +171,12 @@ export default function Dashboard() {
       localStorage.setItem(`communityHighlightsCollapsed_${user.id}`, isCommunityHighlightsCollapsed.toString());
     }
   }, [isCommunityHighlightsCollapsed, user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`toolsCollapsed_${user.id}`, isToolsCollapsed.toString());
+    }
+  }, [isToolsCollapsed, user?.id]);
 
   // Prefetch common data for faster navigation
   useEffect(() => {
@@ -471,11 +484,98 @@ export default function Dashboard() {
         {/* Dashboard Header */}
         <div className="mb-2 md:mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 md:mb-6">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2" data-testid="text-welcome">
-                Welcome back, {user?.firstName || (user?.email ? user.email.split("@")[0] : "") || "User"}
-              </h1>
-              <p className="text-sm md:text-base text-muted-foreground">Manage your AI prompts and discover community favorites</p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2" data-testid="text-welcome">
+                  Welcome back, {user?.firstName || (user?.email ? user.email.split("@")[0] : "") || "User"}
+                </h1>
+                <p className="text-sm md:text-base text-muted-foreground">Manage your AI prompts and discover community favorites</p>
+              </div>
+              
+              {/* Section Visibility Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="ml-2" data-testid="button-section-visibility">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  <DropdownMenuLabel>Show/Hide Sections</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuCheckboxItem
+                    checked={!isStatsCollapsed}
+                    onCheckedChange={(checked) => setIsStatsCollapsed(!checked)}
+                    className="cursor-pointer"
+                  >
+                    <Eye className={`h-4 w-4 mr-2 ${!isStatsCollapsed ? '' : 'opacity-50'}`} />
+                    Your Statistics
+                  </DropdownMenuCheckboxItem>
+                  
+                  <DropdownMenuCheckboxItem
+                    checked={!isToolsCollapsed}
+                    onCheckedChange={(checked) => setIsToolsCollapsed(!checked)}
+                    className="cursor-pointer"
+                  >
+                    <Eye className={`h-4 w-4 mr-2 ${!isToolsCollapsed ? '' : 'opacity-50'}`} />
+                    Tools
+                  </DropdownMenuCheckboxItem>
+                  
+                  <DropdownMenuCheckboxItem
+                    checked={!isRecentPromptsCollapsed}
+                    onCheckedChange={(checked) => setIsRecentPromptsCollapsed(!checked)}
+                    className="cursor-pointer"
+                  >
+                    <Eye className={`h-4 w-4 mr-2 ${!isRecentPromptsCollapsed ? '' : 'opacity-50'}`} />
+                    Recent Prompts
+                  </DropdownMenuCheckboxItem>
+                  
+                  <DropdownMenuCheckboxItem
+                    checked={!isBookmarkedPromptsCollapsed}
+                    onCheckedChange={(checked) => setIsBookmarkedPromptsCollapsed(!checked)}
+                    className="cursor-pointer"
+                  >
+                    <Eye className={`h-4 w-4 mr-2 ${!isBookmarkedPromptsCollapsed ? '' : 'opacity-50'}`} />
+                    Bookmarked Prompts
+                  </DropdownMenuCheckboxItem>
+                  
+                  <DropdownMenuCheckboxItem
+                    checked={!isMarketplaceCollapsed}
+                    onCheckedChange={(checked) => setIsMarketplaceCollapsed(!checked)}
+                    className="cursor-pointer"
+                  >
+                    <Eye className={`h-4 w-4 mr-2 ${!isMarketplaceCollapsed ? '' : 'opacity-50'}`} />
+                    Featured Marketplace
+                  </DropdownMenuCheckboxItem>
+                  
+                  <DropdownMenuCheckboxItem
+                    checked={!isCommunityHighlightsCollapsed}
+                    onCheckedChange={(checked) => setIsCommunityHighlightsCollapsed(!checked)}
+                    className="cursor-pointer"
+                  >
+                    <Eye className={`h-4 w-4 mr-2 ${!isCommunityHighlightsCollapsed ? '' : 'opacity-50'}`} />
+                    Community Highlights
+                  </DropdownMenuCheckboxItem>
+                  
+                  <DropdownMenuCheckboxItem
+                    checked={!isCollectionsCollapsed}
+                    onCheckedChange={(checked) => setIsCollectionsCollapsed(!checked)}
+                    className="cursor-pointer"
+                  >
+                    <Eye className={`h-4 w-4 mr-2 ${!isCollectionsCollapsed ? '' : 'opacity-50'}`} />
+                    My Collections
+                  </DropdownMenuCheckboxItem>
+                  
+                  <DropdownMenuCheckboxItem
+                    checked={!isActivityCollapsed}
+                    onCheckedChange={(checked) => setIsActivityCollapsed(!checked)}
+                    className="cursor-pointer"
+                  >
+                    <Eye className={`h-4 w-4 mr-2 ${!isActivityCollapsed ? '' : 'opacity-50'}`} />
+                    Community Activity
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="mt-2 md:mt-0">
@@ -596,14 +696,32 @@ export default function Dashboard() {
         )}
 
         {/* Quick Actions for Mobile - Show at top on mobile */}
-        <div className="block md:hidden mb-3">
-          <QuickActions
-            onCreatePrompt={handleCreatePrompt}
-            onCreateCollection={handleCreateCollection}
-            onStartProject={handleStartProject}
-            onImportPrompts={handleImportPrompts}
-          />
-        </div>
+        <Collapsible
+          open={!isToolsCollapsed}
+          onOpenChange={(open) => setIsToolsCollapsed(!open)}
+          className="block md:hidden mb-3"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base md:text-xl font-semibold">Tools</h3>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" data-testid="button-toggle-tools-mobile">
+                {isToolsCollapsed ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronUp className="h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+          <CollapsibleContent>
+            <QuickActions
+              onCreatePrompt={handleCreatePrompt}
+              onCreateCollection={handleCreateCollection}
+              onStartProject={handleStartProject}
+              onImportPrompts={handleImportPrompts}
+            />
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Collections and Activity Cards for Mobile/Tablet - Show above recent prompts */}
         <div className="block lg:hidden space-y-4 mb-6">
@@ -958,14 +1076,32 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Actions - Hidden on mobile (shown at top) */}
-            <div className="hidden md:block">
-              <QuickActions
-                onCreatePrompt={handleCreatePrompt}
-                onCreateCollection={handleCreateCollection}
-                onStartProject={handleStartProject}
-                onImportPrompts={handleImportPrompts}
-              />
-            </div>
+            <Collapsible
+              open={!isToolsCollapsed}
+              onOpenChange={(open) => setIsToolsCollapsed(!open)}
+              className="hidden md:block"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base md:text-xl font-semibold">Tools</h3>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" data-testid="button-toggle-tools-desktop">
+                    {isToolsCollapsed ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
+                <QuickActions
+                  onCreatePrompt={handleCreatePrompt}
+                  onCreateCollection={handleCreateCollection}
+                  onStartProject={handleStartProject}
+                  onImportPrompts={handleImportPrompts}
+                />
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* My Collections - Hidden on mobile/tablet, shown on desktop */}
             <Collapsible
