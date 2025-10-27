@@ -83,6 +83,16 @@ export default function Dashboard() {
   const [isMarketplaceCollapsed, setIsMarketplaceCollapsed] = useState(false);
   const [isCommunityHighlightsCollapsed, setIsCommunityHighlightsCollapsed] = useState(false);
   const [isToolsCollapsed, setIsToolsCollapsed] = useState(false);
+  
+  // Visibility states for completely hiding/showing sections
+  const [isStatsVisible, setIsStatsVisible] = useState(true);
+  const [isToolsVisible, setIsToolsVisible] = useState(true);
+  const [isRecentPromptsVisible, setIsRecentPromptsVisible] = useState(true);
+  const [isBookmarkedPromptsVisible, setIsBookmarkedPromptsVisible] = useState(true);
+  const [isMarketplaceVisible, setIsMarketplaceVisible] = useState(true);
+  const [isCommunityHighlightsVisible, setIsCommunityHighlightsVisible] = useState(true);
+  const [isCollectionsVisible, setIsCollectionsVisible] = useState(true);
+  const [isActivityVisible, setIsActivityVisible] = useState(true);
 
   // Load collapsed states from localStorage once user is available
   useEffect(() => {
@@ -125,6 +135,47 @@ export default function Dashboard() {
       const toolsStored = localStorage.getItem(`toolsCollapsed_${user.id}`);
       if (toolsStored !== null) {
         setIsToolsCollapsed(toolsStored === 'true');
+      }
+      
+      // Load visibility states
+      const statsVisible = localStorage.getItem(`statsVisible_${user.id}`);
+      if (statsVisible !== null) {
+        setIsStatsVisible(statsVisible === 'true');
+      }
+      
+      const toolsVisible = localStorage.getItem(`toolsVisible_${user.id}`);
+      if (toolsVisible !== null) {
+        setIsToolsVisible(toolsVisible === 'true');
+      }
+      
+      const recentPromptsVisible = localStorage.getItem(`recentPromptsVisible_${user.id}`);
+      if (recentPromptsVisible !== null) {
+        setIsRecentPromptsVisible(recentPromptsVisible === 'true');
+      }
+      
+      const bookmarkedPromptsVisible = localStorage.getItem(`bookmarkedPromptsVisible_${user.id}`);
+      if (bookmarkedPromptsVisible !== null) {
+        setIsBookmarkedPromptsVisible(bookmarkedPromptsVisible === 'true');
+      }
+      
+      const marketplaceVisible = localStorage.getItem(`marketplaceVisible_${user.id}`);
+      if (marketplaceVisible !== null) {
+        setIsMarketplaceVisible(marketplaceVisible === 'true');
+      }
+      
+      const communityHighlightsVisible = localStorage.getItem(`communityHighlightsVisible_${user.id}`);
+      if (communityHighlightsVisible !== null) {
+        setIsCommunityHighlightsVisible(communityHighlightsVisible === 'true');
+      }
+      
+      const collectionsVisible = localStorage.getItem(`collectionsVisible_${user.id}`);
+      if (collectionsVisible !== null) {
+        setIsCollectionsVisible(collectionsVisible === 'true');
+      }
+      
+      const activityVisible = localStorage.getItem(`activityVisible_${user.id}`);
+      if (activityVisible !== null) {
+        setIsActivityVisible(activityVisible === 'true');
       }
     }
   }, [user?.id]);
@@ -177,6 +228,55 @@ export default function Dashboard() {
       localStorage.setItem(`toolsCollapsed_${user.id}`, isToolsCollapsed.toString());
     }
   }, [isToolsCollapsed, user?.id]);
+  
+  // Update localStorage when visibility states change
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`statsVisible_${user.id}`, isStatsVisible.toString());
+    }
+  }, [isStatsVisible, user?.id]);
+  
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`toolsVisible_${user.id}`, isToolsVisible.toString());
+    }
+  }, [isToolsVisible, user?.id]);
+  
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`recentPromptsVisible_${user.id}`, isRecentPromptsVisible.toString());
+    }
+  }, [isRecentPromptsVisible, user?.id]);
+  
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`bookmarkedPromptsVisible_${user.id}`, isBookmarkedPromptsVisible.toString());
+    }
+  }, [isBookmarkedPromptsVisible, user?.id]);
+  
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`marketplaceVisible_${user.id}`, isMarketplaceVisible.toString());
+    }
+  }, [isMarketplaceVisible, user?.id]);
+  
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`communityHighlightsVisible_${user.id}`, isCommunityHighlightsVisible.toString());
+    }
+  }, [isCommunityHighlightsVisible, user?.id]);
+  
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`collectionsVisible_${user.id}`, isCollectionsVisible.toString());
+    }
+  }, [isCollectionsVisible, user?.id]);
+  
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`activityVisible_${user.id}`, isActivityVisible.toString());
+    }
+  }, [isActivityVisible, user?.id]);
 
   // Prefetch common data for faster navigation
   useEffect(() => {
@@ -504,74 +604,74 @@ export default function Dashboard() {
                   <DropdownMenuSeparator />
                   
                   <DropdownMenuCheckboxItem
-                    checked={!isStatsCollapsed}
-                    onCheckedChange={(checked) => setIsStatsCollapsed(!checked)}
+                    checked={isStatsVisible}
+                    onCheckedChange={setIsStatsVisible}
                     className="cursor-pointer"
                   >
-                    <Eye className={`h-4 w-4 mr-2 ${!isStatsCollapsed ? '' : 'opacity-50'}`} />
+                    <Eye className={`h-4 w-4 mr-2 ${isStatsVisible ? '' : 'opacity-50'}`} />
                     Your Statistics
                   </DropdownMenuCheckboxItem>
                   
                   <DropdownMenuCheckboxItem
-                    checked={!isToolsCollapsed}
-                    onCheckedChange={(checked) => setIsToolsCollapsed(!checked)}
+                    checked={isToolsVisible}
+                    onCheckedChange={setIsToolsVisible}
                     className="cursor-pointer"
                   >
-                    <Eye className={`h-4 w-4 mr-2 ${!isToolsCollapsed ? '' : 'opacity-50'}`} />
+                    <Eye className={`h-4 w-4 mr-2 ${isToolsVisible ? '' : 'opacity-50'}`} />
                     Tools
                   </DropdownMenuCheckboxItem>
                   
                   <DropdownMenuCheckboxItem
-                    checked={!isRecentPromptsCollapsed}
-                    onCheckedChange={(checked) => setIsRecentPromptsCollapsed(!checked)}
+                    checked={isRecentPromptsVisible}
+                    onCheckedChange={setIsRecentPromptsVisible}
                     className="cursor-pointer"
                   >
-                    <Eye className={`h-4 w-4 mr-2 ${!isRecentPromptsCollapsed ? '' : 'opacity-50'}`} />
+                    <Eye className={`h-4 w-4 mr-2 ${isRecentPromptsVisible ? '' : 'opacity-50'}`} />
                     Recent Prompts
                   </DropdownMenuCheckboxItem>
                   
                   <DropdownMenuCheckboxItem
-                    checked={!isBookmarkedPromptsCollapsed}
-                    onCheckedChange={(checked) => setIsBookmarkedPromptsCollapsed(!checked)}
+                    checked={isBookmarkedPromptsVisible}
+                    onCheckedChange={setIsBookmarkedPromptsVisible}
                     className="cursor-pointer"
                   >
-                    <Eye className={`h-4 w-4 mr-2 ${!isBookmarkedPromptsCollapsed ? '' : 'opacity-50'}`} />
+                    <Eye className={`h-4 w-4 mr-2 ${isBookmarkedPromptsVisible ? '' : 'opacity-50'}`} />
                     Bookmarked Prompts
                   </DropdownMenuCheckboxItem>
                   
                   <DropdownMenuCheckboxItem
-                    checked={!isMarketplaceCollapsed}
-                    onCheckedChange={(checked) => setIsMarketplaceCollapsed(!checked)}
+                    checked={isMarketplaceVisible}
+                    onCheckedChange={setIsMarketplaceVisible}
                     className="cursor-pointer"
                   >
-                    <Eye className={`h-4 w-4 mr-2 ${!isMarketplaceCollapsed ? '' : 'opacity-50'}`} />
+                    <Eye className={`h-4 w-4 mr-2 ${isMarketplaceVisible ? '' : 'opacity-50'}`} />
                     Featured Marketplace
                   </DropdownMenuCheckboxItem>
                   
                   <DropdownMenuCheckboxItem
-                    checked={!isCommunityHighlightsCollapsed}
-                    onCheckedChange={(checked) => setIsCommunityHighlightsCollapsed(!checked)}
+                    checked={isCommunityHighlightsVisible}
+                    onCheckedChange={setIsCommunityHighlightsVisible}
                     className="cursor-pointer"
                   >
-                    <Eye className={`h-4 w-4 mr-2 ${!isCommunityHighlightsCollapsed ? '' : 'opacity-50'}`} />
+                    <Eye className={`h-4 w-4 mr-2 ${isCommunityHighlightsVisible ? '' : 'opacity-50'}`} />
                     Community Highlights
                   </DropdownMenuCheckboxItem>
                   
                   <DropdownMenuCheckboxItem
-                    checked={!isCollectionsCollapsed}
-                    onCheckedChange={(checked) => setIsCollectionsCollapsed(!checked)}
+                    checked={isCollectionsVisible}
+                    onCheckedChange={setIsCollectionsVisible}
                     className="cursor-pointer"
                   >
-                    <Eye className={`h-4 w-4 mr-2 ${!isCollectionsCollapsed ? '' : 'opacity-50'}`} />
+                    <Eye className={`h-4 w-4 mr-2 ${isCollectionsVisible ? '' : 'opacity-50'}`} />
                     My Collections
                   </DropdownMenuCheckboxItem>
                   
                   <DropdownMenuCheckboxItem
-                    checked={!isActivityCollapsed}
-                    onCheckedChange={(checked) => setIsActivityCollapsed(!checked)}
+                    checked={isActivityVisible}
+                    onCheckedChange={setIsActivityVisible}
                     className="cursor-pointer"
                   >
-                    <Eye className={`h-4 w-4 mr-2 ${!isActivityCollapsed ? '' : 'opacity-50'}`} />
+                    <Eye className={`h-4 w-4 mr-2 ${isActivityVisible ? '' : 'opacity-50'}`} />
                     Community Activity
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
