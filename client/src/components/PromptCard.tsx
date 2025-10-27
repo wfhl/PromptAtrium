@@ -2,13 +2,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ShineBorder } from "@/components/ui/shine-border";
-import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus, ImagePlus, Link2, DollarSign } from "lucide-react";
+import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus, ImagePlus, Link2, DollarSign, MoreVertical } from "lucide-react";
 import type { Prompt } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -1287,17 +1287,19 @@ export function PromptCard({
                       <Edit className="h-4 w-4" />
                     </Button>
 
-                    {/* List for Sale Button - Dollar sign icon */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => window.location.href = '/seller/dashboard'}
-                      className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                      data-testid={`button-list-sale-${prompt.id}`}
-                      title="List this prompt for sale"
-                    >
-                      <DollarSign className="h-4 w-4" />
-                    </Button>
+                    {/* List for Sale Button - Dollar sign icon - Only show in library, not on community page */}
+                    {!isCommunityPage && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => window.location.href = '/seller/dashboard'}
+                        className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                        data-testid={`button-list-sale-${prompt.id}`}
+                        title="List this prompt for sale"
+                      >
+                        <DollarSign className="h-4 w-4" />
+                      </Button>
+                    )}
                 
                     {/* 3. Collections - Yellow folder with dropdown */}
                     <DropdownMenu>
@@ -1363,19 +1365,13 @@ export function PromptCard({
                     <DropdownMenuItem onClick={handleSystemShare}>
                       System Share
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleDownload}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
-                {/* 5. Download - Download icon */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleDownload}
-                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                  data-testid={`button-download-${prompt.id}`}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
 
                 {/* 6. Fork - Fork icon (existing) */}
                 <Button
@@ -1389,8 +1385,8 @@ export function PromptCard({
                   <GitBranch className="h-4 w-4" />
                 </Button>
 
-                {/* 7. Archive/Featured - Archive for owner/admin, Star for super admin on community page */}
-                {isSuperAdmin && isCommunityPage ? (
+                {/* 7. Featured - Star for super admin on community page */}
+                {isSuperAdmin && isCommunityPage && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -1401,24 +1397,10 @@ export function PromptCard({
                   >
                     <Star className={`h-4 w-4 transition-all duration-200 ${prompt.isFeatured ? 'fill-yellow-600' : ''}`} />
                   </Button>
-                ) : (
-                  // Only show Archive button for owner or admin
-                  typedUser?.id && (String(typedUser.id) === String(prompt.userId) || isSuperAdmin) && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleArchiveClick}
-                      disabled={archiveMutation.isPending}
-                      className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                      data-testid={`button-archive-${prompt.id}`}
-                    >
-                      <Archive className="h-4 w-4" />
-                    </Button>
-                  )
                 )}
 
-                {/* 8. Delete/Hidden - Trash for owner/admin, Eye for super admin on community */}
-                {isSuperAdmin && isCommunityPage ? (
+                {/* 8. Hidden - Eye for super admin on community */}
+                {isSuperAdmin && isCommunityPage && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -1429,20 +1411,36 @@ export function PromptCard({
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
-                ) : (
-                  // Only show Delete button for owner or admin
-                  typedUser?.id && (String(typedUser.id) === String(prompt.userId) || isSuperAdmin) && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleDeleteClick}
-                      disabled={deleteMutation.isPending}
-                      className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                      data-testid={`button-delete-${prompt.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )
+                )}
+
+                {/* 9. Delete/Archive Dropdown - Combining Delete and Archive into one menu */}
+                {typedUser?.id && (String(typedUser.id) === String(prompt.userId) || isSuperAdmin) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                        data-testid={`button-delete-${prompt.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={handleArchiveClick}>
+                        <Archive className="h-4 w-4 mr-2" />
+                        {prompt.status === 'archived' ? 'Unarchive' : 'Archive'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={handleDeleteClick}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
 
                 {/* 9. Bookmark - Bookmark (outline → filled) */}
@@ -1493,32 +1491,34 @@ export function PromptCard({
                       </DropdownMenuContent>
                     </DropdownMenu>
                     
-                    {/* Archive Button for owners */}
+                    {/* Delete/Archive Dropdown for owners */}
                     {String(typedUser.id) === String(prompt.userId) && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleArchiveClick}
-                        disabled={archiveMutation.isPending}
-                        className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                        data-testid={`button-archive-${prompt.id}`}
-                      >
-                        <Archive className="h-4 w-4" />
-                      </Button>
-                    )}
-                    
-                    {/* Delete Button for owners */}
-                    {String(typedUser.id) === String(prompt.userId) && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleDeleteClick}
-                        disabled={deleteMutation.isPending}
-                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                        data-testid={`button-delete-${prompt.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
+                            data-testid={`button-more-actions-community-${prompt.id}`}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={handleArchiveClick}>
+                            <Archive className="h-4 w-4 mr-2" />
+                            {prompt.status === 'archived' ? 'Unarchive' : 'Archive'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={handleDeleteClick}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </>
                 )}
@@ -1560,19 +1560,13 @@ export function PromptCard({
                     <DropdownMenuItem onClick={handleCopyJSON}>
                       Copy JSON
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleDownload}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
-                {/* Download */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleDownload}
-                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                  data-testid={`button-download-${prompt.id}`}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
                 
                 {/* Copy Link */}
                 <Button
