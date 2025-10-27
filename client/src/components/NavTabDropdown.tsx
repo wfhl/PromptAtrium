@@ -6,7 +6,7 @@ import { FileText, Wrench, Users, ShoppingBag, ChevronRight, Sparkles, TrendingU
 interface TabOption {
   label: string;
   tab: string;
-  icon?: any;
+  icon?: React.ComponentType<any>;
 }
 
 interface NavTabDropdownProps {
@@ -197,29 +197,33 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
                   }
                   
                   return (
-                    <Link
+                    <div
                       key={tab.tab}
-                      href={href}
                       onClick={() => {
                         // For community page prompts sub-tabs, save to localStorage
                         if (page === 'community' && tab.tab.startsWith('prompts&sub=')) {
                           const subTab = tab.tab.split('sub=')[1];
                           localStorage.setItem('community-prompts-sub-tab', subTab);
                         }
-                        // Small delay to allow the link navigation to complete
-                        setTimeout(onClose, 100);
+                        // For library tabs, save to localStorage
+                        if (page === 'library' && tab.tab) {
+                          localStorage.setItem('library-active-tab', tab.tab);
+                        }
+                        // Navigate to the appropriate URL
+                        window.location.href = href;
+                        // Close dropdown immediately
+                        onClose();
                       }}
+                      className="flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors cursor-pointer group"
                     >
-                      <div className="flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors cursor-pointer group">
-                        <div className="flex items-center gap-2">
-                          {TabIcon && <TabIcon className="h-3 w-3 text-white/60 group-hover:text-white/80" />}
-                          <span className="text-sm text-white/90 group-hover:text-white">
-                            {tab.label}
-                          </span>
-                        </div>
-                        <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-white/60" />
+                      <div className="flex items-center gap-2">
+                        {TabIcon && <TabIcon className="h-3 w-3 text-white/60 group-hover:text-white/80" />}
+                        <span className="text-sm text-white/90 group-hover:text-white">
+                          {tab.label}
+                        </span>
                       </div>
-                    </Link>
+                      <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-white/60" />
+                    </div>
                   );
                 })}
               </div>

@@ -140,7 +140,7 @@ export default function Tools() {
   return (
     <>
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <div className="mb-8">
+        <div className="mb-1">
           <div className="flex items-center gap-3 mb-4">
             <Wrench className="h-8 w-8 text-green-500" />
             <h1 className="text-3xl font-bold">Tools & Resources</h1>
@@ -150,18 +150,18 @@ export default function Tools() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-2">
           {toolsData.map((tool) => {
             const IconComponent = tool.icon;
             const content = (
               <Card 
-                className="hover:bg-accent/50 transition-all duration-200 cursor-pointer group"
+                className="border-transparent hover:bg-accent/50 transition-all duration-200 cursor-pointer group"
                 data-testid={`card-tool-${tool.id}`}
               >
                 <CardContent className="p-3 md:p-6">
                   <div className="flex flex-col items-center text-center space-y-2 md:space-y-3">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-background rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
-                      <IconComponent className={`h-6 w-6 md:h-8 md:w-8 ${tool.color} transition-all group-hover:brightness-150`} />
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-transparent rounded-lg flex border-transparent items-center justify-center transition-transform group-hover:scale-110">
+                      <IconComponent className={`h-6 w-6 border-transparent md:h-8 md:w-8 ${tool.color} transition-all group-hover:brightness-150`} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-xs md:text-base">{tool.title}</h3>
