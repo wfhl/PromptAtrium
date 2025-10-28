@@ -3151,20 +3151,46 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateSubCommunityMemberRole(userId: string, subCommunityId: string, role: CommunityRole): Promise<UserCommunity> {
-    const [updated] = await db
-      .update(userCommunities)
-      .set({ role })
-      .where(and(
-        eq(userCommunities.userId, userId),
-        eq(userCommunities.subCommunityId, subCommunityId)
-      ))
-      .returning();
+    // Use a transaction to ensure both tables are updated atomically
+    return await db.transaction(async (tx) => {
+      // Update the role in userCommunities
+      const [updated] = await tx
+        .update(userCommunities)
+        .set({ role })
+        .where(and(
+          eq(userCommunities.userId, userId),
+          eq(userCommunities.subCommunityId, subCommunityId)
+        ))
+        .returning();
 
-    if (!updated) {
-      throw new Error('User is not a member of this sub-community');
-    }
+      if (!updated) {
+        throw new Error('User is not a member of this sub-community');
+      }
 
-    return updated;
+      // If promoting to admin, add to subCommunityAdmins table
+      if (role === 'admin') {
+        await tx
+          .insert(subCommunityAdmins)
+          .values({
+            userId,
+            subCommunityId,
+            assignedBy: userId, // For now, using same user as assignedBy
+            permissions: {},
+          })
+          .onConflictDoNothing(); // In case they're already in the table
+      } 
+      // If demoting from admin, remove from subCommunityAdmins table
+      else if (role === 'member') {
+        await tx
+          .delete(subCommunityAdmins)
+          .where(and(
+            eq(subCommunityAdmins.userId, userId),
+            eq(subCommunityAdmins.subCommunityId, subCommunityId)
+          ));
+      }
+
+      return updated;
+    });
   }
 
   // Sub-community hierarchy operations
