@@ -523,7 +523,7 @@ export default function AdminPage() {
   // Helper function to generate invite link
   const generateInviteLink = (inviteCode: string) => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/join/${inviteCode}`;
+    return `${baseUrl}/invite/${inviteCode}`;
   };
 
   // Helper function to copy invite code/link
