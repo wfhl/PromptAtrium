@@ -14,21 +14,21 @@ export function CollectionItem({ collection }: CollectionItemProps) {
     "bg-gradient-to-br from-yellow-500 to-orange-600",
     "bg-gradient-to-br from-purple-500 to-indigo-600",
   ];
-  
+
   const gradientClass = gradientClasses[Math.abs(collection.id.charCodeAt(0)) % gradientClasses.length];
 
   return (
     <Link href={`/collection/${collection.id}`}>
-      <div 
+      <div
         className="flex items-center justify-between p-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
         data-testid={`collection-item-${collection.id}`}
       >
-        <div className="flex items-center space-x-2">
-          <div className={`w-6 h-6 ${gradientClass} rounded-md flex items-center justify-center`}>
+        <div className="flex items-center space-x-2 min-w-0 flex-1">
+          <div className={`w-6 h-6 ${gradientClass} rounded-md flex items-center justify-center flex-shrink-0`}>
             <Folder className="h-3 w-3 text-white" />
           </div>
-          <div>
-            <p className="font-medium text-foreground text-xs" data-testid={`text-collection-name-${collection.id}`}>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground text-xs truncate" data-testid={`text-collection-name-${collection.id}`}>
               {collection.name}
             </p>
             <p className="text-xs text-muted-foreground" data-testid={`text-collection-count-${collection.id}`}>
@@ -36,7 +36,7 @@ export function CollectionItem({ collection }: CollectionItemProps) {
             </p>
           </div>
         </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
       </div>
     </Link>
   );

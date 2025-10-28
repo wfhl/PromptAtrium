@@ -83,7 +83,7 @@ export default function Dashboard() {
   const [isMarketplaceCollapsed, setIsMarketplaceCollapsed] = useState(false);
   const [isCommunityHighlightsCollapsed, setIsCommunityHighlightsCollapsed] = useState(false);
   const [isToolsCollapsed, setIsToolsCollapsed] = useState(false);
-  
+
   // Visibility states for completely hiding/showing sections
   const [isStatsVisible, setIsStatsVisible] = useState(true);
   const [isToolsVisible, setIsToolsVisible] = useState(true);
@@ -136,43 +136,43 @@ export default function Dashboard() {
       if (toolsStored !== null) {
         setIsToolsCollapsed(toolsStored === 'true');
       }
-      
+
       // Load visibility states
       const statsVisible = localStorage.getItem(`statsVisible_${user.id}`);
       if (statsVisible !== null) {
         setIsStatsVisible(statsVisible === 'true');
       }
-      
+
       const toolsVisible = localStorage.getItem(`toolsVisible_${user.id}`);
       if (toolsVisible !== null) {
         setIsToolsVisible(toolsVisible === 'true');
       }
-      
+
       const recentPromptsVisible = localStorage.getItem(`recentPromptsVisible_${user.id}`);
       if (recentPromptsVisible !== null) {
         setIsRecentPromptsVisible(recentPromptsVisible === 'true');
       }
-      
+
       const bookmarkedPromptsVisible = localStorage.getItem(`bookmarkedPromptsVisible_${user.id}`);
       if (bookmarkedPromptsVisible !== null) {
         setIsBookmarkedPromptsVisible(bookmarkedPromptsVisible === 'true');
       }
-      
+
       const marketplaceVisible = localStorage.getItem(`marketplaceVisible_${user.id}`);
       if (marketplaceVisible !== null) {
         setIsMarketplaceVisible(marketplaceVisible === 'true');
       }
-      
+
       const communityHighlightsVisible = localStorage.getItem(`communityHighlightsVisible_${user.id}`);
       if (communityHighlightsVisible !== null) {
         setIsCommunityHighlightsVisible(communityHighlightsVisible === 'true');
       }
-      
+
       const collectionsVisible = localStorage.getItem(`collectionsVisible_${user.id}`);
       if (collectionsVisible !== null) {
         setIsCollectionsVisible(collectionsVisible === 'true');
       }
-      
+
       const activityVisible = localStorage.getItem(`activityVisible_${user.id}`);
       if (activityVisible !== null) {
         setIsActivityVisible(activityVisible === 'true');
@@ -228,50 +228,50 @@ export default function Dashboard() {
       localStorage.setItem(`toolsCollapsed_${user.id}`, isToolsCollapsed.toString());
     }
   }, [isToolsCollapsed, user?.id]);
-  
+
   // Update localStorage when visibility states change
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`statsVisible_${user.id}`, isStatsVisible.toString());
     }
   }, [isStatsVisible, user?.id]);
-  
+
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`toolsVisible_${user.id}`, isToolsVisible.toString());
     }
   }, [isToolsVisible, user?.id]);
-  
+
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`recentPromptsVisible_${user.id}`, isRecentPromptsVisible.toString());
     }
   }, [isRecentPromptsVisible, user?.id]);
-  
+
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`bookmarkedPromptsVisible_${user.id}`, isBookmarkedPromptsVisible.toString());
     }
   }, [isBookmarkedPromptsVisible, user?.id]);
-  
+
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`marketplaceVisible_${user.id}`, isMarketplaceVisible.toString());
     }
   }, [isMarketplaceVisible, user?.id]);
-  
+
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`communityHighlightsVisible_${user.id}`, isCommunityHighlightsVisible.toString());
     }
   }, [isCommunityHighlightsVisible, user?.id]);
-  
+
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`collectionsVisible_${user.id}`, isCollectionsVisible.toString());
     }
   }, [isCollectionsVisible, user?.id]);
-  
+
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(`activityVisible_${user.id}`, isActivityVisible.toString());
@@ -591,7 +591,7 @@ export default function Dashboard() {
                 </h1>
                 <p className="text-sm md:text-base text-muted-foreground">Manage your AI prompts and discover community favorites</p>
               </div>
-              
+
               {/* Section Visibility Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -602,7 +602,7 @@ export default function Dashboard() {
                 <DropdownMenuContent align="start" className="w-64">
                   <DropdownMenuLabel>Show/Hide Sections</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  
+
                   <DropdownMenuCheckboxItem
                     checked={isStatsVisible}
                     onCheckedChange={setIsStatsVisible}
@@ -611,7 +611,7 @@ export default function Dashboard() {
                     <Eye className={`h-4 w-4 mr-2 ${isStatsVisible ? '' : 'opacity-50'}`} />
                     Your Statistics
                   </DropdownMenuCheckboxItem>
-                  
+
                   <DropdownMenuCheckboxItem
                     checked={isToolsVisible}
                     onCheckedChange={setIsToolsVisible}
@@ -620,7 +620,7 @@ export default function Dashboard() {
                     <Eye className={`h-4 w-4 mr-2 ${isToolsVisible ? '' : 'opacity-50'}`} />
                     Tools
                   </DropdownMenuCheckboxItem>
-                  
+
                   <DropdownMenuCheckboxItem
                     checked={isRecentPromptsVisible}
                     onCheckedChange={setIsRecentPromptsVisible}
@@ -629,7 +629,7 @@ export default function Dashboard() {
                     <Eye className={`h-4 w-4 mr-2 ${isRecentPromptsVisible ? '' : 'opacity-50'}`} />
                     Recent Prompts
                   </DropdownMenuCheckboxItem>
-                  
+
                   <DropdownMenuCheckboxItem
                     checked={isBookmarkedPromptsVisible}
                     onCheckedChange={setIsBookmarkedPromptsVisible}
@@ -638,7 +638,7 @@ export default function Dashboard() {
                     <Eye className={`h-4 w-4 mr-2 ${isBookmarkedPromptsVisible ? '' : 'opacity-50'}`} />
                     Bookmarked Prompts
                   </DropdownMenuCheckboxItem>
-                  
+
                   <DropdownMenuCheckboxItem
                     checked={isMarketplaceVisible}
                     onCheckedChange={setIsMarketplaceVisible}
@@ -647,7 +647,7 @@ export default function Dashboard() {
                     <Eye className={`h-4 w-4 mr-2 ${isMarketplaceVisible ? '' : 'opacity-50'}`} />
                     Featured Marketplace
                   </DropdownMenuCheckboxItem>
-                  
+
                   <DropdownMenuCheckboxItem
                     checked={isCommunityHighlightsVisible}
                     onCheckedChange={setIsCommunityHighlightsVisible}
@@ -656,7 +656,7 @@ export default function Dashboard() {
                     <Eye className={`h-4 w-4 mr-2 ${isCommunityHighlightsVisible ? '' : 'opacity-50'}`} />
                     Community Highlights
                   </DropdownMenuCheckboxItem>
-                  
+
                   <DropdownMenuCheckboxItem
                     checked={isCollectionsVisible}
                     onCheckedChange={setIsCollectionsVisible}
@@ -665,7 +665,7 @@ export default function Dashboard() {
                     <Eye className={`h-4 w-4 mr-2 ${isCollectionsVisible ? '' : 'opacity-50'}`} />
                     My Collections
                   </DropdownMenuCheckboxItem>
-                  
+
                   <DropdownMenuCheckboxItem
                     checked={isActivityVisible}
                     onCheckedChange={setIsActivityVisible}
@@ -860,11 +860,13 @@ export default function Dashboard() {
                 <CardHeader className="pb-2 pt-3 px-3 md:pb-3 md:pt-6 md:px-6">
                   <CardTitle className="sr-only">Collections Content</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 px-3 pb-3 md:space-y-3 md:px-6 md:pb-6">
+                <CardContent className="px-3 pb-3 md:px-6 md:pb-6">
                   {collections.length > 0 ? (
-                    collections.slice(0, 10).map((collection) => (
-                      <CollectionItem key={collection.id} collection={collection} />
-                    ))
+                    <div className="grid grid-cols-2 gap-2 md:flex md:flex-col md:space-y-3">
+                      {collections.slice(0, 10).map((collection) => (
+                        <CollectionItem key={collection.id} collection={collection} />
+                      ))}
+                    </div>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-3 md:py-4">
                       No collections yet. Create one to organize your prompts.
