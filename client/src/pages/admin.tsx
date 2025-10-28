@@ -65,6 +65,8 @@ export default function AdminPage() {
   const [collectionsModalOpen, setCollectionsModalOpen] = useState(false);
   const [selectedCommunityForCollections, setSelectedCommunityForCollections] = useState<Community | null>(null);
   const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
+  const [inviteFilterModalOpen, setInviteFilterModalOpen] = useState(false);
+  const [inviteFilterType, setInviteFilterType] = useState<'active' | 'used' | 'expired' | null>(null);
 
   // Check if user is admin (super admin, community admin, or developer)
   if (!authLoading && (!user || !["super_admin", "community_admin", "developer"].includes((user as any).role))) {
@@ -518,6 +520,44 @@ export default function AdminPage() {
     createCollectionMutation.mutate(data);
   };
 
+  // Helper function to generate invite link
+  const generateInviteLink = (inviteCode: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/join/${inviteCode}`;
+  };
+
+  // Helper function to copy invite code/link
+  const copyInviteCode = (invite: CommunityInvite) => {
+    const inviteLink = generateInviteLink(invite.code);
+    navigator.clipboard.writeText(inviteLink);
+    toast({
+      title: "Copied!",
+      description: "Invite link copied to clipboard",
+    });
+  };
+
+  // Filter invites based on type
+  const getFilteredInvites = () => {
+    if (!inviteFilterType) return invites;
+    
+    return invites.filter((invite) => {
+      const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
+      const isExhausted = invite.currentUses >= invite.maxUses;
+      const isActive = invite.isActive && !isExpired && !isExhausted;
+      
+      switch(inviteFilterType) {
+        case 'active':
+          return isActive;
+        case 'used':
+          return !isActive && (isExhausted || invite.currentUses > 0);
+        case 'expired':
+          return !isActive && isExpired;
+        default:
+          return true;
+      }
+    });
+  };
+
   if (authLoading || communitiesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -763,7 +803,13 @@ export default function AdminPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <Card>
+                <Card 
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    setInviteFilterType('active');
+                    setInviteFilterModalOpen(true);
+                  }}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">Active Invites</CardTitle>
                   </CardHeader>
@@ -773,7 +819,13 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
                 
-                <Card>
+                <Card 
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    setInviteFilterType('used');
+                    setInviteFilterModalOpen(true);
+                  }}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">Used Invites</CardTitle>
                   </CardHeader>
@@ -783,7 +835,13 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
                 
-                <Card>
+                <Card 
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    setInviteFilterType('expired');
+                    setInviteFilterModalOpen(true);
+                  }}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">Expired Invites</CardTitle>
                   </CardHeader>
@@ -1520,6 +1578,122 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Invite Filter Modal */}
+        <Dialog open={inviteFilterModalOpen} onOpenChange={setInviteFilterModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                {inviteFilterType === 'active' && 'Active Invites'}
+                {inviteFilterType === 'used' && 'Used Invites'}
+                {inviteFilterType === 'expired' && 'Expired Invites'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {getFilteredInvites().length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p>No {inviteFilterType} invites found</p>
+                </div>
+              ) : (
+                <div className="bg-card rounded-lg border">
+                  <div className="p-4 border-b">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+                      <span className="col-span-2">Code</span>
+                      <span className="col-span-3">Community</span>
+                      <span className="col-span-2">Invite Link</span>
+                      <span className="col-span-1">Uses</span>
+                      <span className="col-span-1">Status</span>
+                      <span className="col-span-2">Expires</span>
+                      <span className="col-span-1">Actions</span>
+                    </div>
+                  </div>
+                  
+                  {getFilteredInvites().map((invite) => {
+                    const community = communities.find(c => c.id === invite.communityId);
+                    const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
+                    const isExhausted = invite.currentUses >= invite.maxUses;
+                    const isActive = invite.isActive && !isExpired && !isExhausted;
+                    const inviteLink = generateInviteLink(invite.code);
+                    
+                    return (
+                      <div key={invite.id} className="p-4 border-b last:border-b-0">
+                        <div className="grid grid-cols-12 gap-4 items-center text-sm">
+                          <span className="col-span-2 font-mono text-blue-600 break-all">
+                            {invite.code}
+                          </span>
+                          <span className="col-span-3">
+                            {community?.name || 'Unknown'}
+                          </span>
+                          <div className="col-span-2 flex items-center gap-2">
+                            <input 
+                              type="text" 
+                              value={inviteLink} 
+                              readOnly 
+                              className="flex-1 bg-muted/50 px-2 py-1 rounded text-xs font-mono"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyInviteCode(invite)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <span className="col-span-1">
+                            {invite.currentUses}/{invite.maxUses}
+                          </span>
+                          <span className="col-span-1">
+                            <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
+                              {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used" : "Inactive"}
+                            </Badge>
+                          </span>
+                          <span className="col-span-2 text-muted-foreground text-xs">
+                            {invite.expiresAt 
+                              ? new Date(invite.expiresAt).toLocaleDateString() 
+                              : 'Never'}
+                          </span>
+                          <span className="col-span-1">
+                            {isActive && (
+                              <Button
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                  deactivateInviteMutation.mutate(invite.id);
+                                  setInviteFilterModalOpen(false);
+                                }}
+                                disabled={deactivateInviteMutation.isPending}
+                                className="h-7 text-xs"
+                              >
+                                Deactivate
+                              </Button>
+                            )}
+                          </span>
+                        </div>
+                        
+                        {/* Additional Details */}
+                        <div className="mt-3 pt-3 border-t grid grid-cols-3 gap-4 text-xs text-muted-foreground">
+                          <div>
+                            <span className="font-medium">Created:</span> {new Date(invite.createdAt).toLocaleString()}
+                          </div>
+                          <div>
+                            <span className="font-medium">Created By:</span> {(invite as any).createdBy?.firstName || 'System'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Type:</span> Community Invite
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
