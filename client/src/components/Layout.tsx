@@ -631,6 +631,21 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
 
                 <DropdownMenuSeparator />
 
+                {/* Credits Balance - Visible on Mobile */}
+                <div className="md:hidden px-2 py-1.5 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center text-muted-foreground">
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      Credits
+                    </span>
+                    <span className="font-semibold text-primary">
+                      {creditBalance ? creditBalance.balance.toLocaleString() : '0'}
+                    </span>
+                  </div>
+                </div>
+                
+                <DropdownMenuSeparator className="md:hidden" />
+
                 <DropdownMenuItem asChild>
                   <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
                     <Settings className="mr-2 h-4 w-4" />
