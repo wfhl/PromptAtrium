@@ -5435,6 +5435,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Global Sub-Community Admin Routes ============
+  
+  // Get all communities (super admin only)
+  app.get('/api/admin/communities', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const communities = await storage.getCommunities();
+      res.json(communities);
+    } catch (error) {
+      console.error("Error fetching communities:", error);
+      res.status(500).json({ message: "Failed to fetch communities" });
+    }
+  });
+
+  // Get all sub-community invites (super admin only)
+  app.get('/api/admin/sub-community-invites', requireSuperAdmin, async (req: any, res) => {
+    try {
+      // Get all sub-communities
+      const communities = await storage.getCommunities();
+      const subCommunities = communities.filter(c => c.parentCommunityId !== null);
+      
+      // Get all invites for all sub-communities
+      const allInvites = [];
+      for (const subCommunity of subCommunities) {
+        const invites = await storage.getSubCommunityInvites(subCommunity.id);
+        allInvites.push(...invites);
+      }
+      
+      res.json(allInvites);
+    } catch (error) {
+      console.error("Error fetching all sub-community invites:", error);
+      res.status(500).json({ message: "Failed to fetch invites" });
+    }
+  });
+
+  // Get all user memberships across sub-communities (super admin only)
+  app.get('/api/admin/user-memberships', requireSuperAdmin, async (req: any, res) => {
+    try {
+      // Get all communities
+      const communities = await storage.getCommunities();
+      const subCommunities = communities.filter(c => c.parentCommunityId !== null);
+      
+      // Get all memberships grouped by user
+      const userMembershipsMap = new Map();
+      
+      for (const subCommunity of subCommunities) {
+        const members = await storage.getSubCommunityMembers(subCommunity.id);
+        
+        for (const member of members) {
+          const userId = member.userId;
+          
+          // Get user details if not already in map
+          if (!userMembershipsMap.has(userId)) {
+            const user = await storage.getUser(userId);
+            if (user) {
+              userMembershipsMap.set(userId, {
+                user,
+                memberships: []
+              });
+            }
+          }
+          
+          // Add membership to user's list
+          if (userMembershipsMap.has(userId)) {
+            userMembershipsMap.get(userId).memberships.push({
+              community: subCommunity,
+              role: member.role,
+              joinedAt: member.joinedAt
+            });
+          }
+        }
+      }
+      
+      // Convert map to array
+      const userMemberships = Array.from(userMembershipsMap.values());
+      
+      res.json(userMemberships);
+    } catch (error) {
+      console.error("Error fetching user memberships:", error);
+      res.status(500).json({ message: "Failed to fetch user memberships" });
+    }
+  });
+
 
   // ============ Sub-community Invite Routes ============
   

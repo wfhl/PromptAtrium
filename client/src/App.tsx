@@ -42,6 +42,7 @@ import MarketplaceDocs from "@/pages/MarketplaceDocs";
 import { PurchaseHistory } from "@/pages/PurchaseHistory";
 import { AdminDisputes } from "@/pages/AdminDisputes";
 import SubCommunityAdminDashboard from "@/pages/SubCommunityAdminDashboard";
+import { GlobalSubCommunityAdmin } from "@/pages/GlobalSubCommunityAdmin";
 import SubCommunityContent from "@/pages/SubCommunityContent";
 import SubCommunityDocs from "@/pages/SubCommunityDocs";
 import InviteAcceptPage from "@/pages/InviteAccept";
@@ -186,6 +187,9 @@ function Router() {
             </Route>
             <Route path="/admin">
               {() => <Layout><Admin /></Layout>}
+            </Route>
+            <Route path="/admin/sub-communities">
+              {() => <Layout><GlobalSubCommunityAdmin /></Layout>}
             </Route>
             <Route path="/admin/disputes">
               {() => <Layout><AdminDisputes /></Layout>}

@@ -496,10 +496,20 @@ export default function AdminPage() {
                 {isSuperAdmin ? "All Communities" : "My Communities"}
               </h2>
               {isSuperAdmin && (
-                <Button onClick={openCreateModal} data-testid="button-create-community">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Community
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => window.location.href = '/admin/sub-communities'} 
+                    variant="outline"
+                    data-testid="button-global-subcommunity-admin"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Global Sub-Community Management
+                  </Button>
+                  <Button onClick={openCreateModal} data-testid="button-create-community">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Community
+                  </Button>
+                </div>
               )}
             </div>
 
