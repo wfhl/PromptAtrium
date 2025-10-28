@@ -852,7 +852,8 @@ export default function AdminPage() {
                 </Card>
               </div>
 
-              <div className="bg-card rounded-lg border">
+              {/* Desktop Table View */}
+              <div className="hidden md:block bg-card rounded-lg border">
                 <div className="p-4 border-b">
                   <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
                     <span className="flex-1">Code</span>
@@ -904,6 +905,68 @@ export default function AdminPage() {
                           )}
                         </span>
                       </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {invites.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                      <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p>No invites found</p>
+                      <p className="text-sm">Create your first community invite to get started</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  invites.map((invite) => {
+                    const community = communities.find(c => c.id === invite.communityId);
+                    const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
+                    const isExhausted = invite.currentUses >= invite.maxUses;
+                    const isActive = invite.isActive && !isExpired && !isExhausted;
+                    
+                    return (
+                      <Card key={invite.id} className="overflow-hidden">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="font-mono text-blue-600 text-sm mb-1">
+                                {invite.code}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {community?.name || 'Unknown'}
+                              </div>
+                            </div>
+                            <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
+                              {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-3 space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Uses:</span>
+                            <span className="font-medium">{invite.currentUses}/{invite.maxUses}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Created:</span>
+                            <span className="font-medium">{new Date(invite.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          {isActive && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deactivateInviteMutation.mutate(invite.id)}
+                              disabled={deactivateInviteMutation.isPending}
+                              data-testid={`button-deactivate-${invite.id}`}
+                              className="w-full mt-2"
+                            >
+                              Deactivate
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
                     );
                   })
                 )}
@@ -1584,7 +1647,7 @@ export default function AdminPage() {
 
         {/* Invite Filter Modal */}
         <Dialog open={inviteFilterModalOpen} onOpenChange={setInviteFilterModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
@@ -1601,98 +1664,204 @@ export default function AdminPage() {
                   <p>No {inviteFilterType} invites found</p>
                 </div>
               ) : (
-                <div className="bg-card rounded-lg border">
-                  <div className="p-4 border-b">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
-                      <span className="col-span-2">Code</span>
-                      <span className="col-span-3">Community</span>
-                      <span className="col-span-2">Invite Link</span>
-                      <span className="col-span-1">Uses</span>
-                      <span className="col-span-1">Status</span>
-                      <span className="col-span-2">Expires</span>
-                      <span className="col-span-1">Actions</span>
-                    </div>
-                  </div>
-                  
-                  {getFilteredInvites().map((invite) => {
-                    const community = communities.find(c => c.id === invite.communityId);
-                    const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
-                    const isExhausted = invite.currentUses >= invite.maxUses;
-                    const isActive = invite.isActive && !isExpired && !isExhausted;
-                    const inviteLink = generateInviteLink(invite.code);
-                    
-                    return (
-                      <div key={invite.id} className="p-4 border-b last:border-b-0">
-                        <div className="grid grid-cols-12 gap-4 items-center text-sm">
-                          <span className="col-span-2 font-mono text-blue-600 break-all">
-                            {invite.code}
-                          </span>
-                          <span className="col-span-3">
-                            {community?.name || 'Unknown'}
-                          </span>
-                          <div className="col-span-2 flex items-center gap-2">
-                            <input 
-                              type="text" 
-                              value={inviteLink} 
-                              readOnly 
-                              className="flex-1 bg-muted/50 px-2 py-1 rounded text-xs font-mono"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyInviteCode(invite)}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <span className="col-span-1">
-                            {invite.currentUses}/{invite.maxUses}
-                          </span>
-                          <span className="col-span-1">
-                            <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
-                              {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used" : "Inactive"}
-                            </Badge>
-                          </span>
-                          <span className="col-span-2 text-muted-foreground text-xs">
-                            {invite.expiresAt 
-                              ? new Date(invite.expiresAt).toLocaleDateString() 
-                              : 'Never'}
-                          </span>
-                          <span className="col-span-1">
-                            {isActive && (
-                              <Button
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => {
-                                  deactivateInviteMutation.mutate(invite.id);
-                                  setInviteFilterModalOpen(false);
-                                }}
-                                disabled={deactivateInviteMutation.isPending}
-                                className="h-7 text-xs"
-                              >
-                                Deactivate
-                              </Button>
-                            )}
-                          </span>
-                        </div>
-                        
-                        {/* Additional Details */}
-                        <div className="mt-3 pt-3 border-t grid grid-cols-3 gap-4 text-xs text-muted-foreground">
-                          <div>
-                            <span className="font-medium">Created:</span> {new Date(invite.createdAt).toLocaleString()}
-                          </div>
-                          <div>
-                            <span className="font-medium">Created By:</span> {(invite as any).createdBy?.firstName || 'System'}
-                          </div>
-                          <div>
-                            <span className="font-medium">Type:</span> Community Invite
-                          </div>
-                        </div>
+                <>
+                  {/* Desktop Table View - Hidden on Mobile */}
+                  <div className="hidden md:block bg-card rounded-lg border">
+                    <div className="p-4 border-b">
+                      <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+                        <span className="col-span-2">Code</span>
+                        <span className="col-span-3">Community</span>
+                        <span className="col-span-2">Invite Link</span>
+                        <span className="col-span-1">Uses</span>
+                        <span className="col-span-1">Status</span>
+                        <span className="col-span-2">Expires</span>
+                        <span className="col-span-1">Actions</span>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                    
+                    {getFilteredInvites().map((invite) => {
+                      const community = communities.find(c => c.id === invite.communityId);
+                      const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
+                      const isExhausted = invite.currentUses >= invite.maxUses;
+                      const isActive = invite.isActive && !isExpired && !isExhausted;
+                      const inviteLink = generateInviteLink(invite.code);
+                      
+                      return (
+                        <div key={invite.id} className="p-4 border-b last:border-b-0">
+                          <div className="grid grid-cols-12 gap-4 items-center text-sm">
+                            <span className="col-span-2 font-mono text-blue-600 break-all">
+                              {invite.code}
+                            </span>
+                            <span className="col-span-3">
+                              {community?.name || 'Unknown'}
+                            </span>
+                            <div className="col-span-2 flex items-center gap-2">
+                              <input 
+                                type="text" 
+                                value={inviteLink} 
+                                readOnly 
+                                className="flex-1 bg-muted/50 px-2 py-1 rounded text-xs font-mono"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyInviteCode(invite)}
+                                className="h-7 w-7 p-0"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <span className="col-span-1">
+                              {invite.currentUses}/{invite.maxUses}
+                            </span>
+                            <span className="col-span-1">
+                              <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
+                                {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used" : "Inactive"}
+                              </Badge>
+                            </span>
+                            <span className="col-span-2 text-muted-foreground text-xs">
+                              {invite.expiresAt 
+                                ? new Date(invite.expiresAt).toLocaleDateString() 
+                                : 'Never'}
+                            </span>
+                            <span className="col-span-1">
+                              {isActive && (
+                                <Button
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    deactivateInviteMutation.mutate(invite.id);
+                                    setInviteFilterModalOpen(false);
+                                  }}
+                                  disabled={deactivateInviteMutation.isPending}
+                                  className="h-7 text-xs"
+                                >
+                                  Deactivate
+                                </Button>
+                              )}
+                            </span>
+                          </div>
+                          
+                          {/* Additional Details */}
+                          <div className="mt-3 pt-3 border-t grid grid-cols-3 gap-4 text-xs text-muted-foreground">
+                            <div>
+                              <span className="font-medium">Created:</span> {new Date(invite.createdAt).toLocaleString()}
+                            </div>
+                            <div>
+                              <span className="font-medium">Created By:</span> {(invite as any).createdBy?.firstName || 'System'}
+                            </div>
+                            <div>
+                              <span className="font-medium">Type:</span> Community Invite
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Mobile Card View - Visible only on Mobile */}
+                  <div className="md:hidden space-y-4">
+                    {getFilteredInvites().map((invite) => {
+                      const community = communities.find(c => c.id === invite.communityId);
+                      const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
+                      const isExhausted = invite.currentUses >= invite.maxUses;
+                      const isActive = invite.isActive && !isExpired && !isExhausted;
+                      const inviteLink = generateInviteLink(invite.code);
+                      
+                      return (
+                        <Card key={invite.id} className="overflow-hidden">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <div className="font-mono text-blue-600 text-sm">
+                                  {invite.code}
+                                </div>
+                                <div className="text-sm font-medium">
+                                  {community?.name || 'Unknown'}
+                                </div>
+                              </div>
+                              <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
+                                {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used" : "Inactive"}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3 pb-3">
+                            {/* Invite Link Section */}
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Invite Link</Label>
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="text" 
+                                  value={inviteLink} 
+                                  readOnly 
+                                  className="flex-1 bg-muted/50 px-2 py-1 rounded text-xs font-mono truncate"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyInviteCode(invite)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Stats Row */}
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <span className="text-muted-foreground">Uses:</span>
+                                <span className="ml-1 font-medium">{invite.currentUses}/{invite.maxUses}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Expires:</span>
+                                <span className="ml-1 font-medium">
+                                  {invite.expiresAt 
+                                    ? new Date(invite.expiresAt).toLocaleDateString() 
+                                    : 'Never'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Additional Info */}
+                            <div className="pt-3 border-t space-y-1 text-xs text-muted-foreground">
+                              <div className="flex justify-between">
+                                <span>Created:</span>
+                                <span>{new Date(invite.createdAt).toLocaleDateString()}, {new Date(invite.createdAt).toLocaleTimeString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Created By:</span>
+                                <span>{(invite as any).createdBy?.firstName || 'System'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Type:</span>
+                                <span>Community Invite</span>
+                              </div>
+                            </div>
+
+                            {/* Action Button */}
+                            {isActive && (
+                              <div className="pt-3">
+                                <Button
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    deactivateInviteMutation.mutate(invite.id);
+                                    setInviteFilterModalOpen(false);
+                                  }}
+                                  disabled={deactivateInviteMutation.isPending}
+                                  className="w-full"
+                                >
+                                  Deactivate Invite
+                                </Button>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </div>
           </DialogContent>
