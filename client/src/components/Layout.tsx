@@ -606,7 +606,12 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                     View Profile
                   </Link>
                 </DropdownMenuItem>
-
+                <DropdownMenuItem asChild>
+                  <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Profile Settings
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link 
                     href={`/user/${typedUser?.username}?tab=followers`}
@@ -630,13 +635,18 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-
+                <DropdownMenuItem asChild>
+                  <Link href="/seller/dashboard" className="flex items-center cursor-pointer" data-testid="menu-start-selling">
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Start Selling
+                  </Link>
+                </DropdownMenuItem>
                 {/* Credits Balance - Visible on Mobile */}
-                <div className="md:hidden px-2 py-1.5 text-sm">
+                <div className="md:hidden px-2 py-1 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center text-muted-foreground">
-                      <DollarSign className="mr-2 h-4 w-4" />
-                      Credits
+                      <DollarSign className="mr-4 h-4 w-4" />
+                        Credits
                     </span>
                     <span className="font-semibold text-primary">
                       {creditBalance ? creditBalance.balance.toLocaleString() : '0'}
@@ -646,19 +656,8 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 
                 <DropdownMenuSeparator className="md:hidden" />
 
-                <DropdownMenuItem asChild>
-                  <Link href="/profile/settings" className="flex items-center cursor-pointer" data-testid="menu-profile-settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Profile Settings
-                  </Link>
-                </DropdownMenuItem>
 
-                <DropdownMenuItem asChild>
-                  <Link href="/seller/dashboard" className="flex items-center cursor-pointer" data-testid="menu-start-selling">
-                    <DollarSign className="mr-2 h-4 w-4" />
-                    Start Selling
-                  </Link>
-                </DropdownMenuItem>
+
 
                 <DropdownMenuItem asChild>
                   <Link href="/prompt-history" className="flex items-center cursor-pointer" data-testid="menu-prompt-history">
