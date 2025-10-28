@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -597,7 +598,8 @@ export default function AdminPage() {
               </div>
 
               <div className="bg-card rounded-lg border">
-                <div className="p-4 border-b">
+                {/* Desktop Table Header */}
+                <div className="p-4 border-b hidden md:block">
                   <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
                     <span className="w-8">#</span>
                     <span className="flex-1">User</span>
@@ -619,18 +621,31 @@ export default function AdminPage() {
                         !userSearchTerm ||
                         user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
                         user.firstName?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-                        user.lastName?.toLowerCase().includes(userSearchTerm.toLowerCase())
+                        user.lastName?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                        user.username?.toLowerCase().includes(userSearchTerm.toLowerCase())
                       )
                       .map((user: User, index: number) => (
                         <div key={user.id} className="p-4 hover:bg-accent/50">
-                          <div className="flex items-center gap-4">
+                          {/* Desktop Layout */}
+                          <div className="hidden md:flex items-center gap-4">
                             <span className="w-8 text-sm text-muted-foreground">{index + 1}</span>
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium">
-                                  {user.firstName} {user.lastName}
+                                {user.username ? (
+                                  <Link 
+                                    href={`/user/${user.username}`}
+                                    className="font-medium text-primary hover:underline"
+                                  >
+                                    {user.firstName} {user.lastName}
+                                  </Link>
+                                ) : (
+                                  <span className="font-medium">
+                                    {user.firstName} {user.lastName}
+                                  </span>
+                                )}
+                                <span className="text-sm text-muted-foreground">
+                                  ({user.username ? `@${user.username}` : user.email})
                                 </span>
-                                <span className="text-sm text-muted-foreground">({user.email})</span>
                               </div>
                             </div>
                             <div className="w-32">
@@ -660,6 +675,71 @@ export default function AdminPage() {
                                 data-testid={`button-manage-user-${user.id}`}
                               >
                                 <UserPlus className="h-4 w-4 mr-1" />
+                                Manage
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Mobile Layout */}
+                          <div className="md:hidden space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs text-muted-foreground">#{index + 1}</span>
+                                  {user.username ? (
+                                    <Link 
+                                      href={`/user/${user.username}`}
+                                      className="font-medium text-primary hover:underline"
+                                    >
+                                      {user.firstName} {user.lastName}
+                                    </Link>
+                                  ) : (
+                                    <span className="font-medium">
+                                      {user.firstName} {user.lastName}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground truncate">
+                                  {user.username ? `@${user.username}` : user.email}
+                                </div>
+                                {user.username && user.email && (
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {user.email}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Calendar className="h-3 w-3" />
+                              <span>Joined {user.createdAt && new Date(user.createdAt).toLocaleDateString()}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1">
+                                <Select
+                                  value={(user as any).role || "user"}
+                                  onValueChange={(role: UserRole) => {
+                                    updateUserRoleMutation.mutate({ userId: user.id, role });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full h-8 text-xs" data-testid={`select-user-role-${user.id}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="community_admin">Community Admin</SelectItem>
+                                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8"
+                                data-testid={`button-manage-user-${user.id}`}
+                              >
+                                <UserPlus className="h-3 w-3 mr-1" />
                                 Manage
                               </Button>
                             </div>
