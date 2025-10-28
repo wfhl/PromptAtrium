@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Settings, Users, Shield, Crown, Folder, Mail, UserPlus, Search, Copy, Link2, CheckCircle } from "lucide-react";
-import type { Community, User, UserRole, CommunityInvite } from "@shared/schema";
+import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle } from "lucide-react";
+import type { Community, User, UserRole } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -23,12 +23,6 @@ const communitySchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
-});
-
-const inviteSchema = z.object({
-  communityId: z.string().min(1, "Community is required"),
-  maxUses: z.number().min(1, "Max uses must be at least 1").max(100, "Max uses cannot exceed 100"),
-  expiresAt: z.string().optional(),
 });
 
 const memberInviteSchema = z.object({
@@ -45,7 +39,6 @@ const collectionSchema = z.object({
 });
 
 type CommunityFormData = z.infer<typeof communitySchema>;
-type InviteFormData = z.infer<typeof inviteSchema>;
 type MemberInviteFormData = z.infer<typeof memberInviteSchema>;
 type CollectionFormData = z.infer<typeof collectionSchema>;
 
@@ -55,7 +48,6 @@ export default function AdminPage() {
   const [communityModalOpen, setCommunityModalOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [userSearchTerm, setUserSearchTerm] = useState("");
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<Community | null>(null);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
@@ -65,8 +57,6 @@ export default function AdminPage() {
   const [collectionsModalOpen, setCollectionsModalOpen] = useState(false);
   const [selectedCommunityForCollections, setSelectedCommunityForCollections] = useState<Community | null>(null);
   const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
-  const [inviteFilterModalOpen, setInviteFilterModalOpen] = useState(false);
-  const [inviteFilterType, setInviteFilterType] = useState<'active' | 'used' | 'expired' | null>(null);
 
   // Check if user is admin (super admin, community admin, or developer)
   if (!authLoading && (!user || !["super_admin", "community_admin", "developer"].includes((user as any).role))) {
@@ -99,14 +89,6 @@ export default function AdminPage() {
     },
   });
 
-  const inviteForm = useForm<InviteFormData>({
-    resolver: zodResolver(inviteSchema),
-    defaultValues: {
-      communityId: "",
-      maxUses: 1,
-      expiresAt: "",
-    },
-  });
 
   const memberInviteForm = useForm<MemberInviteFormData>({
     resolver: zodResolver(memberInviteSchema),
@@ -133,20 +115,6 @@ export default function AdminPage() {
     enabled: !!user,
   });
 
-  // Fetch invites and stats (for Super Admin)
-  const { data: invites = [], isLoading: invitesLoading } = useQuery<CommunityInvite[]>({
-    queryKey: ["/api/invites"],
-    enabled: isSuperAdmin && !!user,
-  });
-
-  const { data: inviteStats } = useQuery<{
-    active: number;
-    used: number;
-    expired: number;
-  }>({
-    queryKey: ["/api/invites/stats"],
-    enabled: isSuperAdmin && !!user,
-  });
 
   // Fetch users (for user management)
   const { data: users = [], isLoading: usersLoading } = useQuery({
@@ -256,54 +224,6 @@ export default function AdminPage() {
     },
   });
 
-  // Invite mutations
-  const createInviteMutation = useMutation({
-    mutationFn: async (data: InviteFormData) => {
-      const payload = {
-        ...data,
-        expiresAt: data.expiresAt ? new Date(data.expiresAt).toISOString() : null,
-      };
-      return await apiRequest("POST", `/api/communities/${data.communityId}/invites`, payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invites"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invites/stats"] });
-      setInviteModalOpen(false);
-      inviteForm.reset();
-      toast({
-        title: "Success",
-        description: "Invite created successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to create invite",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deactivateInviteMutation = useMutation({
-    mutationFn: async (inviteId: string) => {
-      return await apiRequest("POST", `/api/invites/${inviteId}/deactivate`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invites"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invites/stats"] });
-      toast({
-        title: "Success", 
-        description: "Invite deactivated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to deactivate invite",
-        variant: "destructive",
-      });
-    },
-  });
 
   const createMemberInviteMutation = useMutation({
     mutationFn: async (data: MemberInviteFormData) => {
@@ -377,9 +297,6 @@ export default function AdminPage() {
     }
   };
 
-  const onInviteSubmit = (data: InviteFormData) => {
-    createInviteMutation.mutate(data);
-  };
 
   const onMemberInviteSubmit = (data: MemberInviteFormData) => {
     createMemberInviteMutation.mutate(data);
@@ -413,10 +330,6 @@ export default function AdminPage() {
     setCommunityModalOpen(true);
   };
 
-  const openInviteModal = () => {
-    inviteForm.reset();
-    setInviteModalOpen(true);
-  };
 
   const openMemberModal = (community: Community) => {
     setSelectedCommunityForMembers(community);
@@ -520,43 +433,7 @@ export default function AdminPage() {
     createCollectionMutation.mutate(data);
   };
 
-  // Helper function to generate invite link
-  const generateInviteLink = (inviteCode: string) => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/invite/${inviteCode}`;
-  };
 
-  // Helper function to copy invite code/link
-  const copyInviteCode = (invite: CommunityInvite) => {
-    const inviteLink = generateInviteLink(invite.code);
-    navigator.clipboard.writeText(inviteLink);
-    toast({
-      title: "Copied!",
-      description: "Invite link copied to clipboard",
-    });
-  };
-
-  // Filter invites based on type
-  const getFilteredInvites = () => {
-    if (!inviteFilterType) return invites;
-    
-    return invites.filter((invite) => {
-      const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
-      const isExhausted = invite.currentUses >= invite.maxUses;
-      const isActive = invite.isActive && !isExpired && !isExhausted;
-      
-      switch(inviteFilterType) {
-        case 'active':
-          return isActive;
-        case 'used':
-          return !isActive && (isExhausted || invite.currentUses > 0);
-        case 'expired':
-          return !isActive && isExpired;
-        default:
-          return true;
-      }
-    });
-  };
 
   if (authLoading || communitiesLoading) {
     return (
@@ -599,22 +476,16 @@ export default function AdminPage() {
 
         {/* Tabbed Interface */}
         <Tabs defaultValue="communities" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="communities" className="flex items-center gap-2">
               <Folder className="h-4 w-4" />
               Communities
             </TabsTrigger>
             {isSuperAdmin && (
-              <>
-                <TabsTrigger value="users" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Users
-                </TabsTrigger>
-                <TabsTrigger value="invites" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Invites
-                </TabsTrigger>
-              </>
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Users
+              </TabsTrigger>
             )}
           </TabsList>
 
@@ -791,188 +662,6 @@ export default function AdminPage() {
             </TabsContent>
           )}
 
-          {/* Invites Tab - Super Admin Only */}
-          {isSuperAdmin && (
-            <TabsContent value="invites" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-foreground">Invite Management</h2>
-                <Button onClick={openInviteModal} data-testid="button-create-invite">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Invite
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <Card 
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => {
-                    setInviteFilterType('active');
-                    setInviteFilterModalOpen(true);
-                  }}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Active Invites</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{inviteStats?.active || 0}</div>
-                    <p className="text-sm text-muted-foreground">Currently active</p>
-                  </CardContent>
-                </Card>
-                
-                <Card 
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => {
-                    setInviteFilterType('used');
-                    setInviteFilterModalOpen(true);
-                  }}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Used Invites</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">{inviteStats?.used || 0}</div>
-                    <p className="text-sm text-muted-foreground">Successfully redeemed</p>
-                  </CardContent>
-                </Card>
-                
-                <Card 
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => {
-                    setInviteFilterType('expired');
-                    setInviteFilterModalOpen(true);
-                  }}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Expired Invites</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-destructive">{inviteStats?.expired || 0}</div>
-                    <p className="text-sm text-muted-foreground">No longer valid</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Desktop Table View */}
-              <div className="hidden md:block bg-card rounded-lg border">
-                <div className="p-4 border-b">
-                  <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
-                    <span className="flex-1">Code</span>
-                    <span className="w-32">Community</span>
-                    <span className="w-24">Uses</span>
-                    <span className="w-24">Status</span>
-                    <span className="w-32">Created</span>
-                    <span className="w-24">Actions</span>
-                  </div>
-                </div>
-                
-                {invites.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p>No invites found</p>
-                    <p className="text-sm">Create your first community invite to get started</p>
-                  </div>
-                ) : (
-                  invites.map((invite) => {
-                    const community = communities.find(c => c.id === invite.communityId);
-                    const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
-                    const isExhausted = invite.currentUses >= invite.maxUses;
-                    const isActive = invite.isActive && !isExpired && !isExhausted;
-                    
-                    return (
-                      <div key={invite.id} className="p-4 border-b last:border-b-0 flex items-center gap-4 text-sm">
-                        <span className="flex-1 font-mono text-blue-600">{invite.code}</span>
-                        <span className="w-32">{community?.name || 'Unknown'}</span>
-                        <span className="w-24">{invite.currentUses}/{invite.maxUses}</span>
-                        <span className="w-24">
-                          <Badge variant={isActive ? "default" : "secondary"}>
-                            {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used Up" : "Inactive"}
-                          </Badge>
-                        </span>
-                        <span className="w-32 text-muted-foreground">
-                          {new Date(invite.createdAt).toLocaleDateString()}
-                        </span>
-                        <span className="w-24">
-                          {isActive && (
-                            <Button
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => deactivateInviteMutation.mutate(invite.id)}
-                              disabled={deactivateInviteMutation.isPending}
-                              data-testid={`button-deactivate-${invite.id}`}
-                            >
-                              Deactivate
-                            </Button>
-                          )}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-4">
-                {invites.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
-                      <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <p>No invites found</p>
-                      <p className="text-sm">Create your first community invite to get started</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  invites.map((invite) => {
-                    const community = communities.find(c => c.id === invite.communityId);
-                    const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
-                    const isExhausted = invite.currentUses >= invite.maxUses;
-                    const isActive = invite.isActive && !isExpired && !isExhausted;
-                    
-                    return (
-                      <Card key={invite.id} className="overflow-hidden">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="font-mono text-blue-600 text-sm mb-1">
-                                {invite.code}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {community?.name || 'Unknown'}
-                              </div>
-                            </div>
-                            <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
-                              {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used" : "Inactive"}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pb-3 space-y-2">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Uses:</span>
-                            <span className="font-medium">{invite.currentUses}/{invite.maxUses}</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Created:</span>
-                            <span className="font-medium">{new Date(invite.createdAt).toLocaleDateString()}</span>
-                          </div>
-                          {isActive && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => deactivateInviteMutation.mutate(invite.id)}
-                              disabled={deactivateInviteMutation.isPending}
-                              data-testid={`button-deactivate-${invite.id}`}
-                              className="w-full mt-2"
-                            >
-                              Deactivate
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })
-                )}
-              </div>
-            </TabsContent>
-          )}
         </Tabs>
 
         {/* Community Modal */}
@@ -1058,97 +747,6 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Invite Modal */}
-        <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create Community Invite</DialogTitle>
-            </DialogHeader>
-            <Form {...inviteForm}>
-              <form onSubmit={inviteForm.handleSubmit(onInviteSubmit)} className="space-y-4">
-                <FormField
-                  control={inviteForm.control}
-                  name="communityId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Community</FormLabel>
-                      <FormControl>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger data-testid="select-invite-community">
-                            <SelectValue placeholder="Select a community" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {communities.map((community) => (
-                              <SelectItem key={community.id} value={community.id}>
-                                {community.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={inviteForm.control}
-                  name="maxUses"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Uses</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="100"
-                          placeholder="1"
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                          data-testid="input-invite-max-uses"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={inviteForm.control}
-                  name="expiresAt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Expiration Date (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="datetime-local"
-                          {...field}
-                          data-testid="input-invite-expires-at"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setInviteModalOpen(false)}
-                    data-testid="button-cancel-invite"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createInviteMutation.isPending}
-                    data-testid="button-submit-invite"
-                  >
-                    Create Invite
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
 
         {/* Member Management Modal */}
         <Dialog open={memberModalOpen} onOpenChange={setMemberModalOpen}>
@@ -1645,227 +1243,6 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Invite Filter Modal */}
-        <Dialog open={inviteFilterModalOpen} onOpenChange={setInviteFilterModalOpen}>
-          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                {inviteFilterType === 'active' && 'Active Invites'}
-                {inviteFilterType === 'used' && 'Used Invites'}
-                {inviteFilterType === 'expired' && 'Expired Invites'}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {getFilteredInvites().length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p>No {inviteFilterType} invites found</p>
-                </div>
-              ) : (
-                <>
-                  {/* Desktop Table View - Hidden on Mobile */}
-                  <div className="hidden md:block bg-card rounded-lg border">
-                    <div className="p-4 border-b">
-                      <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
-                        <span className="col-span-2">Code</span>
-                        <span className="col-span-3">Community</span>
-                        <span className="col-span-2">Invite Link</span>
-                        <span className="col-span-1">Uses</span>
-                        <span className="col-span-1">Status</span>
-                        <span className="col-span-2">Expires</span>
-                        <span className="col-span-1">Actions</span>
-                      </div>
-                    </div>
-                    
-                    {getFilteredInvites().map((invite) => {
-                      const community = communities.find(c => c.id === invite.communityId);
-                      const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
-                      const isExhausted = invite.currentUses >= invite.maxUses;
-                      const isActive = invite.isActive && !isExpired && !isExhausted;
-                      const inviteLink = generateInviteLink(invite.code);
-                      
-                      return (
-                        <div key={invite.id} className="p-4 border-b last:border-b-0">
-                          <div className="grid grid-cols-12 gap-4 items-center text-sm">
-                            <span className="col-span-2 font-mono text-blue-600 break-all">
-                              {invite.code}
-                            </span>
-                            <span className="col-span-3">
-                              {community?.name || 'Unknown'}
-                            </span>
-                            <div className="col-span-2 flex items-center gap-2">
-                              <input 
-                                type="text" 
-                                value={inviteLink} 
-                                readOnly 
-                                className="flex-1 bg-muted/50 px-2 py-1 rounded text-xs font-mono"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copyInviteCode(invite)}
-                                className="h-7 w-7 p-0"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <span className="col-span-1">
-                              {invite.currentUses}/{invite.maxUses}
-                            </span>
-                            <span className="col-span-1">
-                              <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
-                                {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used" : "Inactive"}
-                              </Badge>
-                            </span>
-                            <span className="col-span-2 text-muted-foreground text-xs">
-                              {invite.expiresAt 
-                                ? new Date(invite.expiresAt).toLocaleDateString() 
-                                : 'Never'}
-                            </span>
-                            <span className="col-span-1">
-                              {isActive && (
-                                <Button
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => {
-                                    deactivateInviteMutation.mutate(invite.id);
-                                    setInviteFilterModalOpen(false);
-                                  }}
-                                  disabled={deactivateInviteMutation.isPending}
-                                  className="h-7 text-xs"
-                                >
-                                  Deactivate
-                                </Button>
-                              )}
-                            </span>
-                          </div>
-                          
-                          {/* Additional Details */}
-                          <div className="mt-3 pt-3 border-t grid grid-cols-3 gap-4 text-xs text-muted-foreground">
-                            <div>
-                              <span className="font-medium">Created:</span> {new Date(invite.createdAt).toLocaleString()}
-                            </div>
-                            <div>
-                              <span className="font-medium">Created By:</span> {(invite as any).createdBy?.firstName || 'System'}
-                            </div>
-                            <div>
-                              <span className="font-medium">Type:</span> Community Invite
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Mobile Card View - Visible only on Mobile */}
-                  <div className="md:hidden space-y-4">
-                    {getFilteredInvites().map((invite) => {
-                      const community = communities.find(c => c.id === invite.communityId);
-                      const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
-                      const isExhausted = invite.currentUses >= invite.maxUses;
-                      const isActive = invite.isActive && !isExpired && !isExhausted;
-                      const inviteLink = generateInviteLink(invite.code);
-                      
-                      return (
-                        <Card key={invite.id} className="overflow-hidden">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between">
-                              <div className="space-y-1">
-                                <div className="font-mono text-blue-600 text-sm">
-                                  {invite.code}
-                                </div>
-                                <div className="text-sm font-medium">
-                                  {community?.name || 'Unknown'}
-                                </div>
-                              </div>
-                              <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
-                                {isActive ? "Active" : isExpired ? "Expired" : isExhausted ? "Used" : "Inactive"}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="space-y-3 pb-3">
-                            {/* Invite Link Section */}
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Invite Link</Label>
-                              <div className="flex items-center gap-2">
-                                <input 
-                                  type="text" 
-                                  value={inviteLink} 
-                                  readOnly 
-                                  className="flex-1 bg-muted/50 px-2 py-1 rounded text-xs font-mono truncate"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyInviteCode(invite)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            {/* Stats Row */}
-                            <div className="grid grid-cols-2 gap-3 text-xs">
-                              <div>
-                                <span className="text-muted-foreground">Uses:</span>
-                                <span className="ml-1 font-medium">{invite.currentUses}/{invite.maxUses}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Expires:</span>
-                                <span className="ml-1 font-medium">
-                                  {invite.expiresAt 
-                                    ? new Date(invite.expiresAt).toLocaleDateString() 
-                                    : 'Never'}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Additional Info */}
-                            <div className="pt-3 border-t space-y-1 text-xs text-muted-foreground">
-                              <div className="flex justify-between">
-                                <span>Created:</span>
-                                <span>{new Date(invite.createdAt).toLocaleDateString()}, {new Date(invite.createdAt).toLocaleTimeString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Created By:</span>
-                                <span>{(invite as any).createdBy?.firstName || 'System'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Type:</span>
-                                <span>Community Invite</span>
-                              </div>
-                            </div>
-
-                            {/* Action Button */}
-                            {isActive && (
-                              <div className="pt-3">
-                                <Button
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    deactivateInviteMutation.mutate(invite.id);
-                                    setInviteFilterModalOpen(false);
-                                  }}
-                                  disabled={deactivateInviteMutation.isPending}
-                                  className="w-full"
-                                >
-                                  Deactivate Invite
-                                </Button>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
         </div>
       </div>
     </>
