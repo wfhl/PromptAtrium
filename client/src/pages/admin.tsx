@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle } from "lucide-react";
+import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle, Calendar } from "lucide-react";
 import type { Community, User, UserRole } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
