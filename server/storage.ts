@@ -1338,9 +1338,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get only the global community (accessible to everyone)
+  // The global community is specifically identified by slug "global" or "general"
   async getGlobalCommunity(): Promise<Community | undefined> {
     const [community] = await db.select().from(communities)
-      .where(and(eq(communities.isActive, true), isNull(communities.parentCommunityId)));
+      .where(and(
+        eq(communities.isActive, true), 
+        or(
+          eq(communities.slug, 'global'),
+          eq(communities.slug, 'general')
+        )
+      ));
     return community;
   }
 
@@ -1375,9 +1382,15 @@ export class DatabaseStorage implements IStorage {
 
   // Get all non-global communities (for super_admin and global_admin)
   async getAllPrivateCommunities(): Promise<Community[]> {
-    // All communities are private except for the global one (parentCommunityId = null)
+    // All communities are private except for the ones with slug 'global' or 'general'
     return await db.select().from(communities)
-      .where(and(eq(communities.isActive, true), isNotNull(communities.parentCommunityId)))
+      .where(and(
+        eq(communities.isActive, true),
+        and(
+          sql`${communities.slug} != 'global'`,
+          sql`${communities.slug} != 'general'`
+        )
+      ))
       .orderBy(desc(communities.createdAt));
   }
 
@@ -2512,6 +2525,11 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(communityInvites.createdAt));
+  }
+
+  // Alias for backwards compatibility
+  async getCommunityInvites(communityId: string): Promise<CommunityInvite[]> {
+    return this.getAllInvites({ communityId, isActive: true });
   }
 
   async getAllInvites(options: {

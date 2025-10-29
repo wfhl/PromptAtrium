@@ -255,33 +255,14 @@ export default function Communities() {
                       </CardDescription>
                     )}
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <SubCommunityList
-                      parentCommunityId={community.id}
-                      parentCommunity={community}
-                      onCreateNew={() => handleCreateSubCommunity(community)}
-                      showCreateButton={isAdmin}
-                      compact={true}
-                    />
-                    
-                    <div className="flex items-center justify-between pt-4 border-t">
+                  <CardContent>
+                    <div className="flex items-center justify-between">
                       <Link href={`/community/${community.id}`}>
                         <Button variant="outline" size="sm" data-testid={`button-view-${community.id}`}>
                           View Community
                           <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                       </Link>
-                      {isAdmin && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleCreateSubCommunity(community)}
-                          data-testid={`button-create-sub-${community.id}`}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Sub
-                        </Button>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -337,13 +318,14 @@ export default function Communities() {
                     )}
                   </CardHeader>
                   <CardContent>
-                    <SubCommunityList
-                      parentCommunityId={community.id}
-                      parentCommunity={community}
-                      onCreateNew={() => handleCreateSubCommunity(community)}
-                      showCreateButton={isAdmin}
-                      compact={true}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Link href={`/community/${community.id}`}>
+                        <Button variant="outline" size="sm">
+                          View Community
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </Link>
+                    </div>
                   </CardContent>
                 </Card>
               );
