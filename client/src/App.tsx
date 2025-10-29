@@ -47,7 +47,6 @@ import { GlobalSubCommunityAdmin } from "@/pages/GlobalSubCommunityAdmin";
 import SubCommunityContent from "@/pages/SubCommunityContent";
 import SubCommunityDocs from "@/pages/SubCommunityDocs";
 import InviteAcceptPage from "@/pages/InviteAccept";
-import Invite from "@/pages/Invite";
 import BlankPage from "@/pages/blank";
 import { IntroductionModal } from "@/components/IntroductionModal";
 import { useAuth } from "@/hooks/useAuth";
