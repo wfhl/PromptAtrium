@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle, Calendar as CalendarIcon, Mail, Trash2, ExternalLink } from "lucide-react";
 import type { Community, User, UserRole } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -58,6 +58,9 @@ export default function AdminPage() {
   const [collectionsModalOpen, setCollectionsModalOpen] = useState(false);
   const [selectedCommunityForCollections, setSelectedCommunityForCollections] = useState<Community | null>(null);
   const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
+  const [inviteManagementModalOpen, setInviteManagementModalOpen] = useState(false);
+  const [selectedCommunityForInvites, setSelectedCommunityForInvites] = useState<Community | null>(null);
+  const [communityInvites, setCommunityInvites] = useState<any[]>([]);
 
   // Check if user is admin (super admin, global admin, community admin, or developer)
   if (!authLoading && (!user || !["super_admin", "global_admin", "community_admin", "developer"].includes((user as any).role))) {
@@ -134,6 +137,16 @@ export default function AdminPage() {
     queryKey: ["/api/collections", selectedCommunityForCollections?.id, "community"],
     queryFn: () => apiRequest("GET", `/api/collections?communityId=${selectedCommunityForCollections?.id}&type=community`),
     enabled: !!selectedCommunityForCollections && !!user,
+  });
+
+  // Fetch community invites (when invite modal is open)
+  const { data: invites = [], isLoading: invitesLoading, refetch: refetchInvites } = useQuery<any[]>({
+    queryKey: ["/api/communities", selectedCommunityForInvites?.id, "invites"],
+    queryFn: async () => {
+      if (!selectedCommunityForInvites) return [];
+      return await apiRequest("GET", `/api/communities/${selectedCommunityForInvites.id}/invites`);
+    },
+    enabled: !!selectedCommunityForInvites && !!user,
   });
 
   // Update user role mutation
@@ -226,6 +239,27 @@ export default function AdminPage() {
     },
   });
 
+
+  // Delete invite mutation
+  const deleteInviteMutation = useMutation({
+    mutationFn: async ({ communityId, inviteId }: { communityId: string; inviteId: string }) => {
+      return await apiRequest("DELETE", `/api/communities/${communityId}/invites/${inviteId}`);
+    },
+    onSuccess: () => {
+      refetchInvites();
+      toast({
+        title: "Success",
+        description: "Invite deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete invite",
+        variant: "destructive",
+      });
+    },
+  });
 
   const createMemberInviteMutation = useMutation({
     mutationFn: async (data: MemberInviteFormData) => {
@@ -560,6 +594,18 @@ export default function AdminPage() {
                           >
                             <Settings className="h-4 w-4 mr-1" />
                             Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCommunityForInvites(community);
+                              setInviteManagementModalOpen(true);
+                            }}
+                            data-testid={`button-invites-community-${community.id}`}
+                          >
+                            <Mail className="h-4 w-4 mr-1" />
+                            Invites
                           </Button>
                           <Button
                             variant="outline"
@@ -1167,6 +1213,132 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Invite Management Modal */}
+        <Dialog open={inviteManagementModalOpen} onOpenChange={setInviteManagementModalOpen}>
+          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg pr-8">
+                Manage Invites - {selectedCommunityForInvites?.name}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  Create and manage invite links for this community
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCommunityForMembers(selectedCommunityForInvites);
+                    setGeneratedInviteLink(null);
+                    setInviteCopied(false);
+                    memberInviteForm.reset();
+                    setMemberInviteModalOpen(true);
+                  }}
+                  data-testid="button-create-new-invite"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Invite
+                </Button>
+              </div>
+
+              {invitesLoading ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-sm text-muted-foreground">Loading invites...</p>
+                </div>
+              ) : invites.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">No active invites</p>
+                    <p className="text-sm text-muted-foreground mt-2">Create an invite to start inviting members</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {invites.map((invite) => (
+                    <Card key={invite.id} className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={invite.isActive ? "default" : "secondary"}>
+                              {invite.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                            {invite.role && (
+                              <Badge variant="outline">
+                                {invite.role} role
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              Code: <span className="font-mono">{invite.code}</span>
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Uses:</span>{" "}
+                              <span className="font-medium">{invite.uses || 0}/{invite.maxUses || "∞"}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Created:</span>{" "}
+                              <span className="font-medium">{new Date(invite.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            {invite.expiresAt && (
+                              <div>
+                                <span className="text-muted-foreground">Expires:</span>{" "}
+                                <span className="font-medium">{new Date(invite.expiresAt).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-muted-foreground">Creator:</span>{" "}
+                              <span className="font-medium">{invite.createdBy}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const inviteUrl = `${window.location.origin}/invite/${invite.code}`;
+                              navigator.clipboard.writeText(inviteUrl);
+                              toast({
+                                title: "Copied!",
+                                description: "Invite link copied to clipboard",
+                              });
+                            }}
+                            data-testid={`button-copy-invite-${invite.id}`}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (selectedCommunityForInvites) {
+                                deleteInviteMutation.mutate({
+                                  communityId: selectedCommunityForInvites.id,
+                                  inviteId: invite.id,
+                                });
+                              }
+                            }}
+                            disabled={deleteInviteMutation.isPending}
+                            data-testid={`button-delete-invite-${invite.id}`}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
 
