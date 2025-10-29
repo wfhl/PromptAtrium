@@ -16,6 +16,7 @@ import Dev from "@/pages/Dev";
 import Collections from "@/pages/collections";
 import CollectionView from "@/pages/CollectionView";
 import Communities from "@/pages/Communities";
+import CommunityDetail from "@/pages/CommunityDetail";
 import Invite from "@/pages/invite";
 import ProfileSettings from "@/pages/profile-settings";
 import UserProfile from "@/pages/user-profile";
@@ -160,6 +161,9 @@ function Router() {
             </Route>
             <Route path="/communities">
               {() => <Layout><Communities /></Layout>}
+            </Route>
+            <Route path="/community/:id">
+              {() => <Layout><CommunityDetail /></Layout>}
             </Route>
             <Route path="/sub-community/:id/admin">
               {() => <Layout><SubCommunityAdminDashboard /></Layout>}
