@@ -2532,6 +2532,97 @@ export class DatabaseStorage implements IStorage {
     return this.getAllInvites({ communityId, isActive: true });
   }
 
+  // Get community member count
+  async getCommunityMemberCount(communityId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userCommunities)
+      .where(eq(userCommunities.communityId, communityId));
+    return result[0]?.count || 0;
+  }
+
+  // Get user's community membership
+  async getCommunityMembership(userId: string, communityId: string): Promise<UserCommunity | undefined> {
+    const [membership] = await db
+      .select()
+      .from(userCommunities)
+      .where(
+        and(
+          eq(userCommunities.userId, userId),
+          eq(userCommunities.communityId, communityId)
+        )
+      );
+    return membership;
+  }
+
+  // Use community invite and join the user to the community
+  async useCommunityInvite(code: string, userId: string): Promise<{ success: boolean; message: string; community?: Community }> {
+    const invite = await this.getInviteByCode(code);
+    
+    if (!invite) {
+      return { success: false, message: "Invalid invite code" };
+    }
+    
+    if (!invite.isActive) {
+      return { success: false, message: "This invite has been deactivated" };
+    }
+    
+    if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+      return { success: false, message: "This invite has expired" };
+    }
+    
+    if (invite.maxUses && invite.currentUses >= invite.maxUses) {
+      return { success: false, message: "This invite has reached its maximum number of uses" };
+    }
+    
+    // Check if user is already a member
+    const existingMembership = await db
+      .select()
+      .from(userCommunities)
+      .where(
+        and(
+          eq(userCommunities.userId, userId),
+          eq(userCommunities.communityId, invite.communityId)
+        )
+      );
+    
+    if (existingMembership.length > 0) {
+      return { success: false, message: "You are already a member of this community" };
+    }
+    
+    // Get community details
+    const community = await this.getCommunity(invite.communityId);
+    if (!community) {
+      return { success: false, message: "Community not found" };
+    }
+    
+    // Transaction to update invite usage and add user to community
+    await db.transaction(async (tx) => {
+      // Update invite usage
+      await tx
+        .update(communityInvites)
+        .set({
+          currentUses: sql`${communityInvites.currentUses} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(communityInvites.code, code));
+      
+      // Add user to community with member role
+      await tx.insert(userCommunities).values({
+        userId,
+        communityId: invite.communityId,
+        role: "member",
+        joinedAt: new Date(),
+      });
+    });
+    
+    return { 
+      success: true, 
+      message: `Successfully joined ${community.name}`,
+      community 
+    };
+  }
+
   async getAllInvites(options: {
     communityId?: string;
     createdBy?: string;

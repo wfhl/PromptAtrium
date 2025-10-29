@@ -5029,8 +5029,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Community not found" });
       }
       
-      // Check if this is the global community (parentCommunityId = null means global)
-      if (!community.parentCommunityId) {
+      // Check if this is the global community (identified by slug)
+      if (community.slug === 'global' || community.slug === 'general') {
         return res.status(400).json({ message: "The global community is public and doesn't need invites" });
       }
       
@@ -5068,31 +5068,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/invites/community/:code', async (req, res) => {
     try {
       const { code } = req.params;
-      const invite = await storage.getCommunityInvite(code);
+      const invite = await storage.getInviteByCode(code);
       
       if (!invite) {
         return res.status(404).json({ message: "Invalid invite code" });
       }
       
-      // Get community details for preview
+      // Get community details and member count
       const community = await storage.getCommunity(invite.communityId);
+      const memberCount = await storage.getCommunityMemberCount(invite.communityId);
+      
+      // Get creator details
+      const creator = await storage.getUser(invite.createdBy);
       
       res.json({
-        invite: {
-          code: invite.code,
-          expiresAt: invite.expiresAt,
-          isActive: invite.isActive
-        },
+        ...invite,
         community: community ? {
-          id: community.id,
-          name: community.name,
-          description: community.description,
-          imageUrl: community.imageUrl
+          ...community,
+          memberCount
+        } : null,
+        creator: creator ? {
+          id: creator.id,
+          firstName: creator.firstName,
+          lastName: creator.lastName,
+          profileImageUrl: creator.profileImageUrl
         } : null
       });
     } catch (error) {
       console.error("Error fetching invite:", error);
       res.status(500).json({ message: "Failed to fetch invite" });
+    }
+  });
+
+  // Check if user is a member of a community
+  app.get('/api/communities/:id/member-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Check if user is member
+      const membership = await storage.getCommunityMembership(userId, communityId);
+      
+      res.json({
+        isMember: !!membership,
+        role: membership?.role || null
+      });
+    } catch (error) {
+      console.error("Error checking member status:", error);
+      res.status(500).json({ message: "Failed to check member status" });
     }
   });
 
