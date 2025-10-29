@@ -24,6 +24,7 @@ const communitySchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
+  isPrivate: z.boolean().default(false),
 });
 
 const memberInviteSchema = z.object({
@@ -59,8 +60,8 @@ export default function AdminPage() {
   const [selectedCommunityForCollections, setSelectedCommunityForCollections] = useState<Community | null>(null);
   const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
 
-  // Check if user is admin (super admin, community admin, or developer)
-  if (!authLoading && (!user || !["super_admin", "community_admin", "developer"].includes((user as any).role))) {
+  // Check if user is admin (super admin, global admin, community admin, or developer)
+  if (!authLoading && (!user || !["super_admin", "global_admin", "community_admin", "developer"].includes((user as any).role))) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-96">
@@ -78,7 +79,7 @@ export default function AdminPage() {
     );
   }
 
-  const isSuperAdmin = (user as any)?.role === "super_admin" || (user as any)?.role === "developer";
+  const isSuperAdmin = (user as any)?.role === "super_admin" || (user as any)?.role === "global_admin" || (user as any)?.role === "developer";
   const isCommunityAdmin = (user as any)?.role === "community_admin";
 
   const form = useForm<CommunityFormData>({
@@ -87,6 +88,7 @@ export default function AdminPage() {
       name: "",
       description: "",
       slug: "",
+      isPrivate: false,
     },
   });
 
@@ -159,8 +161,16 @@ export default function AdminPage() {
 
   // Create community mutation
   const createCommunityMutation = useMutation({
-    mutationFn: async (data: CommunityFormData) => {
-      return await apiRequest("POST", "/api/communities", data);
+    mutationFn: async (data: CommunityFormData & { isPrivate?: boolean }) => {
+      // If creating a private community, use the private endpoint
+      if (data.isPrivate) {
+        const { isPrivate, ...communityData } = data;
+        return await apiRequest("POST", "/api/communities/private", communityData);
+      } else {
+        // For public communities, use the regular endpoint
+        const { isPrivate, ...communityData } = data;
+        return await apiRequest("POST", "/api/communities", communityData);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
@@ -815,6 +825,32 @@ export default function AdminPage() {
                     </FormItem>
                   )}
                 />
+                {/* Only show private toggle for super admins and global admins */}
+                {(user?.role === 'super_admin' || user?.role === 'global_admin') && (
+                  <FormField
+                    control={form.control}
+                    name="isPrivate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Private Community</FormLabel>
+                          <div className="text-sm text-muted-foreground">
+                            Private communities require invites to join
+                          </div>
+                        </div>
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="h-4 w-4"
+                            data-testid="checkbox-private-community"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <div className="flex justify-end gap-2">
                   <Button
                     type="button"
