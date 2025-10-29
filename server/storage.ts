@@ -190,6 +190,9 @@ export interface IStorage {
   // Community operations
   getCommunities(): Promise<Community[]>;
   getManagedCommunities(userId: string): Promise<Community[]>;
+  getGlobalCommunity(): Promise<Community | undefined>;
+  getUserPrivateCommunities(userId: string): Promise<Community[]>;
+  getAllPrivateCommunities(): Promise<Community[]>;
   getCommunity(id: string): Promise<Community | undefined>;
   getCommunityBySlug(slug: string): Promise<Community | undefined>;
   createCommunity(community: InsertCommunity): Promise<Community>;
@@ -1263,9 +1266,61 @@ export class DatabaseStorage implements IStorage {
     await db.delete(collections).where(eq(collections.id, id));
   }
 
-  // Community operations
+  // Community operations - filters out private communities by default
   async getCommunities(): Promise<Community[]> {
-    return await db.select().from(communities).where(eq(communities.isActive, true)).orderBy(desc(communities.createdAt));
+    return await db.select().from(communities)
+      .where(
+        and(
+          eq(communities.isActive, true),
+          eq(communities.isPrivate, false) // Only return public/global communities
+        )
+      )
+      .orderBy(desc(communities.createdAt));
+  }
+
+  // Get only the global community (accessible to everyone)
+  async getGlobalCommunity(): Promise<Community | undefined> {
+    const [community] = await db.select().from(communities)
+      .where(and(eq(communities.isActive, true), eq(communities.isPrivate, false), isNull(communities.parentCommunityId)));
+    return community;
+  }
+
+  // Get private communities that a user has access to
+  async getUserPrivateCommunities(userId: string): Promise<Community[]> {
+    return await db
+      .select({
+        id: communities.id,
+        name: communities.name,
+        description: communities.description,
+        slug: communities.slug,
+        imageUrl: communities.imageUrl,
+        isActive: communities.isActive,
+        isPrivate: communities.isPrivate,
+        isPublic: communities.isPublic,
+        parentCommunityId: communities.parentCommunityId,
+        level: communities.level,
+        path: communities.path,
+        createdBy: communities.createdBy,
+        createdAt: communities.createdAt,
+        updatedAt: communities.updatedAt,
+      })
+      .from(communities)
+      .innerJoin(userCommunities, eq(communities.id, userCommunities.communityId))
+      .where(
+        and(
+          eq(userCommunities.userId, userId),
+          eq(communities.isPrivate, true),
+          eq(communities.isActive, true)
+        )
+      )
+      .orderBy(desc(communities.createdAt));
+  }
+
+  // Get all private communities (for super_admin and global_admin)
+  async getAllPrivateCommunities(): Promise<Community[]> {
+    return await db.select().from(communities)
+      .where(and(eq(communities.isActive, true), eq(communities.isPrivate, true)))
+      .orderBy(desc(communities.createdAt));
   }
 
   async getManagedCommunities(userId: string): Promise<Community[]> {

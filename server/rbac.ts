@@ -22,8 +22,8 @@ export const requireRole = (requiredRole: UserRole): RequestHandler => {
 
       const userRole = user.role as UserRole;
       
-      // Super admin and developer can access everything
-      if (userRole === "super_admin" || userRole === "developer") {
+      // Super admin, global admin, and developer can access everything
+      if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -54,6 +54,38 @@ export const requireSuperAdmin = requireRole("super_admin");
 // Middleware to check if user is developer
 export const requireDeveloper = requireRole("developer");
 
+// Middleware to check if user is global admin
+export const requireGlobalAdmin = requireRole("global_admin");
+
+// Middleware to check if user can create private communities (super_admin or global_admin)
+export const requirePrivateCommunityCreator: RequestHandler = async (req: any, res, next) => {
+  if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const userId = req.user.claims.sub;
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    const userRole = user.role as UserRole;
+    
+    // Only super admin or global admin can create private communities
+    if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer") {
+      req.userRole = userRole;
+      return next();
+    }
+
+    return res.status(403).json({ message: "Only super admins and global admins can create private communities" });
+  } catch (error) {
+    console.error("Error checking user role:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Middleware to check if user is community admin or higher
 export const requireCommunityAdmin: RequestHandler = async (req: any, res, next) => {
   if (!req.isAuthenticated() || !req.user?.claims?.sub) {
@@ -70,8 +102,8 @@ export const requireCommunityAdmin: RequestHandler = async (req: any, res, next)
 
     const userRole = user.role as UserRole;
     
-    // Super admin, developer, or community admin can access
-    if (userRole === "super_admin" || userRole === "developer" || userRole === "community_admin") {
+    // Super admin, global admin, developer, or community admin can access
+    if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer" || userRole === "community_admin") {
       req.userRole = userRole;
       return next();
     }
@@ -100,8 +132,8 @@ export const requireCommunityAdminRole = (communityIdParam = "communityId"): Req
 
       const userRole = user.role as UserRole;
       
-      // Super admin and developer can access everything
-      if (userRole === "super_admin" || userRole === "developer") {
+      // Super admin, global admin, and developer can access everything
+      if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -147,8 +179,8 @@ export const requireCommunityMember = (communityIdParam = "communityId"): Reques
 
       const userRole = user.role as UserRole;
       
-      // Super admin and developer can access everything
-      if (userRole === "super_admin" || userRole === "developer") {
+      // Super admin, global admin, and developer can access everything
+      if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -244,8 +276,8 @@ export const requireSubCommunityAdmin = (subCommunityIdParam = "subCommunityId")
 
       const userRole = user.role as UserRole;
       
-      // Super admin and developer can access everything
-      if (userRole === "super_admin" || userRole === "developer") {
+      // Super admin, global admin, and developer can access everything
+      if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -302,8 +334,8 @@ export const requireSubCommunityMember = (subCommunityIdParam = "subCommunityId"
 
       const userRole = user.role as UserRole;
       
-      // Super admin and developer can access everything
-      if (userRole === "super_admin" || userRole === "developer") {
+      // Super admin, global admin, and developer can access everything
+      if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -503,8 +535,8 @@ export const requireSubCommunityPromptAccess = (promptIdParam = "promptId"): Req
 
       const userRole = user.role as UserRole;
       
-      // Super admin and developer can access everything
-      if (userRole === "super_admin" || userRole === "developer") {
+      // Super admin, global admin, and developer can access everything
+      if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }
@@ -875,8 +907,8 @@ export const requireSubCommunityMemberEnhanced = (subCommunityIdParam = "subComm
 
       const userRole = user.role as UserRole;
       
-      // Super admin and developer can access everything
-      if (userRole === "super_admin" || userRole === "developer") {
+      // Super admin, global admin, and developer can access everything
+      if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer") {
         req.userRole = userRole;
         return next();
       }

@@ -8,6 +8,8 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import { 
   requireSuperAdmin, 
+  requireGlobalAdmin,
+  requirePrivateCommunityCreator,
   requireCommunityAdmin, 
   requireCommunityAdminRole, 
   requireCommunityMember,
@@ -4685,6 +4687,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Community routes
+  // Get global community (publicly accessible)
+  app.get('/api/communities/global', async (req, res) => {
+    try {
+      const globalCommunity = await storage.getGlobalCommunity();
+      res.json(globalCommunity || null);
+    } catch (error) {
+      console.error("Error fetching global community:", error);
+      res.status(500).json({ message: "Failed to fetch global community" });
+    }
+  });
+
+  // Get private communities accessible to user
+  app.get('/api/communities/private', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // Super admin and global admin can see all private communities
+      if (user?.role === 'super_admin' || user?.role === 'global_admin' || user?.role === 'developer') {
+        const communities = await storage.getAllPrivateCommunities();
+        res.json(communities);
+      } else {
+        // Regular users only see communities they're members of
+        const communities = await storage.getUserPrivateCommunities(userId);
+        res.json(communities);
+      }
+    } catch (error) {
+      console.error("Error fetching private communities:", error);
+      res.status(500).json({ message: "Failed to fetch private communities" });
+    }
+  });
+
+  // Legacy endpoint - returns all communities for backwards compatibility
   app.get('/api/communities', async (req, res) => {
     try {
       const communities = await storage.getCommunities();
@@ -4720,6 +4755,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create private community (only super_admin or global_admin)
+  app.post('/api/communities/private', requirePrivateCommunityCreator, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const communityData = insertCommunitySchema.parse(req.body);
+      
+      // Force private community settings
+      const privateCommData = {
+        ...communityData,
+        isPrivate: true,
+        createdBy: userId
+      };
+      
+      const community = await storage.createCommunity(privateCommData);
+      
+      // Automatically make the creator an admin of the community
+      await storage.joinCommunity(userId, community.id, "admin");
+      
+      res.status(201).json(community);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid community data", errors: error.errors });
+      }
+      console.error("Error creating private community:", error);
+      res.status(500).json({ message: "Failed to create private community" });
+    }
+  });
+
+  // Legacy create community route - kept for compatibility
   app.post('/api/communities', requireSuperAdmin, async (req: any, res) => {
     try {
       const communityData = insertCommunitySchema.parse(req.body);
@@ -4914,6 +4978,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching community admins:", error);
       res.status(500).json({ message: "Failed to fetch community admins" });
+    }
+  });
+
+  // ========================
+  // Private Community Invite Routes
+  // ========================
+
+  // Create invite for private community (community admins can invite)
+  app.post('/api/communities/:id/invites', requireCommunityAdminRole('id'), async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const userId = req.user.claims.sub;
+      const { maxUses = 1, expiresAt, role = 'member' } = req.body;
+      
+      // Check if community is private
+      const community = await storage.getCommunity(communityId);
+      if (!community?.isPrivate) {
+        return res.status(400).json({ message: "Invites are only for private communities" });
+      }
+      
+      const invite = await storage.createCommunityInvite({
+        communityId,
+        createdBy: userId,
+        maxUses,
+        expiresAt: expiresAt ? new Date(expiresAt) : undefined,
+        code: Math.random().toString(36).substring(2, 10).toUpperCase()
+      });
+      
+      res.status(201).json(invite);
+    } catch (error) {
+      console.error("Error creating community invite:", error);
+      res.status(500).json({ message: "Failed to create community invite" });
+    }
+  });
+
+  // Get all invites for a community
+  app.get('/api/communities/:id/invites', requireCommunityAdminRole('id'), async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const invites = await storage.getCommunityInvites({
+        communityId,
+        activeOnly: req.query.active === 'true'
+      });
+      res.json(invites);
+    } catch (error) {
+      console.error("Error fetching community invites:", error);
+      res.status(500).json({ message: "Failed to fetch community invites" });
+    }
+  });
+
+  // Get invite details by code (public for preview)
+  app.get('/api/invites/community/:code', async (req, res) => {
+    try {
+      const { code } = req.params;
+      const invite = await storage.getCommunityInvite(code);
+      
+      if (!invite) {
+        return res.status(404).json({ message: "Invalid invite code" });
+      }
+      
+      // Get community details for preview
+      const community = await storage.getCommunity(invite.communityId);
+      
+      res.json({
+        invite: {
+          code: invite.code,
+          expiresAt: invite.expiresAt,
+          isActive: invite.isActive
+        },
+        community: community ? {
+          id: community.id,
+          name: community.name,
+          description: community.description,
+          imageUrl: community.imageUrl
+        } : null
+      });
+    } catch (error) {
+      console.error("Error fetching invite:", error);
+      res.status(500).json({ message: "Failed to fetch invite" });
+    }
+  });
+
+  // Accept community invite
+  app.post('/api/invites/community/:code/accept', isAuthenticated, async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const result = await storage.useCommunityInvite(code, userId);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error accepting invite:", error);
+      res.status(500).json({ message: "Failed to accept invite" });
+    }
+  });
+
+  // Deactivate invite
+  app.delete('/api/communities/:communityId/invites/:inviteId', requireCommunityAdminRole('communityId'), async (req, res) => {
+    try {
+      const { inviteId } = req.params;
+      await storage.deactivateInvite(inviteId);
+      res.json({ message: "Invite deactivated successfully" });
+    } catch (error) {
+      console.error("Error deactivating invite:", error);
+      res.status(500).json({ message: "Failed to deactivate invite" });
     }
   });
 

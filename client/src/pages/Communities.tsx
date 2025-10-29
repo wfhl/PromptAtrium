@@ -36,11 +36,19 @@ export default function Communities() {
   const [selectedParentForCreate, setSelectedParentForCreate] = useState<Community | null>(null);
   const [activeSubCommunity, setActiveSubCommunity] = useState<string>("all");
 
-  // Fetch all communities
-  const { data: communities = [], isLoading: communitiesLoading, error: communitiesError } = useQuery<Community[]>({
-    queryKey: ["/api/communities"],
+  // Fetch global community
+  const { data: globalCommunity } = useQuery<Community | null>({
+    queryKey: ["/api/communities/global"],
+  });
+
+  // Fetch private communities (user must be authenticated)
+  const { data: privateCommunities = [], isLoading: communitiesLoading, error: communitiesError } = useQuery<Community[]>({
+    queryKey: ["/api/communities/private"],
     enabled: isAuthenticated,
   });
+
+  // Combine for backwards compatibility
+  const communities = [...(globalCommunity ? [globalCommunity] : []), ...privateCommunities];
 
   // Fetch user's community memberships
   const { data: userMemberships = [] } = useQuery<UserCommunity[]>({
@@ -193,9 +201,10 @@ export default function Communities() {
         </Card>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-4">
+      <Tabs defaultValue="global" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="all">All Communities</TabsTrigger>
+          <TabsTrigger value="global">Global Community</TabsTrigger>
+          <TabsTrigger value="private">Private Communities</TabsTrigger>
           <TabsTrigger value="member">My Communities</TabsTrigger>
           <TabsTrigger value="admin">Communities I Manage</TabsTrigger>
           <TabsTrigger value="browser">Browser View</TabsTrigger>

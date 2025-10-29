@@ -35,7 +35,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role", { enum: ["user", "community_admin", "sub_community_admin", "super_admin", "developer"] }).default("user"),
+  role: varchar("role", { enum: ["user", "community_admin", "sub_community_admin", "super_admin", "global_admin", "developer"] }).default("user"),
   
   // Extended profile fields
   username: varchar("username").unique(),
@@ -91,10 +91,15 @@ export const communities = pgTable("communities", {
   slug: varchar("slug").notNull().unique(),
   imageUrl: varchar("image_url"),
   isActive: boolean("is_active").default(true),
-  // Sub-communities hierarchy fields
+  // Privacy settings
+  isPrivate: boolean("is_private").default(false), // false = global community, true = private community
+  isPublic: boolean("is_public").default(true), // for sub-communities visibility within private communities
+  // Sub-communities hierarchy fields (now only used within private communities)
   parentCommunityId: varchar("parent_community_id").references(() => communities.id),
   level: integer("level").default(0),
   path: text("path"),
+  // Creator tracking
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1568,6 +1573,6 @@ export type BulkOperationResult = z.infer<typeof bulkOperationResultSchema>;
 export type BulkOperationType = BulkOperation["operation"];
 
 // User role types
-export type UserRole = "user" | "community_admin" | "sub_community_admin" | "super_admin" | "developer";
+export type UserRole = "user" | "community_admin" | "sub_community_admin" | "super_admin" | "global_admin" | "developer";
 export type CommunityRole = "member" | "admin";
 export type CollectionType = "user" | "community" | "global";
