@@ -91,10 +91,7 @@ export const communities = pgTable("communities", {
   slug: varchar("slug").notNull().unique(),
   imageUrl: varchar("image_url"),
   isActive: boolean("is_active").default(true),
-  // Privacy settings
-  isPrivate: boolean("is_private").default(false), // false = global community, true = private community
-  isPublic: boolean("is_public").default(true), // for sub-communities visibility within private communities
-  // Sub-communities hierarchy fields (now only used within private communities)
+  // Hierarchy fields - parentCommunityId = null means global community, otherwise it's a private community
   parentCommunityId: varchar("parent_community_id").references(() => communities.id),
   level: integer("level").default(0),
   path: text("path"),
