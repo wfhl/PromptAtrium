@@ -586,6 +586,23 @@ export default function AdminPage() {
                         <Folder className="h-4 w-4 mr-1" />
                         Collections
                       </Button>
+                      {/* Show invites button for both super admins and community admins */}
+                      {(isSuperAdmin || isCommunityAdmin) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCommunityForInvites(community);
+                            setInviteManagementModalOpen(true);
+                          }}
+                          data-testid={`button-invites-community-${community.id}`}
+                        >
+                          <Mail className="h-4 w-4 mr-1" />
+                          Invites
+                        </Button>
+                      )}
+                      
+                      {/* Super admin only actions */}
                       {isSuperAdmin && (
                         <>
                           <Button
@@ -596,18 +613,6 @@ export default function AdminPage() {
                           >
                             <Settings className="h-4 w-4 mr-1" />
                             Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCommunityForInvites(community);
-                              setInviteManagementModalOpen(true);
-                            }}
-                            data-testid={`button-invites-community-${community.id}`}
-                          >
-                            <Mail className="h-4 w-4 mr-1" />
-                            Invites
                           </Button>
                           <Button
                             variant="outline"
