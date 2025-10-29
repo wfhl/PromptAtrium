@@ -4761,10 +4761,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const communityData = insertCommunitySchema.parse(req.body);
       
-      // Force private community settings
+      // Add creator to the community
       const privateCommData = {
         ...communityData,
-        isPrivate: true,
         createdBy: userId
       };
       
@@ -4992,10 +4991,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { maxUses = 1, expiresAt, role = 'member' } = req.body;
       
-      // Check if community is private
+      // Check if community exists (all non-global communities are private)
       const community = await storage.getCommunity(communityId);
-      if (!community?.isPrivate) {
-        return res.status(400).json({ message: "Invites are only for private communities" });
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+      
+      // Check if this is the global community (parentCommunityId = null means global)
+      if (!community.parentCommunityId) {
+        return res.status(400).json({ message: "The global community is public and doesn't need invites" });
       }
       
       const invite = await storage.createCommunityInvite({

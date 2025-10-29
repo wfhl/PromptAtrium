@@ -24,7 +24,6 @@ const communitySchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
-  isPrivate: z.boolean().default(false),
 });
 
 const memberInviteSchema = z.object({
@@ -88,7 +87,6 @@ export default function AdminPage() {
       name: "",
       description: "",
       slug: "",
-      isPrivate: false,
     },
   });
 
@@ -159,18 +157,11 @@ export default function AdminPage() {
     },
   });
 
-  // Create community mutation
+  // Create community mutation - all created communities are private except global
   const createCommunityMutation = useMutation({
-    mutationFn: async (data: CommunityFormData & { isPrivate?: boolean }) => {
-      // If creating a private community, use the private endpoint
-      if (data.isPrivate) {
-        const { isPrivate, ...communityData } = data;
-        return await apiRequest("POST", "/api/communities/private", communityData);
-      } else {
-        // For public communities, use the regular endpoint
-        const { isPrivate, ...communityData } = data;
-        return await apiRequest("POST", "/api/communities", communityData);
-      }
+    mutationFn: async (data: CommunityFormData) => {
+      // Use private endpoint since all new communities are private/invite-only
+      return await apiRequest("POST", "/api/communities/private", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
@@ -825,32 +816,9 @@ export default function AdminPage() {
                     </FormItem>
                   )}
                 />
-                {/* Only show private toggle for super admins and global admins */}
-                {(user?.role === 'super_admin' || user?.role === 'global_admin') && (
-                  <FormField
-                    control={form.control}
-                    name="isPrivate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel>Private Community</FormLabel>
-                          <div className="text-sm text-muted-foreground">
-                            Private communities require invites to join
-                          </div>
-                        </div>
-                        <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={field.onChange}
-                            className="h-4 w-4"
-                            data-testid="checkbox-private-community"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                )}
+                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                  <span className="font-medium">Note:</span> All communities are private and require invites to join. Only the global community is publicly accessible.
+                </div>
                 <div className="flex justify-end gap-2">
                   <Button
                     type="button"

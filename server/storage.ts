@@ -1266,22 +1266,17 @@ export class DatabaseStorage implements IStorage {
     await db.delete(collections).where(eq(collections.id, id));
   }
 
-  // Community operations - filters out private communities by default
+  // Community operations - returns only global community to non-members
   async getCommunities(): Promise<Community[]> {
     return await db.select().from(communities)
-      .where(
-        and(
-          eq(communities.isActive, true),
-          eq(communities.isPrivate, false) // Only return public/global communities
-        )
-      )
+      .where(eq(communities.isActive, true))
       .orderBy(desc(communities.createdAt));
   }
 
   // Get only the global community (accessible to everyone)
   async getGlobalCommunity(): Promise<Community | undefined> {
     const [community] = await db.select().from(communities)
-      .where(and(eq(communities.isActive, true), eq(communities.isPrivate, false), isNull(communities.parentCommunityId)));
+      .where(and(eq(communities.isActive, true), isNull(communities.parentCommunityId)));
     return community;
   }
 
@@ -1295,7 +1290,6 @@ export class DatabaseStorage implements IStorage {
         slug: communities.slug,
         imageUrl: communities.imageUrl,
         isActive: communities.isActive,
-        isPrivate: communities.isPrivate,
         isPublic: communities.isPublic,
         parentCommunityId: communities.parentCommunityId,
         level: communities.level,
@@ -1309,17 +1303,17 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(userCommunities.userId, userId),
-          eq(communities.isPrivate, true),
           eq(communities.isActive, true)
         )
       )
       .orderBy(desc(communities.createdAt));
   }
 
-  // Get all private communities (for super_admin and global_admin)
+  // Get all non-global communities (for super_admin and global_admin)
   async getAllPrivateCommunities(): Promise<Community[]> {
+    // All communities are private except for the global one (parentCommunityId = null)
     return await db.select().from(communities)
-      .where(and(eq(communities.isActive, true), eq(communities.isPrivate, true)))
+      .where(and(eq(communities.isActive, true), not(isNull(communities.parentCommunityId))))
       .orderBy(desc(communities.createdAt));
   }
 
