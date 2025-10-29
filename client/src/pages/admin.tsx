@@ -486,9 +486,9 @@ export default function AdminPage() {
     <>
       <div className="bg-transparent p-6">
         <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
               {isSuperAdmin ? (
                 <>
                   <Crown className="h-8 w-8 text-yellow-500" />
@@ -512,13 +512,13 @@ export default function AdminPage() {
 
         {/* Tabbed Interface */}
         <Tabs defaultValue="communities" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="communities" className="flex items-center gap-2">
+          <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <TabsTrigger value="communities" className="flex items-center gap-2 text-sm sm:text-base">
               <Folder className="h-4 w-4" />
               Communities
             </TabsTrigger>
             {isSuperAdmin && (
-              <TabsTrigger value="users" className="flex items-center gap-2">
+              <TabsTrigger value="users" className="flex items-center gap-2 text-sm sm:text-base">
                 <Users className="h-4 w-4" />
                 Users
               </TabsTrigger>
@@ -527,21 +527,23 @@ export default function AdminPage() {
 
           {/* Communities Tab */}
           <TabsContent value="communities" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
                 {isSuperAdmin ? "All Communities" : "My Communities"}
               </h2>
               {isSuperAdmin && (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button 
                     onClick={() => window.location.href = '/admin/sub-communities'} 
                     variant="outline"
                     data-testid="button-global-subcommunity-admin"
+                    className="w-full sm:w-auto"
                   >
                     <Shield className="h-4 w-4 mr-2" />
-                    Global Sub-Community Management
+                    <span className="hidden sm:inline">Global Sub-Community Management</span>
+                    <span className="sm:hidden">Sub-Communities</span>
                   </Button>
-                  <Button onClick={openCreateModal} data-testid="button-create-community">
+                  <Button onClick={openCreateModal} data-testid="button-create-community" className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Community
                   </Button>
@@ -628,16 +630,16 @@ export default function AdminPage() {
           {/* Users Tab - Super Admin Only */}
           {isSuperAdmin && (
             <TabsContent value="users" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-foreground">User Management</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-xl sm:text-2xl font-semibold text-foreground">User Management</h2>
                 <div className="flex items-center gap-2">
-                  <div className="relative">
+                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Search users..."
                       value={userSearchTerm}
                       onChange={(e) => setUserSearchTerm(e.target.value)}
-                      className="pl-10 w-64"
+                      className="pl-10 w-full"
                       data-testid="input-user-search"
                     />
                   </div>
