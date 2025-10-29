@@ -4719,10 +4719,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy endpoint - returns all communities for backwards compatibility
-  app.get('/api/communities', async (req, res) => {
+  // Main communities endpoint - returns global + user's private communities
+  app.get('/api/communities', async (req: any, res) => {
     try {
-      const communities = await storage.getCommunities();
+      // Always include the global community
+      const globalCommunity = await storage.getGlobalCommunity();
+      const communities = globalCommunity ? [globalCommunity] : [];
+      
+      // If user is authenticated, add their private communities
+      if (req.user?.claims?.sub) {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (user?.role === 'super_admin' || user?.role === 'global_admin' || user?.role === 'developer') {
+          // Admins see all communities
+          const privateCommunities = await storage.getAllPrivateCommunities();
+          communities.push(...privateCommunities);
+        } else {
+          // Regular users only see communities they're members of
+          const userCommunities = await storage.getUserPrivateCommunities(userId);
+          communities.push(...userCommunities);
+        }
+      }
+      
       res.json(communities);
     } catch (error) {
       console.error("Error fetching communities:", error);
