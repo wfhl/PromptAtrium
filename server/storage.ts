@@ -162,7 +162,7 @@ export interface IStorage {
     authenticatedUserId?: string;
   }): Promise<Prompt[]>;
   getPrompt(id: string): Promise<Prompt | undefined>;
-  getPromptWithUser(id: string): Promise<any>;
+  getPromptWithUser(id: string, authenticatedUserId?: string): Promise<any>;
   createPrompt(prompt: InsertPrompt): Promise<Prompt>;
   updatePrompt(id: string, prompt: Partial<InsertPrompt>): Promise<Prompt>;
   deletePrompt(id: string): Promise<void>;
@@ -914,7 +914,7 @@ export class DatabaseStorage implements IStorage {
     return prompt;
   }
 
-  async getPromptWithUser(id: string): Promise<any> {
+  async getPromptWithUser(id: string, authenticatedUserId?: string): Promise<any> {
     const [result] = await db
       .select({
         id: prompts.id,
@@ -953,6 +953,8 @@ export class DatabaseStorage implements IStorage {
         license: prompts.license,
         lastUsedAt: prompts.lastUsedAt,
         userId: prompts.userId,
+        subCommunityId: prompts.subCommunityId,
+        subCommunityVisibility: prompts.subCommunityVisibility,
         createdAt: prompts.createdAt,
         updatedAt: prompts.updatedAt,
         promptContent: prompts.promptContent,
@@ -969,6 +971,23 @@ export class DatabaseStorage implements IStorage {
       .from(prompts)
       .leftJoin(users, eq(prompts.userId, users.id))
       .where(eq(prompts.id, id));
+    
+    if (!result) {
+      return null;
+    }
+
+    // If the prompt is in a private community (has subCommunityId), check if user has access
+    if (result.subCommunityId && authenticatedUserId) {
+      // Check if user is a member of the community
+      const isMember = await this.isCommunityMember(authenticatedUserId, result.subCommunityId);
+      if (!isMember) {
+        // User doesn't have access to this prompt
+        return null;
+      }
+    } else if (result.subCommunityId && !authenticatedUserId) {
+      // Prompt is in a private community but user is not authenticated
+      return null;
+    }
     
     return result;
   }

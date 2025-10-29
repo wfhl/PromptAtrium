@@ -861,7 +861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/prompts/:id', async (req, res) => {
     try {
-      const prompt = await storage.getPromptWithUser(req.params.id);
+      const prompt = await storage.getPromptWithUser(req.params.id, req.user?.id);
       if (!prompt) {
         return res.status(404).json({ message: "Prompt not found" });
       }
