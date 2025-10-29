@@ -61,6 +61,9 @@ export default function AdminPage() {
   const [inviteManagementModalOpen, setInviteManagementModalOpen] = useState(false);
   const [selectedCommunityForInvites, setSelectedCommunityForInvites] = useState<Community | null>(null);
   const [communityInvites, setCommunityInvites] = useState<any[]>([]);
+  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   // Check if user is admin (super admin, global admin, community admin, or developer)
   if (!authLoading && (!user || !["super_admin", "global_admin", "community_admin", "developer"].includes((user as any).role))) {
@@ -147,6 +150,16 @@ export default function AdminPage() {
       return await apiRequest("GET", `/api/communities/${selectedCommunityForInvites.id}/invites`);
     },
     enabled: !!selectedCommunityForInvites && !!user,
+  });
+
+  // Search available users for adding to community
+  const { data: availableUsers = [], isLoading: searchingUsers } = useQuery<User[]>({
+    queryKey: ["/api/communities", selectedCommunityForMembers?.id, "available-users", userSearchQuery],
+    queryFn: async () => {
+      if (!selectedCommunityForMembers || userSearchQuery.length < 2) return [];
+      return await apiRequest("GET", `/api/communities/${selectedCommunityForMembers.id}/available-users?search=${userSearchQuery}`);
+    },
+    enabled: !!selectedCommunityForMembers && userSearchQuery.length >= 2 && addMemberModalOpen,
   });
 
   // Update user role mutation
@@ -256,6 +269,36 @@ export default function AdminPage() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete invite",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add member directly to community
+  const addMemberDirectlyMutation = useMutation({
+    mutationFn: async ({ userId, role = "member" }: { userId: string; role?: string }) => {
+      if (!selectedCommunityForMembers) {
+        throw new Error("No community selected");
+      }
+      return await apiRequest("POST", `/api/communities/${selectedCommunityForMembers.id}/members`, {
+        userId,
+        role,
+      });
+    },
+    onSuccess: () => {
+      refetchMembers();
+      setAddMemberModalOpen(false);
+      setUserSearchQuery("");
+      setSelectedUserId(null);
+      toast({
+        title: "Success",
+        description: "Member added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add member",
         variant: "destructive",
       });
     },
@@ -906,20 +949,34 @@ export default function AdminPage() {
                     data-testid="input-member-search"
                   />
                 </div>
-                <Button 
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    setGeneratedInviteLink(null);
-                    setInviteCopied(false);
-                    memberInviteForm.reset();
-                    setMemberInviteModalOpen(true);
-                  }}
-                  data-testid="button-invite-new-member"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Invite Member
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      setAddMemberModalOpen(true);
+                    }}
+                    data-testid="button-add-member-directly"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Member
+                  </Button>
+                  <Button 
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      setGeneratedInviteLink(null);
+                      setInviteCopied(false);
+                      memberInviteForm.reset();
+                      setMemberInviteModalOpen(true);
+                    }}
+                    data-testid="button-invite-new-member"
+                  >
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Invite Link
+                  </Button>
+                </div>
               </div>
 
               <div className="bg-white rounded-lg border max-h-[60vh] sm:max-h-96 overflow-y-auto">
@@ -1210,6 +1267,118 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Member Modal */}
+        <Dialog open={addMemberModalOpen} onOpenChange={setAddMemberModalOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Add Member Directly</DialogTitle>
+              <DialogDescription>
+                Search for a user to add directly to {selectedCommunityForMembers?.name}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-search">Search Users</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    id="user-search"
+                    placeholder="Search by name or email..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-direct-add-search"
+                  />
+                </div>
+                {userSearchQuery.length > 0 && userSearchQuery.length < 2 && (
+                  <p className="text-xs text-muted-foreground">Type at least 2 characters to search</p>
+                )}
+              </div>
+
+              {searchingUsers ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-sm text-muted-foreground">Searching users...</p>
+                </div>
+              ) : availableUsers.length > 0 ? (
+                <div className="max-h-60 overflow-y-auto border rounded-lg">
+                  {availableUsers.map((user: any) => (
+                    <div
+                      key={user.id}
+                      className={`p-3 hover:bg-accent cursor-pointer transition-colors ${
+                        selectedUserId === user.id ? 'bg-accent' : ''
+                      }`}
+                      onClick={() => setSelectedUserId(user.id)}
+                      data-testid={`user-option-${user.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          {user.profileImageUrl ? (
+                            <AvatarImage src={user.profileImageUrl} />
+                          ) : (
+                            <AvatarFallback>
+                              {(user.firstName?.[0] || '') + (user.lastName?.[0] || '')}
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </div>
+                        {selectedUserId === user.id && (
+                          <CheckCircle className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : userSearchQuery.length >= 2 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">No available users found</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      All matching users may already be members
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAddMemberModalOpen(false);
+                    setUserSearchQuery("");
+                    setSelectedUserId(null);
+                  }}
+                  data-testid="button-cancel-direct-add"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedUserId) {
+                      addMemberDirectlyMutation.mutate({ userId: selectedUserId });
+                    }
+                  }}
+                  disabled={!selectedUserId || addMemberDirectlyMutation.isPending}
+                  data-testid="button-confirm-direct-add"
+                >
+                  {addMemberDirectlyMutation.isPending ? (
+                    <>Adding...</>
+                  ) : (
+                    <>Add Member</>
+                  )}
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
 

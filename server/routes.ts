@@ -5100,6 +5100,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search users for adding to community (excludes existing members)
+  app.get('/api/communities/:id/available-users', requireCommunityAdminRole('id'), async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const { search } = req.query;
+      
+      if (!search || search.length < 2) {
+        return res.json([]);
+      }
+      
+      // Get all users matching the search
+      const users = await storage.searchUsers(search as string, 10);
+      
+      // Get existing members
+      const members = await storage.getCommunityMembers(communityId);
+      const memberIds = new Set(members.map(m => m.userId));
+      
+      // Filter out existing members
+      const availableUsers = users.filter(u => !memberIds.has(u.id));
+      
+      res.json(availableUsers);
+    } catch (error) {
+      console.error("Error searching available users:", error);
+      res.status(500).json({ message: "Failed to search users" });
+    }
+  });
+
+  // Add user directly to community
+  app.post('/api/communities/:id/members', requireCommunityAdminRole('id'), async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const { userId, role = 'member' } = req.body;
+      const adminId = req.user.claims.sub;
+      
+      // Check if community exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+      
+      // Check if user is already a member
+      const existingMembership = await storage.getCommunityMembership(userId, communityId);
+      if (existingMembership) {
+        return res.status(400).json({ message: "User is already a member of this community" });
+      }
+      
+      // Add user to community
+      await storage.joinCommunity(userId, communityId, role);
+      
+      // Create activity for the user being added
+      await storage.createActivity({
+        userId,
+        actionType: 'joined_community',
+        targetId: communityId,
+        targetType: 'community',
+        metadata: { addedBy: adminId, role }
+      });
+      
+      res.status(201).json({ message: "User added to community successfully" });
+    } catch (error) {
+      console.error("Error adding user to community:", error);
+      res.status(500).json({ message: "Failed to add user to community" });
+    }
+  });
+
   // Check if user is a member of a community
   app.get('/api/communities/:id/member-status', isAuthenticated, async (req: any, res) => {
     try {
