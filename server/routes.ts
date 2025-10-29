@@ -906,12 +906,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Handle sub-community and visibility
       if (requestBody.subCommunityId) {
-        // Validate user is a member of the sub-community
-        const isMember = await storage.isSubCommunityMember(userId, requestBody.subCommunityId);
-        const isAdmin = await storage.isSubCommunityAdmin(userId, requestBody.subCommunityId);
+        // Check if this is a regular community (not a sub-community)
+        const community = await storage.getCommunity(requestBody.subCommunityId);
+        if (!community) {
+          return res.status(404).json({ message: "Community not found" });
+        }
         
-        if (!isMember && !isAdmin) {
-          return res.status(403).json({ message: "Must be a member of the sub-community to create prompts for it" });
+        // If it's not the global community (parentCommunityId = null means global)
+        // then it's a private community and user must be a member
+        if (community.parentCommunityId !== null) {
+          // For private communities, check if user is a member
+          const isMember = await storage.isCommunityMember(userId, requestBody.subCommunityId);
+          const isAdmin = await storage.isSubCommunityAdmin(userId, requestBody.subCommunityId);
+          const user = await storage.getUser(userId);
+          const isPrivileged = user?.role === 'super_admin' || user?.role === 'global_admin' || user?.role === 'developer';
+          
+          if (!isMember && !isAdmin && !isPrivileged) {
+            return res.status(403).json({ message: "Must be a member of the community to create prompts for it" });
+          }
         }
         
         // Set default visibility for sub-community prompts
