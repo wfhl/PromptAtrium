@@ -5034,7 +5034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "The global community is public and doesn't need invites" });
       }
       
-      const invite = await storage.createCommunityInvite({
+      const invite = await storage.createInvite({
         communityId,
         createdBy: userId,
         maxUses,
