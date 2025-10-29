@@ -135,7 +135,7 @@ import {
   type InsertDisputeMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, ilike, inArray, isNull, gte } from "drizzle-orm";
+import { eq, desc, and, or, sql, ilike, inArray, isNull, isNotNull, gte } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 // Interface for storage operations
@@ -1377,7 +1377,7 @@ export class DatabaseStorage implements IStorage {
   async getAllPrivateCommunities(): Promise<Community[]> {
     // All communities are private except for the global one (parentCommunityId = null)
     return await db.select().from(communities)
-      .where(and(eq(communities.isActive, true), not(isNull(communities.parentCommunityId))))
+      .where(and(eq(communities.isActive, true), isNotNull(communities.parentCommunityId)))
       .orderBy(desc(communities.createdAt));
   }
 
