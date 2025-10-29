@@ -818,6 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         offset: parseInt(offset as string),
         showNsfw: showNsfw,
         subCommunityId: subCommunityId as string,
+        authenticatedUserId: req.user?.claims?.sub, // Pass the authenticated user's ID for access control
       };
       
       // Handle multi-select filters (arrays)

@@ -159,6 +159,7 @@ export interface IStorage {
     promptIds?: string[];
     recommendedModels?: string[];
     subCommunityId?: string;
+    authenticatedUserId?: string;
   }): Promise<Prompt[]>;
   getPrompt(id: string): Promise<Prompt | undefined>;
   getPromptWithUser(id: string): Promise<any>;
@@ -668,6 +669,7 @@ export class DatabaseStorage implements IStorage {
     offset?: number;
     promptIds?: string[];
     showNsfw?: boolean;
+    authenticatedUserId?: string;
   } = {}): Promise<any[]> {
     // Build conditions first
     const conditions = [];
@@ -776,9 +778,52 @@ export class DatabaseStorage implements IStorage {
       conditions.push(inArray(prompts.id, options.promptIds));
     }
     
-    // Filter by sub-community
+    // Filter by sub-community if specified
     if (options.subCommunityId) {
       conditions.push(eq(prompts.subCommunityId, options.subCommunityId));
+      // When filtering by specific sub-community, still need to check access
+      // but this is handled below
+    }
+    
+    // Access control for private community prompts
+    // Apply this logic unless we're filtering by a specific subCommunityId
+    // (when filtering by specific subCommunityId, access control should be handled separately)
+    if (!options.subCommunityId) {
+      if (options.authenticatedUserId) {
+        // Get the authenticated user to check their role
+        const authenticatedUser = await this.getUser(options.authenticatedUserId);
+        const isPrivilegedUser = authenticatedUser && 
+          ['super_admin', 'global_admin', 'developer'].includes(authenticatedUser.role || '');
+        
+        if (!isPrivilegedUser) {
+          // For non-privileged users, filter prompts based on community membership
+          // Get all sub-communities the user is a member of
+          const userCommunityMemberships = await db
+            .select({ subCommunityId: userCommunities.subCommunityId })
+            .from(userCommunities)
+            .where(eq(userCommunities.userId, options.authenticatedUserId));
+          
+          const memberSubCommunityIds = userCommunityMemberships
+            .filter(m => m.subCommunityId !== null)
+            .map(m => m.subCommunityId as string);
+          
+          // Add condition: show prompts that either:
+          // 1. Have no subCommunityId (global community prompts)
+          // 2. Belong to a sub-community the user is a member of
+          conditions.push(
+            or(
+              isNull(prompts.subCommunityId),
+              memberSubCommunityIds.length > 0 
+                ? inArray(prompts.subCommunityId, memberSubCommunityIds)
+                : sql`false` // If user is not member of any sub-community, don't show any sub-community prompts
+            )
+          );
+        }
+        // If user is privileged (super_admin, global_admin, developer), no filtering needed - they see all prompts
+      } else {
+        // No authenticated user, only show global community prompts (no subCommunityId)
+        conditions.push(isNull(prompts.subCommunityId));
+      }
     }
     
     // Filter NSFW content based on user preference
