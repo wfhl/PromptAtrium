@@ -81,7 +81,9 @@ app.use((req, res, next) => {
   }, async () => {
     log(`serving on port ${port}`);
     
-    // Run cleanup of duplicate likes on startup
+    // Skip duplicate likes cleanup on startup - it's already been run and adds 18+ seconds to startup time
+    // Uncomment only if you need to fix duplicate likes or incorrect like counts
+    /*
     try {
       StructuredLogger.info("Running duplicate likes cleanup");
       const cleanupResult = await storage.cleanupDuplicateLikes();
@@ -93,6 +95,7 @@ app.use((req, res, next) => {
       StructuredLogger.error("Error during likes cleanup", error as Error);
       // Don't crash the server if cleanup fails
     }
+    */
     
     // Seed initial achievements if needed
     try {
