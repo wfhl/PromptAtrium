@@ -533,16 +533,6 @@ export default function AdminPage() {
               </h2>
               {isSuperAdmin && (
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button 
-                    onClick={() => window.location.href = '/admin/sub-communities'} 
-                    variant="outline"
-                    data-testid="button-global-subcommunity-admin"
-                    className="w-full sm:w-auto"
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Global Sub-Community Management</span>
-                    <span className="sm:hidden">Sub-Communities</span>
-                  </Button>
                   <Button onClick={openCreateModal} data-testid="button-create-community" className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Community
