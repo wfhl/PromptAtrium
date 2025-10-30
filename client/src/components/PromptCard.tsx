@@ -8,13 +8,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ShineBorder } from "@/components/ui/shine-border";
-import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus, ImagePlus, Link2, DollarSign, MoreVertical } from "lucide-react";
-import type { Prompt } from "@shared/schema";
+import { Heart, Star, GitBranch, Eye, Edit, Share2, Trash2, Image as ImageIcon, ZoomIn, X, Copy, Check, Globe, Folder, Download, Archive, Bookmark, ChevronDown, Plus, Minus, ImagePlus, Link2, DollarSign, MoreVertical, Users, Lock } from "lucide-react";
+import type { Prompt, Community } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -91,9 +91,34 @@ export function PromptCard({
   // Add to Collection dialog state
   const [showCollectionDialog, setShowCollectionDialog] = useState(false);
   
+  // Community selection state
+  const [showCommunitySelector, setShowCommunitySelector] = useState(false);
+  const [selectedCommunities, setSelectedCommunities] = useState<string[]>([]);
+  
   const toggleCollapsed = () => {
     setIsCollapsed(!isCollapsed);
   };
+
+  // Fetch user's communities
+  const { data: userCommunities = [] } = useQuery<Community[]>({
+    queryKey: ["/api/user/communities"],
+    enabled: !!user,
+  });
+  
+  // Fetch prompt's shared communities
+  const { data: promptCommunities = [] } = useQuery<string[]>({
+    queryKey: [`/api/prompts/${prompt.id}/communities`],
+    enabled: !!prompt.id,
+  });
+  
+  // Initialize selected communities based on current prompt state
+  useEffect(() => {
+    if (prompt.isPublic) {
+      setSelectedCommunities(['global', ...promptCommunities]);
+    } else {
+      setSelectedCommunities(promptCommunities);
+    }
+  }, [prompt.isPublic, promptCommunities]);
 
   // Separate queries for likes and favorites
   const { data: userFavorites = [] } = useQuery({
@@ -727,11 +752,13 @@ export function PromptCard({
   });
 
   const visibilityMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/prompts/${prompt.id}/visibility`);
+    mutationFn: async (communities: string[]) => {
+      const response = await apiRequest("POST", `/api/prompts/${prompt.id}/visibility`, {
+        communities: communities
+      });
       return await response.json();
     },
-    onMutate: async () => {
+    onMutate: async (communities) => {
       // Cancel prompt-specific queries to prevent race conditions
       await queryClient.cancelQueries({ 
         predicate: (query) => {
@@ -750,6 +777,9 @@ export function PromptCard({
         }
       });
       
+      // Determine new visibility state
+      const isPublic = communities.includes('global');
+      
       // Update all matching prompt queries with optimistic visibility toggle
       queryClient.setQueriesData({ 
         predicate: (query) => {
@@ -764,7 +794,7 @@ export function PromptCard({
         if (Array.isArray(old)) {
           return old.map((p: any) => 
             p.id === prompt.id 
-              ? { ...p, isPublic: !p.isPublic }
+              ? { ...p, isPublic }
               : p
           );
         }
@@ -775,7 +805,7 @@ export function PromptCard({
             ...old,
             items: old.items.map((p: any) => 
               p.id === prompt.id 
-                ? { ...p, isPublic: !p.isPublic }
+                ? { ...p, isPublic }
                 : p
             )
           };
@@ -797,9 +827,20 @@ export function PromptCard({
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"], exact: false });
+      queryClient.invalidateQueries({ queryKey: [`/api/prompts/${prompt.id}/communities`] });
+      
+      let description = "Visibility updated successfully!";
+      if (data.communities?.length === 0) {
+        description = "Prompt made private!";
+      } else if (data.communities?.includes('global')) {
+        description = "Prompt shared publicly!";
+      } else {
+        description = `Prompt shared to ${data.communities?.length} ${data.communities?.length === 1 ? 'community' : 'communities'}!`;
+      }
+      
       toast({
         title: "Success",
-        description: data.isPublic ? "Prompt shared publicly!" : "Prompt made private!",
+        description,
       });
     },
     onError: (error, variables, context) => {
@@ -823,7 +864,7 @@ export function PromptCard({
       }
       toast({
         title: "Error",
-        description: "Failed to toggle visibility",
+        description: "Failed to update visibility",
         variant: "destructive",
       });
     },
@@ -1189,21 +1230,152 @@ export function PromptCard({
                 </h3>
               )}
 {showActions && !isCommunityPage ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={`px-2 py-1 text-xs transition-all ${
-                    prompt.isPublic 
-                      ? 'font-bold bg-gradient-to-br from-yellow-600/60 via-orange-700/60 to-orange-500/60 text-white' 
-                      : 'font-bold bg-gradient-to-br from-indigo-600/60 via-purple-700/60 to-purple-500/60 text-white'
-                  }`}
-                  onClick={() => visibilityMutation.mutate()}
-                  disabled={visibilityMutation.isPending}
-                  data-testid={`button-visibility-toggle-${prompt.id}`}
-                >
-                  <Globe className="h-3 w-3 mr-1" />
-                  {prompt.isPublic ? "Public" : "Private"}
-                </Button>
+                userCommunities.length > 0 ? (
+                  <DropdownMenu open={showCommunitySelector} onOpenChange={setShowCommunitySelector}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`px-2 py-1 text-xs transition-all ${
+                          selectedCommunities.length === 0
+                            ? 'font-bold bg-gradient-to-br from-indigo-600/60 via-purple-700/60 to-purple-500/60 text-white'
+                            : selectedCommunities.includes('global')
+                            ? 'font-bold bg-gradient-to-br from-yellow-600/60 via-orange-700/60 to-orange-500/60 text-white' 
+                            : 'font-bold bg-gradient-to-br from-green-600/60 via-teal-700/60 to-teal-500/60 text-white'
+                        }`}
+                        disabled={visibilityMutation.isPending}
+                        data-testid={`button-visibility-dropdown-${prompt.id}`}
+                      >
+                        {selectedCommunities.length === 0 ? (
+                          <>
+                            <Lock className="h-3 w-3 mr-1" />
+                            Private
+                          </>
+                        ) : selectedCommunities.includes('global') ? (
+                          <>
+                            <Globe className="h-3 w-3 mr-1" />
+                            Public
+                          </>
+                        ) : (
+                          <>
+                            <Users className="h-3 w-3 mr-1" />
+                            Communities
+                          </>
+                        )}
+                        <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <div className="p-2">
+                        <h4 className="text-sm font-semibold mb-2">Share prompt to:</h4>
+                        
+                        {/* Global Community Option */}
+                        <DropdownMenuItem
+                          className="flex items-center justify-between py-2 cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSelectedCommunities(prev => 
+                              prev.includes('global') 
+                                ? prev.filter(id => id !== 'global')
+                                : [...prev, 'global']
+                            );
+                          }}
+                        >
+                          <div className="flex items-center">
+                            <Checkbox
+                              checked={selectedCommunities.includes('global')}
+                              onCheckedChange={(checked) => {
+                                setSelectedCommunities(prev => 
+                                  checked 
+                                    ? [...prev, 'global']
+                                    : prev.filter(id => id !== 'global')
+                                );
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <Globe className="h-4 w-4 ml-2 mr-2 text-blue-500" />
+                            <span className="text-sm">Global Community</span>
+                          </div>
+                        </DropdownMenuItem>
+
+                        {userCommunities.length > 0 && (
+                          <>
+                            <DropdownMenuSeparator className="my-2" />
+                            <div className="text-xs text-muted-foreground mb-2">Private Communities</div>
+                          </>
+                        )}
+
+                        {/* Private Communities */}
+                        {userCommunities.map((community) => (
+                          <DropdownMenuItem
+                            key={community.id}
+                            className="flex items-center justify-between py-2 cursor-pointer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSelectedCommunities(prev => 
+                                prev.includes(community.id) 
+                                  ? prev.filter(id => id !== community.id)
+                                  : [...prev, community.id]
+                              );
+                            }}
+                          >
+                            <div className="flex items-center">
+                              <Checkbox
+                                checked={selectedCommunities.includes(community.id)}
+                                onCheckedChange={(checked) => {
+                                  setSelectedCommunities(prev => 
+                                    checked 
+                                      ? [...prev, community.id]
+                                      : prev.filter(id => id !== community.id)
+                                  );
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <Users className="h-4 w-4 ml-2 mr-2 text-green-500" />
+                              <span className="text-sm">{community.name}</span>
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+
+                        <DropdownMenuSeparator className="my-2" />
+                        
+                        <div className="flex justify-between items-center pt-2">
+                          <p className="text-xs text-muted-foreground">
+                            {selectedCommunities.length === 0 ? "Prompt will be private" : 
+                             selectedCommunities.length === 1 && selectedCommunities.includes('global') ? "Sharing globally" :
+                             `Sharing to ${selectedCommunities.length} ${selectedCommunities.length === 1 ? 'community' : 'communities'}`}
+                          </p>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              visibilityMutation.mutate(selectedCommunities);
+                              setShowCommunitySelector(false);
+                            }}
+                            disabled={visibilityMutation.isPending}
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`px-2 py-1 text-xs transition-all ${
+                      prompt.isPublic 
+                        ? 'font-bold bg-gradient-to-br from-yellow-600/60 via-orange-700/60 to-orange-500/60 text-white' 
+                        : 'font-bold bg-gradient-to-br from-indigo-600/60 via-purple-700/60 to-purple-500/60 text-white'
+                    }`}
+                    onClick={() => visibilityMutation.mutate(prompt.isPublic ? [] : ['global'])}
+                    disabled={visibilityMutation.isPending}
+                    data-testid={`button-visibility-toggle-${prompt.id}`}
+                  >
+                    <Globe className="h-3 w-3 mr-1" />
+                    {prompt.isPublic ? "Public" : "Private"}
+                  </Button>
+                )
               ) : (
                 // Hide "Public" badge on community page and profile page
                 !showActions && !isCommunityPage && !isProfilePage && (
