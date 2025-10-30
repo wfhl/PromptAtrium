@@ -166,31 +166,28 @@ export function CommunityVisibilitySelector({
                     </div>
                   ) : (
                     privateCommunities.map((community) => (
-                      <DropdownMenuItem
+                      <div
                         key={community.id}
-                        className="p-0"
-                        onSelect={(e) => e.preventDefault()}
+                        className="flex items-center space-x-2 w-full p-2 rounded hover:bg-accent"
                       >
-                        <div className="flex items-center space-x-2 w-full p-2 rounded hover:bg-accent">
-                          <Checkbox
-                            id={community.id}
-                            checked={tempSelectedIds.includes(community.id)}
-                            onCheckedChange={(checked) =>
-                              handleCommunityToggle(community.id, checked as boolean)
-                            }
-                            data-testid={`checkbox-community-${community.id}`}
-                          />
-                          <label
-                            htmlFor={community.id}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer"
-                          >
-                            {community.name}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              @{community.slug}
-                            </p>
-                          </label>
-                        </div>
-                      </DropdownMenuItem>
+                        <Checkbox
+                          id={community.id}
+                          checked={tempSelectedIds.includes(community.id)}
+                          onCheckedChange={(checked) =>
+                            handleCommunityToggle(community.id, checked as boolean)
+                          }
+                          data-testid={`checkbox-community-${community.id}`}
+                        />
+                        <label
+                          htmlFor={community.id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1 cursor-pointer"
+                        >
+                          {community.name}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            @{community.slug}
+                          </p>
+                        </label>
+                      </div>
                     ))
                   )}
                 </div>
