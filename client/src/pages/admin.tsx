@@ -610,6 +610,7 @@ export default function AdminPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="mb-2" 
                         onClick={() => openMemberModal(community)}
                         data-testid={`button-manage-members-${community.id}`}
                       >
@@ -619,6 +620,7 @@ export default function AdminPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="mb-2"
                         onClick={() => openCollectionsModal(community)}
                         data-testid={`button-manage-collections-${community.id}`}
                       >
@@ -630,6 +632,7 @@ export default function AdminPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          className="mb-2"
                           onClick={() => {
                             setSelectedCommunityForInvites(community);
                             setInviteManagementModalOpen(true);
@@ -647,6 +650,7 @@ export default function AdminPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="mb-2"
                             onClick={() => openEditModal(community)}
                             data-testid={`button-edit-community-${community.id}`}
                           >
@@ -656,6 +660,7 @@ export default function AdminPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="mb-2"
                             onClick={() => deleteCommunityMutation.mutate(community.id)}
                             disabled={deleteCommunityMutation.isPending}
                             data-testid={`button-delete-community-${community.id}`}
