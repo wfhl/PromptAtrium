@@ -1270,10 +1270,9 @@ export function PromptCard({
                         <h4 className="text-sm font-semibold mb-2">Share prompt to:</h4>
                         
                         {/* Global Community Option */}
-                        <DropdownMenuItem
-                          className="flex items-center justify-between py-2 cursor-pointer hover:bg-accent"
-                          onSelect={(e) => {
-                            e.preventDefault();
+                        <div
+                          className="flex items-center justify-between py-2 px-2 cursor-pointer hover:bg-accent rounded-sm"
+                          onClick={() => {
                             setSelectedCommunities(prev => 
                               prev.includes('global') 
                                 ? prev.filter(id => id !== 'global')
@@ -1284,21 +1283,15 @@ export function PromptCard({
                           <div className="flex items-center">
                             <Checkbox
                               checked={selectedCommunities.includes('global')}
-                              onCheckedChange={(checked) => {
-                                setSelectedCommunities(prev => 
-                                  checked 
-                                    ? [...prev, 'global']
-                                    : prev.filter(id => id !== 'global')
-                                );
-                              }}
+                              onCheckedChange={() => {}}
                               onClick={(e) => e.stopPropagation()}
-                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary pointer-events-none"
                               data-testid="checkbox-global-community"
                             />
                             <Globe className="h-4 w-4 ml-2 mr-2 text-blue-500" />
                             <span className="text-sm text-foreground" data-testid="text-global-community">Global Community</span>
                           </div>
-                        </DropdownMenuItem>
+                        </div>
 
                         {userCommunities.length > 0 && (
                           <>
@@ -1309,11 +1302,10 @@ export function PromptCard({
 
                         {/* Private Communities */}
                         {userCommunities.map((community) => (
-                          <DropdownMenuItem
+                          <div
                             key={community.id}
-                            className="flex items-center justify-between py-2 cursor-pointer hover:bg-accent"
-                            onSelect={(e) => {
-                              e.preventDefault();
+                            className="flex items-center justify-between py-2 px-2 cursor-pointer hover:bg-accent rounded-sm"
+                            onClick={() => {
                               setSelectedCommunities(prev => 
                                 prev.includes(community.id) 
                                   ? prev.filter(id => id !== community.id)
@@ -1324,21 +1316,15 @@ export function PromptCard({
                             <div className="flex items-center">
                               <Checkbox
                                 checked={selectedCommunities.includes(community.id)}
-                                onCheckedChange={(checked) => {
-                                  setSelectedCommunities(prev => 
-                                    checked 
-                                      ? [...prev, community.id]
-                                      : prev.filter(id => id !== community.id)
-                                  );
-                                }}
+                                onCheckedChange={() => {}}
                                 onClick={(e) => e.stopPropagation()}
-                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary pointer-events-none"
                                 data-testid={`checkbox-community-${community.id}`}
                               />
                               <Users className="h-4 w-4 ml-2 mr-2 text-green-500" />
                               <span className="text-sm text-foreground" data-testid={`text-community-${community.id}`}>{community.name}</span>
                             </div>
-                          </DropdownMenuItem>
+                          </div>
                         ))}
 
                         <DropdownMenuSeparator className="my-2" />
