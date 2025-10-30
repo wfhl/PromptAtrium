@@ -5140,7 +5140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add user directly to community
+  // Add user directly to community (sends invitation)
   app.post('/api/communities/:id/members', requireCommunityAdminRole('id'), async (req: any, res) => {
     try {
       const { id: communityId } = req.params;
@@ -5156,25 +5156,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user is already a member
       const existingMembership = await storage.getCommunityMembership(userId, communityId);
       if (existingMembership) {
-        return res.status(400).json({ message: "User is already a member of this community" });
+        if (existingMembership.status === 'pending') {
+          return res.status(400).json({ message: "User already has a pending invitation to this community" });
+        } else if (existingMembership.status === 'accepted') {
+          return res.status(400).json({ message: "User is already a member of this community" });
+        }
       }
       
-      // Add user to community
-      await storage.joinCommunity(userId, communityId, role);
+      // Send invitation to user (status will be pending)
+      await storage.inviteUserToCommunity(userId, communityId, adminId, role);
       
-      // Create activity for the user being added
+      res.status(201).json({ message: "Invitation sent to user successfully" });
+    } catch (error) {
+      console.error("Error inviting user to community:", error);
+      res.status(500).json({ message: "Failed to invite user to community" });
+    }
+  });
+  
+  // Remove user from community (admin only)
+  app.delete('/api/communities/:id/members/:userId', requireCommunityAdminRole('id'), async (req: any, res) => {
+    try {
+      const { id: communityId, userId } = req.params;
+      const adminId = req.user.claims.sub;
+      
+      // Check if user is trying to remove themselves
+      if (userId === adminId) {
+        return res.status(400).json({ message: "Admins cannot remove themselves. Please transfer admin rights first." });
+      }
+      
+      // Check if user is a member
+      const membership = await storage.getCommunityMembership(userId, communityId);
+      if (!membership) {
+        return res.status(404).json({ message: "User is not a member of this community" });
+      }
+      
+      // Remove user from community
+      await storage.removeUserFromCommunity(userId, communityId);
+      
+      // Create activity for removal
       await storage.createActivity({
         userId,
-        actionType: 'joined_community',
+        actionType: 'removed_from_community',
         targetId: communityId,
         targetType: 'community',
-        metadata: { addedBy: adminId, role }
+        metadata: { removedBy: adminId }
       });
       
-      res.status(201).json({ message: "User added to community successfully" });
+      res.json({ message: "User removed from community successfully" });
     } catch (error) {
-      console.error("Error adding user to community:", error);
-      res.status(500).json({ message: "Failed to add user to community" });
+      console.error("Error removing user from community:", error);
+      res.status(500).json({ message: "Failed to remove user from community" });
+    }
+  });
+  
+  // Accept or reject community invitation
+  app.post('/api/communities/:id/invitations/respond', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const userId = req.user.claims.sub;
+      const { accept } = req.body;
+      
+      // Check if user has a pending invitation
+      const membership = await storage.getCommunityMembership(userId, communityId);
+      if (!membership) {
+        return res.status(404).json({ message: "No invitation found for this community" });
+      }
+      
+      if (membership.status !== 'pending') {
+        return res.status(400).json({ message: "Invitation has already been responded to" });
+      }
+      
+      // Update invitation status
+      const status = accept ? 'accepted' : 'rejected';
+      await storage.respondToInvitation(userId, communityId, status);
+      
+      // Create activity
+      await storage.createActivity({
+        userId,
+        actionType: accept ? 'joined_community' : 'rejected_invitation',
+        targetId: communityId,
+        targetType: 'community',
+        metadata: { status }
+      });
+      
+      res.json({ message: accept ? "Invitation accepted successfully" : "Invitation rejected" });
+    } catch (error) {
+      console.error("Error responding to invitation:", error);
+      res.status(500).json({ message: "Failed to respond to invitation" });
+    }
+  });
+  
+  // Leave a community (any member)
+  app.delete('/api/communities/:id/leave', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: communityId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Check if user is a member
+      const membership = await storage.getCommunityMembership(userId, communityId);
+      if (!membership || membership.status !== 'accepted') {
+        return res.status(404).json({ message: "You are not a member of this community" });
+      }
+      
+      // Check if user is the last admin
+      if (membership.role === 'admin') {
+        const admins = await storage.getCommunityAdmins(communityId);
+        if (admins.length <= 1) {
+          return res.status(400).json({ message: "Cannot leave community as you are the last admin. Please assign another admin first." });
+        }
+      }
+      
+      // Remove user from community
+      await storage.removeUserFromCommunity(userId, communityId);
+      
+      // Create activity
+      await storage.createActivity({
+        userId,
+        actionType: 'left_community',
+        targetId: communityId,
+        targetType: 'community',
+        metadata: {}
+      });
+      
+      res.json({ message: "Left community successfully" });
+    } catch (error) {
+      console.error("Error leaving community:", error);
+      res.status(500).json({ message: "Failed to leave community" });
+    }
+  });
+  
+  // Get user's pending invitations
+  app.get('/api/user/invitations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const invitations = await storage.getUserInvitations(userId);
+      res.json(invitations);
+    } catch (error) {
+      console.error("Error fetching user invitations:", error);
+      res.status(500).json({ message: "Failed to fetch invitations" });
     }
   });
 

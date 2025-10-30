@@ -1600,18 +1600,28 @@ export class DatabaseStorage implements IStorage {
         userId: userCommunities.userId,
         communityId: userCommunities.communityId,
         role: userCommunities.role,
+        status: userCommunities.status,
         joinedAt: userCommunities.joinedAt,
         user: {
           id: users.id,
           email: users.email,
           firstName: users.firstName,
           lastName: users.lastName,
+          username: users.username,
           profileImageUrl: users.profileImageUrl,
         }
       })
       .from(userCommunities)
       .leftJoin(users, eq(userCommunities.userId, users.id))
-      .where(eq(userCommunities.communityId, communityId));
+      .where(
+        and(
+          eq(userCommunities.communityId, communityId),
+          or(
+            eq(userCommunities.status, 'accepted'),
+            isNull(userCommunities.status) // For existing members without status field
+          )
+        )
+      );
   }
 
   async updateCommunityMemberRole(userId: string, communityId: string, role: CommunityRole): Promise<UserCommunity> {
@@ -2814,6 +2824,127 @@ export class DatabaseStorage implements IStorage {
     }
 
     return await query;
+  }
+
+  // Invite user to community (creates pending invitation)
+  async inviteUserToCommunity(userId: string, communityId: string, invitedBy: string, role: string = 'member'): Promise<void> {
+    await db.insert(userCommunities).values({
+      userId,
+      communityId,
+      role: role as 'member' | 'admin',
+      status: 'pending',
+      invitedBy,
+      joinedAt: new Date(),
+    });
+    
+    // Create notification for the invited user
+    const community = await this.getCommunity(communityId);
+    const inviter = await this.getUser(invitedBy);
+    
+    await this.createNotification({
+      userId,
+      type: 'community_invite',
+      message: `${inviter?.username || 'Someone'} has invited you to join the community "${community?.name}"`,
+      relatedUserId: invitedBy,
+      relatedPromptId: null,
+      relatedListId: null,
+      isRead: false,
+      metadata: {
+        communityId,
+        communityName: community?.name,
+        invitedBy,
+        inviterName: inviter?.username
+      }
+    });
+  }
+  
+  // Remove user from community
+  async removeUserFromCommunity(userId: string, communityId: string): Promise<void> {
+    await db
+      .delete(userCommunities)
+      .where(
+        and(
+          eq(userCommunities.userId, userId),
+          eq(userCommunities.communityId, communityId)
+        )
+      );
+  }
+  
+  // Respond to community invitation
+  async respondToInvitation(userId: string, communityId: string, status: 'accepted' | 'rejected'): Promise<void> {
+    await db
+      .update(userCommunities)
+      .set({
+        status,
+        respondedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(userCommunities.userId, userId),
+          eq(userCommunities.communityId, communityId)
+        )
+      );
+    
+    // Create notification for response
+    const community = await this.getCommunity(communityId);
+    
+    if (status === 'accepted') {
+      await this.createNotification({
+        userId,
+        type: 'community_join',
+        message: `You have successfully joined the community "${community?.name}"`,
+        relatedUserId: null,
+        relatedPromptId: null,
+        relatedListId: null,
+        isRead: false,
+        metadata: {
+          communityId,
+          communityName: community?.name,
+          status: 'accepted'
+        }
+      });
+    }
+  }
+  
+  // Get user's pending invitations
+  async getUserInvitations(userId: string): Promise<any[]> {
+    const invitations = await db
+      .select({
+        id: userCommunities.id,
+        communityId: userCommunities.communityId,
+        role: userCommunities.role,
+        status: userCommunities.status,
+        invitedBy: userCommunities.invitedBy,
+        joinedAt: userCommunities.joinedAt,
+        community: communities,
+        inviter: users,
+      })
+      .from(userCommunities)
+      .leftJoin(communities, eq(userCommunities.communityId, communities.id))
+      .leftJoin(users, eq(userCommunities.invitedBy, users.id))
+      .where(
+        and(
+          eq(userCommunities.userId, userId),
+          eq(userCommunities.status, 'pending')
+        )
+      );
+    
+    return invitations.map(inv => ({
+      id: inv.id,
+      communityId: inv.communityId,
+      role: inv.role,
+      status: inv.status,
+      invitedBy: inv.invitedBy,
+      joinedAt: inv.joinedAt,
+      community: inv.community,
+      inviter: inv.inviter ? {
+        id: inv.inviter.id,
+        username: inv.inviter.username,
+        firstName: inv.inviter.firstName,
+        lastName: inv.inviter.lastName,
+        profileImageUrl: inv.inviter.profileImageUrl,
+      } : null,
+    }));
   }
 
   async deactivateInvite(id: string): Promise<void> {
