@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Wrench, Users, ShoppingBag, ChevronRight, Sparkles, TrendingUp, Clock, Heart, FileSearch, FolderPlus, RatioIcon, BookOpen, Plus, FileUp } from 'lucide-react';
+import { FileText, Wrench, Users, ShoppingBag, ChevronRight, Sparkles, TrendingUp, Clock, Heart, FileSearch, FolderPlus, RatioIcon, BookOpen, Plus, FileUp, Globe, Lock } from 'lucide-react';
+import { CommunityContextTabs } from '@/components/CommunityContextTabs';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import type { Community, UserCommunity } from '@shared/schema';
 
 interface TabOption {
   label: string;
@@ -71,7 +75,31 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
     left: 0,
     width: 0
   });
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  // Fetch user's communities for community page
+  const { data: userCommunities = [] } = useQuery<UserCommunity[]>({
+    queryKey: ["/api/user/communities"],
+    enabled: !!user && page === 'community',
+  });
+
+  // Fetch all communities to get the details
+  const { data: allCommunities = [] } = useQuery<Community[]>({
+    queryKey: ["/api/communities"],
+    enabled: !!user && userCommunities.length > 0 && page === 'community',
+  });
+
+  // Filter to get user's private communities
+  const privateCommunities = allCommunities.filter(c => 
+    c.slug !== 'global' && 
+    c.slug !== 'general' &&
+    userCommunities.some(uc => 
+      uc.communityId === c.id && 
+      (uc.status === 'accepted' || !uc.status)
+    )
+  );
 
   const config = PAGE_CONFIGS[page];
   const Icon = config.icon;
@@ -164,6 +192,64 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
                 <Icon className="h-4 w-4 text-white/90" />
                 <span className="text-sm font-medium text-white">{config.title} - Quick Jump</span>
               </div>
+              
+              {/* Community Context Selection for Community Page */}
+              {page === 'community' && privateCommunities.length > 0 && (
+                <div className="p-2 border-b border-purple-400/20">
+                  <div className="text-xs text-white/70 font-medium mb-2 px-2">Select Community</div>
+                  
+                  {/* Global Community */}
+                  <div
+                    onClick={() => {
+                      setSelectedCommunityId(null);
+                      setLocation('/community');
+                      onClose();
+                    }}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                      !selectedCommunityId 
+                        ? 'bg-white/20 text-white' 
+                        : 'hover:bg-white/10 text-white/80 hover:text-white'
+                    }`}
+                  >
+                    <Globe className="h-3.5 w-3.5" />
+                    <span className="text-sm">Global</span>
+                    {!selectedCommunityId && (
+                      <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full" />
+                    )}
+                  </div>
+
+                  {/* Private Communities */}
+                  {privateCommunities.map((community) => {
+                    const membership = userCommunities.find(uc => uc.communityId === community.id);
+                    const isAdmin = membership?.role === 'admin';
+                    
+                    return (
+                      <div
+                        key={community.id}
+                        onClick={() => {
+                          setSelectedCommunityId(community.id);
+                          setLocation(`/community?communityId=${community.id}`);
+                          onClose();
+                        }}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                          selectedCommunityId === community.id 
+                            ? 'bg-white/20 text-white' 
+                            : 'hover:bg-white/10 text-white/80 hover:text-white'
+                        }`}
+                      >
+                        <Lock className="h-3.5 w-3.5" />
+                        <span className="text-sm truncate flex-1">{community.name}</span>
+                        {isAdmin && (
+                          <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">Admin</span>
+                        )}
+                        {selectedCommunityId === community.id && (
+                          <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               
               {/* Tab Options */}
               <div className="py-1 max-h-[60vh] overflow-y-auto">

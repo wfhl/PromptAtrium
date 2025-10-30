@@ -15,7 +15,7 @@ import {
   Lightbulb, Search, Filter, Star, TrendingUp, Clock, Eye,
   Users, UserPlus, UserMinus, Hash, Heart, GitBranch,
   Share2, BookOpen, Folder, ChevronRight, Building, Lock,
-  Globe
+  Globe, Mail
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { MultiSelectFilters } from "@/components/MultiSelectFilters";
@@ -35,7 +35,6 @@ export default function Community() {
   const [searchQuery, setSearchQuery] = useState("");
   const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
 
   // Multi-select filters state
   const [multiSelectFilters, setMultiSelectFilters] = useState<MultiSelectFiltersType>({
@@ -79,6 +78,8 @@ export default function Community() {
   const urlParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
   const tabFromUrl = urlParams.get('tab');
   const subTabFromUrl = urlParams.get('sub');
+  const communityIdFromUrl = urlParams.get('communityId');
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(communityIdFromUrl);
   const savedTab = localStorage.getItem('community-active-tab');
   const initialTab = tabFromUrl || savedTab || 'prompts';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -110,6 +111,7 @@ export default function Community() {
     const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
     const tab = params.get('tab');
     const sub = params.get('sub');
+    const communityId = params.get('communityId');
     
     if (tab && ['prompts', 'collections', 'followed'].includes(tab)) {
       setActiveTab(tab);
@@ -118,7 +120,11 @@ export default function Community() {
     if (sub && ['featured', 'all', 'trending', 'recent'].includes(sub)) {
       setPromptsSubTab(sub);
     }
-  }, [location]);
+    
+    if (communityId !== selectedCommunityId) {
+      setSelectedCommunityId(communityId);
+    }
+  }, [location, selectedCommunityId]);
 
   // Save promptsSubTab to localStorage when it changes
   useEffect(() => {
@@ -235,8 +241,14 @@ export default function Community() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Fetch public collections
+  const collectionQueryParams = new URLSearchParams();
+  collectionQueryParams.append("isPublic", "true");
+  if (collectionSearchQuery) collectionQueryParams.append("search", collectionSearchQuery);
+  if (selectedCommunityId) collectionQueryParams.append("communityId", selectedCommunityId);
+  collectionQueryParams.append("limit", "50");
+  
   const { data: publicCollections = [] } = useQuery<(Collection & { promptCount?: number; exampleImages?: string[]; user?: User })[]>({
-    queryKey: [`/api/collections?isPublic=true&search=${collectionSearchQuery}&limit=50`],
+    queryKey: [`/api/collections?${collectionQueryParams.toString()}`],
     enabled: isAuthenticated && activeTab === "collections",
     retry: false,
   });
@@ -598,7 +610,20 @@ export default function Community() {
       {/* Community Context Tabs */}
       <CommunityContextTabs 
         selectedCommunityId={selectedCommunityId}
-        onCommunityChange={setSelectedCommunityId}
+        onCommunityChange={(communityId) => {
+          setSelectedCommunityId(communityId);
+          // Update URL with the new communityId
+          const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+          if (communityId) {
+            params.set('communityId', communityId);
+          } else {
+            params.delete('communityId');
+          }
+          // Preserve other params
+          if (activeTab) params.set('tab', activeTab);
+          if (activeTab === 'prompts' && promptsSubTab) params.set('sub', promptsSubTab);
+          setLocation(`/community${params.toString() ? '?' + params.toString() : ''}`);
+        }}
       />
 
       {/* Tabs */}
