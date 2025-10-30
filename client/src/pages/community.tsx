@@ -20,6 +20,7 @@ import {
 import { PromptCard } from "@/components/PromptCard";
 import { MultiSelectFilters } from "@/components/MultiSelectFilters";
 import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } from "@/components/MultiSelectFilters";
+import { CommunityContextTabs } from "@/components/CommunityContextTabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Prompt, User, Collection, Community, UserCommunity } from "@shared/schema";
@@ -34,6 +35,7 @@ export default function Community() {
   const [searchQuery, setSearchQuery] = useState("");
   const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
 
   // Multi-select filters state
   const [multiSelectFilters, setMultiSelectFilters] = useState<MultiSelectFiltersType>({
@@ -128,6 +130,11 @@ export default function Community() {
     const params = new URLSearchParams();
     params.append("isPublic", "true");
     if (searchQuery) params.append("search", searchQuery);
+    
+    // Add community filter
+    if (selectedCommunityId) {
+      params.append("communityId", selectedCommunityId);
+    }
 
     // Handle multi-select filters
     if (multiSelectFilters.category.length > 0) {
@@ -175,7 +182,7 @@ export default function Community() {
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ["prompts", promptsSubTab, searchQuery, multiSelectFilters],
+    queryKey: ["prompts", promptsSubTab, searchQuery, multiSelectFilters, selectedCommunityId],
     queryFn: async ({ pageParam = 0 }) => {
       const response = await fetch(`/api/prompts?${buildQuery(pageParam)}`);
       if (!response.ok) throw new Error("Failed to fetch prompts");
@@ -587,6 +594,12 @@ export default function Community() {
           </CardContent>
         </Card>
       )}
+
+      {/* Community Context Tabs */}
+      <CommunityContextTabs 
+        selectedCommunityId={selectedCommunityId}
+        onCommunityChange={setSelectedCommunityId}
+      />
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => {
