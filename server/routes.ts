@@ -937,8 +937,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const promptData = insertPromptSchema.parse(requestBody);
-      const prompt = await storage.createPrompt(promptData);
+      // Extract sharedCommunityIds before parsing
+      const { sharedCommunityIds, ...promptDataToValidate } = requestBody;
+      
+      const promptData = insertPromptSchema.parse(promptDataToValidate);
+      const prompt = await storage.createPrompt({ ...promptData, sharedCommunityIds });
       
       // Create activity for prompt creation
       if (prompt.isPublic) {
@@ -1109,8 +1112,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestBody.collectionId = null;
       }
 
-      const promptData = insertPromptSchema.partial().parse(requestBody);
-      const updatedPrompt = await storage.updatePrompt(req.params.id, promptData);
+      // Extract sharedCommunityIds before parsing
+      const { sharedCommunityIds, ...promptDataToValidate } = requestBody;
+
+      const promptData = insertPromptSchema.partial().parse(promptDataToValidate);
+      const updatedPrompt = await storage.updatePrompt(req.params.id, { ...promptData, sharedCommunityIds });
       res.json(updatedPrompt);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2174,8 +2180,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/collections', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const collectionData = insertCollectionSchema.parse({ ...req.body, userId });
-      const collection = await storage.createCollection(collectionData);
+      const { sharedCommunityIds, ...collectionDataToValidate } = req.body;
+      const collectionData = insertCollectionSchema.parse({ ...collectionDataToValidate, userId });
+      const collection = await storage.createCollection({ ...collectionData, sharedCommunityIds });
       
       // Create activity for collection creation
       await storage.createActivity({
@@ -2215,7 +2222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Not authorized to edit this collection" });
       }
 
-      const collectionData = insertCollectionSchema.partial().parse(req.body);
+      const { sharedCommunityIds, ...collectionDataToValidate } = req.body;
+      const collectionData = insertCollectionSchema.partial().parse(collectionDataToValidate);
       
       // If updatePrompts is true and privacy is changing, update all prompts in the collection
       if (updatePrompts === 'true' && collectionData.isPublic !== undefined && collectionData.isPublic !== collection.isPublic) {
@@ -2227,7 +2235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const updatedCollection = await storage.updateCollection(req.params.id, collectionData);
+      const updatedCollection = await storage.updateCollection(req.params.id, { ...collectionData, sharedCommunityIds });
       res.json(updatedCollection);
     } catch (error) {
       if (error instanceof z.ZodError) {
