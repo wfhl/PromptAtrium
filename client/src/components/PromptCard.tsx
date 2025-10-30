@@ -1271,8 +1271,8 @@ export function PromptCard({
                         
                         {/* Global Community Option */}
                         <DropdownMenuItem
-                          className="flex items-center justify-between py-2 cursor-pointer"
-                          onClick={(e) => {
+                          className="flex items-center justify-between py-2 cursor-pointer hover:bg-accent"
+                          onSelect={(e) => {
                             e.preventDefault();
                             setSelectedCommunities(prev => 
                               prev.includes('global') 
@@ -1292,9 +1292,11 @@ export function PromptCard({
                                 );
                               }}
                               onClick={(e) => e.stopPropagation()}
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              data-testid="checkbox-global-community"
                             />
                             <Globe className="h-4 w-4 ml-2 mr-2 text-blue-500" />
-                            <span className="text-sm">Global Community</span>
+                            <span className="text-sm text-foreground" data-testid="text-global-community">Global Community</span>
                           </div>
                         </DropdownMenuItem>
 
@@ -1309,8 +1311,8 @@ export function PromptCard({
                         {userCommunities.map((community) => (
                           <DropdownMenuItem
                             key={community.id}
-                            className="flex items-center justify-between py-2 cursor-pointer"
-                            onClick={(e) => {
+                            className="flex items-center justify-between py-2 cursor-pointer hover:bg-accent"
+                            onSelect={(e) => {
                               e.preventDefault();
                               setSelectedCommunities(prev => 
                                 prev.includes(community.id) 
@@ -1330,9 +1332,11 @@ export function PromptCard({
                                   );
                                 }}
                                 onClick={(e) => e.stopPropagation()}
+                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                data-testid={`checkbox-community-${community.id}`}
                               />
                               <Users className="h-4 w-4 ml-2 mr-2 text-green-500" />
-                              <span className="text-sm">{community.name}</span>
+                              <span className="text-sm text-foreground" data-testid={`text-community-${community.id}`}>{community.name}</span>
                             </div>
                           </DropdownMenuItem>
                         ))}
