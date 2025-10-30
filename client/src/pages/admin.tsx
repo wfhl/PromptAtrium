@@ -139,7 +139,10 @@ export default function AdminPage() {
   // Fetch community collections (when collections modal is open)
   const { data: communityCollections = [], isLoading: collectionsLoading, refetch: refetchCollections } = useQuery<any[]>({
     queryKey: ["/api/collections", selectedCommunityForCollections?.id, "community"],
-    queryFn: () => apiRequest("GET", `/api/collections?communityId=${selectedCommunityForCollections?.id}&type=community`),
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/collections?communityId=${selectedCommunityForCollections?.id}&type=community`);
+      return await response.json();
+    },
     enabled: !!selectedCommunityForCollections && !!user,
   });
 
@@ -148,7 +151,8 @@ export default function AdminPage() {
     queryKey: ["/api/communities", selectedCommunityForInvites?.id, "invites"],
     queryFn: async () => {
       if (!selectedCommunityForInvites) return [];
-      return await apiRequest("GET", `/api/communities/${selectedCommunityForInvites.id}/invites`);
+      const response = await apiRequest("GET", `/api/communities/${selectedCommunityForInvites.id}/invites`);
+      return await response.json();
     },
     enabled: !!selectedCommunityForInvites && !!user,
   });
@@ -158,7 +162,8 @@ export default function AdminPage() {
     queryKey: ["/api/communities", selectedCommunityForMembers?.id, "available-users", userSearchQuery],
     queryFn: async () => {
       if (!selectedCommunityForMembers || userSearchQuery.length < 2) return [];
-      return await apiRequest("GET", `/api/communities/${selectedCommunityForMembers.id}/available-users?search=${userSearchQuery}`);
+      const response = await apiRequest("GET", `/api/communities/${selectedCommunityForMembers.id}/available-users?search=${userSearchQuery}`);
+      return await response.json();
     },
     enabled: !!selectedCommunityForMembers && userSearchQuery.length >= 2 && addMemberModalOpen,
   });

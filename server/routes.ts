@@ -5053,10 +5053,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/communities/:id/invites', requireCommunityAdminRole('id'), async (req: any, res) => {
     try {
       const { id: communityId } = req.params;
-      const invites = await storage.getCommunityInvites({
-        communityId,
-        activeOnly: req.query.active === 'true'
-      });
+      const activeOnly = req.query.active === 'true';
+      
+      // Use appropriate method based on whether filtering for active invites
+      const invites = activeOnly 
+        ? await storage.getActiveInvites(communityId)
+        : await storage.getCommunityInvites(communityId);
+        
       res.json(invites);
     } catch (error) {
       console.error("Error fetching community invites:", error);

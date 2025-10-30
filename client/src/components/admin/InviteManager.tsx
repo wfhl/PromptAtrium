@@ -368,7 +368,7 @@ export function InviteManager({ subCommunityId, existingInvites }: InviteManager
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody>2
                 {existingInvites.map(invite => {
                   const status = getInviteStatus(invite);
                   const StatusIcon = status.icon;
