@@ -1943,23 +1943,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Toggle public/private status
+  // Toggle public/private status with community selection
   app.post('/api/prompts/:id/visibility', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
+      const { communities = [] } = req.body; // Array of community IDs, 'global' means public
       const prompt = await storage.getPrompt(req.params.id);
       
       if (!prompt || prompt.userId !== userId) {
         return res.status(404).json({ message: "Prompt not found or not authorized" });
       }
 
-      const newVisibility = !prompt.isPublic;
-      const updatedPrompt = await storage.updatePrompt(req.params.id, { isPublic: newVisibility });
+      // Check if 'global' is in the communities array (meaning public)
+      const isPublic = communities.includes('global');
       
-      res.json({ isPublic: newVisibility });
+      // Filter out 'global' to get actual community IDs
+      const communityIds = communities.filter((id: string) => id !== 'global');
+      
+      // Update prompt visibility
+      const updatedPrompt = await storage.updatePrompt(req.params.id, { isPublic });
+      
+      // Update community sharing
+      await storage.updatePromptCommunitySharing(req.params.id, communityIds, userId);
+      
+      res.json({ isPublic, communities });
     } catch (error) {
       console.error("Error toggling visibility:", error);
       res.status(500).json({ message: "Failed to toggle visibility" });
+    }
+  });
+  
+  // Get communities a prompt is shared with
+  app.get('/api/prompts/:id/communities', async (req: any, res) => {
+    try {
+      const communityIds = await storage.getPromptSharedCommunities(req.params.id);
+      res.json(communityIds);
+    } catch (error) {
+      console.error("Error fetching prompt communities:", error);
+      res.status(500).json({ message: "Failed to fetch prompt communities" });
     }
   });
 

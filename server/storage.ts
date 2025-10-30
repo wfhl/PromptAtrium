@@ -1071,7 +1071,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Method to update prompt community sharing
-  async updatePromptCommunitySharing(promptId: string, communityIds: string[]): Promise<void> {
+  async updatePromptCommunitySharing(promptId: string, communityIds: string[], sharedBy: string): Promise<void> {
     // First, delete existing sharing entries for this prompt
     await db.delete(promptCommunitySharing).where(eq(promptCommunitySharing.promptId, promptId));
     
@@ -1079,7 +1079,8 @@ export class DatabaseStorage implements IStorage {
     if (communityIds.length > 0) {
       const sharingEntries = communityIds.map(communityId => ({
         promptId,
-        subCommunityId: communityId,
+        communityId,
+        sharedBy,
       }));
       
       await db.insert(promptCommunitySharing).values(sharingEntries);
@@ -1089,11 +1090,11 @@ export class DatabaseStorage implements IStorage {
   // Method to get community IDs a prompt is shared with
   async getPromptSharedCommunities(promptId: string): Promise<string[]> {
     const result = await db
-      .select({ subCommunityId: promptCommunitySharing.subCommunityId })
+      .select({ communityId: promptCommunitySharing.communityId })
       .from(promptCommunitySharing)
       .where(eq(promptCommunitySharing.promptId, promptId));
     
-    return result.map(r => r.subCommunityId);
+    return result.map(r => r.communityId);
   }
 
   async getPromptRelatedData(id: string): Promise<{
