@@ -24,7 +24,8 @@ import {
   Settings,
   FolderOpen,
   BookOpen,
-  Package
+  Package,
+  UserX
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +51,9 @@ export default function CommunityDetail() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<any>(null);
 
   const inviteForm = useForm<InviteFormData>({
     resolver: zodResolver(inviteSchema),
@@ -137,6 +141,51 @@ export default function CommunityDetail() {
       toast({
         title: "Error",
         description: error.response?.data?.message || "Failed to revoke invite",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Leave community mutation
+  const leaveCommunityMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("DELETE", `/api/communities/${id}/leave`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "You have left the community",
+      });
+      // Redirect to communities page
+      window.location.href = "/communities";
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to leave community",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Remove member mutation
+  const removeMemberMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("DELETE", `/api/communities/${id}/members/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/communities/${id}/members`] });
+      toast({
+        title: "Success",
+        description: "Member removed from community",
+      });
+      setRemoveDialogOpen(false);
+      setMemberToRemove(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to remove member",
         variant: "destructive",
       });
     },
@@ -370,10 +419,24 @@ export default function CommunityDetail() {
         <TabsContent value="members" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Community Members</CardTitle>
-              <CardDescription>
-                Users who are part of this community
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Community Members</CardTitle>
+                  <CardDescription>
+                    Users who are part of this community
+                  </CardDescription>
+                </div>
+                {isMember && !isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLeaveDialogOpen(true)}
+                  >
+                    <UserX className="h-4 w-4 mr-2" />
+                    Leave Community
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {membersLoading ? (
@@ -392,12 +455,26 @@ export default function CommunityDetail() {
                           <p className="text-sm text-muted-foreground">@{member.user?.username}</p>
                         </div>
                       </div>
-                      {member.role === "admin" && (
-                        <Badge>
-                          <Shield className="h-3 w-3 mr-1" />
-                          Admin
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {member.role === "admin" && (
+                          <Badge>
+                            <Shield className="h-3 w-3 mr-1" />
+                            Admin
+                          </Badge>
+                        )}
+                        {isAdmin && member.userId !== user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setMemberToRemove(member);
+                              setRemoveDialogOpen(true);
+                            }}
+                          >
+                            <UserX className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -613,6 +690,67 @@ export default function CommunityDetail() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Leave Community Dialog */}
+      <Dialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Leave Community</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to leave {community.name}? You will need to be invited again to rejoin.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setLeaveDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => leaveCommunityMutation.mutate()}
+              disabled={leaveCommunityMutation.isPending}
+            >
+              Leave Community
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Remove Member Dialog */}
+      <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove {memberToRemove?.user?.username || 'this member'} from {community.name}? They will need to be invited again to rejoin.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRemoveDialogOpen(false);
+                setMemberToRemove(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (memberToRemove?.userId) {
+                  removeMemberMutation.mutate(memberToRemove.userId);
+                }
+              }}
+              disabled={removeMemberMutation.isPending}
+            >
+              Remove Member
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
