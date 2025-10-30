@@ -14,14 +14,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Lightbulb, Search, Filter, Star, TrendingUp, Clock, Eye,
   Users, UserPlus, UserMinus, Hash, Heart, GitBranch,
-  Share2, BookOpen, Folder, ChevronRight
+  Share2, BookOpen, Folder, ChevronRight, Building, Lock,
+  Globe
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
 import { MultiSelectFilters } from "@/components/MultiSelectFilters";
 import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } from "@/components/MultiSelectFilters";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Prompt, User, Collection } from "@shared/schema";
+import type { Prompt, User, Collection, Community, UserCommunity } from "@shared/schema";
 import { ShineBorder } from "@/components/ui/shine-border";
 
 export default function Community() {
@@ -278,6 +279,23 @@ export default function Community() {
     enabled: isAuthenticated && currentUserId && activeTab === "followed",
   });
 
+  // Fetch user's communities
+  const { data: userCommunities = [] } = useQuery<UserCommunity[]>({
+    queryKey: ["/api/user/communities"],
+    enabled: isAuthenticated,
+  });
+
+  // Fetch all communities to get the details
+  const { data: allCommunities = [] } = useQuery<Community[]>({
+    queryKey: ["/api/communities"],
+    enabled: isAuthenticated && userCommunities.length > 0,
+  });
+
+  // Filter to get user's communities with full details
+  const myCommunities = allCommunities.filter(c => 
+    userCommunities.some(uc => uc.communityId === c.id)
+  );
+
   // Activities query removed - Activity tab no longer exists
 
   // Check follow status for all users
@@ -412,6 +430,73 @@ export default function Community() {
 
   return (
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 lg:pb-8">
+      {/* My Communities Section */}
+      {myCommunities.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Building className="h-5 w-5" />
+              My Communities
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {/* Global Community (always show first if user has access) */}
+              {myCommunities.some(c => c.parentCommunityId === null) && (
+                <Link href="/community">
+                  <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Globe className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">Global Community</p>
+                          <p className="text-xs text-muted-foreground">Public Content</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
+              
+              {/* Private Communities */}
+              {myCommunities
+                .filter(c => c.parentCommunityId !== null)
+                .map((community) => {
+                  const membership = userCommunities.find(uc => uc.communityId === community.id);
+                  const isAdmin = membership?.role === 'admin';
+                  
+                  return (
+                    <Link key={community.id} href={`/community/${community.id}`}>
+                      <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="p-2 bg-muted rounded-lg">
+                              <Lock className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{community.name}</p>
+                              <div className="flex items-center gap-1">
+                                <p className="text-xs text-muted-foreground">Private</p>
+                                {isAdmin && (
+                                  <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                    Admin
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => {
         setActiveTab(value);
