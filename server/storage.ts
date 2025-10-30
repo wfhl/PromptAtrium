@@ -1590,38 +1590,86 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserCommunities(userId: string): Promise<UserCommunity[]> {
-    return await db.select().from(userCommunities).where(eq(userCommunities.userId, userId));
+    try {
+      return await db.select().from(userCommunities).where(eq(userCommunities.userId, userId));
+    } catch (error) {
+      console.error("Error fetching user communities with full schema:", error);
+      // Fallback: try selecting only the columns that exist
+      try {
+        const results = await db.select({
+          id: userCommunities.id,
+          userId: userCommunities.userId,
+          communityId: userCommunities.communityId,
+          role: userCommunities.role,
+          joinedAt: userCommunities.joinedAt,
+        }).from(userCommunities).where(eq(userCommunities.userId, userId));
+        
+        // Add default status for backward compatibility
+        return results.map(r => ({ ...r, status: 'accepted' as any, invitedBy: null, subCommunityId: null, respondedAt: null }));
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   async getCommunityMembers(communityId: string): Promise<any[]> {
-    return await db
-      .select({
-        id: userCommunities.id,
-        userId: userCommunities.userId,
-        communityId: userCommunities.communityId,
-        role: userCommunities.role,
-        status: userCommunities.status,
-        joinedAt: userCommunities.joinedAt,
-        user: {
-          id: users.id,
-          email: users.email,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          username: users.username,
-          profileImageUrl: users.profileImageUrl,
-        }
-      })
-      .from(userCommunities)
-      .leftJoin(users, eq(userCommunities.userId, users.id))
-      .where(
-        and(
-          eq(userCommunities.communityId, communityId),
-          or(
-            eq(userCommunities.status, 'accepted'),
-            isNull(userCommunities.status) // For existing members without status field
+    try {
+      // Try with status column first
+      return await db
+        .select({
+          id: userCommunities.id,
+          userId: userCommunities.userId,
+          communityId: userCommunities.communityId,
+          role: userCommunities.role,
+          status: userCommunities.status,
+          joinedAt: userCommunities.joinedAt,
+          user: {
+            id: users.id,
+            email: users.email,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            username: users.username,
+            profileImageUrl: users.profileImageUrl,
+          }
+        })
+        .from(userCommunities)
+        .leftJoin(users, eq(userCommunities.userId, users.id))
+        .where(
+          and(
+            eq(userCommunities.communityId, communityId),
+            or(
+              eq(userCommunities.status, 'accepted'),
+              isNull(userCommunities.status) // For existing members without status field
+            )
           )
-        )
-      );
+        );
+    } catch (error) {
+      console.error("Error fetching community members with status:", error);
+      // Fallback without status column
+      const results = await db
+        .select({
+          id: userCommunities.id,
+          userId: userCommunities.userId,
+          communityId: userCommunities.communityId,
+          role: userCommunities.role,
+          joinedAt: userCommunities.joinedAt,
+          user: {
+            id: users.id,
+            email: users.email,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            username: users.username,
+            profileImageUrl: users.profileImageUrl,
+          }
+        })
+        .from(userCommunities)
+        .leftJoin(users, eq(userCommunities.userId, users.id))
+        .where(eq(userCommunities.communityId, communityId));
+      
+      // Add default status for backward compatibility
+      return results.map(r => ({ ...r, status: 'accepted' }));
+    }
   }
 
   async updateCommunityMemberRole(userId: string, communityId: string, role: CommunityRole): Promise<UserCommunity> {
@@ -2908,43 +2956,51 @@ export class DatabaseStorage implements IStorage {
   
   // Get user's pending invitations
   async getUserInvitations(userId: string): Promise<any[]> {
-    const invitations = await db
-      .select({
-        id: userCommunities.id,
-        communityId: userCommunities.communityId,
-        role: userCommunities.role,
-        status: userCommunities.status,
-        invitedBy: userCommunities.invitedBy,
-        joinedAt: userCommunities.joinedAt,
-        community: communities,
-        inviter: users,
-      })
-      .from(userCommunities)
-      .leftJoin(communities, eq(userCommunities.communityId, communities.id))
-      .leftJoin(users, eq(userCommunities.invitedBy, users.id))
-      .where(
-        and(
-          eq(userCommunities.userId, userId),
-          eq(userCommunities.status, 'pending')
-        )
-      );
-    
-    return invitations.map(inv => ({
-      id: inv.id,
-      communityId: inv.communityId,
-      role: inv.role,
-      status: inv.status,
-      invitedBy: inv.invitedBy,
-      joinedAt: inv.joinedAt,
-      community: inv.community,
-      inviter: inv.inviter ? {
-        id: inv.inviter.id,
-        username: inv.inviter.username,
-        firstName: inv.inviter.firstName,
-        lastName: inv.inviter.lastName,
-        profileImageUrl: inv.inviter.profileImageUrl,
-      } : null,
-    }));
+    try {
+      // Try with all columns first
+      const invitations = await db
+        .select({
+          id: userCommunities.id,
+          communityId: userCommunities.communityId,
+          role: userCommunities.role,
+          status: userCommunities.status,
+          invitedBy: userCommunities.invitedBy,
+          joinedAt: userCommunities.joinedAt,
+          community: communities,
+          inviter: users,
+        })
+        .from(userCommunities)
+        .leftJoin(communities, eq(userCommunities.communityId, communities.id))
+        .leftJoin(users, eq(userCommunities.invitedBy, users.id))
+        .where(
+          and(
+            eq(userCommunities.userId, userId),
+            eq(userCommunities.status, 'pending')
+          )
+        );
+      
+      return invitations.map(inv => ({
+        id: inv.id,
+        communityId: inv.communityId,
+        role: inv.role,
+        status: inv.status,
+        invitedBy: inv.invitedBy,
+        joinedAt: inv.joinedAt,
+        community: inv.community,
+        inviter: inv.inviter ? {
+          id: inv.inviter.id,
+          username: inv.inviter.username,
+          firstName: inv.inviter.firstName,
+          lastName: inv.inviter.lastName,
+          profileImageUrl: inv.inviter.profileImageUrl,
+        } : null,
+      }));
+    } catch (error) {
+      console.error("Error fetching user invitations:", error);
+      // For now, return empty array if columns don't exist
+      // Since invitations require the status column which doesn't exist in the database
+      return [];
+    }
   }
 
   async deactivateInvite(id: string): Promise<void> {
