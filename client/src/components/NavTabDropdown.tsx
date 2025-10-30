@@ -76,7 +76,10 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
     width: 0
   });
   const [location, setLocation] = useLocation();
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+  // Initialize selectedCommunityId from URL
+  const currentParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+  const urlCommunityId = currentParams.get('communityId');
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(urlCommunityId);
   const { user } = useAuth();
 
   // Fetch user's communities for community page
@@ -103,6 +106,15 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
 
   const config = PAGE_CONFIGS[page];
   const Icon = config.icon;
+
+  // Keep selectedCommunityId in sync with URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+    const communityId = params.get('communityId');
+    if (communityId !== selectedCommunityId) {
+      setSelectedCommunityId(communityId);
+    }
+  }, [location]);
 
   useEffect(() => {
     if (isOpen && buttonRef.current) {
@@ -290,7 +302,19 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
                     }
                   } else {
                     // Other pages use tab parameters
-                    href = `${config.path}?tab=${tab.tab}`;
+                    // Preserve communityId if we're on the community page
+                    if (page === 'community') {
+                      const currentParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+                      const currentCommunityId = currentParams.get('communityId');
+                      const newParams = new URLSearchParams();
+                      newParams.set('tab', tab.tab);
+                      if (currentCommunityId) {
+                        newParams.set('communityId', currentCommunityId);
+                      }
+                      href = `${config.path}?${newParams.toString()}`;
+                    } else {
+                      href = `${config.path}?tab=${tab.tab}`;
+                    }
                   }
                   
                   return (
