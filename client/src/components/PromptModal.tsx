@@ -16,6 +16,7 @@ import type { Prompt, Collection } from "@shared/schema";
 import { PromptImageUploader } from "./PromptImageUploader";
 import { PromptAIExtractor } from "./PromptAIExtractor";
 import { PromptAutoFill } from "./PromptAutoFill";
+import { CommunityVisibilitySelector } from "./CommunityVisibilitySelector";
 
 interface PromptModalProps {
   open: boolean;
@@ -31,6 +32,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDescription, setNewCollectionDescription] = useState("");
   const [newCollectionIsPublic, setNewCollectionIsPublic] = useState(false);
+  const [selectedCommunityIds, setSelectedCommunityIds] = useState<string[]>([]);
 
   // States for creating new options
   const [showCreateCategory, setShowCreateCategory] = useState(false);
@@ -427,6 +429,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         collectionId: data.collectionId === "none" ? null : data.collectionId,
         exampleImagesUrl: data.exampleImages || [],
         recommendedModels: data.recommendedModels ? data.recommendedModels.split(",").map((model: string) => model.trim()) : [],
+        sharedCommunityIds: selectedCommunityIds, // Add community sharing
         technicalParams: data.technicalParams && data.technicalParams.trim() ? (() => {
           try {
             return JSON.parse(data.technicalParams);
@@ -527,6 +530,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
         collectionId: data.collectionId === "none" ? null : data.collectionId,
         exampleImagesUrl: data.exampleImages || [],
         recommendedModels: data.recommendedModels ? data.recommendedModels.split(",").map((model: string) => model.trim()) : [],
+        sharedCommunityIds: selectedCommunityIds, // Add community sharing
         technicalParams: data.technicalParams && data.technicalParams.trim() ? (() => {
           try {
             return JSON.parse(data.technicalParams);
@@ -959,34 +963,32 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="visibility">Visibility</Label>
-              <Select value={formData.isPublic ? "public" : "private"} onValueChange={(value) => setFormData({ ...formData, isPublic: value === "public" })}>
-                <SelectTrigger data-testid="select-visibility">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="private">Private</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-6">
+            <CommunityVisibilitySelector
+              isPublic={formData.isPublic}
+              selectedCommunityIds={selectedCommunityIds}
+              onVisibilityChange={(isPublic, communityIds) => {
+                setFormData({ ...formData, isPublic });
+                setSelectedCommunityIds(communityIds);
+              }}
+              showLabel={true}
+            />
 
-
-            <div>
-              <Label htmlFor="license">License</Label>
-              <Select value={formData.license} onValueChange={(value) => setFormData({ ...formData, license: value })}>
-                <SelectTrigger data-testid="select-license">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CC0 (Public Domain)">CC0 (Public Domain)</SelectItem>
-                  <SelectItem value="CC BY (Attribution)">CC BY (Attribution)</SelectItem>
-                  <SelectItem value="CC BY-SA (Share Alike)">CC BY-SA (Share Alike)</SelectItem>
-                  <SelectItem value="All Rights Reserved">All Rights Reserved</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="license">License</Label>
+                <Select value={formData.license} onValueChange={(value) => setFormData({ ...formData, license: value })}>
+                  <SelectTrigger data-testid="select-license">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CC0 (Public Domain)">CC0 (Public Domain)</SelectItem>
+                    <SelectItem value="CC BY (Attribution)">CC BY (Attribution)</SelectItem>
+                    <SelectItem value="CC BY-SA (Share Alike)">CC BY-SA (Share Alike)</SelectItem>
+                    <SelectItem value="All Rights Reserved">All Rights Reserved</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
