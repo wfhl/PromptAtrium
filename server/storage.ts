@@ -992,21 +992,37 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async createPrompt(prompt: InsertPrompt): Promise<Prompt> {
+  async createPrompt(prompt: InsertPrompt & { sharedCommunityIds?: string[] }): Promise<Prompt> {
     const id = generatePromptId();
+    const { sharedCommunityIds, ...promptData } = prompt;
+    
     const [newPrompt] = await db
       .insert(prompts)
-      .values({ ...prompt, id })
+      .values({ ...promptData, id })
       .returning();
+    
+    // Handle community sharing if specified
+    if (sharedCommunityIds && sharedCommunityIds.length > 0) {
+      await this.updatePromptCommunitySharing(newPrompt.id, sharedCommunityIds);
+    }
+    
     return newPrompt;
   }
 
-  async updatePrompt(id: string, prompt: Partial<InsertPrompt>): Promise<Prompt> {
+  async updatePrompt(id: string, prompt: Partial<InsertPrompt> & { sharedCommunityIds?: string[] }): Promise<Prompt> {
+    const { sharedCommunityIds, ...promptData } = prompt;
+    
     const [updatedPrompt] = await db
       .update(prompts)
-      .set({ ...prompt, updatedAt: new Date() })
+      .set({ ...promptData, updatedAt: new Date() })
       .where(eq(prompts.id, id))
       .returning();
+    
+    // Handle community sharing if specified
+    if (sharedCommunityIds !== undefined) {
+      await this.updatePromptCommunitySharing(id, sharedCommunityIds);
+    }
+    
     return updatedPrompt;
   }
 
@@ -1021,6 +1037,9 @@ export class DatabaseStorage implements IStorage {
     // Delete all ratings for this prompt
     await db.delete(promptRatings).where(eq(promptRatings.promptId, id));
     
+    // Delete all community sharing entries for this prompt
+    await db.delete(promptCommunitySharing).where(eq(promptCommunitySharing.promptId, id));
+    
     // Delete all activities related to this prompt
     await db.delete(activities).where(
       and(
@@ -1031,6 +1050,32 @@ export class DatabaseStorage implements IStorage {
     
     // Now delete the prompt itself
     await db.delete(prompts).where(eq(prompts.id, id));
+  }
+
+  // Method to update prompt community sharing
+  async updatePromptCommunitySharing(promptId: string, communityIds: string[]): Promise<void> {
+    // First, delete existing sharing entries for this prompt
+    await db.delete(promptCommunitySharing).where(eq(promptCommunitySharing.promptId, promptId));
+    
+    // Then, insert new sharing entries
+    if (communityIds.length > 0) {
+      const sharingEntries = communityIds.map(communityId => ({
+        promptId,
+        subCommunityId: communityId,
+      }));
+      
+      await db.insert(promptCommunitySharing).values(sharingEntries);
+    }
+  }
+
+  // Method to get community IDs a prompt is shared with
+  async getPromptSharedCommunities(promptId: string): Promise<string[]> {
+    const result = await db
+      .select({ subCommunityId: promptCommunitySharing.subCommunityId })
+      .from(promptCommunitySharing)
+      .where(eq(promptCommunitySharing.promptId, promptId));
+    
+    return result.map(r => r.subCommunityId);
   }
 
   async getPromptRelatedData(id: string): Promise<{
@@ -1312,22 +1357,67 @@ export class DatabaseStorage implements IStorage {
     return collection;
   }
 
-  async createCollection(collection: InsertCollection): Promise<Collection> {
-    const [newCollection] = await db.insert(collections).values(collection).returning();
+  async createCollection(collection: InsertCollection & { sharedCommunityIds?: string[] }): Promise<Collection> {
+    const { sharedCommunityIds, ...collectionData } = collection;
+    
+    const [newCollection] = await db.insert(collections).values(collectionData).returning();
+    
+    // Handle community sharing if specified
+    if (sharedCommunityIds && sharedCommunityIds.length > 0) {
+      await this.updateCollectionCommunitySharing(newCollection.id, sharedCommunityIds);
+    }
+    
     return newCollection;
   }
 
-  async updateCollection(id: string, collection: Partial<InsertCollection>): Promise<Collection> {
+  async updateCollection(id: string, collection: Partial<InsertCollection> & { sharedCommunityIds?: string[] }): Promise<Collection> {
+    const { sharedCommunityIds, ...collectionData } = collection;
+    
     const [updatedCollection] = await db
       .update(collections)
-      .set({ ...collection, updatedAt: new Date() })
+      .set({ ...collectionData, updatedAt: new Date() })
       .where(eq(collections.id, id))
       .returning();
+    
+    // Handle community sharing if specified
+    if (sharedCommunityIds !== undefined) {
+      await this.updateCollectionCommunitySharing(id, sharedCommunityIds);
+    }
+    
     return updatedCollection;
   }
 
   async deleteCollection(id: string): Promise<void> {
+    // Delete community sharing entries first
+    await db.delete(collectionCommunitySharing).where(eq(collectionCommunitySharing.collectionId, id));
+    // Then delete the collection
     await db.delete(collections).where(eq(collections.id, id));
+  }
+
+  // Method to update collection community sharing
+  async updateCollectionCommunitySharing(collectionId: string, communityIds: string[]): Promise<void> {
+    // First, delete existing sharing entries for this collection
+    await db.delete(collectionCommunitySharing).where(eq(collectionCommunitySharing.collectionId, collectionId));
+    
+    // Then, insert new sharing entries
+    if (communityIds.length > 0) {
+      const sharingEntries = communityIds.map(communityId => ({
+        collectionId,
+        subCommunityId: communityId,
+      }));
+      
+      await db.insert(collectionCommunitySharing).values(sharingEntries);
+    }
+  }
+
+  // Method to get community IDs a collection is shared with
+  async getCollectionSharedCommunities(collectionId: string): Promise<string[]> {
+    const result = await db
+      .select({ subCommunityId: collectionCommunitySharing.subCommunityId })
+      .from(collectionCommunitySharing)
+      .where(eq(collectionCommunitySharing.collectionId, collectionId));
+    
+    return result.map(r => r.subCommunityId);
   }
 
   // Community operations - returns only global community to non-members
