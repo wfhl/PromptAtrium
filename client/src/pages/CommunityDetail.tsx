@@ -22,12 +22,14 @@ import {
   Trash2,
   ArrowLeft,
   Settings,
-  FolderOpen
+  FolderOpen,
+  BookOpen,
+  Package
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Community, UserCommunity } from "@shared/schema";
+import type { Community, UserCommunity, Collection } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -84,6 +86,12 @@ export default function CommunityDetail() {
   // Fetch community prompts
   const { data: prompts = [], isLoading: promptsLoading } = useQuery({
     queryKey: [`/api/prompts?communityId=${id}`],
+    enabled: !!membership,
+  });
+
+  // Fetch community collections
+  const { data: collections = [], isLoading: collectionsLoading } = useQuery<Collection[]>({
+    queryKey: [`/api/collections?communityId=${id}`],
     enabled: !!membership,
   });
 
@@ -225,6 +233,10 @@ export default function CommunityDetail() {
             <FolderOpen className="h-4 w-4 mr-2" />
             Prompts ({prompts.length})
           </TabsTrigger>
+          <TabsTrigger value="collections">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Collections ({collections.length})
+          </TabsTrigger>
           <TabsTrigger value="members">
             <Users className="h-4 w-4 mr-2" />
             Members ({members.length})
@@ -267,6 +279,89 @@ export default function CommunityDetail() {
                 <p className="text-center text-muted-foreground py-8">
                   No prompts shared yet
                 </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="collections" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Community Collections</CardTitle>
+                  <CardDescription>
+                    Collections shared within this community
+                  </CardDescription>
+                </div>
+                {isAdmin && (
+                  <Link href={`/collections/new?communityId=${id}`}>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Collection
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {collectionsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <Skeleton key={i} className="h-32" />
+                  ))}
+                </div>
+              ) : collections.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {collections.map((collection) => (
+                    <Card key={collection.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <Package className="h-4 w-4" />
+                              {collection.name}
+                            </h4>
+                            {collection.description && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                {collection.description}
+                              </p>
+                            )}
+                          </div>
+                          {collection.isPublic && (
+                            <Badge variant="secondary">Public</Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span>
+                            Created by {collection.userId === user?.id ? "you" : "member"}
+                          </span>
+                          <Link href={`/collections/${collection.id}`}>
+                            <Button variant="ghost" size="sm">
+                              View
+                              <ArrowLeft className="h-4 w-4 ml-1 rotate-180" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No collections shared yet</p>
+                  {isAdmin && (
+                    <Link href={`/collections/new?communityId=${id}`}>
+                      <Button variant="outline" className="mt-4">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create First Collection
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
