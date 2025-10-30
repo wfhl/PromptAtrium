@@ -125,7 +125,10 @@ export const userCommunities = pgTable("user_communities", {
   communityId: varchar("community_id").notNull().references(() => communities.id),
   subCommunityId: varchar("sub_community_id").references(() => communities.id),
   role: varchar("role", { enum: ["member", "admin"] }).default("member"),
+  status: varchar("status", { enum: ["pending", "accepted", "rejected"] }).default("pending"),
+  invitedBy: varchar("invited_by").references(() => users.id),
   joinedAt: timestamp("joined_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
 }, (table) => [
   // Foreign key indexes
   index("idx_user_communities_user_id").on(table.userId),
