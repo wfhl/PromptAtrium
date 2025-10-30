@@ -339,26 +339,32 @@ export default function AdminPage() {
       // Check if this is a sub-community
       const isSubCommunity = selectedCommunityForMembers.parentCommunityId !== null;
       
+      let response;
       if (isSubCommunity) {
         // Use sub-community invite endpoint
-        return await apiRequest("POST", `/api/sub-communities/${selectedCommunityForMembers.id}/invites`, {
+        response = await apiRequest("POST", `/api/sub-communities/${selectedCommunityForMembers.id}/invites`, {
           maxUses: data.maxUses || 10,
           expiresAt: expiresAt?.toISOString(),
           role: data.role,
         });
       } else {
         // Use regular community invite endpoint
-        return await apiRequest("POST", `/api/communities/${selectedCommunityForMembers.id}/invites`, {
+        response = await apiRequest("POST", `/api/communities/${selectedCommunityForMembers.id}/invites`, {
           maxUses: data.maxUses || 10,
           expiresAt: expiresAt?.toISOString(),
         });
       }
+      
+      return await response.json();
     },
     onSuccess: (data) => {
       // Generate the invite link
       const baseUrl = window.location.origin;
       const inviteLink = `${baseUrl}/invite/${data.code}`;
       setGeneratedInviteLink(inviteLink);
+      
+      // Refetch invites to show the new one immediately
+      refetchInvites();
       
       toast({
         title: "Success",
