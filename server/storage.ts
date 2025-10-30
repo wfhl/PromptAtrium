@@ -1447,6 +1447,31 @@ export class DatabaseStorage implements IStorage {
       communityId,
       role,
     }).returning();
+    
+    // Get community details for notification
+    const community = await this.getCommunity(communityId);
+    if (community) {
+      // Don't send notifications for the global/general community (it's public)
+      if (community.slug !== 'global' && community.slug !== 'general') {
+        // Create notification for the user being added to the private community
+        const roleText = role === 'admin' ? 'an admin' : 'a member';
+        await this.createNotification({
+          userId,
+          type: 'community_join',
+          message: `You have been added to the community "${community.name}" as ${roleText}`,
+          relatedUserId: null,
+          relatedPromptId: null,
+          relatedListId: null,
+          isRead: false,
+          metadata: { 
+            communityId,
+            communityName: community.name,
+            role
+          }
+        });
+      }
+    }
+    
     return membership;
   }
 
@@ -2615,6 +2640,26 @@ export class DatabaseStorage implements IStorage {
         joinedAt: new Date(),
       });
     });
+    
+    // Create notification for joining private community via invite
+    // Don't send notifications for the global/general community (it's public)
+    if (community.slug !== 'global' && community.slug !== 'general') {
+      await this.createNotification({
+        userId,
+        type: 'community_join',
+        message: `You have successfully joined the community "${community.name}" as a member using an invite link`,
+        relatedUserId: null,
+        relatedPromptId: null,
+        relatedListId: null,
+        isRead: false,
+        metadata: { 
+          communityId: community.id,
+          communityName: community.name,
+          role: 'member',
+          joinMethod: 'invite'
+        }
+      });
+    }
     
     return { 
       success: true, 
