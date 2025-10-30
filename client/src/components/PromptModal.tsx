@@ -1216,17 +1216,15 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="newCollectionIsPublic"
-              checked={newCollectionIsPublic}
-              onChange={(e) => setNewCollectionIsPublic(e.target.checked)}
-              className="h-4 w-4"
-              data-testid="checkbox-new-collection-public"
-            />
-            <Label htmlFor="newCollectionIsPublic">Make collection public</Label>
-          </div>
+          <CommunityVisibilitySelector
+            isPublic={newCollectionIsPublic}
+            selectedCommunityIds={selectedCommunityIds}
+            onVisibilityChange={(isPublic, communityIds) => {
+              setNewCollectionIsPublic(isPublic);
+              setSelectedCommunityIds(communityIds);
+            }}
+            showLabel={true}
+          />
         </div>
 
         <div className="flex items-center justify-end space-x-4 pt-4">

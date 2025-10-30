@@ -19,6 +19,7 @@ import { PromptModal } from "@/components/PromptModal";
 import { BulkEditToolbar } from "@/components/BulkEditToolbar";
 import { BulkEditModal } from "@/components/BulkEditModal";
 import { BulkImportModal } from "@/components/BulkImportModal";
+import { CommunityVisibilitySelector } from "@/components/CommunityVisibilitySelector";
 import { CollectionItem } from "@/components/CollectionItem";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -136,6 +137,8 @@ export default function Library() {
   const [privacyUpdateDialogOpen, setPrivacyUpdateDialogOpen] = useState(false);
   const [updatePromptsPrivacy, setUpdatePromptsPrivacy] = useState(false);
   const [pendingCollectionData, setPendingCollectionData] = useState<CollectionFormData | null>(null);
+  const [createCollectionCommunityIds, setCreateCollectionCommunityIds] = useState<string[]>([]);
+  const [editCollectionCommunityIds, setEditCollectionCommunityIds] = useState<string[]>([]);
 
   // Collection forms
   const createCollectionForm = useForm<CollectionFormData>({
@@ -251,6 +254,7 @@ export default function Library() {
       return await apiRequest("POST", "/api/collections", {
         ...data,
         type: "user",
+        sharedCommunityIds: createCollectionCommunityIds,
       });
     },
     onSuccess: () => {
@@ -277,7 +281,10 @@ export default function Library() {
       const url = updatePrompts 
         ? `/api/collections/${selectedCollection?.id}?updatePrompts=true`
         : `/api/collections/${selectedCollection?.id}`;
-      return await apiRequest("PUT", url, data);
+      return await apiRequest("PUT", url, {
+        ...data,
+        sharedCommunityIds: editCollectionCommunityIds,
+      });
     },
     onSuccess: () => {
       refetchCollections();
@@ -1066,22 +1073,16 @@ export default function Library() {
                           control={createCollectionForm.control}
                           name="isPublic"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                              <div className="space-y-0.5">
-                                <FormLabel>Make Public</FormLabel>
-                                <div className="text-sm text-muted-foreground">
-                                  Allow others to discover and view this collection
-                                </div>
-                              </div>
-                              <FormControl>
-                                <input
-                                  type="checkbox"
-                                  checked={field.value}
-                                  onChange={field.onChange}
-                                  className="h-4 w-4"
-                                  data-testid="checkbox-collection-public"
-                                />
-                              </FormControl>
+                            <FormItem>
+                              <CommunityVisibilitySelector
+                                isPublic={field.value}
+                                selectedCommunityIds={createCollectionCommunityIds}
+                                onVisibilityChange={(isPublic, communityIds) => {
+                                  field.onChange(isPublic);
+                                  setCreateCollectionCommunityIds(communityIds);
+                                }}
+                                showLabel={true}
+                              />
                             </FormItem>
                           )}
                         />
@@ -1429,22 +1430,16 @@ export default function Library() {
                 control={editCollectionForm.control}
                 name="isPublic"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel>Make Public</FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        Allow others to discover and view this collection
-                      </div>
-                    </div>
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        className="h-4 w-4"
-                        data-testid="checkbox-edit-collection-public"
-                      />
-                    </FormControl>
+                  <FormItem>
+                    <CommunityVisibilitySelector
+                      isPublic={field.value}
+                      selectedCommunityIds={editCollectionCommunityIds}
+                      onVisibilityChange={(isPublic, communityIds) => {
+                        field.onChange(isPublic);
+                        setEditCollectionCommunityIds(communityIds);
+                      }}
+                      showLabel={true}
+                    />
                   </FormItem>
                 )}
               />
