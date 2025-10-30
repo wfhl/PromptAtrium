@@ -12,6 +12,7 @@ import {
   communities,
   userCommunities,
   communityAdmins,
+  promptCommunitySharing,
   subCommunityAdmins,
   communityInvites,
   subCommunityInvites,
