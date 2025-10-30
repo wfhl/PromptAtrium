@@ -795,7 +795,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sortBy,
         limit,
         offset = "0",
-        subCommunityId
+        subCommunityId,
+        communityId
       } = req.query;
 
       // Get the current user's NSFW preference if authenticated
@@ -818,6 +819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         offset: parseInt(offset as string),
         showNsfw: showNsfw,
         subCommunityId: subCommunityId as string,
+        communityId: communityId as string, // For filtering by shared community
         authenticatedUserId: req.user?.claims?.sub, // Pass the authenticated user's ID for access control
       };
       

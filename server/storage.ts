@@ -664,6 +664,7 @@ export class DatabaseStorage implements IStorage {
     intendedGenerators?: string[];
     collectionIds?: string[];
     collectionId?: string;
+    communityId?: string; // For filtering by shared community
     search?: string;
     limit?: number;
     offset?: number;
@@ -762,6 +763,12 @@ export class DatabaseStorage implements IStorage {
     // Filter by single collectionId field
     if (options.collectionId) {
       conditions.push(eq(prompts.collectionId, options.collectionId));
+    }
+    
+    // Filter by shared community through junction table
+    if (options.communityId) {
+      // Need to join with promptCommunitySharing to filter by shared communities
+      // We'll handle this in the query builder below since it requires a join
     }
     
     if (options.search) {
@@ -885,13 +892,24 @@ export class DatabaseStorage implements IStorage {
       }
     })
     .from(prompts)
-    .leftJoin(users, eq(prompts.userId, users.id))
-    .$dynamic();
+    .leftJoin(users, eq(prompts.userId, users.id));
     
-    // Apply conditions if any
-    if (conditions.length > 0) {
-      queryBuilder = queryBuilder.where(and(...conditions));
+    // If filtering by communityId, join with the promptCommunitySharing table
+    if (options.communityId) {
+      queryBuilder = queryBuilder
+        .innerJoin(promptCommunitySharing, eq(prompts.id, promptCommunitySharing.promptId))
+        .where(and(
+          eq(promptCommunitySharing.subCommunityId, options.communityId),
+          ...(conditions.length > 0 ? conditions : [])
+        ));
+    } else {
+      // Apply conditions normally if not filtering by community
+      if (conditions.length > 0) {
+        queryBuilder = queryBuilder.where(and(...conditions));
+      }
     }
+    
+    queryBuilder = queryBuilder.$dynamic();
     
     // Apply ordering
     queryBuilder = queryBuilder.orderBy(desc(prompts.updatedAt));
