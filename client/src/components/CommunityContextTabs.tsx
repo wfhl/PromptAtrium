@@ -33,12 +33,13 @@ export function CommunityContextTabs({
   });
 
   // Filter to get user's private communities with full details
+  // Include communities where user is a member (accepted status or no status field for backward compatibility)
   const privateCommunities = allCommunities.filter(c => 
     c.slug !== 'global' && 
     c.slug !== 'general' &&
     userCommunities.some(uc => 
       uc.communityId === c.id && 
-      (uc.status === 'accepted' || !uc.status)
+      (uc.status === 'accepted' || uc.status === null || uc.status === undefined || !('status' in uc))
     )
   );
 
@@ -52,9 +53,13 @@ export function CommunityContextTabs({
     onCommunityChange(value === "global" ? null : value);
   };
 
-  // Don't render if user has no private communities
-  if (privateCommunities.length === 0) {
-    return null;
+  // Always render tabs, but only show them if there are communities to switch between
+  // Show tabs if user has private communities OR if they are currently viewing a community
+  const shouldShowTabs = privateCommunities.length > 0;
+  
+  if (!shouldShowTabs) {
+    return null; // For now, don't show tabs if only global community exists
+    // TODO: Consider always showing tabs for consistency
   }
 
   // Mobile variant for dropdown
