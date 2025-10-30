@@ -253,6 +253,38 @@ export const collections = pgTable("collections", {
   index("idx_collections_user_id").on(table.userId),
 ]);
 
+// Prompt community sharing table - tracks which communities a prompt is shared with
+export const promptCommunitySharing = pgTable("prompt_community_sharing", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id, { onDelete: "cascade" }),
+  communityId: varchar("community_id").notNull().references(() => communities.id, { onDelete: "cascade" }),
+  sharedBy: varchar("shared_by").notNull().references(() => users.id),
+  sharedAt: timestamp("shared_at").defaultNow(),
+}, (table) => [
+  // Composite unique constraint
+  unique().on(table.promptId, table.communityId),
+  // Indexes for efficient queries
+  index("idx_prompt_community_sharing_prompt").on(table.promptId),
+  index("idx_prompt_community_sharing_community").on(table.communityId),
+  index("idx_prompt_community_sharing_user").on(table.sharedBy),
+]);
+
+// Collection community sharing table - tracks which communities a collection is shared with  
+export const collectionCommunitySharing = pgTable("collection_community_sharing", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: varchar("collection_id").notNull().references(() => collections.id, { onDelete: "cascade" }),
+  communityId: varchar("community_id").notNull().references(() => communities.id, { onDelete: "cascade" }),
+  sharedBy: varchar("shared_by").notNull().references(() => users.id),
+  sharedAt: timestamp("shared_at").defaultNow(),
+}, (table) => [
+  // Composite unique constraint
+  unique().on(table.collectionId, table.communityId),
+  // Indexes for efficient queries
+  index("idx_collection_community_sharing_collection").on(table.collectionId),
+  index("idx_collection_community_sharing_community").on(table.communityId),
+  index("idx_collection_community_sharing_user").on(table.sharedBy),
+]);
+
 // Categories table
 export const categories = pgTable("categories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1254,6 +1286,16 @@ export const insertCommunityInviteSchema = createInsertSchema(communityInvites).
   currentUses: true,
 });
 
+export const insertPromptCommunitySharingSchema = createInsertSchema(promptCommunitySharing).omit({
+  id: true,
+  sharedAt: true,
+});
+
+export const insertCollectionCommunitySharingSchema = createInsertSchema(collectionCommunitySharing).omit({
+  id: true,
+  sharedAt: true,
+});
+
 export const insertPromptRatingSchema = createInsertSchema(promptRatings).omit({
   id: true,
   createdAt: true,
@@ -1504,6 +1546,10 @@ export type InsertCommunityAdmin = z.infer<typeof insertCommunityAdminSchema>;
 export type CommunityAdmin = typeof communityAdmins.$inferSelect;
 export type InsertCommunityInvite = z.infer<typeof insertCommunityInviteSchema>;
 export type CommunityInvite = typeof communityInvites.$inferSelect;
+export type InsertPromptCommunitySharing = z.infer<typeof insertPromptCommunitySharingSchema>;
+export type PromptCommunitySharing = typeof promptCommunitySharing.$inferSelect;
+export type InsertCollectionCommunitySharing = z.infer<typeof insertCollectionCommunitySharingSchema>;
+export type CollectionCommunitySharing = typeof collectionCommunitySharing.$inferSelect;
 export type InsertPromptRating = z.infer<typeof insertPromptRatingSchema>;
 export type PromptRating = typeof promptRatings.$inferSelect;
 export type PromptLike = typeof promptLikes.$inferSelect;
