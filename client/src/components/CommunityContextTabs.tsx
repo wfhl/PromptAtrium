@@ -55,11 +55,11 @@ export function CommunityContextTabs({
 
   // Always render tabs, but only show them if there are communities to switch between
   // Show tabs if user has private communities OR if they are currently viewing a community
-  const shouldShowTabs = privateCommunities.length > 0;
+  // Always show the tabs if the user is logged in - at minimum they can see Global community
+  const shouldShowTabs = true; // Always show tabs for consistency
   
   if (!shouldShowTabs) {
-    return null; // For now, don't show tabs if only global community exists
-    // TODO: Consider always showing tabs for consistency
+    return null;
   }
 
   // Mobile variant for dropdown
