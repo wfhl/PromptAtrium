@@ -284,6 +284,12 @@ export default function Community() {
     queryKey: ["/api/user/communities"],
     enabled: isAuthenticated,
   });
+  
+  // Fetch user's pending invitations
+  const { data: pendingInvitations = [] } = useQuery<any[]>({
+    queryKey: ["/api/user/invitations"],
+    enabled: isAuthenticated,
+  });
 
   // Fetch all communities to get the details
   const { data: allCommunities = [] } = useQuery<Community[]>({
@@ -293,7 +299,7 @@ export default function Community() {
 
   // Filter to get user's communities with full details
   const myCommunities = allCommunities.filter(c => 
-    userCommunities.some(uc => uc.communityId === c.id)
+    userCommunities.some(uc => uc.communityId === c.id && (uc.status === 'accepted' || !uc.status))
   );
 
   // Activities query removed - Activity tab no longer exists
@@ -312,6 +318,37 @@ export default function Community() {
       });
     }
   }, [allUsers, currentUserId]);
+
+  // Accept/reject invitation mutation
+  const respondToInvitationMutation = useMutation({
+    mutationFn: async ({ communityId, accept }: { communityId: string; accept: boolean }) => {
+      const response = await apiRequest("POST", `/api/communities/${communityId}/invitations/respond`, { accept });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to respond to invitation');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (_, { accept }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/invitations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/communities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
+      
+      toast({
+        title: accept ? "Invitation Accepted" : "Invitation Rejected",
+        description: accept ? "You have joined the community" : "You have declined the invitation",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to respond to invitation",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Follow/unfollow mutation
   const followMutation = useMutation({
@@ -430,6 +467,60 @@ export default function Community() {
 
   return (
     <div className="container mx-auto px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-8 pb-24 lg:pb-8">
+      {/* Pending Invitations Section */}
+      {pendingInvitations.length > 0 && (
+        <Card className="mb-4 border-yellow-500/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Mail className="h-5 w-5 text-yellow-500" />
+              Pending Invitations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingInvitations.map((invitation) => (
+                <Card key={invitation.id} className="bg-yellow-50 dark:bg-yellow-900/10">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{invitation.community?.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Invited by {invitation.inviter?.username || 'Unknown'} as {invitation.role}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => respondToInvitationMutation.mutate({ 
+                            communityId: invitation.communityId, 
+                            accept: true 
+                          })}
+                          disabled={respondToInvitationMutation.isPending}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => respondToInvitationMutation.mutate({ 
+                            communityId: invitation.communityId, 
+                            accept: false 
+                          })}
+                          disabled={respondToInvitationMutation.isPending}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* My Communities Section */}
       {myCommunities.length > 0 && (
         <Card className="mb-4">
