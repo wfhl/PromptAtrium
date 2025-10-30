@@ -1483,7 +1483,12 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(userCommunities.userId, userId),
-          eq(communities.isActive, true)
+          eq(communities.isActive, true),
+          // Include communities where user has accepted membership or no status (backward compatibility)
+          or(
+            eq(userCommunities.status, 'accepted'),
+            isNull(userCommunities.status)
+          )
         )
       )
       .orderBy(desc(communities.createdAt));
