@@ -126,14 +126,16 @@ export function PromptCard({
   console.log('PromptCard Debug:', {
     promptId: prompt.id,
     userId: typedUser?.id,
+    userRole: typedUser?.role,
     promptUserId: prompt.userId,
     isOwner: String(typedUser?.id) === String(prompt.userId),
     isSuperAdmin,
+    isRegularUser,
     userCommunitiesCount: userCommunities.length,
     userCommunities: userCommunities.map(c => ({ id: c.id, name: c.name, slug: c.slug })),
     showActions,
     isCommunityPage,
-    shouldShowDropdown: showActions && !isCommunityPage && (String(typedUser?.id) === String(prompt.userId) || isSuperAdmin) && userCommunities.length > 0
+    shouldShowDropdown: showActions && !isCommunityPage && String(typedUser?.id) === String(prompt.userId) && userCommunities.length > 0
   });
   
   // Fetch prompt's shared communities
@@ -1260,8 +1262,8 @@ export function PromptCard({
                   {prompt.name}
                 </h3>
               )}
-              {/* Show community selector for prompt owners or super admins who are members of communities */}
-              {showActions && !isCommunityPage && (String(typedUser?.id) === String(prompt.userId) || isSuperAdmin) && userCommunities.length > 0 ? (
+              {/* Show community selector for prompt owners who are members of communities */}
+              {showActions && !isCommunityPage && String(typedUser?.id) === String(prompt.userId) && userCommunities.length > 0 ? (
                   <DropdownMenu open={showCommunitySelector} onOpenChange={setShowCommunitySelector}>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -1386,7 +1388,7 @@ export function PromptCard({
                       </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
-              ) : showActions && !isCommunityPage && (String(typedUser?.id) === String(prompt.userId) || isSuperAdmin) ? (
+              ) : showActions && !isCommunityPage && String(typedUser?.id) === String(prompt.userId) ? (
                   <Button
                     variant="outline"
                     size="sm"

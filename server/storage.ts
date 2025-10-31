@@ -1656,7 +1656,16 @@ export class DatabaseStorage implements IStorage {
 
   async getUserCommunities(userId: string): Promise<UserCommunity[]> {
     try {
-      return await db.select().from(userCommunities).where(eq(userCommunities.userId, userId));
+      // Only return accepted memberships (or null/undefined for backward compatibility)
+      return await db.select().from(userCommunities).where(
+        and(
+          eq(userCommunities.userId, userId),
+          or(
+            eq(userCommunities.status, 'accepted'),
+            isNull(userCommunities.status) // For backward compatibility with existing members
+          )
+        )
+      );
     } catch (error) {
       console.error("Error fetching user communities with full schema:", error);
       // Fallback: try selecting only the columns that exist
@@ -1669,7 +1678,7 @@ export class DatabaseStorage implements IStorage {
           joinedAt: userCommunities.joinedAt,
         }).from(userCommunities).where(eq(userCommunities.userId, userId));
         
-        // Add default status for backward compatibility
+        // Add default status for backward compatibility - these are all accepted since they're old records
         return results.map(r => ({ ...r, status: 'accepted' as any, invitedBy: null, subCommunityId: null, respondedAt: null }));
       } catch (fallbackError) {
         console.error("Fallback also failed:", fallbackError);
