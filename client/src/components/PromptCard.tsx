@@ -121,6 +121,20 @@ export function PromptCard({
     )
   );
   
+  // Debug logging
+  console.log('PromptCard Debug:', {
+    promptId: prompt.id,
+    userId: typedUser?.id,
+    promptUserId: prompt.userId,
+    isOwner: String(typedUser?.id) === String(prompt.userId),
+    isSuperAdmin,
+    userCommunitiesCount: userCommunities.length,
+    userCommunities: userCommunities.map(c => ({ id: c.id, name: c.name, slug: c.slug })),
+    showActions,
+    isCommunityPage,
+    shouldShowDropdown: showActions && !isCommunityPage && (String(typedUser?.id) === String(prompt.userId) || isSuperAdmin) && userCommunities.length > 0
+  });
+  
   // Fetch prompt's shared communities
   const { data: promptCommunities = [] } = useQuery<string[]>({
     queryKey: [`/api/prompts/${prompt.id}/communities`],

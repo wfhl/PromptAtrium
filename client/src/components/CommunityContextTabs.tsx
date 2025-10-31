@@ -42,6 +42,19 @@ export function CommunityContextTabs({
       (uc.status === 'accepted' || uc.status === null || uc.status === undefined || !('status' in uc))
     )
   );
+  
+  // Debug logging
+  console.log('CommunityContextTabs Debug:', {
+    userId: user?.id,
+    userRole: (user as any)?.role,
+    userCommunitiesCount: userCommunities.length,
+    userCommunities: userCommunities,
+    allCommunitiesCount: allCommunities.length,
+    allCommunities: allCommunities.map(c => ({ id: c.id, name: c.name, slug: c.slug })),
+    privateCommunitiesCount: privateCommunities.length,
+    privateCommunities: privateCommunities.map(c => ({ id: c.id, name: c.name, slug: c.slug })),
+    shouldShowTabs: privateCommunities.length > 0
+  });
 
   // Update active tab when selectedCommunityId changes
   useEffect(() => {
