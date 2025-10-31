@@ -1287,25 +1287,28 @@ export function PromptCard({
                         
                         {/* Global Community Option */}
                         <div
-                          className="flex items-center justify-between py-2 px-2 cursor-pointer hover:bg-accent rounded-sm"
-                          onClick={() => {
-                            setSelectedCommunities(prev => 
-                              prev.includes('global') 
-                                ? prev.filter(id => id !== 'global')
-                                : [...prev, 'global']
-                            );
-                          }}
+                          className="flex items-center justify-between py-2 px-2 hover:bg-accent rounded-sm"
                         >
                           <div className="flex items-center">
                             <Checkbox
                               checked={selectedCommunities.includes('global')}
-                              onCheckedChange={() => {}}
-                              onClick={(e) => e.stopPropagation()}
-                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary pointer-events-none"
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedCommunities(prev => [...prev, 'global']);
+                                } else {
+                                  setSelectedCommunities(prev => prev.filter(id => id !== 'global'));
+                                }
+                              }}
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                               data-testid="checkbox-global-community"
                             />
-                            <Globe className="h-4 w-4 ml-2 mr-2 text-blue-500" />
-                            <span className="text-sm text-foreground" data-testid="text-global-community">Global Community</span>
+                            <label 
+                              htmlFor="global-community"
+                              className="flex items-center cursor-pointer ml-2"
+                            >
+                              <Globe className="h-4 w-4 mr-2 text-blue-500" />
+                              <span className="text-sm text-foreground" data-testid="text-global-community">Global Community</span>
+                            </label>
                           </div>
                         </div>
 
@@ -1320,25 +1323,28 @@ export function PromptCard({
                         {userCommunities.map((community) => (
                           <div
                             key={community.id}
-                            className="flex items-center justify-between py-2 px-2 cursor-pointer hover:bg-accent rounded-sm"
-                            onClick={() => {
-                              setSelectedCommunities(prev => 
-                                prev.includes(community.id) 
-                                  ? prev.filter(id => id !== community.id)
-                                  : [...prev, community.id]
-                              );
-                            }}
+                            className="flex items-center justify-between py-2 px-2 hover:bg-accent rounded-sm"
                           >
                             <div className="flex items-center">
                               <Checkbox
                                 checked={selectedCommunities.includes(community.id)}
-                                onCheckedChange={() => {}}
-                                onClick={(e) => e.stopPropagation()}
-                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary pointer-events-none"
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedCommunities(prev => [...prev, community.id]);
+                                  } else {
+                                    setSelectedCommunities(prev => prev.filter(id => id !== community.id));
+                                  }
+                                }}
+                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                 data-testid={`checkbox-community-${community.id}`}
                               />
-                              <Users className="h-4 w-4 ml-2 mr-2 text-green-500" />
-                              <span className="text-sm text-foreground" data-testid={`text-community-${community.id}`}>{community.name}</span>
+                              <label 
+                                htmlFor={`community-${community.id}`}
+                                className="flex items-center cursor-pointer ml-2"
+                              >
+                                <Users className="h-4 w-4 mr-2 text-green-500" />
+                                <span className="text-sm text-foreground" data-testid={`text-community-${community.id}`}>{community.name}</span>
+                              </label>
                             </div>
                           </div>
                         ))}
