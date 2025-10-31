@@ -55,10 +55,9 @@ export function CommunityContextTabs({
     console.log('CommunityContextTabs activeTab set to:', value);
   };
 
-  // Always render tabs, but only show them if there are communities to switch between
-  // Show tabs if user has private communities OR if they are currently viewing a community
-  // Always show the tabs if the user is logged in - at minimum they can see Global community
-  const shouldShowTabs = true; // Always show tabs for consistency
+  // Only show tabs if user has private communities to switch between
+  // If there's only the global community, no need for a tab bar
+  const shouldShowTabs = privateCommunities.length > 0;
   
   if (!shouldShowTabs) {
     return null;
