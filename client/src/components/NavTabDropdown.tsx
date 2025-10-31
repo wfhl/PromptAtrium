@@ -107,13 +107,11 @@ export function NavTabDropdown({ page, isOpen, onClose, buttonRef }: NavTabDropd
   const config = PAGE_CONFIGS[page];
   const Icon = config.icon;
 
-  // Keep selectedCommunityId in sync with URL
+  // Update selectedCommunityId when URL changes
   useEffect(() => {
     const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
     const communityId = params.get('communityId');
-    if (communityId !== selectedCommunityId) {
-      setSelectedCommunityId(communityId);
-    }
+    setSelectedCommunityId(communityId);
   }, [location]);
 
   useEffect(() => {

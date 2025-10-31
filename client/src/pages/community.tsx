@@ -123,11 +123,10 @@ export default function Community() {
       setPromptsSubTab(sub);
     }
     
-    if (communityId !== selectedCommunityId) {
-      console.log('Setting selectedCommunityId from URL:', communityId);
-      setSelectedCommunityId(communityId);
-    }
-  }, [location, selectedCommunityId]);
+    // Update selectedCommunityId from URL
+    console.log('Setting selectedCommunityId from URL:', communityId);
+    setSelectedCommunityId(communityId);
+  }, [location]); // Only depend on location
 
   // Save promptsSubTab to localStorage when it changes
   useEffect(() => {
