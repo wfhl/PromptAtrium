@@ -63,7 +63,9 @@ export function ImageLightbox({ images, currentIndex, open, onClose, onNavigate 
     if (imageUrl.startsWith('http')) {
       return imageUrl;
     } else if (imageUrl.startsWith('/objects/')) {
-      return `/api/objects/serve${imageUrl}`;
+      // Remove the /objects/ prefix before adding /api/objects/serve
+      const pathWithoutObjects = imageUrl.slice('/objects/'.length);
+      return `/api/objects/serve/${encodeURIComponent(pathWithoutObjects)}`;
     } else if (imageUrl.startsWith('/api/')) {
       return imageUrl;
     } else if (imageUrl.startsWith('/')) {

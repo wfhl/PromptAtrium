@@ -52,8 +52,9 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
               if (imageUrl.startsWith('http')) {
                 imageSrc = imageUrl;
               } else if (imageUrl.startsWith('/objects/')) {
-                // Object storage paths need the serve prefix
-                imageSrc = `/api/objects/serve${imageUrl}`;
+                // Remove the /objects/ prefix before adding /api/objects/serve
+                const pathWithoutObjects = imageUrl.slice('/objects/'.length);
+                imageSrc = `/api/objects/serve/${encodeURIComponent(pathWithoutObjects)}`;
               } else if (imageUrl.startsWith('/api/')) {
                 // API paths should be used directly (dev-storage, etc)
                 imageSrc = imageUrl;
@@ -110,7 +111,9 @@ export function PromptImageCarousel({ images, promptName, onImageClick }: Prompt
             if (imageUrl.startsWith('http')) {
               img.src = imageUrl;
             } else if (imageUrl.startsWith('/objects/')) {
-              img.src = `/api/objects/serve${imageUrl}`;
+              // Remove the /objects/ prefix before adding /api/objects/serve
+              const pathWithoutObjects = imageUrl.slice('/objects/'.length);
+              img.src = `/api/objects/serve/${encodeURIComponent(pathWithoutObjects)}`;
             } else if (imageUrl.startsWith('/api/')) {
               img.src = imageUrl;
             } else if (imageUrl.startsWith('/')) {
