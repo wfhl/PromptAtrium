@@ -73,12 +73,23 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
+  // Perform database operations BEFORE starting the server
+  // This ensures the port opens quickly for deployment
+  try {
+    StructuredLogger.info("Seeding initial achievements");
+    await storage.seedInitialAchievements();
+    StructuredLogger.info("Achievement seeding completed");
+  } catch (error) {
+    StructuredLogger.error("Error seeding achievements", error as Error);
+    // Don't crash the server if seeding fails
+  }
+  
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, async () => {
+  }, () => {
     log(`serving on port ${port}`);
     
     // Skip duplicate likes cleanup on startup - it's already been run and adds 18+ seconds to startup time
@@ -96,15 +107,5 @@ app.use((req, res, next) => {
       // Don't crash the server if cleanup fails
     }
     */
-    
-    // Seed initial achievements if needed
-    try {
-      StructuredLogger.info("Seeding initial achievements");
-      await storage.seedInitialAchievements();
-      StructuredLogger.info("Achievement seeding completed");
-    } catch (error) {
-      StructuredLogger.error("Error seeding achievements", error as Error);
-      // Don't crash the server if seeding fails
-    }
   });
 })();
