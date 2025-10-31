@@ -108,10 +108,12 @@ export default function Community() {
 
   // React to URL changes and update tabs
   useEffect(() => {
+    console.log('URL changed, location:', location);
     const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
     const tab = params.get('tab');
     const sub = params.get('sub');
     const communityId = params.get('communityId');
+    console.log('Parsed URL params - tab:', tab, 'sub:', sub, 'communityId:', communityId);
     
     if (tab && ['prompts', 'collections', 'followed'].includes(tab)) {
       setActiveTab(tab);
@@ -122,6 +124,7 @@ export default function Community() {
     }
     
     if (communityId !== selectedCommunityId) {
+      console.log('Setting selectedCommunityId from URL:', communityId);
       setSelectedCommunityId(communityId);
     }
   }, [location, selectedCommunityId]);
@@ -611,6 +614,8 @@ export default function Community() {
       <CommunityContextTabs 
         selectedCommunityId={selectedCommunityId}
         onCommunityChange={(communityId) => {
+          console.log('Community page onCommunityChange called with:', communityId);
+          console.log('Current location:', location);
           setSelectedCommunityId(communityId);
           // Update URL with the new communityId
           const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
@@ -622,7 +627,9 @@ export default function Community() {
           // Preserve other params
           if (activeTab) params.set('tab', activeTab);
           if (activeTab === 'prompts' && promptsSubTab) params.set('sub', promptsSubTab);
-          setLocation(`/community${params.toString() ? '?' + params.toString() : ''}`);
+          const newUrl = `/community${params.toString() ? '?' + params.toString() : ''}`;
+          console.log('Setting new location to:', newUrl);
+          setLocation(newUrl);
         }}
       />
 

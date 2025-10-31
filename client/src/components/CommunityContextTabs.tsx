@@ -49,8 +49,10 @@ export function CommunityContextTabs({
   }, [selectedCommunityId]);
 
   const handleTabChange = (value: string) => {
+    console.log('CommunityContextTabs handleTabChange called with value:', value);
     setActiveTab(value);
     onCommunityChange(value === "global" ? null : value);
+    console.log('CommunityContextTabs activeTab set to:', value);
   };
 
   // Always render tabs, but only show them if there are communities to switch between
