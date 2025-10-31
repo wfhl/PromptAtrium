@@ -902,7 +902,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(prompts.userId, users.id))
       .innerJoin(promptCommunitySharing, eq(prompts.id, promptCommunitySharing.promptId))
       .where(and(
-        eq(promptCommunitySharing.subCommunityId, options.communityId),
+        eq(promptCommunitySharing.communityId, options.communityId),
         ...(conditions.length > 0 ? conditions : [])
       ));
     } else {
