@@ -1521,36 +1521,67 @@ export class DatabaseStorage implements IStorage {
 
   // Get private communities that a user has access to
   async getUserPrivateCommunities(userId: string): Promise<Community[]> {
-    return await db
-      .select({
-        id: communities.id,
-        name: communities.name,
-        description: communities.description,
-        slug: communities.slug,
-        imageUrl: communities.imageUrl,
-        isActive: communities.isActive,
-        isPublic: communities.isPublic,
-        parentCommunityId: communities.parentCommunityId,
-        level: communities.level,
-        path: communities.path,
-        createdBy: communities.createdBy,
-        createdAt: communities.createdAt,
-        updatedAt: communities.updatedAt,
-      })
-      .from(communities)
-      .innerJoin(userCommunities, eq(communities.id, userCommunities.communityId))
-      .where(
-        and(
-          eq(userCommunities.userId, userId),
-          eq(communities.isActive, true),
-          // Include communities where user has accepted membership or no status (backward compatibility)
-          or(
-            eq(userCommunities.status, 'accepted'),
-            isNull(userCommunities.status)
+    try {
+      // Try query with status column first (new schema)
+      return await db
+        .select({
+          id: communities.id,
+          name: communities.name,
+          description: communities.description,
+          slug: communities.slug,
+          imageUrl: communities.imageUrl,
+          isActive: communities.isActive,
+          isPublic: communities.isPublic,
+          parentCommunityId: communities.parentCommunityId,
+          level: communities.level,
+          path: communities.path,
+          createdBy: communities.createdBy,
+          createdAt: communities.createdAt,
+          updatedAt: communities.updatedAt,
+        })
+        .from(communities)
+        .innerJoin(userCommunities, eq(communities.id, userCommunities.communityId))
+        .where(
+          and(
+            eq(userCommunities.userId, userId),
+            eq(communities.isActive, true),
+            // Include communities where user has accepted membership or no status (backward compatibility)
+            or(
+              eq(userCommunities.status, 'accepted'),
+              isNull(userCommunities.status)
+            )
           )
         )
-      )
-      .orderBy(desc(communities.createdAt));
+        .orderBy(desc(communities.createdAt));
+    } catch (error) {
+      console.error("Error fetching user communities with status column:", error);
+      // Fallback: Query without status column (for backward compatibility)
+      return await db
+        .select({
+          id: communities.id,
+          name: communities.name,
+          description: communities.description,
+          slug: communities.slug,
+          imageUrl: communities.imageUrl,
+          isActive: communities.isActive,
+          isPublic: communities.isPublic,
+          parentCommunityId: communities.parentCommunityId,
+          level: communities.level,
+          path: communities.path,
+          createdBy: communities.createdBy,
+          createdAt: communities.createdAt,
+          updatedAt: communities.updatedAt,
+        })
+        .from(communities)
+        .innerJoin(userCommunities, eq(communities.id, userCommunities.communityId))
+        .where(
+          and(
+            eq(userCommunities.userId, userId),
+            eq(communities.isActive, true)
+          )
+        )
+        .orderBy(desc(communities.createdAt));
+    }
   }
 
   // Get all non-global communities (for super_admin and global_admin)
