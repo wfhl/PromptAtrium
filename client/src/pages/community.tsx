@@ -18,6 +18,7 @@ import {
   Globe, Mail
 } from "lucide-react";
 import { PromptCard } from "@/components/PromptCard";
+import { PromptModal } from "@/components/PromptModal";
 import { MultiSelectFilters } from "@/components/MultiSelectFilters";
 import type { MultiSelectFilters as MultiSelectFiltersType, EnabledFilters } from "@/components/MultiSelectFilters";
 import { CommunityContextTabs } from "@/components/CommunityContextTabs";
@@ -73,6 +74,8 @@ export default function Community() {
     collections: []
   });
   const [sortBy, setSortBy] = useState("featured");
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   
   // Parse URL parameters reactively from wouter's location
   const urlParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
@@ -674,6 +677,23 @@ export default function Community() {
 
         {/* Prompts Tab */}
         <TabsContent value="prompts" className="space-y-4">
+          {/* Header with Add Prompt button */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">
+              {selectedCommunityId ? "Private Community Prompts" : "Global Community Prompts"}
+            </h2>
+            <Button 
+              onClick={() => {
+                setEditingPrompt(null);
+                setPromptModalOpen(true);
+              }}
+              data-testid="button-add-prompt"
+            >
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Add Prompt
+            </Button>
+          </div>
+
           {/* Search Bar */}
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -1043,6 +1063,19 @@ export default function Community() {
         </TabsContent>
 
       </Tabs>
+
+      {/* Prompt Modal */}
+      <PromptModal
+        open={promptModalOpen}
+        onOpenChange={setPromptModalOpen}
+        prompt={editingPrompt}
+        mode={editingPrompt ? "edit" : "create"}
+        onSuccess={() => {
+          setPromptModalOpen(false);
+          setEditingPrompt(null);
+          refetch();
+        }}
+      />
     </div>
   );
 }
