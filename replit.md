@@ -5,6 +5,12 @@ A comprehensive platform for managing, sharing, and generating AI prompts. Featu
 
 ## Recent Updates (October 31, 2025)
 
+### Member Prompt Publishing Enhancement
+- **Added Prompt Creation for Regular Members**: Regular members can now create and publish prompts to private communities they belong to
+- **Community Page Enhancement**: Added "Add Prompt" button to the Community page's prompts tab, visible to all authenticated users
+- **Equal Access**: Both SuperAdmins and regular members now have equal access to publish prompts to communities they belong to
+- **Private Community Support**: Members can navigate to and publish prompts in private communities they are members of
+
 ### Community Sharing System Fixes
 - **Fixed Infinite Loop in Dropdown**: Removed conflicting event handlers (onSelect with preventDefault) in community dropdown checkboxes
 - **Fixed Community Tab Visibility**: Community tabs now always show for logged-in users for consistency
