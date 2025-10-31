@@ -1245,8 +1245,8 @@ export function PromptCard({
                   {prompt.name}
                 </h3>
               )}
-{showActions && !isCommunityPage ? (
-                userCommunities.length > 0 ? (
+              {/* Show community selector for prompt owners or super admins who are members of communities */}
+              {showActions && !isCommunityPage && (String(typedUser?.id) === String(prompt.userId) || isSuperAdmin) && userCommunities.length > 0 ? (
                   <DropdownMenu open={showCommunitySelector} onOpenChange={setShowCommunitySelector}>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -1371,7 +1371,7 @@ export function PromptCard({
                       </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                ) : (
+              ) : showActions && !isCommunityPage && (String(typedUser?.id) === String(prompt.userId) || isSuperAdmin) ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -1387,20 +1387,16 @@ export function PromptCard({
                     <Globe className="h-3 w-3 mr-1" />
                     {prompt.isPublic ? "Public" : "Private"}
                   </Button>
-                )
-              ) : (
-                // Hide "Public" badge on community page and profile page
-                !showActions && !isCommunityPage && !isProfilePage && (
-                  <Badge 
-                    variant={prompt.isPublic ? "default" : "secondary"} 
-                    className={prompt.isPublic ? "bg-blue-500" : ""}
-                    data-testid={`badge-visibility-${prompt.id}`}
-                  >
-                    <Globe className="h-3 w-3 mr-1" />
-                    {prompt.isPublic ? "Public" : "Private"}
-                  </Badge>
-                )
-              )}
+              ) : !showActions && !isCommunityPage && !isProfilePage ? (
+                <Badge 
+                  variant={prompt.isPublic ? "default" : "secondary"} 
+                  className={prompt.isPublic ? "bg-blue-500" : ""}
+                  data-testid={`badge-visibility-${prompt.id}`}
+                >
+                  <Globe className="h-3 w-3 mr-1" />
+                  {prompt.isPublic ? "Public" : "Private"}
+                </Badge>
+              ) : null}
               {prompt.isFeatured && (
                 <Badge className="bg-yellow-100 text-yellow-800" data-testid={`badge-featured-${prompt.id}`}>
                   Featured
