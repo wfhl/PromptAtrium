@@ -5,6 +5,11 @@ A comprehensive platform for managing, sharing, and generating AI prompts. Featu
 
 ## Recent Updates (October 31, 2025)
 
+### Mobile UI Improvements
+- **Fixed Mobile Member Management**: Added dropdown menu for role changes and member removal on mobile devices
+- **Date Display Fix**: Resolved "Invalid Date" issue in member management modal with proper fallback handling
+- **Community Tab Bar Optimization**: Tab bar now only shows when user is a member of at least one private community, reducing UI clutter
+
 ### Member Prompt Publishing Enhancement
 - **Added Prompt Creation for Regular Members**: Regular members can now create and publish prompts to private communities they belong to
 - **Community Page Enhancement**: Added "Add Prompt" button to the Community page's prompts tab, visible to all authenticated users
