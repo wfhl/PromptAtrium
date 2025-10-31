@@ -684,16 +684,26 @@ export default function Community() {
             <h2 className="text-lg font-semibold">
               {selectedCommunityId ? "Private Community Prompts" : "Global Community Prompts"}
             </h2>
-            <Button 
-              onClick={() => {
-                setEditingPrompt(null);
-                setPromptModalOpen(true);
-              }}
-              data-testid="button-add-prompt"
-            >
-              <Lightbulb className="h-4 w-4 mr-2" />
-              Add Prompt
-            </Button>
+            {/* Only show Add Prompt button if:
+                - It's the global community (no selectedCommunityId), OR
+                - User is a member of the selected private community, OR  
+                - User is a super admin */}
+            {(!selectedCommunityId || 
+              userCommunities.some(uc => uc.communityId === selectedCommunityId) ||
+              (user as any)?.role === 'super_admin' || 
+              (user as any)?.role === 'global_admin' ||
+              (user as any)?.role === 'developer') && (
+              <Button 
+                onClick={() => {
+                  setEditingPrompt(null);
+                  setPromptModalOpen(true);
+                }}
+                data-testid="button-add-prompt"
+              >
+                <Lightbulb className="h-4 w-4 mr-2" />
+                Add Prompt
+              </Button>
+            )}
           </div>
 
           {/* Search Bar */}
