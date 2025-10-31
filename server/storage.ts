@@ -840,70 +840,128 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Build query step by step to avoid TypeScript issues
-    let queryBuilder = db.select({
-      id: prompts.id,
-      name: prompts.name,
-      description: prompts.description,
-      category: prompts.category,
-      promptType: prompts.promptType,
-      promptStyle: prompts.promptStyle,
-      categories: prompts.categories,
-      promptTypes: prompts.promptTypes,
-      promptStyles: prompts.promptStyles,
-      tags: prompts.tags,
-      tagsNormalized: prompts.tagsNormalized,
-      isPublic: prompts.isPublic,
-      isFeatured: prompts.isFeatured,
-      isNsfw: prompts.isNsfw,
-      status: prompts.status,
-      exampleImagesUrl: prompts.exampleImagesUrl,
-      notes: prompts.notes,
-      author: prompts.author,
-      sourceUrl: prompts.sourceUrl,
-      version: prompts.version,
-      forkOf: prompts.forkOf,
-      usageCount: prompts.usageCount,
-      likes: prompts.likes,
-      qualityScore: prompts.qualityScore,
-      intendedGenerator: prompts.intendedGenerator,
-      intendedGenerators: prompts.intendedGenerators,
-      recommendedModels: prompts.recommendedModels,
-      technicalParams: prompts.technicalParams,
-      variables: prompts.variables,
-      projectId: prompts.projectId,
-      collectionId: prompts.collectionId,
-      collectionIds: prompts.collectionIds,
-      relatedPrompts: prompts.relatedPrompts,
-      license: prompts.license,
-      lastUsedAt: prompts.lastUsedAt,
-      userId: prompts.userId,
-      subCommunityId: prompts.subCommunityId,
-      subCommunityVisibility: prompts.subCommunityVisibility,
-      createdAt: prompts.createdAt,
-      updatedAt: prompts.updatedAt,
-      promptContent: prompts.promptContent,
-      negativePrompt: prompts.negativePrompt,
-      user: {
-        id: users.id,
-        email: users.email,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        username: users.username,
-        profileImageUrl: users.profileImageUrl,
-      }
-    })
-    .from(prompts)
-    .leftJoin(users, eq(prompts.userId, users.id));
+    // Build base query differently depending on whether we're filtering by community
+    let queryBuilder;
     
-    // If filtering by communityId, join with the promptCommunitySharing table
     if (options.communityId) {
-      queryBuilder = queryBuilder
-        .innerJoin(promptCommunitySharing, eq(prompts.id, promptCommunitySharing.promptId))
-        .where(and(
-          eq(promptCommunitySharing.subCommunityId, options.communityId),
-          ...(conditions.length > 0 ? conditions : [])
-        ));
+      // When filtering by community, we need to join with promptCommunitySharing
+      // and build the query with the join from the start
+      queryBuilder = db.select({
+        id: prompts.id,
+        name: prompts.name,
+        description: prompts.description,
+        category: prompts.category,
+        promptType: prompts.promptType,
+        promptStyle: prompts.promptStyle,
+        categories: prompts.categories,
+        promptTypes: prompts.promptTypes,
+        promptStyles: prompts.promptStyles,
+        tags: prompts.tags,
+        tagsNormalized: prompts.tagsNormalized,
+        isPublic: prompts.isPublic,
+        isFeatured: prompts.isFeatured,
+        isNsfw: prompts.isNsfw,
+        status: prompts.status,
+        exampleImagesUrl: prompts.exampleImagesUrl,
+        notes: prompts.notes,
+        author: prompts.author,
+        sourceUrl: prompts.sourceUrl,
+        version: prompts.version,
+        forkOf: prompts.forkOf,
+        usageCount: prompts.usageCount,
+        likes: prompts.likes,
+        qualityScore: prompts.qualityScore,
+        intendedGenerator: prompts.intendedGenerator,
+        intendedGenerators: prompts.intendedGenerators,
+        recommendedModels: prompts.recommendedModels,
+        technicalParams: prompts.technicalParams,
+        variables: prompts.variables,
+        projectId: prompts.projectId,
+        collectionId: prompts.collectionId,
+        collectionIds: prompts.collectionIds,
+        relatedPrompts: prompts.relatedPrompts,
+        license: prompts.license,
+        lastUsedAt: prompts.lastUsedAt,
+        userId: prompts.userId,
+        subCommunityId: prompts.subCommunityId,
+        subCommunityVisibility: prompts.subCommunityVisibility,
+        createdAt: prompts.createdAt,
+        updatedAt: prompts.updatedAt,
+        promptContent: prompts.promptContent,
+        negativePrompt: prompts.negativePrompt,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          username: users.username,
+          profileImageUrl: users.profileImageUrl,
+        }
+      })
+      .from(prompts)
+      .leftJoin(users, eq(prompts.userId, users.id))
+      .innerJoin(promptCommunitySharing, eq(prompts.id, promptCommunitySharing.promptId))
+      .where(and(
+        eq(promptCommunitySharing.subCommunityId, options.communityId),
+        ...(conditions.length > 0 ? conditions : [])
+      ));
     } else {
+      // Normal query without community filtering
+      queryBuilder = db.select({
+        id: prompts.id,
+        name: prompts.name,
+        description: prompts.description,
+        category: prompts.category,
+        promptType: prompts.promptType,
+        promptStyle: prompts.promptStyle,
+        categories: prompts.categories,
+        promptTypes: prompts.promptTypes,
+        promptStyles: prompts.promptStyles,
+        tags: prompts.tags,
+        tagsNormalized: prompts.tagsNormalized,
+        isPublic: prompts.isPublic,
+        isFeatured: prompts.isFeatured,
+        isNsfw: prompts.isNsfw,
+        status: prompts.status,
+        exampleImagesUrl: prompts.exampleImagesUrl,
+        notes: prompts.notes,
+        author: prompts.author,
+        sourceUrl: prompts.sourceUrl,
+        version: prompts.version,
+        forkOf: prompts.forkOf,
+        usageCount: prompts.usageCount,
+        likes: prompts.likes,
+        qualityScore: prompts.qualityScore,
+        intendedGenerator: prompts.intendedGenerator,
+        intendedGenerators: prompts.intendedGenerators,
+        recommendedModels: prompts.recommendedModels,
+        technicalParams: prompts.technicalParams,
+        variables: prompts.variables,
+        projectId: prompts.projectId,
+        collectionId: prompts.collectionId,
+        collectionIds: prompts.collectionIds,
+        relatedPrompts: prompts.relatedPrompts,
+        license: prompts.license,
+        lastUsedAt: prompts.lastUsedAt,
+        userId: prompts.userId,
+        subCommunityId: prompts.subCommunityId,
+        subCommunityVisibility: prompts.subCommunityVisibility,
+        createdAt: prompts.createdAt,
+        updatedAt: prompts.updatedAt,
+        promptContent: prompts.promptContent,
+        negativePrompt: prompts.negativePrompt,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          username: users.username,
+          profileImageUrl: users.profileImageUrl,
+        }
+      })
+      .from(prompts)
+      .leftJoin(users, eq(prompts.userId, users.id));
+      
       // Apply conditions normally if not filtering by community
       if (conditions.length > 0) {
         queryBuilder = queryBuilder.where(and(...conditions));
