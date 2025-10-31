@@ -639,6 +639,10 @@ export default function Community() {
         } else {
           params.delete('sub');
         }
+        // Preserve communityId if set
+        if (selectedCommunityId) {
+          params.set('communityId', selectedCommunityId);
+        }
         setLocation(`/community?${params.toString()}`);
       }} className="space-y-1 md:space-y-2">
         <TabsList className="grid grid-cols-3">
@@ -700,6 +704,10 @@ export default function Community() {
             const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
             params.set('tab', 'prompts');
             params.set('sub', value);
+            // Preserve communityId if set
+            if (selectedCommunityId) {
+              params.set('communityId', selectedCommunityId);
+            }
             setLocation(`/community?${params.toString()}`);
           }} className="mb-2">
             <TabsList className="inline-flex w-auto">
