@@ -99,11 +99,27 @@ export function PromptCard({
     setIsCollapsed(!isCollapsed);
   };
 
-  // Fetch user's communities
-  const { data: userCommunities = [] } = useQuery<Community[]>({
+  // Fetch user's community memberships
+  const { data: userCommunityMemberships = [] } = useQuery<any[]>({
     queryKey: ["/api/user/communities"],
     enabled: !!user,
   });
+  
+  // Fetch all communities to get the details
+  const { data: allCommunities = [] } = useQuery<Community[]>({
+    queryKey: ["/api/communities"],
+    enabled: userCommunityMemberships.length > 0,
+  });
+  
+  // Filter to get user's communities with full details (excluding global)
+  const userCommunities = allCommunities.filter(c => 
+    c.slug !== 'global' && 
+    c.slug !== 'general' &&
+    userCommunityMemberships.some(uc => 
+      uc.communityId === c.id && 
+      (uc.status === 'accepted' || uc.status === null || uc.status === undefined || !('status' in uc))
+    )
+  );
   
   // Fetch prompt's shared communities
   const { data: promptCommunities = [] } = useQuery<string[]>({

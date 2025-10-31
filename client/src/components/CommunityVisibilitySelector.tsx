@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -15,7 +14,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, Globe, Lock, Users } from "lucide-react";
-import type { Community } from "@shared/schema";
+import type { Community, UserCommunity } from "@shared/schema";
 
 interface CommunityVisibilitySelectorProps {
   isPublic: boolean;
@@ -35,8 +34,8 @@ export function CommunityVisibilitySelector({
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>(selectedCommunityIds);
 
-  // Fetch user's communities (only communities they are a member of)
-  const { data: userCommunities = [], isLoading: isLoadingUserCommunities } = useQuery<any[]>({
+  // Fetch user's community memberships
+  const { data: userCommunities = [], isLoading: isLoadingUserCommunities } = useQuery<UserCommunity[]>({
     queryKey: ["/api/user/communities"],
   });
   
@@ -50,7 +49,10 @@ export function CommunityVisibilitySelector({
   const privateCommunities = allCommunities.filter(c => 
     c.slug !== 'global' && 
     c.slug !== 'general' &&
-    userCommunities.some(uc => uc.communityId === c.id && (uc.status === 'accepted' || !uc.status))
+    userCommunities.some(uc => 
+      uc.communityId === c.id && 
+      (uc.status === 'accepted' || uc.status === null || uc.status === undefined || !('status' in uc))
+    )
   );
   
   const isLoading = isLoadingUserCommunities || isLoadingCommunities;
