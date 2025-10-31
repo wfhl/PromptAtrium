@@ -807,7 +807,18 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48" data-testid="mobile-dropdown-resources">
-
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      handleOpenIntroduction();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="cursor-pointer"
+                    data-testid="mobile-menu-account-setup"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Account Setup
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/prompting-guides" className="flex items-center cursor-pointer" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-menu-prompting-guides">
                       <BookOpen className="mr-2 h-4 w-4" />
@@ -1025,6 +1036,18 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         open={notificationModalOpen} 
         onOpenChange={setNotificationModalOpen} 
       />
+
+      {/* Introduction Modal */}
+      {typedUser && (
+        <IntroductionModal
+          open={introductionModalOpen}
+          onComplete={() => {
+            setIntroductionModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+          }}
+          user={typedUser}
+        />
+      )}
     </div>
   );
 }
