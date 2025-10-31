@@ -35,15 +35,25 @@ export function CommunityVisibilitySelector({
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>(selectedCommunityIds);
 
-  // Fetch user's communities
-  const { data: communities = [], isLoading } = useQuery<Community[]>({
+  // Fetch user's communities (only communities they are a member of)
+  const { data: userCommunities = [], isLoading: isLoadingUserCommunities } = useQuery<any[]>({
+    queryKey: ["/api/user/communities"],
+  });
+  
+  // Fetch all communities to get the details
+  const { data: allCommunities = [], isLoading: isLoadingCommunities } = useQuery<Community[]>({
     queryKey: ["/api/communities"],
+    enabled: userCommunities.length > 0,
   });
 
-  // Filter to only show private communities (non-global ones)
-  const privateCommunities = communities.filter(
-    (c) => c.slug !== "global" && c.slug !== "general" && c.slug !== "/"
+  // Filter to get user's communities with full details (only private, non-global ones)
+  const privateCommunities = allCommunities.filter(c => 
+    c.slug !== 'global' && 
+    c.slug !== 'general' &&
+    userCommunities.some(uc => uc.communityId === c.id && (uc.status === 'accepted' || !uc.status))
   );
+  
+  const isLoading = isLoadingUserCommunities || isLoadingCommunities;
 
   useEffect(() => {
     setTempSelectedIds(selectedCommunityIds);

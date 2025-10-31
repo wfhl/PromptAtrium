@@ -3,6 +3,15 @@
 ## Overview
 A comprehensive platform for managing, sharing, and generating AI prompts. Features include a prompt library, community sharing, collections management, and advanced prompt generation tools.
 
+## Recent Updates (October 31, 2025)
+
+### Community Sharing System Fixes
+- **Fixed Infinite Loop in Dropdown**: Removed conflicting event handlers (onSelect with preventDefault) in community dropdown checkboxes
+- **Fixed Community Tab Visibility**: Community tabs now always show for logged-in users for consistency
+- **Fixed Community Display Issue**: Updated CommunityVisibilitySelector to properly fetch and display user's communities
+- **Database Fix**: Created prompt_community_sharing table for multi-community prompt sharing
+- **API Integration**: Connected visibility updates to properly update both prompt visibility and community sharing
+
 ## Recent Updates (October 26, 2025)
 
 ### My Activity Tab - Prompt Links Fix
