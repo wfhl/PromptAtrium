@@ -60,6 +60,7 @@ export function PromptCard({
   const { user } = useAuth();
   const typedUser = user as any;
   const isSuperAdmin = (user as any)?.role === "super_admin" || (user as any)?.role === "developer";
+  const isRegularUser = (user as any)?.role === "user";
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
   const [copied, setCopied] = useState(false);
   
