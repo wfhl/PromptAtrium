@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle, Calendar as CalendarIcon, Mail, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle, Calendar as CalendarIcon, Mail, Trash2, ExternalLink, MoreVertical, UserCheck, UserMinus } from "lucide-react";
 import type { Community, User, UserRole } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1044,11 +1045,67 @@ export default function AdminPage() {
                                     {member.role || 'member'}
                                   </Badge>
                                   <span className="text-xs text-muted-foreground">
-                                    Joined {new Date(member.createdAt).toLocaleDateString()}
+                                    Joined {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : 'Recently'}
                                   </span>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1">{/* Actions will be added here */}</div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                    <span className="sr-only">Open menu</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  {member.role !== 'admin' ? (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        if (selectedCommunityForMembers && member.userId) {
+                                          updateMemberRoleMutation.mutate({ 
+                                            userId: member.userId, 
+                                            communityId: selectedCommunityForMembers.id, 
+                                            role: 'admin'
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      <Shield className="h-4 w-4 mr-2" />
+                                      Make Admin
+                                    </DropdownMenuItem>
+                                  ) : member.role === 'admin' ? (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        if (selectedCommunityForMembers && member.userId) {
+                                          updateMemberRoleMutation.mutate({ 
+                                            userId: member.userId, 
+                                            communityId: selectedCommunityForMembers.id, 
+                                            role: 'member'
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      <UserCheck className="h-4 w-4 mr-2" />
+                                      Make Member
+                                    </DropdownMenuItem>
+                                  ) : null}
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => {
+                                      if (selectedCommunityForMembers && member.userId) {
+                                        removeMemberMutation.mutate({ 
+                                          userId: member.userId, 
+                                          communityId: selectedCommunityForMembers.id 
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <UserMinus className="h-4 w-4 mr-2" />
+                                    Remove Member
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </div>
                           
@@ -1087,7 +1144,7 @@ export default function AdminPage() {
                               </Select>
                             </div>
                             <div className="w-32 text-sm text-muted-foreground">
-                              {member.joinedAt && new Date(member.joinedAt).toLocaleDateString()}
+                              {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : 'Recently'}
                             </div>
                             <div className="w-24">
                               <Button
