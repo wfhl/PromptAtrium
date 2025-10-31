@@ -549,8 +549,9 @@ export default function Community() {
         </Card>
       )}
       
-      {/* My Communities Section */}
-      {myCommunities.length > 0 && (
+      {/* My Communities Section - Only show if user has NO private communities */}
+      {/* Hide this when CommunityContextTabs are visible to avoid redundancy */}
+      {myCommunities.length > 0 && myCommunities.filter(c => c.parentCommunityId !== null).length === 0 && (
         <Card className="mb-4">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
