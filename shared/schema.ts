@@ -13,6 +13,7 @@ import {
   char,
   serial,
   unique,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -258,14 +259,13 @@ export const collections = pgTable("collections", {
 
 // Prompt community sharing table - tracks which communities a prompt is shared with
 export const promptCommunitySharing = pgTable("prompt_community_sharing", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id, { onDelete: "cascade" }),
   communityId: varchar("community_id").notNull().references(() => communities.id, { onDelete: "cascade" }),
   sharedBy: varchar("shared_by").notNull().references(() => users.id),
   sharedAt: timestamp("shared_at").defaultNow(),
 }, (table) => [
-  // Composite unique constraint
-  unique().on(table.promptId, table.communityId),
+  // Composite primary key on promptId and communityId
+  primaryKey({ columns: [table.promptId, table.communityId] }),
   // Indexes for efficient queries
   index("idx_prompt_community_sharing_prompt").on(table.promptId),
   index("idx_prompt_community_sharing_community").on(table.communityId),
@@ -1290,7 +1290,6 @@ export const insertCommunityInviteSchema = createInsertSchema(communityInvites).
 });
 
 export const insertPromptCommunitySharingSchema = createInsertSchema(promptCommunitySharing).omit({
-  id: true,
   sharedAt: true,
 });
 
