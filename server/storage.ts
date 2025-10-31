@@ -1022,7 +1022,7 @@ export class DatabaseStorage implements IStorage {
     
     // Handle community sharing if specified
     if (sharedCommunityIds && sharedCommunityIds.length > 0) {
-      await this.updatePromptCommunitySharing(newPrompt.id, sharedCommunityIds);
+      await this.updatePromptCommunitySharing(newPrompt.id, sharedCommunityIds, promptData.userId);
     }
     
     return newPrompt;
@@ -1039,7 +1039,7 @@ export class DatabaseStorage implements IStorage {
     
     // Handle community sharing if specified
     if (sharedCommunityIds !== undefined) {
-      await this.updatePromptCommunitySharing(id, sharedCommunityIds);
+      await this.updatePromptCommunitySharing(id, sharedCommunityIds, updatedPrompt.userId);
     }
     
     return updatedPrompt;
