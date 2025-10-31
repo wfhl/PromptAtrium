@@ -34,14 +34,26 @@ export function CommunityContextTabs({
 
   // Filter to get user's private communities with full details
   // Include communities where user is a member (accepted status or no status field for backward compatibility)
-  const privateCommunities = allCommunities.filter(c => 
-    c.slug !== 'global' && 
-    c.slug !== 'general' &&
-    userCommunities.some(uc => 
-      uc.communityId === c.id && 
-      (uc.status === 'accepted' || uc.status === null || uc.status === undefined || !('status' in uc))
-    )
-  );
+  const privateCommunities = allCommunities.filter(c => {
+    // Skip global/general communities
+    if (c.slug === 'global' || c.slug === 'general') {
+      return false;
+    }
+    
+    // Check if user is a member of this community
+    const membership = userCommunities.find(uc => uc.communityId === c.id);
+    
+    // Include if membership exists and is accepted (or has no status field for backward compatibility)
+    if (membership) {
+      const hasAcceptedStatus = membership.status === 'accepted' || 
+                                membership.status === null || 
+                                membership.status === undefined || 
+                                !('status' in membership);
+      return hasAcceptedStatus;
+    }
+    
+    return false;
+  });
   
   // Debug logging
   console.log('CommunityContextTabs Debug:', {

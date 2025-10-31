@@ -1521,24 +1521,11 @@ export class DatabaseStorage implements IStorage {
 
   // Get private communities that a user has access to
   async getUserPrivateCommunities(userId: string): Promise<Community[]> {
+    console.log(`[getUserPrivateCommunities] Fetching private communities for user: ${userId}`);
     try {
       // Try query with status column first (new schema)
-      return await db
-        .select({
-          id: communities.id,
-          name: communities.name,
-          description: communities.description,
-          slug: communities.slug,
-          imageUrl: communities.imageUrl,
-          isActive: communities.isActive,
-          isPublic: communities.isPublic,
-          parentCommunityId: communities.parentCommunityId,
-          level: communities.level,
-          path: communities.path,
-          createdBy: communities.createdBy,
-          createdAt: communities.createdAt,
-          updatedAt: communities.updatedAt,
-        })
+      const results = await db
+        .select()
         .from(communities)
         .innerJoin(userCommunities, eq(communities.id, userCommunities.communityId))
         .where(
@@ -1553,34 +1540,36 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .orderBy(desc(communities.createdAt));
+      
+      // Extract just the community data from the joined result
+      const communityData = results.map(r => r.communities);
+      console.log(`[getUserPrivateCommunities] Found ${communityData.length} private communities for user ${userId}:`, communityData.map(c => ({ id: c.id, name: c.name, slug: c.slug })));
+      return communityData;
     } catch (error) {
       console.error("Error fetching user communities with status column:", error);
       // Fallback: Query without status column (for backward compatibility)
-      return await db
-        .select({
-          id: communities.id,
-          name: communities.name,
-          description: communities.description,
-          slug: communities.slug,
-          imageUrl: communities.imageUrl,
-          isActive: communities.isActive,
-          isPublic: communities.isPublic,
-          parentCommunityId: communities.parentCommunityId,
-          level: communities.level,
-          path: communities.path,
-          createdBy: communities.createdBy,
-          createdAt: communities.createdAt,
-          updatedAt: communities.updatedAt,
-        })
-        .from(communities)
-        .innerJoin(userCommunities, eq(communities.id, userCommunities.communityId))
-        .where(
-          and(
-            eq(userCommunities.userId, userId),
-            eq(communities.isActive, true)
+      try {
+        const fallbackResults = await db
+          .select()
+          .from(communities)
+          .innerJoin(userCommunities, eq(communities.id, userCommunities.communityId))
+          .where(
+            and(
+              eq(userCommunities.userId, userId),
+              eq(communities.isActive, true)
+            )
           )
-        )
-        .orderBy(desc(communities.createdAt));
+          .orderBy(desc(communities.createdAt));
+        
+        // Extract just the community data from the joined result
+        const communityData = fallbackResults.map(r => r.communities);
+        console.log(`[getUserPrivateCommunities] Fallback found ${communityData.length} private communities for user ${userId}:`, communityData.map(c => ({ id: c.id, name: c.name, slug: c.slug })));
+        return communityData;
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        // Last resort: return empty array
+        return [];
+      }
     }
   }
 
@@ -1686,9 +1675,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserCommunities(userId: string): Promise<UserCommunity[]> {
+    console.log(`[getUserCommunities] Fetching communities for user: ${userId}`);
     try {
       // Only return accepted memberships (or null/undefined for backward compatibility)
-      return await db.select().from(userCommunities).where(
+      const results = await db.select().from(userCommunities).where(
         and(
           eq(userCommunities.userId, userId),
           or(
@@ -1697,6 +1687,8 @@ export class DatabaseStorage implements IStorage {
           )
         )
       );
+      console.log(`[getUserCommunities] Found ${results.length} communities for user ${userId}:`, results);
+      return results;
     } catch (error) {
       console.error("Error fetching user communities with full schema:", error);
       // Fallback: try selecting only the columns that exist
@@ -1709,6 +1701,7 @@ export class DatabaseStorage implements IStorage {
           joinedAt: userCommunities.joinedAt,
         }).from(userCommunities).where(eq(userCommunities.userId, userId));
         
+        console.log(`[getUserCommunities] Fallback found ${results.length} communities for user ${userId}:`, results);
         // Add default status for backward compatibility - these are all accepted since they're old records
         return results.map(r => ({ ...r, status: 'accepted' as any, invitedBy: null, subCommunityId: null, respondedAt: null }));
       } catch (fallbackError) {

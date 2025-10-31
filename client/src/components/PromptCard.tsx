@@ -113,14 +113,28 @@ export function PromptCard({
   });
   
   // Filter to get user's communities with full details (excluding global)
-  const userCommunities = allCommunities.filter(c => 
-    c.slug !== 'global' && 
-    c.slug !== 'general' &&
-    userCommunityMemberships.some(uc => 
-      uc.communityId === c.id && 
-      (uc.status === 'accepted' || uc.status === null || uc.status === undefined || !('status' in uc))
-    )
-  );
+  // For regular users, we need to check the memberships they have from /api/user/communities
+  // and match them with the communities from /api/communities
+  const userCommunities = allCommunities.filter(c => {
+    // Skip global/general communities
+    if (c.slug === 'global' || c.slug === 'general') {
+      return false;
+    }
+    
+    // Check if user is a member of this community
+    const membership = userCommunityMemberships.find(uc => uc.communityId === c.id);
+    
+    // Include if membership exists and is accepted (or has no status field for backward compatibility)
+    if (membership) {
+      const hasAcceptedStatus = membership.status === 'accepted' || 
+                                membership.status === null || 
+                                membership.status === undefined || 
+                                !('status' in membership);
+      return hasAcceptedStatus;
+    }
+    
+    return false;
+  });
   
   // Debug logging
   console.log('PromptCard Debug:', {
@@ -131,6 +145,13 @@ export function PromptCard({
     isOwner: String(typedUser?.id) === String(prompt.userId),
     isSuperAdmin,
     isRegularUser,
+    userCommunityMembershipsCount: userCommunityMemberships.length,
+    userCommunityMemberships: userCommunityMemberships.map(uc => ({ 
+      communityId: uc.communityId, 
+      role: uc.role, 
+      status: uc.status 
+    })),
+    allCommunitiesCount: allCommunities.length,
     userCommunitiesCount: userCommunities.length,
     userCommunities: userCommunities.map(c => ({ id: c.id, name: c.name, slug: c.slug })),
     showActions,

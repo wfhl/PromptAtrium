@@ -4775,17 +4775,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.user.claims.sub;
         const user = await storage.getUser(userId);
         
+        console.log(`[API /api/communities] User ${userId} with role ${user?.role} is fetching communities`);
+        
         if (user?.role === 'super_admin' || user?.role === 'global_admin' || user?.role === 'developer') {
           // Admins see all communities
           const privateCommunities = await storage.getAllPrivateCommunities();
+          console.log(`[API /api/communities] Admin user ${userId} can see ${privateCommunities.length} private communities`);
           communities.push(...privateCommunities);
         } else {
           // Regular users only see communities they're members of
           const userCommunities = await storage.getUserPrivateCommunities(userId);
+          console.log(`[API /api/communities] Regular user ${userId} can see ${userCommunities.length} private communities they are member of`);
           communities.push(...userCommunities);
         }
       }
       
+      console.log(`[API /api/communities] Returning total ${communities.length} communities`);
       res.json(communities);
     } catch (error) {
       console.error("Error fetching communities:", error);
@@ -4949,7 +4954,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/user/communities', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
+      const user = await storage.getUser(userId);
+      console.log(`[API /api/user/communities] Fetching for user ${userId} with role: ${user?.role}`);
       const communities = await storage.getUserCommunities(userId);
+      console.log(`[API /api/user/communities] Returning ${communities.length} communities for user ${userId}`);
       res.json(communities);
     } catch (error) {
       console.error("Error fetching user communities:", error);
