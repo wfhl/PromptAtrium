@@ -136,10 +136,14 @@ export default function Community() {
   // Build query string for prompts
   const buildQuery = (offset = 0) => {
     const params = new URLSearchParams();
-    params.append("isPublic", "true");
+    // Only filter by isPublic if we're viewing the global community
+    // Private community prompts are not public
+    if (!selectedCommunityId) {
+      params.append("isPublic", "true");
+    }
     if (searchQuery) params.append("search", searchQuery);
     
-    // Add community filter
+    // Add community filter for private communities
     if (selectedCommunityId) {
       params.append("communityId", selectedCommunityId);
     }
