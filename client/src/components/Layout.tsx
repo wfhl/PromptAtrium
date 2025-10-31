@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkImportModal } from "@/components/BulkImportModal";
+import { IntroductionModal } from "@/components/IntroductionModal";
 import { MobilePageNav } from "@/components/MobilePageNav";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -65,6 +66,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
   const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
+  const [introductionModalOpen, setIntroductionModalOpen] = useState(false);
 
   // Apply theme to document
   useEffect(() => {
@@ -160,6 +162,10 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
 
   const handleImportPrompts = () => {
     setBulkImportModalOpen(true);
+  };
+
+  const handleOpenIntroduction = () => {
+    setIntroductionModalOpen(true);
   };
 
   const onCreateCollectionSubmit = (data: CollectionFormData) => {
