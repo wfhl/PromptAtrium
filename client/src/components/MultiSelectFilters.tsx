@@ -348,11 +348,11 @@ export function MultiSelectFilters({
 
       {/* Filter Tabs - Show when showTabs is true and filters are enabled */}
       {showTabs && (
-        <div className="space-y-1">
+        <div className="space-y-2">
         {/* Category Tabs */}
         {enabledFilters.category && filterOptions?.categories && filterOptions.categories.length > 0 && (
-          <div className="inline-flex w-auto pr-3">
-            <div className="inline-flex h-6 items-center justify-center rounded-lg bg-black/90 backdrop-blur-sm px-3 w-auto gap-1">
+          <div className="w-full">
+            <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-black/90 backdrop-blur-sm">
               {/* All Categories button */}
               <button
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
@@ -402,8 +402,8 @@ export function MultiSelectFilters({
 
         {/* Type Tabs */}
         {enabledFilters.type && filterOptions?.promptTypes && filterOptions.promptTypes.length > 0 && (
-          <div className="inline-flex w-auto">
-            <div className="inline-flex h-6 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+          <div className="w-full">
+            <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-black/50 backdrop-blur-sm">
               {/* All Types button */}
               <button
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
@@ -453,8 +453,8 @@ export function MultiSelectFilters({
 
         {/* Style Tabs */}
         {enabledFilters.style && filterOptions?.promptStyles && filterOptions.promptStyles.length > 0 && (
-          <div className="inline-flex w-auto">
-            <div className="inline-flex h-6 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+          <div className="w-full">
+            <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-black/50 backdrop-blur-sm">
               {/* All Styles button */}
               <button
                 className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
@@ -504,9 +504,8 @@ export function MultiSelectFilters({
 
         {/* Intended Generator Tabs */}
         {enabledFilters.intendedGenerator && filterOptions?.intendedGenerators && filterOptions.intendedGenerators.length > 0 && (
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="inline-flex w-auto">
-              <div className="inline-flex h-6 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+          <div className="w-full">
+            <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-black/50 backdrop-blur-sm">
                 {/* All Generators button */}
                 <button
                   className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
@@ -550,16 +549,14 @@ export function MultiSelectFilters({
                     {generator}
                   </button>
                 ))}
-              </div>
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {/* Recommended Model Tabs */}
         {enabledFilters.recommendedModel && filterOptions?.models && filterOptions.models.length > 0 && (
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="inline-flex w-auto">
-              <div className="inline-flex h-6 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+          <div className="w-full">
+            <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-black/50 backdrop-blur-sm">
                 {/* All Models button */}
                 <button
                   className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
@@ -603,16 +600,14 @@ export function MultiSelectFilters({
                     {model}
                   </button>
                 ))}
-              </div>
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {/* Collection Tabs */}
         {enabledFilters.collection && filterOptions?.collections && filterOptions.collections.length > 0 && (
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="inline-flex w-auto">
-              <div className="inline-flex h-6 items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm p-1 w-auto gap-1">
+          <div className="w-full">
+            <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-black/50 backdrop-blur-sm">
                 {/* All Collections button */}
                 <button
                   className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
@@ -657,9 +652,8 @@ export function MultiSelectFilters({
                     {collection.name}
                   </button>
                 ))}
-              </div>
             </div>
-          </ScrollArea>
+          </div>
         )}
       </div>
       )}
