@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, Heart, GitFork, UserPlus, Check, X, Bookmark, Star, Image } from "lucide-react";
+import { Bell, Heart, GitBranch, UserPlus, Check, X, Bookmark, Star, Image } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,8 +23,8 @@ const getNotificationIcon = (type: Notification["type"]) => {
       return <UserPlus className="h-4 w-4 text-blue-500" />;
     case "like":
       return <Heart className="h-4 w-4 fill-red-500 text-red-500" />;
-    case "fork":
-      return <GitFork className="h-4 w-4 text-purple-500" />;
+    case "branch":
+      return <GitBranch className="h-4 w-4 text-purple-500" />;
     case "approval": // For featured prompts
       return <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />;
     case "image_contribution":
@@ -85,8 +85,8 @@ export function NotificationModal({ open, onOpenChange }: NotificationModalProps
     const message = notification.message;
     
     // First, check if there's a username at the beginning that should be linked
-    // Pattern matches: "Username liked...", "Username started following...", "Username forked...", etc.
-    const usernameMatch = message.match(/^([^\s]+)\s+(liked|started following|forked|contributed|approved|commented|mentioned|created|joined)/);
+    // Pattern matches: "Username liked...", "Username started following...", "Username branched...", etc.
+    const usernameMatch = message.match(/^([^\s]+)\s+(liked|started following|branched|contributed|approved|commented|mentioned|created|joined)/);
     
     if (usernameMatch && notification.relatedUserId && (notification as any).relatedUser) {
       const username = usernameMatch[1];

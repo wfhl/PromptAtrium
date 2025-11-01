@@ -1,7 +1,7 @@
 import { GitBranch, Heart, Plus } from "lucide-react";
 
 interface ActivityItemProps {
-  type: "fork" | "like" | "create";
+  type: "branch" | "like" | "create";
   user: string;
   promptName: string;
   timestamp: string;
@@ -11,7 +11,7 @@ interface ActivityItemProps {
 export function ActivityItem({ type, user, promptName, timestamp, testId }: ActivityItemProps) {
   const getIcon = () => {
     switch (type) {
-      case "fork":
+      case "branch":
         return <GitBranch className="h-3 w-3 text-white" />;
       case "like":
         return <Heart className="h-3 w-3 text-white" />;
@@ -22,7 +22,7 @@ export function ActivityItem({ type, user, promptName, timestamp, testId }: Acti
 
   const getIconColor = () => {
     switch (type) {
-      case "fork":
+      case "branch":
         return "bg-blue-500";
       case "like":
         return "bg-red-500";
@@ -33,8 +33,8 @@ export function ActivityItem({ type, user, promptName, timestamp, testId }: Acti
 
   const getActionText = () => {
     switch (type) {
-      case "fork":
-        return "forked";
+      case "branch":
+        return "branched";
       case "like":
         return "liked";
       case "create":
