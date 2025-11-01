@@ -172,7 +172,7 @@ export interface IStorage {
     favoritesCount: number;
     ratingsCount: number;
   }>;
-  forkPrompt(promptId: string, userId: string): Promise<Prompt>;
+  branchPrompt(promptId: string, userId: string): Promise<Prompt>;
   contributeImagesToPrompt(promptId: string, imageUrls: string[], contributorId: string): Promise<Prompt>;
   
   // Project operations
@@ -229,7 +229,7 @@ export interface IStorage {
     totalPrompts: number;
     totalLikes: number;
     collections: number;
-    forksCreated: number;
+    branchesCreated: number;
   }>;
   
   // Follow operations
@@ -867,7 +867,7 @@ export class DatabaseStorage implements IStorage {
         author: prompts.author,
         sourceUrl: prompts.sourceUrl,
         version: prompts.version,
-        forkOf: prompts.forkOf,
+        branchOf: prompts.branchOf,
         usageCount: prompts.usageCount,
         likes: prompts.likes,
         qualityScore: prompts.qualityScore,
@@ -928,7 +928,7 @@ export class DatabaseStorage implements IStorage {
         author: prompts.author,
         sourceUrl: prompts.sourceUrl,
         version: prompts.version,
-        forkOf: prompts.forkOf,
+        branchOf: prompts.branchOf,
         usageCount: prompts.usageCount,
         likes: prompts.likes,
         qualityScore: prompts.qualityScore,
@@ -1014,7 +1014,7 @@ export class DatabaseStorage implements IStorage {
         author: prompts.author,
         sourceUrl: prompts.sourceUrl,
         version: prompts.version,
-        forkOf: prompts.forkOf,
+        branchOf: prompts.branchOf,
         usageCount: prompts.usageCount,
         likes: prompts.likes,
         qualityScore: prompts.qualityScore,
@@ -1186,14 +1186,14 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async forkPrompt(promptId: string, userId: string): Promise<Prompt> {
+  async branchPrompt(promptId: string, userId: string): Promise<Prompt> {
     const [originalPrompt] = await db.select().from(prompts).where(eq(prompts.id, promptId));
     if (!originalPrompt) {
       throw new Error("Prompt not found");
     }
 
-    const forkedPrompt: InsertPrompt = {
-      name: `${originalPrompt.name} (Fork)`,
+    const branchedPrompt: InsertPrompt = {
+      name: `${originalPrompt.name} (Branch)`,
       description: originalPrompt.description,
       category: originalPrompt.category,
       promptContent: originalPrompt.promptContent,
@@ -1210,7 +1210,7 @@ export class DatabaseStorage implements IStorage {
       author: originalPrompt.author,
       sourceUrl: originalPrompt.sourceUrl,
       version: 1,
-      forkOf: originalPrompt.id,
+      branchOf: originalPrompt.id,
       intendedGenerator: originalPrompt.intendedGenerator,
       recommendedModels: originalPrompt.recommendedModels || [],
       technicalParams: originalPrompt.technicalParams as any,
@@ -1222,16 +1222,16 @@ export class DatabaseStorage implements IStorage {
       userId,
     };
 
-    const newPrompt = await this.createPrompt(forkedPrompt);
+    const newPrompt = await this.createPrompt(branchedPrompt);
     
-    // Create notification when someone forks a prompt (if the original has an owner)
+    // Create notification when someone branches a prompt (if the original has an owner)
     if (originalPrompt.userId && originalPrompt.userId !== userId) {
-      const [forker] = await db.select().from(users).where(eq(users.id, userId));
-      if (forker) {
+      const [brancher] = await db.select().from(users).where(eq(users.id, userId));
+      if (brancher) {
         await this.createNotification({
           userId: originalPrompt.userId,
-          type: "fork",
-          message: `${forker.username || forker.firstName || 'Someone'} forked your prompt "${originalPrompt.name}"`,
+          type: "branch",
+          message: `${brancher.username || brancher.firstName || 'Someone'} branched your prompt "${originalPrompt.name}"`,
           relatedUserId: userId,
           relatedPromptId: newPrompt.id,
           relatedListId: null,
@@ -1239,7 +1239,7 @@ export class DatabaseStorage implements IStorage {
           metadata: { 
             originalPromptId: originalPrompt.id,
             originalPromptName: originalPrompt.name,
-            forkedPromptId: newPrompt.id
+            branchedPromptId: newPrompt.id
           }
         });
       }
@@ -2081,7 +2081,7 @@ export class DatabaseStorage implements IStorage {
     totalPrompts: number;
     totalLikes: number;
     collections: number;
-    forksCreated: number;
+    branchesCreated: number;
   }> {
     const [userPrompts] = await db
       .select({ count: sql<number>`count(*)` })
@@ -2098,16 +2098,16 @@ export class DatabaseStorage implements IStorage {
       .from(collections)
       .where(eq(collections.userId, userId));
 
-    const [userForks] = await db
+    const [userBranches] = await db
       .select({ count: sql<number>`count(*)` })
       .from(prompts)
-      .where(and(eq(prompts.userId, userId), sql`${prompts.forkOf} IS NOT NULL`));
+      .where(and(eq(prompts.userId, userId), sql`${prompts.branchOf} IS NOT NULL`));
 
     return {
       totalPrompts: userPrompts?.count || 0,
       totalLikes: userLikes?.sum || 0,
       collections: userCollections?.count || 0,
-      forksCreated: userForks?.count || 0,
+      branchesCreated: userBranches?.count || 0,
     };
   }
 
