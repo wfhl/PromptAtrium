@@ -7,16 +7,16 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Prompt } from "@shared/schema";
 
-export default function ForkedPrompts() {
+export default function BranchedPrompts() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch forked prompts
-  const { data: forkedPrompts = [], isLoading } = useQuery<Prompt[]>({
-    queryKey: ["/api/prompts/forked"],
+  // Fetch branched prompts
+  const { data: branchedPrompts = [], isLoading } = useQuery<Prompt[]>({
+    queryKey: ["/api/prompts/branched"],
   });
 
   // Filter prompts based on search query
-  const filteredPrompts = forkedPrompts.filter(prompt => {
+  const filteredPrompts = branchedPrompts.filter(prompt => {
     const query = searchQuery.toLowerCase();
     return (
       prompt.name.toLowerCase().includes(query) ||
@@ -42,21 +42,21 @@ export default function ForkedPrompts() {
           <div className="mb-4 md:mb-0">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
               <GitBranch className="h-6 w-6 md:h-8 md:w-8 text-blue-500" />
-              Forked Prompts
+              Branched Prompts
             </h1>
             <p className="text-sm md:text-base text-muted-foreground">
-              All the prompts you've forked and customized
+              All the prompts you've branched and customized
             </p>
           </div>
           
           <div className="flex items-center space-x-2">
             <input
               type="text"
-              placeholder="Search forked prompts..."
+              placeholder="Search branched prompts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full md:w-64 px-4 py-2 border rounded-md"
-              data-testid="input-search-forked"
+              data-testid="input-search-branched"
             />
           </div>
         </div>
@@ -65,7 +65,7 @@ export default function ForkedPrompts() {
       {/* Content */}
       {isLoading ? (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">Loading your forked prompts...</p>
+          <p className="text-muted-foreground">Loading your branched prompts...</p>
         </div>
       ) : filteredPrompts.length > 0 ? (
         <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
@@ -84,7 +84,7 @@ export default function ForkedPrompts() {
           <CardContent className="p-8 text-center">
             <GitBranch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">
-              No forked prompts match your search.
+              No branched prompts match your search.
             </p>
           </CardContent>
         </Card>
@@ -93,7 +93,7 @@ export default function ForkedPrompts() {
           <CardContent className="p-8 text-center">
             <GitBranch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">
-              You haven't forked any prompts yet.
+              You haven't branched any prompts yet.
             </p>
             <Link href="/community">
               <Button data-testid="button-explore-community">
