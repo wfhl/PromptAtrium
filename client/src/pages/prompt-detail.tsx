@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Copy, Heart, Share2, Edit, GitFork, ChevronLeft, LogIn, UserPlus, Download, Link2, Bookmark, Check, ZoomIn, ImageIcon, Link as LinkIcon } from "lucide-react";
+import { Copy, Heart, Share2, Edit, GitBranch, ChevronLeft, LogIn, UserPlus, Download, Link2, Bookmark, Check, ZoomIn, ImageIcon, Link as LinkIcon } from "lucide-react";
 import { Link } from "wouter";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -177,11 +177,11 @@ export default function PromptDetail() {
     }
   };
 
-  // Handle fork
-  const handleFork = () => {
-    // Navigate to fork page (to be implemented)
+  // Handle branch
+  const handleBranch = () => {
+    // Navigate to branch page (to be implemented)
     toast({
-      title: "Fork feature coming soon",
+      title: "Branch feature coming soon",
       description: "This feature is under development",
     });
   };
@@ -720,12 +720,12 @@ export default function PromptDetail() {
               </div>
               {user && (
                 <Button 
-                  onClick={handleFork} 
+                  onClick={handleBranch} 
                   variant="outline" 
-                  data-testid="button-fork"
+                  data-testid="button-branch"
                 >
-                  <GitFork className="h-4 w-4 mr-2" />
-                  Fork Prompt
+                  <GitBranch className="h-4 w-4 mr-2" />
+                  Branch Prompt
                 </Button>
               )}
             </div>
