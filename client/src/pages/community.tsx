@@ -660,7 +660,7 @@ export default function Community() {
         }
         setLocation(`/community?${params.toString()}`);
       }} className="space-y-1 md:space-y-2">
-        <TabsList className="grid grid-cols-3">
+        <TabsList className="grid grid-cols-3 mb-4">
           <TabsTrigger value="prompts" className="text-xs md:text-sm" data-testid="tab-prompts">
             <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">Prompts</span>
@@ -679,32 +679,7 @@ export default function Community() {
 
         {/* Prompts Tab */}
         <TabsContent value="prompts" className="space-y-4">
-          {/* Header with Add Prompt button */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">
-              {selectedCommunityId ? "Private Community Prompts" : "Global Community Prompts"}
-            </h2>
-            {/* Only show Add Prompt button if:
-                - It's the global community (no selectedCommunityId), OR
-                - User is a member of the selected private community, OR  
-                - User is a super admin */}
-            {(!selectedCommunityId || 
-              userCommunities.some(uc => uc.communityId === selectedCommunityId) ||
-              (user as any)?.role === 'super_admin' || 
-              (user as any)?.role === 'global_admin' ||
-              (user as any)?.role === 'developer') && (
-              <Button 
-                onClick={() => {
-                  setEditingPrompt(null);
-                  setPromptModalOpen(true);
-                }}
-                data-testid="button-add-prompt"
-              >
-                <Lightbulb className="h-4 w-4 mr-2" />
-                Add Prompt
-              </Button>
-            )}
-          </div>
+         
 
           {/* Search Bar */}
           <div className="flex gap-2">
