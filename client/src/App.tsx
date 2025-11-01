@@ -21,7 +21,7 @@ import Invite from "@/pages/invite";
 import ProfileSettings from "@/pages/profile-settings";
 import UserProfile from "@/pages/user-profile";
 import LikedPrompts from "@/pages/LikedPrompts";
-import ForkedPrompts from "@/pages/ForkedPrompts";
+import BranchedPrompts from "@/pages/BranchedPrompts";
 import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import QuickPrompterPage from "@/pages/tools/quick-prompter";
@@ -197,8 +197,8 @@ function Router() {
             <Route path="/liked-prompts">
               {() => <Layout><LikedPrompts /></Layout>}
             </Route>
-            <Route path="/forked-prompts">
-              {() => <Layout><ForkedPrompts /></Layout>}
+            <Route path="/branched-prompts">
+              {() => <Layout><BranchedPrompts /></Layout>}
             </Route>
             <Route path="/install-guide">
               {() => <Layout><InstallGuide /></Layout>}
