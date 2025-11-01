@@ -498,9 +498,9 @@ export function PromptCard({
     },
   });
 
-  const forkMutation = useMutation({
+  const branchMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", `/api/prompts/${prompt.id}/fork`);
+      await apiRequest("POST", `/api/prompts/${prompt.id}/branch`);
     },
     onSuccess: () => {
       // Invalidate all prompt-related queries to ensure immediate UI updates
@@ -512,7 +512,7 @@ export function PromptCard({
       });
       toast({
         title: "Success",
-        description: "Prompt forked successfully! You now have the forked prompt available in your own Library",
+        description: "Prompt branched successfully! You now have the branched prompt available in your own Library",
       });
     },
     onError: (error) => {
@@ -529,7 +529,7 @@ export function PromptCard({
       }
       toast({
         title: "Error",
-        description: "Failed to fork prompt",
+        description: "Failed to branch prompt",
         variant: "destructive",
       });
     },
@@ -1591,14 +1591,14 @@ export function PromptCard({
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* 6. Fork - Fork icon (existing) */}
+                {/* 6. Branch - Branch icon (existing) */}
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => forkMutation.mutate()}
-                  disabled={forkMutation.isPending}
+                  onClick={() => branchMutation.mutate()}
+                  disabled={branchMutation.isPending}
                   className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-200 hover:scale-110 active:scale-95"
-                  data-testid={`button-fork-${prompt.id}`}
+                  data-testid={`button-branch-${prompt.id}`}
                 >
                   <GitBranch className="h-4 w-4" />
                 </Button>
