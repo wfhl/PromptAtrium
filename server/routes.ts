@@ -1176,33 +1176,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/prompts/:id/fork', isAuthenticated, async (req: any, res) => {
+  app.post('/api/prompts/:id/branch', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const forkedPrompt = await storage.forkPrompt(req.params.id, userId);
+      const branchedPrompt = await storage.branchPrompt(req.params.id, userId);
       
       // Get the original prompt to find the owner
       const originalPrompt = await storage.getPrompt(req.params.id);
       if (originalPrompt && originalPrompt.userId !== userId) {
-        const forker = await storage.getUser(userId);
-        if (forker) {
+        const brancher = await storage.getUser(userId);
+        if (brancher) {
           await storage.createNotification({
             userId: originalPrompt.userId,
-            type: "fork",
-            message: `${forker.username || forker.firstName || 'Someone'} forked your prompt "${originalPrompt.name}"`,
+            type: "branch",
+            message: `${brancher.username || brancher.firstName || 'Someone'} branched your prompt "${originalPrompt.name}"`,
             relatedUserId: userId,
             relatedPromptId: req.params.id,
             relatedListId: null,
             isRead: false,
-            metadata: { promptName: originalPrompt.name, forkedPromptId: forkedPrompt.id }
+            metadata: { promptName: originalPrompt.name, branchedPromptId: branchedPrompt.id }
           });
         }
       }
       
-      res.status(201).json(forkedPrompt);
+      res.status(201).json(branchedPrompt);
     } catch (error) {
-      console.error("Error forking prompt:", error);
-      res.status(500).json({ message: "Failed to fork prompt" });
+      console.error("Error branching prompt:", error);
+      res.status(500).json({ message: "Failed to branch prompt" });
     }
   });
 
@@ -1862,7 +1862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/prompts/forked', isAuthenticated, async (req: any, res) => {
+  app.get('/api/prompts/branched', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
       
@@ -1870,19 +1870,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentUser = await storage.getUser(userId);
       const showNsfw = currentUser?.showNsfw ?? true;
       
-      // Get all prompts where forkOf is not null and userId matches
-      const forkedPrompts = await storage.getPrompts({
+      // Get all prompts where branchOf is not null and userId matches
+      const branchedPrompts = await storage.getPrompts({
         userId: userId,
         showNsfw: showNsfw,
       });
       
-      // Filter to only include prompts that have a forkOf value
-      const actualForkedPrompts = forkedPrompts.filter(prompt => prompt.forkOf !== null);
+      // Filter to only include prompts that have a branchOf value
+      const actualBranchedPrompts = branchedPrompts.filter(prompt => prompt.branchOf !== null);
       
-      res.json(actualForkedPrompts);
+      res.json(actualBranchedPrompts);
     } catch (error) {
-      console.error("Error fetching forked prompts:", error);
-      res.status(500).json({ message: "Failed to fetch forked prompts" });
+      console.error("Error fetching branched prompts:", error);
+      res.status(500).json({ message: "Failed to fetch branched prompts" });
     }
   });
 
