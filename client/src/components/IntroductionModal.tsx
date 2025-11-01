@@ -271,12 +271,12 @@ export function IntroductionModal({ open, onComplete, user }: IntroductionModalP
                       <CardHeader className="p-3 sm:p-4">
                         <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                           <Bookmark className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                          Bookmarks & Forks
+                          Bookmarks & Branches
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2 text-xs sm:text-sm text-gray-300 p-3 sm:p-4 pt-0 sm:pt-0">
                         <p><strong>Bookmark:</strong> Save prompts you love to your personal library for quick access later.</p>
-                        <p><strong>Fork:</strong> Create your own version of any public prompt, customizing it while crediting the original creator.</p>
+                        <p><strong>Branch:</strong> Create your own version of any public prompt, customizing it while crediting the original creator.</p>
                         <p>Build your inspiration library and iterate on community ideas!</p>
                       </CardContent>
                     </Card>

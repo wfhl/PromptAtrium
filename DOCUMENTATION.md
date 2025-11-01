@@ -88,7 +88,7 @@ PromptAtrium is a comprehensive AI prompt management platform that enables users
 #### 1. Prompt Management
 - **CRUD Operations**: Create, read, update, delete prompts
 - **Rich Metadata**: Categories, tags, models, styles, templates
-- **Version Control**: Fork prompts, track history
+- **Version Control**: Branch prompts, track history
 - **Visibility Control**: Public/private/NSFW flags
 - **Batch Operations**: Import/export, bulk updates
 
@@ -483,7 +483,7 @@ psql $DATABASE_URL < backup-20240101.sql
 - Like prompts to show appreciation
 - Favorite prompts for quick access
 - Rate prompts (1-5 stars)
-- Fork prompts to create variations
+- Branch prompts to create variations
 
 ### Advanced Tools
 

@@ -62,7 +62,7 @@ export default function PrivacyPolicy() {
                   <li>Prompts, including text and any generated images you upload</li>
                   <li>Collections and their metadata</li>
                   <li>Comments and interactions with other users' content</li>
-                  <li>Likes, bookmarks, and forks of prompts</li>
+                  <li>Likes, bookmarks, and branches of prompts</li>
                 </ul>
               </div>
 

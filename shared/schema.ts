@@ -599,7 +599,7 @@ export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id), // Who receives the notification
   type: varchar("type", { 
-    enum: ["follow", "like", "fork", "approval", "contribution_approved", "comment", "mention", "image_contribution"] 
+    enum: ["follow", "like", "branch", "approval", "contribution_approved", "comment", "mention", "image_contribution"] 
   }).notNull(),
   message: text("message").notNull(),
   relatedUserId: varchar("related_user_id").references(() => users.id), // Who triggered the notification

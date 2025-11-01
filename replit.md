@@ -103,7 +103,7 @@ A comprehensive platform for managing, sharing, and generating AI prompts. Featu
 #### 1. Prompt Management
 - Create, edit, and organize prompts
 - Rich metadata (categories, tags, models)
-- Version history and forking
+- Version history and branching
 - Public/private visibility controls
 
 #### 2. Community Features

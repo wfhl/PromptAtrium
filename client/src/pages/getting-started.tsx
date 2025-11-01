@@ -15,7 +15,7 @@ import {
   Rocket,
   Target,
   Heart,
-  GitFork,
+  GitBranch,
   Bookmark,
   MessageSquare,
   TrendingUp,
@@ -127,7 +127,7 @@ export default function GettingStarted() {
               <ul className="space-y-2 text-sm">
                 <li>• Follow your favorite creators</li>
                 <li>• Like and comment on prompts</li>
-                <li>• Fork prompts to build on ideas</li>
+                <li>• Branch prompts to build on ideas</li>
                 <li>• Share your creations</li>
                 <li>• Join discussions</li>
               </ul>
@@ -271,11 +271,11 @@ export default function GettingStarted() {
 
                   <div>
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
-                      <GitFork className="h-4 w-4 text-purple-500" />
-                      Forking & Building On Ideas
+                      <GitBranch className="h-4 w-4 text-purple-500" />
+                      Branching & Building On Ideas
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Fork any public prompt to create your own version. Add your twist 
+                      Branch any public prompt to create your own version. Add your twist 
                       while crediting the original creator.
                     </p>
                   </div>
@@ -325,7 +325,7 @@ export default function GettingStarted() {
                 <div>
                   <h3 className="font-semibold mb-2">Community Etiquette</h3>
                   <ul className="space-y-1 text-muted-foreground">
-                    <li>• Always credit original creators when forking or adapting</li>
+                    <li>• Always credit original creators when branching or adapting</li>
                     <li>• Provide constructive feedback in comments</li>
                     <li>• Mark NSFW content appropriately</li>
                     <li>• Respect others' creative work and intellectual property</li>

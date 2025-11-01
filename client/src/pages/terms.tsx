@@ -188,15 +188,15 @@ export default function TermsAndConditions() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Forking & Attribution</h3>
+                <h3 className="font-semibold text-foreground mb-2">Branching & Attribution</h3>
                 <p>
-                  When forking another user's prompt:
+                  When branching another user's prompt:
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
                   <li>The original creator is automatically attributed</li>
                   <li>You must not remove or hide this attribution</li>
-                  <li>You may modify the forked content</li>
-                  <li>The fork creates a new work that you own</li>
+                  <li>You may modify the branched content</li>
+                  <li>The branch creates a new work that you own</li>
                 </ul>
               </div>
 

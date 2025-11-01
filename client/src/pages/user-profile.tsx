@@ -85,7 +85,7 @@ export default function UserProfile() {
     totalPrompts: number;
     totalLikes: number;
     collections: number;
-    forksCreated: number;
+    branchesCreated: number;
     followers: number;
     following: number;
   }>({
@@ -278,9 +278,9 @@ export default function UserProfile() {
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="flex justify-between">
-                  <span className="text-sm">Forks</span>
-                  <span className="font-bold" data-testid={`text-forks-count-mobile-${profile.id}`}>
-                    {stats?.forksCreated || 0}
+                  <span className="text-sm">Branches</span>
+                  <span className="font-bold" data-testid={`text-branches-count-mobile-${profile.id}`}>
+                    {stats?.branchesCreated || 0}
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
