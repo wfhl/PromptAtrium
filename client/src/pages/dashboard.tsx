@@ -290,7 +290,7 @@ export default function Dashboard() {
     totalPrompts: number;
     totalLikes: number;
     collections: number;
-    forksCreated: number;
+    branchesCreated: number;
   }>({
     queryKey: ["/api/user/stats"],
     enabled: isAuthenticated,
@@ -745,13 +745,13 @@ export default function Dashboard() {
                     testId="stat-collections"
                   />
                 </Link>
-                <Link href="/forked-prompts" className="hover:scale-105 transition-transform cursor-pointer">
+                <Link href="/branched-prompts" className="hover:scale-105 transition-transform cursor-pointer">
                   <StatsCard
-                    title="Forks Created"
-                    value={userStats?.forksCreated || 0}
+                    title="Branches Created"
+                    value={userStats?.branchesCreated || 0}
                     icon={GitBranch}
                     iconColor="bg-blue-500/10 text-blue-500"
-                    testId="stat-forks"
+                    testId="stat-branches"
                   />
                 </Link>
               </div>
