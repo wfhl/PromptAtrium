@@ -28,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { User, Collection } from "@shared/schema";
+import type { User, Collection, UserCommunity } from "@shared/schema";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -112,6 +112,14 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
     queryKey: ["/api/credits/balance"],
     enabled: isAuthenticated,
     staleTime: 60 * 1000, // Refresh every minute
+    retry: false,
+  });
+
+  // Fetch user's community memberships to check if they're admin of any community
+  const { data: userCommunityMemberships = [] } = useQuery<UserCommunity[]>({
+    queryKey: ["/api/user/communities"],
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
   });
 
@@ -350,7 +358,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 </Link>
               </div>
 
-              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer") && (
+              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer" || userCommunityMemberships.some(m => m.role === "admin")) && (
                 <div 
                   ref={setLinkRef('/admin')}
                   onMouseEnter={(e) => positionTo(e.currentTarget as HTMLElement, '/admin')}
@@ -775,7 +783,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
                 Marketplace
               </Link>
 
-              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer") && (
+              {(typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer" || userCommunityMemberships.some(m => m.role === "admin")) && (
                 <Link 
                   href="/admin" 
                   className={isActiveRoute("/admin") ? "text-yellow-400 px-2 py-2 rounded-md bg-yellow-400/10 border border-yellow-400/30 flex items-center gap-1 font-medium" : "text-yellow-400 hover:text-yellow-300 px-2 py-2 rounded-md transition-colors flex items-center gap-1"} 

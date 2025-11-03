@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle, Calendar as CalendarIcon, Mail, Trash2, ExternalLink, MoreVertical, UserCheck, UserMinus, Activity, BarChart, ShieldCheck, FileText, AlertTriangle, History, Bell } from "lucide-react";
-import type { Community, User, UserRole } from "@shared/schema";
+import type { Community, User, UserRole, UserCommunity } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -54,7 +54,7 @@ type MemberInviteFormData = z.infer<typeof memberInviteSchema>;
 type CollectionFormData = z.infer<typeof collectionSchema>;
 
 export default function AdminPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [communityModalOpen, setCommunityModalOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
@@ -75,8 +75,16 @@ export default function AdminPage() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  // Check if user is admin (super admin, global admin, community admin, or developer)
-  if (!authLoading && (!user || !["super_admin", "global_admin", "community_admin", "developer"].includes((user as any).role))) {
+  // Fetch user's community memberships to check if they're admin of any community  
+  const { data: userCommunityMemberships = [] } = useQuery<UserCommunity[]>({
+    queryKey: ["/api/user/communities"],
+    enabled: isAuthenticated,
+  });
+
+  const isAdminOfAnyComm = userCommunityMemberships.some(m => m.role === "admin");
+
+  // Check if user is admin (super admin, global admin, community admin, developer, or admin of any community)
+  if (!authLoading && (!user || (!["super_admin", "global_admin", "community_admin", "developer"].includes((user as any).role) && !isAdminOfAnyComm))) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-96">

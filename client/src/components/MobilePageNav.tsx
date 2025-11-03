@@ -5,10 +5,11 @@ import { FileText, Users, Wrench, ShoppingBag, Home, Crown } from "lucide-react"
 import { useLongPress } from "@/hooks/useLongPress";
 import { NavTabDropdown } from "./NavTabDropdown";
 import { useAuth } from "@/hooks/useAuth";
-import type { User } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+import type { User, UserCommunity } from "@shared/schema";
 
 export function MobilePageNav() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const typedUser = user as User;
   const [location, setLocation] = useLocation();
   const [openDropdown, setOpenDropdown] = useState<'library' | 'tools' | 'community' | 'marketplace' | null>(null);
@@ -20,8 +21,16 @@ export function MobilePageNav() {
   const isMarketplacePage = location.startsWith("/marketplace");
   const isAdminPage = location.startsWith("/admin");
   
+  // Fetch user's community memberships to check if they're admin of any community
+  const { data: userCommunityMemberships = [] } = useQuery<UserCommunity[]>({
+    queryKey: ["/api/user/communities"],
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false,
+  });
+  
   // Check if user has admin access
-  const hasAdminAccess = typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer";
+  const hasAdminAccess = typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer" || userCommunityMemberships.some(m => m.role === "admin");
 
   // Button refs for dropdown positioning
   const homeButtonRef = useRef<HTMLButtonElement>(null);
