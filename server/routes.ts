@@ -27,6 +27,7 @@ import aiAnalyzerRouter from "./routes/aiAnalyzer";
 import captionRouter from "./routes/caption";
 import enhancePromptRouter from "./routes/enhance-prompt";
 import systemDataRouter from "./routes/system-data";
+import adminRouter from "./routes/admin";
 import { 
   authLimiter, 
   apiLimiter, 
@@ -6602,6 +6603,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/caption', captionRouter);
   app.use('/api/enhance-prompt', enhancePromptRouter);
   app.use('/api/system-data', systemDataRouter);
+  
+  // Register Admin routes
+  app.use('/api/admin', adminRouter);
   
   // Generate prompt metadata endpoint for ShareToLibraryModal
   app.post('/api/generate-prompt-metadata', async (req, res) => {

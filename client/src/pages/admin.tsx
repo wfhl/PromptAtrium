@@ -15,12 +15,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle, Calendar as CalendarIcon, Mail, Trash2, ExternalLink, MoreVertical, UserCheck, UserMinus } from "lucide-react";
+import { Plus, Settings, Users, Shield, Crown, Folder, UserPlus, Search, Copy, Link2, CheckCircle, Calendar as CalendarIcon, Mail, Trash2, ExternalLink, MoreVertical, UserCheck, UserMinus, Activity, BarChart, ShieldCheck, FileText, AlertTriangle, History, Bell } from "lucide-react";
 import type { Community, User, UserRole } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
+
+// Import new admin components
+import { SystemOverview } from "@/components/admin/SystemOverview";
+import { ContentModerationHub } from "@/components/admin/ContentModerationHub";
+import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 
 const communitySchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -126,13 +131,13 @@ export default function AdminPage() {
 
 
   // Fetch users (for user management)
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
     enabled: isSuperAdmin && !!user,
   });
 
   // Fetch community members (when member modal is open)
-  const { data: communityMembers = [], isLoading: membersLoading, refetch: refetchMembers } = useQuery({
+  const { data: communityMembers = [], isLoading: membersLoading, refetch: refetchMembers } = useQuery<any[]>({
     queryKey: ["/api/communities", selectedCommunityForMembers?.id, "members"],
     enabled: !!selectedCommunityForMembers && !!user,
   });
@@ -567,16 +572,42 @@ export default function AdminPage() {
         </div>
 
         {/* Tabbed Interface */}
-        <Tabs defaultValue="communities" className="space-y-6">
-          <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            <TabsTrigger value="communities" className="flex items-center gap-2 text-sm sm:text-base">
-              <Folder className="h-4 w-4" />
-              Communities
+        <Tabs defaultValue={isSuperAdmin ? "overview" : "communities"} className="space-y-6">
+          <TabsList className={`grid w-full ${
+            isSuperAdmin 
+              ? 'lg:grid-cols-6 md:grid-cols-3 grid-cols-2' 
+              : 'lg:grid-cols-4 md:grid-cols-2 grid-cols-1'
+          } gap-1`}>
+            {isSuperAdmin && (
+              <TabsTrigger value="overview" className="flex items-center gap-1 text-xs sm:text-sm">
+                <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="communities" className="flex items-center gap-1 text-xs sm:text-sm">
+              <Folder className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Communities</span>
             </TabsTrigger>
             {isSuperAdmin && (
-              <TabsTrigger value="users" className="flex items-center gap-2 text-sm sm:text-base">
-                <Users className="h-4 w-4" />
-                Users
+              <>
+                <TabsTrigger value="users" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Users</span>
+                </TabsTrigger>
+                <TabsTrigger value="moderation" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Moderation</span>
+                </TabsTrigger>
+              </>
+            )}
+            <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs sm:text-sm">
+              <BarChart className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="reports" className="flex items-center gap-1 text-xs sm:text-sm">
+                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Reports</span>
               </TabsTrigger>
             )}
           </TabsList>
@@ -854,6 +885,51 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
+            </TabsContent>
+          )}
+
+          {/* System Overview Tab - Super Admin Only */}
+          {isSuperAdmin && (
+            <TabsContent value="overview" className="space-y-6">
+              <SystemOverview />
+            </TabsContent>
+          )}
+
+          {/* Moderation Tab - Super Admin Only */}
+          {isSuperAdmin && (
+            <TabsContent value="moderation" className="space-y-6">
+              <ContentModerationHub />
+            </TabsContent>
+          )}
+
+          {/* Analytics Tab - Available to All Admins */}
+          <TabsContent value="analytics" className="space-y-6">
+            <AnalyticsDashboard />
+          </TabsContent>
+
+          {/* Reports Tab - Super Admin Only */}
+          {isSuperAdmin && (
+            <TabsContent value="reports" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Reports & Disputes
+                  </CardTitle>
+                  <CardDescription>
+                    Handle user reports, disputes, and complaints
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Reports queue coming soon</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      This feature will allow you to manage user reports and disputes
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           )}
 
