@@ -682,4 +682,299 @@ router.put("/communities/:id/settings", isAuthenticated, requireCommunityAdminRo
   }
 });
 
+// Audit log endpoints - super admins only
+router.get("/audit-logs", isAuthenticated, requireSuperAdmin, async (req, res) => {
+  try {
+    const { range = "24h", category = "all", status = "all", search = "" } = req.query;
+    
+    // NOTE: Mock data for demonstration - integrate with real audit logging service
+    const mockLogs = Array.from({ length: 20 }, (_, i) => ({
+      id: `log-${Date.now()}-${i}`,
+      timestamp: new Date(Date.now() - i * 60 * 60 * 1000),
+      userId: `user-${Math.floor(Math.random() * 100)}`,
+      userName: `User ${Math.floor(Math.random() * 100)}`,
+      userRole: ["super_admin", "community_admin", "member"][Math.floor(Math.random() * 3)],
+      action: ["Created Community", "Deleted User", "Updated Settings", "Moderated Content"][Math.floor(Math.random() * 4)],
+      category: ["auth", "moderation", "settings", "content", "system"][Math.floor(Math.random() * 5)] as any,
+      resourceType: ["community", "user", "prompt", "collection"][Math.floor(Math.random() * 4)],
+      resourceId: `res-${Math.floor(Math.random() * 1000)}`,
+      details: "Action performed successfully with all required permissions validated",
+      ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0",
+      status: ["success", "failed", "warning"][Math.floor(Math.random() * 3)] as any,
+      metadata: { additional: "data" }
+    }));
+    
+    res.json(mockLogs);
+  } catch (error) {
+    console.error("Error fetching audit logs:", error);
+    res.status(500).json({ error: "Failed to fetch audit logs" });
+  }
+});
+
+// Export audit logs
+router.get("/audit-logs/export", isAuthenticated, requireSuperAdmin, async (req, res) => {
+  try {
+    const { format = "json" } = req.query;
+    
+    // Mock export data
+    const data = { logs: "Mock audit log data for export" };
+    
+    if (format === "csv") {
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename=audit-logs-${Date.now()}.csv`);
+      res.send("timestamp,user,action,status\n2024-01-01,admin,login,success");
+    } else {
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", `attachment; filename=audit-logs-${Date.now()}.json`);
+      res.json(data);
+    }
+  } catch (error) {
+    console.error("Error exporting audit logs:", error);
+    res.status(500).json({ error: "Failed to export audit logs" });
+  }
+});
+
+// Community/Platform settings endpoints
+router.get("/settings", isAuthenticated, requireSuperAdmin, async (req, res) => {
+  try {
+    // NOTE: Mock settings data - integrate with database
+    const settings = {
+      general: {
+        name: "Platform Settings",
+        description: "Global platform configuration",
+        visibility: "public",
+        category: "platform",
+        tags: ["ai", "prompts", "community"],
+        maxMembers: 100000,
+        allowJoinRequests: true,
+      },
+      moderation: {
+        autoModEnabled: true,
+        profanityFilter: true,
+        spamDetection: true,
+        linkModeration: false,
+        imageModeration: true,
+        minimumAccountAge: 1,
+        minimumKarma: 0,
+        restrictedWords: ["spam", "abuse"],
+        approvalRequired: false,
+      },
+      permissions: {
+        canPost: "members",
+        canComment: "all",
+        canShare: "all",
+        canInvite: "members",
+        canReport: true,
+        canAppeal: true,
+      },
+      notifications: {
+        newMemberAlert: true,
+        reportAlert: true,
+        flaggedContentAlert: true,
+        thresholdViolationAlert: true,
+        dailyDigest: false,
+        weeklyReport: true,
+      },
+      appearance: {
+        theme: "default",
+        primaryColor: "#7C3AED",
+        bannerImage: "",
+        logo: "",
+        customCSS: "",
+      },
+      rules: [],
+    };
+    
+    res.json(settings);
+  } catch (error) {
+    console.error("Error fetching settings:", error);
+    res.status(500).json({ error: "Failed to fetch settings" });
+  }
+});
+
+router.put("/settings", isAuthenticated, requireSuperAdmin, async (req, res) => {
+  try {
+    // NOTE: Save settings to database in production
+    res.json({ success: true, message: "Settings updated" });
+  } catch (error) {
+    console.error("Error updating settings:", error);
+    res.status(500).json({ error: "Failed to update settings" });
+  }
+});
+
+router.get("/community-settings/:id", isAuthenticated, async (req, res) => {
+  try {
+    // NOTE: Mock community-specific settings
+    const settings = {
+      id: req.params.id,
+      communityId: req.params.id,
+      general: {
+        name: "Community Name",
+        description: "Community description",
+        visibility: "private",
+        category: "technology",
+        tags: ["ai", "ml"],
+        maxMembers: 1000,
+        allowJoinRequests: true,
+      },
+      moderation: {
+        autoModEnabled: true,
+        profanityFilter: true,
+        spamDetection: true,
+        linkModeration: false,
+        imageModeration: true,
+        minimumAccountAge: 0,
+        minimumKarma: 0,
+        restrictedWords: [],
+        approvalRequired: false,
+      },
+      permissions: {
+        canPost: "members",
+        canComment: "members",
+        canShare: "members",
+        canInvite: "approved",
+        canReport: true,
+        canAppeal: true,
+      },
+      notifications: {
+        newMemberAlert: true,
+        reportAlert: true,
+        flaggedContentAlert: true,
+        thresholdViolationAlert: false,
+        dailyDigest: false,
+        weeklyReport: false,
+      },
+      appearance: {
+        theme: "default",
+        primaryColor: "#7C3AED",
+        bannerImage: "",
+        logo: "",
+        customCSS: "",
+      },
+      rules: [
+        {
+          id: "1",
+          title: "Be respectful",
+          description: "Treat all members with respect",
+          severity: "warning",
+        },
+      ],
+    };
+    
+    res.json(settings);
+  } catch (error) {
+    console.error("Error fetching community settings:", error);
+    res.status(500).json({ error: "Failed to fetch community settings" });
+  }
+});
+
+router.put("/community-settings/:id", isAuthenticated, async (req, res) => {
+  try {
+    // NOTE: Save community settings to database in production
+    res.json({ success: true, message: "Community settings updated" });
+  } catch (error) {
+    console.error("Error updating community settings:", error);
+    res.status(500).json({ error: "Failed to update community settings" });
+  }
+});
+
+// Reports management endpoints
+router.get("/reports", isAuthenticated, requireSuperAdmin, async (req, res) => {
+  try {
+    const { status = "pending", category = "all", priority = "all" } = req.query;
+    
+    // NOTE: Mock reports data - integrate with real reporting system
+    const reports = Array.from({ length: 10 }, (_, i) => ({
+      id: `report-${Date.now()}-${i}`,
+      reporterId: `user-${Math.floor(Math.random() * 100)}`,
+      reporterName: `Reporter ${Math.floor(Math.random() * 100)}`,
+      reporterAvatar: `https://api.dicebear.com/6.x/initials/svg?seed=R${i}`,
+      reportedUserId: `user-${Math.floor(Math.random() * 100)}`,
+      reportedUserName: `Reported User ${Math.floor(Math.random() * 100)}`,
+      reportedUserAvatar: `https://api.dicebear.com/6.x/initials/svg?seed=U${i}`,
+      contentId: `content-${Math.floor(Math.random() * 1000)}`,
+      contentType: ["prompt", "comment", "user", "image"][Math.floor(Math.random() * 4)] as any,
+      contentSnippet: "This is a snippet of the reported content that violates community guidelines...",
+      reason: "Violation of community guidelines",
+      category: ["spam", "harassment", "inappropriate", "copyright", "other"][Math.floor(Math.random() * 5)] as any,
+      description: "Detailed description of the issue reported by the user",
+      evidence: ["Screenshot evidence", "Link to content"],
+      status: ["pending", "reviewing", "resolved", "dismissed"][Math.floor(Math.random() * 4)] as any,
+      priority: ["low", "medium", "high", "critical"][Math.floor(Math.random() * 4)] as any,
+      assignedTo: Math.random() > 0.5 ? `admin-${Math.floor(Math.random() * 10)}` : undefined,
+      createdAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - i * 12 * 60 * 60 * 1000),
+      resolution: Math.random() > 0.7 ? {
+        action: "Content removed and user warned",
+        note: "User has been notified of the violation",
+        moderator: "SuperAdmin",
+        timestamp: new Date(),
+      } : undefined,
+    }));
+    
+    res.json(reports);
+  } catch (error) {
+    console.error("Error fetching reports:", error);
+    res.status(500).json({ error: "Failed to fetch reports" });
+  }
+});
+
+router.get("/reports/stats", isAuthenticated, requireSuperAdmin, async (req, res) => {
+  try {
+    const stats = {
+      total: 45,
+      pending: 12,
+      reviewing: 8,
+      resolved: 25,
+      avgResolutionTime: "2.5 hours",
+      topReasons: [
+        { reason: "spam", count: 15 },
+        { reason: "harassment", count: 10 },
+        { reason: "inappropriate", count: 8 },
+        { reason: "copyright", count: 7 },
+        { reason: "other", count: 5 },
+      ],
+    };
+    
+    res.json(stats);
+  } catch (error) {
+    console.error("Error fetching report stats:", error);
+    res.status(500).json({ error: "Failed to fetch report stats" });
+  }
+});
+
+router.post("/reports/:id/process", isAuthenticated, requireSuperAdmin, async (req, res) => {
+  try {
+    const { action, note } = req.body;
+    
+    // NOTE: Process report in database
+    res.json({ 
+      success: true, 
+      message: "Report processed",
+      resolution: {
+        action,
+        note,
+        moderator: (req.user as any).claims.sub,
+        timestamp: new Date(),
+      }
+    });
+  } catch (error) {
+    console.error("Error processing report:", error);
+    res.status(500).json({ error: "Failed to process report" });
+  }
+});
+
+router.post("/reports/:id/assign", isAuthenticated, requireSuperAdmin, async (req, res) => {
+  try {
+    const { assignTo } = req.body;
+    
+    // NOTE: Assign report in database
+    res.json({ success: true, message: "Report assigned" });
+  } catch (error) {
+    console.error("Error assigning report:", error);
+    res.status(500).json({ error: "Failed to assign report" });
+  }
+});
+
 export default router;

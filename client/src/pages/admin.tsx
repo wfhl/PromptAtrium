@@ -26,6 +26,9 @@ import { z } from "zod";
 import { SystemOverview } from "@/components/admin/SystemOverview";
 import { ContentModerationHub } from "@/components/admin/ContentModerationHub";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
+import AuditLog from "@/components/admin/AuditLog";
+import CommunitySettings from "@/components/admin/CommunitySettings";
+import ReportsQueue from "@/components/admin/ReportsQueue";
 
 const communitySchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -575,7 +578,7 @@ export default function AdminPage() {
         <Tabs defaultValue={isSuperAdmin ? "overview" : "communities"} className="space-y-6">
           <TabsList className={`grid w-full ${
             isSuperAdmin 
-              ? 'lg:grid-cols-6 md:grid-cols-3 grid-cols-2' 
+              ? 'lg:grid-cols-8 md:grid-cols-4 grid-cols-2' 
               : 'lg:grid-cols-4 md:grid-cols-2 grid-cols-1'
           } gap-1`}>
             {isSuperAdmin && (
@@ -605,10 +608,20 @@ export default function AdminPage() {
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
             {isSuperAdmin && (
-              <TabsTrigger value="reports" className="flex items-center gap-1 text-xs sm:text-sm">
-                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Reports</span>
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="reports" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Reports</span>
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <History className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Audit</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center gap-1 text-xs sm:text-sm">
+                  <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </TabsTrigger>
+              </>
             )}
           </TabsList>
 
@@ -910,28 +923,24 @@ export default function AdminPage() {
           {/* Reports Tab - Super Admin Only */}
           {isSuperAdmin && (
             <TabsContent value="reports" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5" />
-                    Reports & Disputes
-                  </CardTitle>
-                  <CardDescription>
-                    Handle user reports, disputes, and complaints
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Reports queue coming soon</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      This feature will allow you to manage user reports and disputes
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <ReportsQueue />
             </TabsContent>
           )}
+
+          {/* Audit Log Tab - Super Admin Only */}
+          {isSuperAdmin && (
+            <TabsContent value="audit" className="space-y-6">
+              <AuditLog />
+            </TabsContent>
+          )}
+
+          {/* Settings Tab - Available to All Admins */}
+          <TabsContent value="settings" className="space-y-6">
+            <CommunitySettings 
+              communityId={isCommunityAdmin ? communities[0]?.id : undefined}
+              isSuperAdmin={isSuperAdmin}
+            />
+          </TabsContent>
 
         </Tabs>
 
