@@ -644,90 +644,108 @@ export default function AdminPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {communities.map((community: Community) => (
-                <Card key={community.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{community.name}</CardTitle>
-                        <CardDescription className="mt-1">@{community.slug}</CardDescription>
-                      </div>
-                      <Badge variant={community.isActive ? "default" : "secondary"}>
-                        {community.isActive ? "Active" : "Inactive"}
-                      </Badge>
+            {communities.length === 0 ? (
+              <div className="text-center py-12">
+                <Card className="max-w-md mx-auto">
+                  <CardContent className="pt-6">
+                    <div className="mb-4">
+                      <Folder className="h-12 w-12 text-muted-foreground mx-auto" />
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">{community.description}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mb-2" 
-                        onClick={() => openMemberModal(community)}
-                        data-testid={`button-manage-members-${community.id}`}
-                      >
-                        <Users className="h-4 w-4 mr-1" />
-                        Members
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mb-2"
-                        onClick={() => openCollectionsModal(community)}
-                        data-testid={`button-manage-collections-${community.id}`}
-                      >
-                        <Folder className="h-4 w-4 mr-1" />
-                        Collections
-                      </Button>
-                      {/* Show invites button for both super admins and community admins */}
-                      {(isSuperAdmin || isCommunityAdmin) && (
+                    <h3 className="text-lg font-semibold mb-2">No Communities Yet</h3>
+                    <p className="text-muted-foreground">
+                      {isCommunityAdmin 
+                        ? "You haven't been assigned to manage any communities yet. Please contact a super admin to be added as a community administrator."
+                        : "No communities have been created yet. Click 'Create Community' to get started."}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {communities.map((community: Community) => (
+                  <Card key={community.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{community.name}</CardTitle>
+                          <CardDescription className="mt-1">@{community.slug}</CardDescription>
+                        </div>
+                        <Badge variant={community.isActive ? "default" : "secondary"}>
+                          {community.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">{community.description}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mb-2" 
+                          onClick={() => openMemberModal(community)}
+                          data-testid={`button-manage-members-${community.id}`}
+                        >
+                          <Users className="h-4 w-4 mr-1" />
+                          Members
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="mb-2"
-                          onClick={() => {
-                            setSelectedCommunityForInvites(community);
-                            setInviteManagementModalOpen(true);
-                          }}
-                          data-testid={`button-invites-community-${community.id}`}
+                          onClick={() => openCollectionsModal(community)}
+                          data-testid={`button-manage-collections-${community.id}`}
                         >
-                          <Mail className="h-4 w-4 mr-1" />
-                          Invites
+                          <Folder className="h-4 w-4 mr-1" />
+                          Collections
                         </Button>
-                      )}
-                      
-                      {/* Super admin only actions */}
-                      {isSuperAdmin && (
-                        <>
+                        {/* Show invites button for both super admins and community admins */}
+                        {(isSuperAdmin || isCommunityAdmin) && (
                           <Button
                             variant="outline"
                             size="sm"
                             className="mb-2"
-                            onClick={() => openEditModal(community)}
-                            data-testid={`button-edit-community-${community.id}`}
+                            onClick={() => {
+                              setSelectedCommunityForInvites(community);
+                              setInviteManagementModalOpen(true);
+                            }}
+                            data-testid={`button-invites-community-${community.id}`}
                           >
-                            <Settings className="h-4 w-4 mr-1" />
-                            Edit
+                            <Mail className="h-4 w-4 mr-1" />
+                            Invites
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mb-2"
-                            onClick={() => deleteCommunityMutation.mutate(community.id)}
-                            disabled={deleteCommunityMutation.isPending}
-                            data-testid={`button-delete-community-${community.id}`}
-                          >
-                            Delete
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                        )}
+                        
+                        {/* Super admin only actions */}
+                        {isSuperAdmin && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mb-2"
+                              onClick={() => openEditModal(community)}
+                              data-testid={`button-edit-community-${community.id}`}
+                            >
+                              <Settings className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mb-2"
+                              onClick={() => deleteCommunityMutation.mutate(community.id)}
+                              disabled={deleteCommunityMutation.isPending}
+                              data-testid={`button-delete-community-${community.id}`}
+                            >
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Users Tab - Super Admin Only */}
