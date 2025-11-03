@@ -580,7 +580,7 @@ export default function AdminPage() {
             isSuperAdmin 
               ? 'lg:grid-cols-8 md:grid-cols-4 grid-cols-2' 
               : 'lg:grid-cols-4 md:grid-cols-2 grid-cols-1'
-          } gap-1`}>
+          } gap-2 gap-y-3 mb-6 p-2`}>
             {isSuperAdmin && (
               <TabsTrigger value="overview" className="flex items-center gap-1 text-xs sm:text-sm">
                 <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
