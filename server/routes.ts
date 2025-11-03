@@ -4800,7 +4800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get communities managed by the current user (community admin)
-  app.get('/api/communities/managed', requireCommunityAdminRole(), async (req: any, res) => {
+  app.get('/api/communities/managed', requireCommunityAdmin, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
       const communities = await storage.getManagedCommunities(userId);
