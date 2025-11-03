@@ -1,11 +1,15 @@
 import { useRef, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
-import { FileText, Users, Wrench, ShoppingBag, Home } from "lucide-react";
+import { FileText, Users, Wrench, ShoppingBag, Home, Crown } from "lucide-react";
 import { useLongPress } from "@/hooks/useLongPress";
 import { NavTabDropdown } from "./NavTabDropdown";
+import { useAuth } from "@/hooks/useAuth";
+import type { User } from "@shared/schema";
 
 export function MobilePageNav() {
+  const { user } = useAuth();
+  const typedUser = user as User;
   const [location, setLocation] = useLocation();
   const [openDropdown, setOpenDropdown] = useState<'library' | 'tools' | 'community' | 'marketplace' | null>(null);
   
@@ -14,6 +18,10 @@ export function MobilePageNav() {
   const isCommunityPage = location === "/community";
   const isToolsPage = location === "/tools";
   const isMarketplacePage = location.startsWith("/marketplace");
+  const isAdminPage = location.startsWith("/admin");
+  
+  // Check if user has admin access
+  const hasAdminAccess = typedUser?.role === "super_admin" || typedUser?.role === "community_admin" || typedUser?.role === "developer";
 
   // Button refs for dropdown positioning
   const homeButtonRef = useRef<HTMLButtonElement>(null);
@@ -125,6 +133,26 @@ export function MobilePageNav() {
               )}
             </Button>
           </div>
+
+          {/* Admin Button - Only show for admin users */}
+          {hasAdminAccess && (
+            <div className="flex-1">
+              <Button 
+                variant="outline"
+                className={`w-full relative group px-1 py-2 h-auto border-transparent select-none ${isAdminPage ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600' : 'bg-gray-900/70 hover:bg-white/5'}`}
+                data-testid="button-admin"
+                onClick={() => setLocation('/admin')}
+              >
+                <div className="flex flex-col items-center gap-0.5">
+                  <Crown className={`h-4 w-4 ${isAdminPage ? 'text-white' : 'text-yellow-400'} transition-all ${!isAdminPage ? 'group-hover:scale-110 group-hover:brightness-150' : ''}`} />
+                  <span className={`text-[9px] ${isAdminPage ? 'text-white' : 'text-yellow-400'}`}>Admin</span>
+                </div>
+                {isAdminPage && (
+                  <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
+                )}
+              </Button>
+            </div>
+          )}
 
           {/* Marketplace Button */}
           <div className="flex-1">
