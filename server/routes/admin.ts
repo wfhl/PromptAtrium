@@ -16,7 +16,8 @@ import {
 import { 
   requireSuperAdmin, 
   requireCommunityAdminRole,
-  requireRole 
+  requireRole,
+  requireCommunityManager 
 } from "../rbac";
 import { isAuthenticated } from "../replitAuth";
 import { sql, eq, desc, asc, and, or, gte, lte, count, sum } from "drizzle-orm";
@@ -189,7 +190,7 @@ router.get("/health-checks", isAuthenticated, requireSuperAdmin, async (req, res
 });
 
 // Moderation endpoints
-router.get("/moderation/flagged", isAuthenticated, requireRole("community_admin"), async (req: any, res) => {
+router.get("/moderation/flagged", isAuthenticated, requireCommunityManager, async (req: any, res) => {
   try {
     const { status = "pending", priority, type } = req.query;
     const userId = req.user.claims.sub;
@@ -272,7 +273,7 @@ router.get("/moderation/flagged", isAuthenticated, requireRole("community_admin"
   }
 });
 
-router.get("/moderation/stats", isAuthenticated, requireRole("community_admin"), async (req, res) => {
+router.get("/moderation/stats", isAuthenticated, requireCommunityManager, async (req, res) => {
   try {
     // Mock moderation statistics
     res.json({
@@ -289,7 +290,7 @@ router.get("/moderation/stats", isAuthenticated, requireRole("community_admin"),
   }
 });
 
-router.post("/moderation/action", isAuthenticated, requireRole("community_admin"), async (req: any, res) => {
+router.post("/moderation/action", isAuthenticated, requireCommunityManager, async (req: any, res) => {
   try {
     const { contentIds, action, reason } = req.body;
     const moderatorId = req.user.claims.sub;
@@ -319,7 +320,7 @@ router.post("/moderation/action", isAuthenticated, requireRole("community_admin"
 });
 
 // Analytics endpoints
-router.get("/analytics", isAuthenticated, requireRole("community_admin"), async (req: any, res) => {
+router.get("/analytics", isAuthenticated, requireCommunityManager, async (req: any, res) => {
   try {
     const { range = "7d", metric = "all" } = req.query;
     const userId = req.user.claims.sub;
@@ -465,7 +466,7 @@ router.get("/analytics", isAuthenticated, requireRole("community_admin"), async 
 });
 
 // Export analytics data
-router.get("/analytics/export", isAuthenticated, requireRole("community_admin"), async (req: any, res) => {
+router.get("/analytics/export", isAuthenticated, requireCommunityManager, async (req: any, res) => {
   try {
     const { format = "csv", range = "7d" } = req.query;
     
@@ -593,7 +594,7 @@ router.get("/audit-log", isAuthenticated, requireSuperAdmin, async (req, res) =>
 });
 
 // Log an admin action
-router.post("/audit-log", isAuthenticated, requireRole("community_admin"), async (req: any, res) => {
+router.post("/audit-log", isAuthenticated, requireCommunityManager, async (req: any, res) => {
   try {
     const { action, targetType, targetId, details } = req.body;
     const actorId = req.user.claims.sub;
