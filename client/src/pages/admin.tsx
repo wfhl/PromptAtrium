@@ -576,54 +576,57 @@ export default function AdminPage() {
 
         {/* Tabbed Interface */}
         <Tabs defaultValue={isSuperAdmin ? "overview" : "communities"} className="space-y-6">
-          <TabsList className={`grid w-full ${
-            isSuperAdmin 
-              ? 'lg:grid-cols-8 md:grid-cols-4 grid-cols-2' 
-              : 'lg:grid-cols-4 md:grid-cols-2 grid-cols-1'
-          } gap-2 gap-y-3 mb-6 p-2`}>
-            {isSuperAdmin && (
-              <TabsTrigger value="overview" className="flex items-center gap-1 text-xs sm:text-sm">
-                <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Overview</span>
+          {/* Tab list wrapper with proper spacing */}
+          <div className="mb-8 -mx-2 sm:mx-0">
+            <TabsList className={`${
+              isSuperAdmin 
+                ? 'flex overflow-x-auto sm:grid sm:grid-cols-4 lg:grid-cols-8' 
+                : 'flex overflow-x-auto sm:grid sm:grid-cols-2 lg:grid-cols-4'
+            } w-full gap-2 p-2 sm:gap-2 sm:gap-y-3`}>
+              {isSuperAdmin && (
+                <TabsTrigger value="overview" className="flex-shrink-0 flex items-center justify-center gap-1 text-xs sm:text-sm px-3 py-2 sm:px-2">
+                  <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Overview</span>
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="communities" className="flex-shrink-0 flex items-center justify-center gap-1 text-xs sm:text-sm px-3 py-2 sm:px-2">
+                <Folder className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Communities</span>
               </TabsTrigger>
-            )}
-            <TabsTrigger value="communities" className="flex items-center gap-1 text-xs sm:text-sm">
-              <Folder className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Communities</span>
-            </TabsTrigger>
-            {isSuperAdmin && (
-              <>
-                <TabsTrigger value="users" className="flex items-center gap-1 text-xs sm:text-sm">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Users</span>
-                </TabsTrigger>
-                <TabsTrigger value="moderation" className="flex items-center gap-1 text-xs sm:text-sm">
-                  <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Moderation</span>
-                </TabsTrigger>
-              </>
-            )}
-            <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs sm:text-sm">
-              <BarChart className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Analytics</span>
-            </TabsTrigger>
-            {isSuperAdmin && (
-              <>
-                <TabsTrigger value="reports" className="flex items-center gap-1 text-xs sm:text-sm">
-                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Reports</span>
-                </TabsTrigger>
-                <TabsTrigger value="audit" className="flex items-center gap-1 text-xs sm:text-sm">
-                  <History className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Audit</span>
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-1 text-xs sm:text-sm">
-                  <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Settings</span>
-                </TabsTrigger>
-              </>
-            )}
-          </TabsList>
+              {isSuperAdmin && (
+                <>
+                  <TabsTrigger value="users" className="flex-shrink-0 flex items-center justify-center gap-1 text-xs sm:text-sm px-3 py-2 sm:px-2">
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Users</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="moderation" className="flex-shrink-0 flex items-center justify-center gap-1 text-xs sm:text-sm px-3 py-2 sm:px-2">
+                    <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Moderation</span>
+                  </TabsTrigger>
+                </>
+              )}
+              <TabsTrigger value="analytics" className="flex-shrink-0 flex items-center justify-center gap-1 text-xs sm:text-sm px-3 py-2 sm:px-2">
+                <BarChart className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Analytics</span>
+              </TabsTrigger>
+              {isSuperAdmin && (
+                <>
+                  <TabsTrigger value="reports" className="flex-shrink-0 flex items-center justify-center gap-1 text-xs sm:text-sm px-3 py-2 sm:px-2">
+                    <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Reports</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="audit" className="flex-shrink-0 flex items-center justify-center gap-1 text-xs sm:text-sm px-3 py-2 sm:px-2">
+                    <History className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Audit</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex-shrink-0 flex items-center justify-center gap-1 text-xs sm:text-sm px-3 py-2 sm:px-2">
+                    <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Settings</span>
+                  </TabsTrigger>
+                </>
+              )}
+            </TabsList>
+          </div>
 
           {/* Communities Tab */}
           <TabsContent value="communities" className="space-y-6">
