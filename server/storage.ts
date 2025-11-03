@@ -1588,7 +1588,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getManagedCommunities(userId: string): Promise<Community[]> {
-    return await db
+    // Get the user to check their global role
+    const user = await this.getUser(userId);
+    
+    if (user && (user.role === "super_admin" || user.role === "global_admin" || user.role === "developer" || user.role === "community_admin")) {
+      // If user has global admin role, get communities from communityAdmins table (legacy)
+      const legacyAdminCommunities = await db
+        .select({
+          id: communities.id,
+          name: communities.name,
+          description: communities.description,
+          slug: communities.slug,
+          imageUrl: communities.imageUrl,
+          isActive: communities.isActive,
+          createdAt: communities.createdAt,
+          updatedAt: communities.updatedAt,
+        })
+        .from(communities)
+        .innerJoin(communityAdmins, eq(communities.id, communityAdmins.communityId))
+        .where(and(eq(communityAdmins.userId, userId), eq(communities.isActive, true)))
+        .orderBy(desc(communities.createdAt));
+        
+      if (legacyAdminCommunities.length > 0) {
+        return legacyAdminCommunities;
+      }
+    }
+    
+    // Also get communities where user is admin through userCommunities table
+    const adminCommunities = await db
       .select({
         id: communities.id,
         name: communities.name,
@@ -1600,9 +1627,18 @@ export class DatabaseStorage implements IStorage {
         updatedAt: communities.updatedAt,
       })
       .from(communities)
-      .innerJoin(communityAdmins, eq(communities.id, communityAdmins.communityId))
-      .where(and(eq(communityAdmins.userId, userId), eq(communities.isActive, true)))
+      .innerJoin(userCommunities, eq(communities.id, userCommunities.communityId))
+      .where(
+        and(
+          eq(userCommunities.userId, userId),
+          eq(userCommunities.role, "admin"),
+          eq(userCommunities.status, "accepted"),
+          eq(communities.isActive, true)
+        )
+      )
       .orderBy(desc(communities.createdAt));
+      
+    return adminCommunities;
   }
 
   async getCommunity(id: string): Promise<Community | undefined> {

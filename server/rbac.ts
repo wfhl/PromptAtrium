@@ -115,6 +115,44 @@ export const requireCommunityAdmin: RequestHandler = async (req: any, res, next)
   }
 };
 
+// Middleware to check if user can manage communities (either global admin or admin of at least one community)
+export const requireCommunityManager: RequestHandler = async (req: any, res, next) => {
+  if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const userId = req.user.claims.sub;
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    const userRole = user.role as UserRole;
+    
+    // Super admin, global admin, developer, or community admin can access
+    if (userRole === "super_admin" || userRole === "global_admin" || userRole === "developer" || userRole === "community_admin") {
+      req.userRole = userRole;
+      return next();
+    }
+
+    // Check if user is admin of any community through userCommunities
+    const userCommunities = await storage.getUserCommunities(userId);
+    const isAdminOfAnyCommunity = userCommunities.some(uc => uc.role === "admin");
+    
+    if (isAdminOfAnyCommunity) {
+      req.userRole = userRole;
+      return next();
+    }
+
+    return res.status(403).json({ message: "You must be an administrator to access this resource" });
+  } catch (error) {
+    console.error("Error checking community manager role:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Middleware to check if user is admin of specific community
 export const requireCommunityAdminRole = (communityIdParam = "communityId"): RequestHandler => {
   return async (req: any, res, next) => {
