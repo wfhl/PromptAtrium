@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -56,24 +56,50 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [tagInput, setTagInput] = useState("");
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Handle loading timeout
+  useEffect(() => {
+    if (open && !editingListing) {
+      // Set a 5 second timeout for loading
+      timeoutRef.current = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 5000);
+    } else {
+      // Clear timeout when modal closes or when not loading
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setLoadingTimeout(false);
+    }
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [open, editingListing]);
 
   // Fetch seller profile to check onboarding status
   const { data: sellerProfile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ["/api/marketplace/seller/profile"],
     enabled: open,
     retry: false, // Don't retry on failure, show onboarding prompt instead
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   }) as { data: SellerProfile | undefined; isLoading: boolean; error: any };
 
   // Fetch user's prompts
   const { data: userPrompts = [], isLoading: promptsLoading } = useQuery({
     queryKey: ["/api/prompts", { userId: "me" }],
-    enabled: open && !editingListing && sellerProfile?.onboardingStatus === 'completed',
+    enabled: open && !editingListing && !!sellerProfile && sellerProfile?.onboardingStatus === 'completed',
   }) as { data: Prompt[]; isLoading: boolean };
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories"],
-    enabled: open && sellerProfile?.onboardingStatus === 'completed',
+    enabled: open && !!sellerProfile && sellerProfile?.onboardingStatus === 'completed',
   }) as { data: Category[]; isLoading: boolean };
 
   const form = useForm<z.infer<typeof listingSchema>>({
@@ -184,10 +210,13 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
   // Check if seller profile is not completed and not editing
   // This includes: profile doesn't exist, error fetching profile, or profile exists but onboarding incomplete
   const isOnboardingIncomplete = !editingListing && (
-    !sellerProfile || 
     profileError || 
-    (sellerProfile && sellerProfile.onboardingStatus !== 'completed')
+    loadingTimeout ||
+    (!profileLoading && (!sellerProfile || sellerProfile?.onboardingStatus !== 'completed'))
   );
+
+  // Show loading only if not timed out
+  const showLoading = profileLoading && !loadingTimeout && !editingListing;
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
@@ -197,14 +226,22 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
             {editingListing ? "Edit Listing" : "Create Marketplace Listing"}
           </DialogTitle>
           <DialogDescription>
-            {isOnboardingIncomplete 
-              ? "You need to complete seller onboarding before creating listings"
-              : "List your prompt for sale in the marketplace with flexible pricing options"}
+            {showLoading
+              ? "Loading seller profile..."
+              : isOnboardingIncomplete 
+                ? "You need to complete seller onboarding before creating listings"
+                : "List your prompt for sale in the marketplace with flexible pricing options"}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Show alert if onboarding is incomplete */}
-        {isOnboardingIncomplete ? (
+        {/* Show loading state */}
+        {showLoading ? (
+          <div className="flex flex-col justify-center items-center py-8 space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading seller profile...</p>
+          </div>
+        ) : /* Show alert if onboarding is incomplete or timeout */
+        (isOnboardingIncomplete || loadingTimeout) ? (
           <>
             <Alert className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-900/20 dark:border-yellow-500/30">
               <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
@@ -221,7 +258,10 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
             </Alert>
             
             <DialogFooter className="flex justify-center">
-              <Button onClick={() => navigate("/seller-dashboard")} data-testid="button-go-to-onboarding">
+              <Button onClick={() => {
+                onClose();
+                navigate("/seller-dashboard");
+              }} data-testid="button-go-to-onboarding">
                 Go to Seller Dashboard
               </Button>
               <Button variant="outline" onClick={onClose} data-testid="button-cancel">
@@ -229,10 +269,6 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
               </Button>
             </DialogFooter>
           </>
-        ) : profileLoading ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
         ) : (
           <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
