@@ -389,21 +389,37 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Tool Navigation Tabs */}
-          <Tabs value={activeToolTab} onValueChange={setActiveToolTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8 h-auto">
-              {toolSections.map((tool) => (
-                <TabsTrigger 
-                  key={tool.id} 
-                  value={tool.id}
-                  className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 md:py-2"
-                >
-                  {tool.icon}
-                  <span className="text-xs md:text-sm">{tool.title}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          {/* Quick Access Cards - Now Used as Navigation */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {toolSections.map((tool) => (
+              <Card 
+                key={tool.id}
+                onClick={() => setActiveToolTab(tool.id)}
+                className={cn(
+                  "cursor-pointer transition-all hover:scale-105",
+                  activeToolTab === tool.id 
+                    ? "ring-2 ring-primary shadow-lg bg-primary/10" 
+                    : "hover:shadow-lg"
+                )}
+              >
+                <CardContent className="p-4 md:p-6 text-center">
+                  <div className={cn(
+                    "w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center transition-colors",
+                    activeToolTab === tool.id 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-primary/10"
+                  )}>
+                    {tool.icon}
+                  </div>
+                  <h3 className="font-semibold mb-2 text-sm md:text-base">{tool.title}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{tool.subtitle}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
+          {/* Tool Details Display */}
+          <Tabs value={activeToolTab} onValueChange={setActiveToolTab} className="w-full">
             {toolSections.map((tool) => (
               <TabsContent key={tool.id} value={tool.id} className="mt-0">
                 <Card className={`border-2 bg-gradient-to-br ${tool.gradient} backdrop-blur`}>
