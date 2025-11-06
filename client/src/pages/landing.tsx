@@ -106,7 +106,7 @@ const toolSections: ToolSection[] = [
     ],
     primaryAction: {
       label: "Explore Library",
-      href: "/library"
+      href: "/api/login"
     },
     highlights: [
       "Unlimited prompt storage",
@@ -146,17 +146,14 @@ const toolSections: ToolSection[] = [
     ],
     primaryAction: {
       label: "Start Generating",
-      href: "/tools/quick-prompter"
+      href: "/api/login"
     },
-    secondaryAction: {
-      label: "View Templates",
-      href: "/tools"
-    },
+  
     highlights: [
       "50+ professional templates",
       "Model-specific optimization",
       "Character and scene builders",
-      "Real-time preview"
+      "Multiple Prompt Sytle Formats"
     ]
   },
   {
@@ -190,7 +187,7 @@ const toolSections: ToolSection[] = [
     ],
     primaryAction: {
       label: "Browse Codex",
-      href: "/codex"
+      href: "/api/login"
     },
     highlights: [
       "10,000+ curated terms",
@@ -230,12 +227,9 @@ const toolSections: ToolSection[] = [
     ],
     primaryAction: {
       label: "Visit Marketplace",
-      href: "/marketplace"
+      href: "/api/login"
     },
-    secondaryAction: {
-      label: "Start Selling",
-      href: "/seller/dashboard"
-    },
+   
     highlights: [
       "Low commission rates",
       "Instant payouts",
