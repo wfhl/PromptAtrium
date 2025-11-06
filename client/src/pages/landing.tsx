@@ -367,46 +367,45 @@ export default function Landing() {
             <h2 className="text-4xl font-bold text-foreground mb-4">
               Powerful Tools for Every Creator
             </h2>
-            {/* Quick Access Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12">
-              {toolSections.map((tool) => (
-                <Link key={tool.id} href={tool.primaryAction.href}>
-                  <Card className="h-full hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-primary/10 flex items-center justify-center">
-                        {tool.icon}
-                      </div>
-                      <h3 className="font-semibold mb-2">{tool.title}</h3>
-                      <p className="text-sm text-muted-foreground">{tool.subtitle}</p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-            
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
               Discover our comprehensive suite of AI prompt management tools designed to streamline your workflow and unleash your creativity
             </p>
+            
+            {/* Quick Access Cards - Used as Navigation */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {toolSections.map((tool) => (
+                <Card 
+                  key={tool.id}
+                  onClick={() => setActiveToolTab(tool.id)}
+                  className={cn(
+                    "cursor-pointer transition-all hover:scale-105",
+                    activeToolTab === tool.id 
+                      ? "ring-2 ring-primary shadow-lg bg-primary/10" 
+                      : "hover:shadow-lg"
+                  )}
+                >
+                  <CardContent className="p-4 md:p-6 text-center">
+                    <div className={cn(
+                      "w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center transition-colors",
+                      activeToolTab === tool.id 
+                        ? "bg-primary text-primary-foreground" 
+                        : "bg-primary/10"
+                    )}>
+                      {tool.icon}
+                    </div>
+                    <h3 className="font-semibold mb-2 text-sm md:text-base">{tool.title}</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{tool.subtitle}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
 
-          {/* Tool Navigation Tabs */}
-          <Tabs value={activeToolTab} onValueChange={setActiveToolTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8 h-auto">
-              {toolSections.map((tool) => (
-                <TabsTrigger 
-                  key={tool.id} 
-                  value={tool.id}
-                  className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 md:py-2"
-                >
-                  {tool.icon}
-                  <span className="text-xs md:text-sm">{tool.title}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
+          {/* Tool Details Display - Show Selected Tool */}
+          <div className="mt-8">
             {toolSections.map((tool) => (
-              <TabsContent key={tool.id} value={tool.id} className="mt-0">
-                <Card className={`border-2 bg-gradient-to-br ${tool.gradient} backdrop-blur`}>
+              tool.id === activeToolTab && (
+                <Card key={tool.id} className={`border-2 bg-gradient-to-br ${tool.gradient} backdrop-blur animate-in fade-in-50 duration-500`}>
                   <CardHeader className="pb-8">
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
@@ -473,9 +472,9 @@ export default function Landing() {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )
             ))}
-          </Tabs>
+          </div>
 
       
         </div>
