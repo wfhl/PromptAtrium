@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ export function InviteAcceptanceForm({ embedded = false, initialCode = "" }: Inv
   const [inviteCode, setInviteCode] = useState(initialCode);
   const [validatedCode, setValidatedCode] = useState("");
   const [hasAccepted, setHasAccepted] = useState(false);
+  const autoAcceptAttempted = useRef(false);
 
   // Auto-validate if an initial code is provided
   useEffect(() => {
@@ -54,18 +55,6 @@ export function InviteAcceptanceForm({ embedded = false, initialCode = "" }: Inv
       setValidatedCode(initialCode);
     }
   }, [initialCode]);
-
-  // Auto-accept after login if this is the pending invite
-  useEffect(() => {
-    if (user && validatedCode && inviteData && !hasAccepted && !acceptInviteMutation.isPending && !embedded) {
-      const pendingCode = sessionStorage.getItem("pendingInviteCode");
-      if (pendingCode === validatedCode) {
-        // Clear the pending code and auto-accept
-        sessionStorage.removeItem("pendingInviteCode");
-        acceptInviteMutation.mutate();
-      }
-    }
-  }, [user, validatedCode, inviteData, hasAccepted, embedded]);
 
   // Validate invite code
   const { data: inviteData, isLoading: validatingInvite, error: inviteError, refetch } = useQuery<InviteResponse>({
@@ -125,6 +114,19 @@ export function InviteAcceptanceForm({ embedded = false, initialCode = "" }: Inv
       });
     },
   });
+
+  // Auto-accept after login if this is the pending invite
+  useEffect(() => {
+    if (user && validatedCode && inviteData && !hasAccepted && !embedded && !autoAcceptAttempted.current) {
+      const pendingCode = sessionStorage.getItem("pendingInviteCode");
+      if (pendingCode === validatedCode) {
+        autoAcceptAttempted.current = true;
+        // Clear the pending code and auto-accept
+        sessionStorage.removeItem("pendingInviteCode");
+        acceptInviteMutation.mutate();
+      }
+    }
+  }, [user, validatedCode, inviteData, hasAccepted, embedded]);
 
   const handleValidateCode = () => {
     if (inviteCode && inviteCode.length > 5) {
