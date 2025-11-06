@@ -535,7 +535,7 @@ export default function Landing() {
           <p className="text-xl text-muted-foreground mb-8" data-testid="text-cta-description">
             Join thousands of creators managing their AI prompts with PromptAtrium.
           </p>
-          <Button size="lg" asChild data-testid="button-cta">
+          <Button size="lg" className="bg-gradient-to-br from-indigo-600 to-purple-600" asChild data-testid="button-cta">
             <a href="/api/login">Sign Up Now</a>
           </Button>
         </div>

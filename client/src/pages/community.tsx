@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { redirectToLogin } from "@/utils/auth-redirect";
 import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
@@ -103,7 +104,7 @@ export default function Community() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        redirectToLogin();
       }, 500);
       return;
     }

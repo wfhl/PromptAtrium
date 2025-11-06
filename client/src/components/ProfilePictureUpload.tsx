@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { redirectToLogin } from "@/utils/auth-redirect";
 import Croppie from "croppie";
 import "croppie/croppie.css";
 import { Button } from "@/components/ui/button";
@@ -237,7 +238,7 @@ export function ProfilePictureUpload({
         
         // Redirect to login after a short delay
         setTimeout(() => {
-          window.location.href = "/api/login";
+          redirectToLogin();
         }, 1500);
       } else {
         toast({

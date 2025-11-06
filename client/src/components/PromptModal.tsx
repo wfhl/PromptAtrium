@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { redirectToLogin } from "@/utils/auth-redirect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -509,7 +510,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          redirectToLogin();
         }, 500);
         return;
       }
@@ -578,7 +579,7 @@ export function PromptModal({ open, onOpenChange, prompt, mode, defaultCollectio
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          redirectToLogin();
         }, 500);
         return;
       }

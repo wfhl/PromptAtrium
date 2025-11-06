@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, Users, AlertCircle, Loader, Mail } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { redirectToLogin } from "@/utils/auth-redirect";
 
 interface InviteResponse {
   type: 'community' | 'sub-community';
@@ -144,7 +145,7 @@ export function InviteAcceptanceForm({ embedded = false, initialCode = "" }: Inv
         description: "Please log in to accept this invite. You'll be redirected back after logging in.",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        redirectToLogin();
       }, 1500);
       return;
     } else if (!user && embedded) {

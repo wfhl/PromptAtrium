@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { redirectToLogin } from "@/utils/auth-redirect";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -70,7 +71,7 @@ export default function CollectionView() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        redirectToLogin();
       }, 500);
     }
   }, [isAuthenticated, authLoading, toast]);

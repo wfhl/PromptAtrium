@@ -19,6 +19,7 @@ import { Lightbulb, Plus, ChevronDown, Crown, LogOut, Moon, Sun, User as UserIco
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { redirectToLogin } from "@/utils/auth-redirect";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkImportModal } from "@/components/BulkImportModal";
 import { IntroductionModal } from "@/components/IntroductionModal";
@@ -93,7 +94,7 @@ export function Layout({ children, onCreatePrompt }: LayoutProps) {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        redirectToLogin();
       }, 500);
       return;
     }

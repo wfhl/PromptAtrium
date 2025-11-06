@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { redirectToLogin } from "@/utils/auth-redirect";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +24,7 @@ export default function Projects() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        redirectToLogin();
       }, 500);
       return;
     }

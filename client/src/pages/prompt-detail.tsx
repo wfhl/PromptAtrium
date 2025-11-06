@@ -11,6 +11,7 @@ import { Link } from "wouter";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { redirectToLogin } from "@/utils/auth-redirect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import type { Prompt, User } from "@shared/schema";
@@ -741,7 +742,7 @@ export default function PromptDetail() {
                   </p>
                   <div className="flex gap-3 justify-center">
                     <Button 
-                      onClick={() => window.location.href = "/api/login"}
+                      onClick={() => redirectToLogin()}
                       className="button-gradient-primary"
                       data-testid="button-sign-up"
                     >
