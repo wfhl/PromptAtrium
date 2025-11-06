@@ -292,7 +292,11 @@ export default function Landing() {
           </nav>
           
           <div className="flex items-center gap-4">
-            <Button asChild data-testid="button-login">
+            <Button 
+              asChild 
+              data-testid="button-login"
+              className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 border border-purple-500/20"
+            >
               <a href="/api/login">Sign In/Up</a>
             </Button>
           </div>
