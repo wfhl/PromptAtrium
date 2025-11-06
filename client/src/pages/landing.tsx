@@ -455,7 +455,7 @@ export default function Landing() {
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row gap-4">
                       <Link href={tool.primaryAction.href}>
-                        <Button size="lg" className="w-full sm:w-auto">
+                        <Button size="lg" className="w-full sm:w-auto bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 border border-purple-500/20">
                           {tool.primaryAction.label}
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
