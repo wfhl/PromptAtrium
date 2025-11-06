@@ -193,7 +193,7 @@ const toolSections: ToolSection[] = [
       href: "/codex"
     },
     highlights: [
-      "1000+ curated terms",
+      "10,000+ curated terms",
       "Anatomy of prompts guide",
       "Model-specific syntax",
       "Community contributions"
@@ -262,9 +262,9 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Header with Navigation */}
-      <header className="border-b border-border bg-card/95 backdrop-blur sticky top-0 z-50">
+      <header className="border-b border-border bg-card/30 backdrop-blur-lg sticky top-0 z-50">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img 
@@ -322,7 +322,7 @@ export default function Landing() {
         <PromptCardBeam />
       </section>
       {/* Features */}
-      <section id="features" className="pt-3 pb-8 px-6 bg-muted/50">
+      <section id="features" className="pt-3 pb-8 px-6 bg-muted/20">
         <div className="container mx-auto">
           <h2 className="text-3xl -mt-1 font-bold text-center text-foreground mb-8" data-testid="text-features-title">
             Everything you need for AI prompt management
@@ -361,7 +361,7 @@ export default function Landing() {
         </div>
       </section>
       {/* Tools Overview Section */}
-      <section id="tools-overview" className="py-16 px-6 bg-gradient-to-b from-background to-muted/30">
+      <section id="tools-overview" className="py-16 px-6 bg-gradient-to-b from-transparent to-muted/20">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-foreground mb-4">
@@ -482,7 +482,7 @@ export default function Landing() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-16 px-6 bg-muted/50">
+      <section id="how-it-works" className="py-16 px-6 bg-muted/20">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-foreground mb-4">
