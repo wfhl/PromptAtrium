@@ -366,19 +366,19 @@ export default function Landing() {
             </p>
             
             {/* Quick Access Cards - Used as Navigation */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 border-transparent md:grid-cols-4 gap-4">
               {toolSections.map((tool) => (
                 <Card 
                   key={tool.id}
                   onClick={() => setActiveToolTab(tool.id)}
                   className={cn(
-                    "cursor-pointer transition-all hover:scale-105",
+                    "cursor-pointer transition-all border-transparent hover:scale-105",
                     activeToolTab === tool.id 
-                      ? `ring-2 shadow-lg bg-gradient-to-br ${tool.gradient} backdrop-blur border-2` 
+                      ? `ring-2 shadow-lg bg-gradient-to-br ${tool.gradient} backdrop-blur border-0 border-transparent` 
                       : "hover:shadow-lg"
                   )}
                 >
-                  <CardContent className="p-4 md:p-6 text-center">
+                  <CardContent className="p-4 border-transparent md:p-6 text-center">
                     <div className={cn(
                       "w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center transition-colors",
                       activeToolTab === tool.id 
