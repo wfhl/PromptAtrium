@@ -374,7 +374,7 @@ export default function Landing() {
                   className={cn(
                     "cursor-pointer transition-all border-transparent hover:scale-105",
                     activeToolTab === tool.id 
-                      ? `ring-2 shadow-lg bg-gradient-to-br ${tool.gradient} backdrop-blur border-0 border-transparent` 
+                      ? `ring-0 shadow-lg bg-gradient-to-br ${tool.gradient} backdrop-blur border-0 border-transparent` 
                       : "hover:shadow-lg"
                   )}
                 >
