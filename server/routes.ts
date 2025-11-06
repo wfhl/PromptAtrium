@@ -5108,6 +5108,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generic invite lookup - determines type and returns appropriate data
+  app.get('/api/invites/:code', async (req, res) => {
+    try {
+      const { code } = req.params;
+      
+      // First check community invites
+      const communityInvite = await storage.getInviteByCode(code);
+      if (communityInvite) {
+        // Get community details and member count
+        const community = await storage.getCommunity(communityInvite.communityId);
+        const memberCount = await storage.getCommunityMemberCount(communityInvite.communityId);
+        
+        // Get creator details
+        const creator = await storage.getUser(communityInvite.createdBy);
+        
+        return res.json({
+          type: 'community',
+          invite: {
+            ...communityInvite,
+            community: community ? {
+              ...community,
+              memberCount
+            } : null,
+            creator: creator ? {
+              id: creator.id,
+              firstName: creator.firstName,
+              lastName: creator.lastName,
+              profileImageUrl: creator.profileImageUrl
+            } : null
+          }
+        });
+      }
+      
+      // Check sub-community invites
+      const subCommunityInvite = await storage.getSubCommunityInvite(code);
+      if (subCommunityInvite) {
+        // Check if invite is still valid
+        if (!subCommunityInvite.isActive) {
+          return res.status(400).json({ message: "Invite is no longer active" });
+        }
+        
+        if (subCommunityInvite.expiresAt && new Date() > new Date(subCommunityInvite.expiresAt)) {
+          return res.status(400).json({ message: "Invite has expired" });
+        }
+        
+        if (subCommunityInvite.currentUses >= subCommunityInvite.maxUses) {
+          return res.status(400).json({ message: "Invite has reached maximum uses" });
+        }
+        
+        // Get sub-community info for the invite
+        const subCommunity = await storage.getCommunity(subCommunityInvite.subCommunityId);
+        
+        return res.json({
+          type: 'sub-community',
+          invite: {
+            ...subCommunityInvite,
+            subCommunity,
+          }
+        });
+      }
+      
+      // No invite found
+      return res.status(404).json({ message: "Invalid invite code" });
+    } catch (error) {
+      console.error("Error fetching invite:", error);
+      res.status(500).json({ message: "Failed to fetch invite" });
+    }
+  });
+
   // Get invite details by code (public for preview)
   app.get('/api/invites/community/:code', async (req, res) => {
     try {
@@ -5141,6 +5210,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching invite:", error);
       res.status(500).json({ message: "Failed to fetch invite" });
+    }
+  });
+
+  // Generic invite accept endpoint - handles both community and sub-community invites
+  app.post('/api/invites/:code/accept', isAuthenticated, async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // First check if it's a community invite
+      const communityInvite = await storage.getInviteByCode(code);
+      if (communityInvite) {
+        const result = await storage.useInvite(code);
+        
+        if (!result) {
+          return res.status(400).json({ message: "Failed to accept invite" });
+        }
+        
+        // Add user to community
+        await storage.joinCommunity(userId, communityInvite.communityId, communityInvite.role);
+        
+        return res.status(201).json({
+          type: 'community',
+          message: "Successfully joined community",
+          communityId: communityInvite.communityId
+        });
+      }
+      
+      // Check if it's a sub-community invite
+      const subCommunityInvite = await storage.getSubCommunityInvite(code);
+      if (subCommunityInvite) {
+        const result = await storage.useSubCommunityInvite(code, userId);
+        
+        if (!result.success) {
+          return res.status(400).json({ message: result.message });
+        }
+        
+        return res.status(201).json({
+          type: 'sub-community',
+          message: result.message,
+          community: result.community,
+          subCommunityId: subCommunityInvite.subCommunityId
+        });
+      }
+      
+      // No invite found
+      return res.status(404).json({ message: "Invalid invite code" });
+    } catch (error) {
+      console.error("Error accepting invite:", error);
+      res.status(500).json({ message: "Failed to accept invite" });
     }
   });
 

@@ -26,9 +26,10 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Lightbulb, Plus, X, Link2, Calendar, User as UserIcon, Shield, Globe, ChevronDown, Crown, Settings, LogOut, Moon, Sun, Eye } from "lucide-react";
+import { Lightbulb, Plus, X, Link2, Calendar, User as UserIcon, Shield, Globe, ChevronDown, Crown, Settings, LogOut, Moon, Sun, Eye, Mail } from "lucide-react";
 import type { User } from "@shared/schema";
 import { ProfilePictureUpload } from "@/components/ProfilePictureUpload";
+import { InviteAcceptanceForm } from "@/components/InviteAcceptanceForm";
 
 // Custom social link type
 type CustomSocial = {
@@ -550,6 +551,22 @@ export default function ProfileSettings() {
             </Button>
           </div>
         </form>
+
+        {/* Invitations Card - Outside the form */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Mail className="h-5 w-5" />
+              <span>Community Invitations</span>
+            </CardTitle>
+            <CardDescription>
+              Join communities and sub-communities using invite codes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <InviteAcceptanceForm embedded={true} />
+          </CardContent>
+        </Card>
     </div>
   );
 }
