@@ -374,7 +374,7 @@ export default function Landing() {
                   className={cn(
                     "cursor-pointer transition-all hover:scale-105",
                     activeToolTab === tool.id 
-                      ? "ring-2 ring-primary shadow-lg bg-primary/10" 
+                      ? `ring-2 shadow-lg bg-gradient-to-br ${tool.gradient} backdrop-blur border-2` 
                       : "hover:shadow-lg"
                   )}
                 >
@@ -382,7 +382,7 @@ export default function Landing() {
                     <div className={cn(
                       "w-12 h-12 mx-auto mb-3 rounded-lg flex items-center justify-center transition-colors",
                       activeToolTab === tool.id 
-                        ? "bg-primary text-primary-foreground" 
+                        ? "bg-white/20 text-white backdrop-blur" 
                         : "bg-primary/10"
                     )}>
                       {tool.icon}
