@@ -1,9 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Lightbulb, Users, Search, Shield } from "lucide-react";
-import { useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Lightbulb, Users, Search, Shield, Library, Sparkles, BookOpen, ShoppingCart, FolderOpen, Tags, Download, Archive, Copy, Brain, Wand2, Code, Layers, DollarSign, CreditCard, Globe, Lock, ArrowRight, ChevronRight, CheckCircle2, Star, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import PromptCardBeam from "@/components/PromptCardBeam";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 interface GridItemProps {
   area: string;
@@ -45,17 +49,222 @@ const GridItem = ({ area, icon, title, description, testId }: GridItemProps) => 
   );
 };
 
+interface ToolFeature {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+interface ToolSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: React.ReactNode;
+  features: ToolFeature[];
+  primaryAction: {
+    label: string;
+    href: string;
+  };
+  secondaryAction?: {
+    label: string;
+    href: string;
+  };
+  highlights?: string[];
+  gradient: string;
+}
+
+const toolSections: ToolSection[] = [
+  {
+    id: "library",
+    title: "Prompt Library",
+    subtitle: "Your Personal AI Prompt Repository",
+    description: "Organize, manage, and version control all your AI prompts in one centralized location. Create collections, add metadata, and track your prompt evolution over time.",
+    icon: <Library className="h-6 w-6" />,
+    gradient: "from-blue-500/20 to-cyan-500/20",
+    features: [
+      {
+        icon: <FolderOpen className="h-4 w-4" />,
+        title: "Smart Collections",
+        description: "Organize prompts into themed collections with custom categories"
+      },
+      {
+        icon: <Tags className="h-4 w-4" />,
+        title: "Rich Metadata",
+        description: "Tag prompts with categories, models, and custom attributes"
+      },
+      {
+        icon: <Archive className="h-4 w-4" />,
+        title: "Version History",
+        description: "Track changes and iterations of your prompts over time"
+      },
+      {
+        icon: <Download className="h-4 w-4" />,
+        title: "Import & Export",
+        description: "Bulk import/export prompts in various formats"
+      }
+    ],
+    primaryAction: {
+      label: "Explore Library",
+      href: "/library"
+    },
+    highlights: [
+      "Unlimited prompt storage",
+      "Advanced search and filtering",
+      "Private and public collections",
+      "Bookmark favorite prompts"
+    ]
+  },
+  {
+    id: "generator",
+    title: "Prompt Generator",
+    subtitle: "AI-Powered Prompt Creation",
+    description: "Generate professional prompts using our intelligent template system. Combine subjects, styles, and modifiers to create the perfect prompt for any AI model.",
+    icon: <Sparkles className="h-6 w-6" />,
+    gradient: "from-purple-500/20 to-pink-500/20",
+    features: [
+      {
+        icon: <Brain className="h-4 w-4" />,
+        title: "Smart Templates",
+        description: "Pre-built templates for common use cases and scenarios"
+      },
+      {
+        icon: <Wand2 className="h-4 w-4" />,
+        title: "Auto Enhancement",
+        description: "AI suggestions to improve and refine your prompts"
+      },
+      {
+        icon: <Layers className="h-4 w-4" />,
+        title: "Layered Building",
+        description: "Build complex prompts step-by-step with guided assistance"
+      },
+      {
+        icon: <Copy className="h-4 w-4" />,
+        title: "Quick Copy",
+        description: "One-click copy with format optimization for different models"
+      }
+    ],
+    primaryAction: {
+      label: "Start Generating",
+      href: "/tools/quick-prompter"
+    },
+    secondaryAction: {
+      label: "View Templates",
+      href: "/tools"
+    },
+    highlights: [
+      "50+ professional templates",
+      "Model-specific optimization",
+      "Character and scene builders",
+      "Real-time preview"
+    ]
+  },
+  {
+    id: "codex",
+    title: "Wordsmith Codex",
+    subtitle: "The Ultimate Prompt Engineering Reference",
+    description: "Access a comprehensive database of AI prompt terms, modifiers, and techniques. Browse by category, assemble custom strings, and save your favorite combinations.",
+    icon: <BookOpen className="h-6 w-6" />,
+    gradient: "from-green-500/20 to-emerald-500/20",
+    features: [
+      {
+        icon: <Code className="h-4 w-4" />,
+        title: "Syntax Guides",
+        description: "Master weight control, attention brackets, and advanced syntax"
+      },
+      {
+        icon: <Layers className="h-4 w-4" />,
+        title: "Category Browser",
+        description: "Navigate organized categories from subjects to styles"
+      },
+      {
+        icon: <Zap className="h-4 w-4" />,
+        title: "Term Assembly",
+        description: "Click to collect terms and build complex prompt strings"
+      },
+      {
+        icon: <Star className="h-4 w-4" />,
+        title: "Wildcard Lists",
+        description: "Create dynamic wildcards for randomized generation"
+      }
+    ],
+    primaryAction: {
+      label: "Browse Codex",
+      href: "/codex"
+    },
+    highlights: [
+      "1000+ curated terms",
+      "Anatomy of prompts guide",
+      "Model-specific syntax",
+      "Community contributions"
+    ]
+  },
+  {
+    id: "marketplace",
+    title: "Prompt Marketplace",
+    subtitle: "Buy, Sell, and Trade Premium Prompts",
+    description: "Discover high-quality prompts from talented creators or monetize your own creations. Our secure marketplace supports both credit and money transactions.",
+    icon: <ShoppingCart className="h-6 w-6" />,
+    gradient: "from-orange-500/20 to-red-500/20",
+    features: [
+      {
+        icon: <DollarSign className="h-4 w-4" />,
+        title: "Flexible Pricing",
+        description: "Set prices in credits or real money with Stripe integration"
+      },
+      {
+        icon: <Globe className="h-4 w-4" />,
+        title: "Global Reach",
+        description: "Connect with buyers and sellers worldwide"
+      },
+      {
+        icon: <Lock className="h-4 w-4" />,
+        title: "Secure Transactions",
+        description: "Protected payments and intellectual property rights"
+      },
+      {
+        icon: <TrendingUp className="h-4 w-4" />,
+        title: "Analytics Dashboard",
+        description: "Track sales, views, and performance metrics"
+      }
+    ],
+    primaryAction: {
+      label: "Visit Marketplace",
+      href: "/marketplace"
+    },
+    secondaryAction: {
+      label: "Start Selling",
+      href: "/seller/dashboard"
+    },
+    highlights: [
+      "Low commission rates",
+      "Instant payouts",
+      "Copyright protection",
+      "Featured listings"
+    ]
+  }
+];
+
 export default function Landing() {
+  const [activeToolTab, setActiveToolTab] = useState("library");
+  
   // Force dark theme on mount
   useEffect(() => {
     document.documentElement.classList.remove('light');
     document.documentElement.classList.add('dark');
   }, []);
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/95 backdrop-blur">
+      {/* Header with Navigation */}
+      <header className="border-b border-border bg-card/95 backdrop-blur sticky top-0 z-50">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img 
@@ -66,6 +275,28 @@ export default function Landing() {
             <h1 className="text-xl font-bold text-foreground">PromptAtrium</h1>
           </div>
           
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <button 
+              onClick={() => scrollToSection('tools-overview')}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Tools
+            </button>
+            <button 
+              onClick={() => scrollToSection('features')}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Features
+            </button>
+            <button 
+              onClick={() => scrollToSection('how-it-works')}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              How It Works
+            </button>
+          </nav>
+          
           <div className="flex items-center gap-4">
             <Button asChild data-testid="button-login">
               <a href="/api/login">Sign In/Up</a>
@@ -75,12 +306,12 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-4 px-6">
+      <section className="py-8 md:py-4 px-4 md:px-6">
         <div className="container mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-2" data-testid="text-hero-title">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-foreground mb-4 md:mb-2" data-testid="text-hero-title">
             AI Prompt Library & Community
           </h1>
-          <p className="text-sm text-muted-foreground mb-1 max-w-xl mx-auto" data-testid="text-hero-description">
+          <p className="text-base md:text-sm text-muted-foreground mb-4 md:mb-1 max-w-xl mx-auto px-4 md:px-0" data-testid="text-hero-description">
             PromptAtrium is an open, central space for managing, sharing, and refining AI prompts. Join the community and elevate your AI projects today.
           </p>
         </div>
@@ -91,8 +322,173 @@ export default function Landing() {
         <PromptCardBeam />
       </section>
 
+      {/* Tools Overview Section */}
+      <section id="tools-overview" className="py-16 px-6 bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              Powerful Tools for Every Creator
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Discover our comprehensive suite of AI prompt management tools designed to streamline your workflow and unleash your creativity
+            </p>
+          </div>
+
+          {/* Tool Navigation Tabs */}
+          <Tabs value={activeToolTab} onValueChange={setActiveToolTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8 h-auto">
+              {toolSections.map((tool) => (
+                <TabsTrigger 
+                  key={tool.id} 
+                  value={tool.id}
+                  className="flex flex-col md:flex-row items-center gap-1 md:gap-2 py-3 md:py-2"
+                >
+                  {tool.icon}
+                  <span className="text-xs md:text-sm">{tool.title}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {toolSections.map((tool) => (
+              <TabsContent key={tool.id} value={tool.id} className="mt-0">
+                <Card className={`border-2 bg-gradient-to-br ${tool.gradient} backdrop-blur`}>
+                  <CardHeader className="pb-8">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <CardTitle className="text-3xl flex items-center gap-3">
+                          {tool.icon}
+                          {tool.title}
+                        </CardTitle>
+                        <Badge variant="secondary" className="text-sm">
+                          {tool.subtitle}
+                        </Badge>
+                      </div>
+                    </div>
+                    <CardDescription className="text-base mt-4 text-foreground/80">
+                      {tool.description}
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    {/* Features Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                      {tool.features.map((feature, idx) => (
+                        <div key={idx} className="flex gap-3 p-4 rounded-lg bg-background/50 backdrop-blur">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            {feature.icon}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-foreground mb-1">{feature.title}</h4>
+                            <p className="text-sm text-muted-foreground">{feature.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Highlights */}
+                    {tool.highlights && (
+                      <div className="mb-8">
+                        <h4 className="font-semibold mb-3 text-foreground">Key Features:</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {tool.highlights.map((highlight, idx) => (
+                            <div key={idx} className="flex items-start sm:items-center gap-2 text-sm">
+                              <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5 sm:mt-0" />
+                              <span className="text-muted-foreground">{highlight}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <Link href={tool.primaryAction.href}>
+                        <Button size="lg" className="w-full sm:w-auto">
+                          {tool.primaryAction.label}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                      {tool.secondaryAction && (
+                        <Link href={tool.secondaryAction.href}>
+                          <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                            {tool.secondaryAction.label}
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            ))}
+          </Tabs>
+
+          {/* Quick Access Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12">
+            {toolSections.map((tool) => (
+              <Link key={tool.id} href={tool.primaryAction.href}>
+                <Card className="h-full hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-primary/10 flex items-center justify-center">
+                      {tool.icon}
+                    </div>
+                    <h3 className="font-semibold mb-2">{tool.title}</h3>
+                    <p className="text-sm text-muted-foreground">{tool.subtitle}</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-16 px-6 bg-muted/50">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              How PromptAtrium Works
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Get started in minutes with our intuitive workflow
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <span className="text-2xl font-bold text-blue-500">1</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Create & Import</h3>
+              <p className="text-muted-foreground">
+                Start by creating new prompts or importing existing ones. Use our generator for quick creation.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/20 flex items-center justify-center">
+                <span className="text-2xl font-bold text-purple-500">2</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Organize & Enhance</h3>
+              <p className="text-muted-foreground">
+                Organize prompts into collections, add metadata, and use the Codex to enhance your prompts.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                <span className="text-2xl font-bold text-green-500">3</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Share & Monetize</h3>
+              <p className="text-muted-foreground">
+                Share with the community or sell your best prompts in the marketplace. Build your reputation.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
-      <section className="pt-3 pb-8 px-6 bg-muted/50">
+      <section id="features" className="pt-3 pb-8 px-6 bg-muted/50">
         <div className="container mx-auto">
           <h2 className="text-3xl -mt-1 font-bold text-center text-foreground mb-8" data-testid="text-features-title">
             Everything you need for AI prompt management
