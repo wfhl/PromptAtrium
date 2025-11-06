@@ -321,7 +321,45 @@ export default function Landing() {
       <section className="mt-2 mb-2">
         <PromptCardBeam />
       </section>
+      {/* Features */}
+      <section id="features" className="pt-3 pb-8 px-6 bg-muted/50">
+        <div className="container mx-auto">
+          <h2 className="text-3xl -mt-1 font-bold text-center text-foreground mb-8" data-testid="text-features-title">
+            Everything you need for AI prompt management
+          </h2>
 
+          <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4">
+            <GridItem
+              area="md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/7]"
+              icon={<Lightbulb className="h-4 w-4" />}
+              title="Organize & Manage"
+              description="Store, categorize, and version your prompts with advanced metadata and organization tools."
+              testId="card-feature-organize"
+            />
+            <GridItem
+              area="md:[grid-area:1/7/2/13] xl:[grid-area:1/7/2/13]"
+              icon={<Users className="h-4 w-4" />}
+              title="Community Driven"
+              description="Share, discover, and collaborate on prompts with a vibrant community of creators."
+              testId="card-feature-community"
+            />
+            <GridItem
+              area="md:[grid-area:2/1/2/7] xl:[grid-area:2/1/3/7]"
+              icon={<Search className="h-4 w-4" />}
+              title="Advanced Search"
+              description="Find the perfect prompt with full-text search, filtering by tags, categories, and more."
+              testId="card-feature-search"
+            />
+            <GridItem
+              area="md:[grid-area:2/7/2/13] xl:[grid-area:2/7/3/13]"
+              icon={<Shield className="h-4 w-4" />}
+              title="Secure & Private"
+              description="Keep your prompts private or share them publicly with role-based access control."
+              testId="card-feature-secure"
+            />
+          </ul>
+        </div>
+      </section>
       {/* Tools Overview Section */}
       <section id="tools-overview" className="py-16 px-6 bg-gradient-to-b from-background to-muted/30">
         <div className="container mx-auto">
@@ -329,6 +367,23 @@ export default function Landing() {
             <h2 className="text-4xl font-bold text-foreground mb-4">
               Powerful Tools for Every Creator
             </h2>
+            {/* Quick Access Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12">
+              {toolSections.map((tool) => (
+                <Link key={tool.id} href={tool.primaryAction.href}>
+                  <Card className="h-full hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
+                    <CardContent className="p-6 text-center">
+                      <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-primary/10 flex items-center justify-center">
+                        {tool.icon}
+                      </div>
+                      <h3 className="font-semibold mb-2">{tool.title}</h3>
+                      <p className="text-sm text-muted-foreground">{tool.subtitle}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+            
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Discover our comprehensive suite of AI prompt management tools designed to streamline your workflow and unleash your creativity
             </p>
@@ -422,22 +477,7 @@ export default function Landing() {
             ))}
           </Tabs>
 
-          {/* Quick Access Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12">
-            {toolSections.map((tool) => (
-              <Link key={tool.id} href={tool.primaryAction.href}>
-                <Card className="h-full hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
-                  <CardContent className="p-6 text-center">
-                    <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-primary/10 flex items-center justify-center">
-                      {tool.icon}
-                    </div>
-                    <h3 className="font-semibold mb-2">{tool.title}</h3>
-                    <p className="text-sm text-muted-foreground">{tool.subtitle}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+      
         </div>
       </section>
 
@@ -487,45 +527,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="pt-3 pb-8 px-6 bg-muted/50">
-        <div className="container mx-auto">
-          <h2 className="text-3xl -mt-1 font-bold text-center text-foreground mb-8" data-testid="text-features-title">
-            Everything you need for AI prompt management
-          </h2>
-          
-          <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4">
-            <GridItem
-              area="md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/7]"
-              icon={<Lightbulb className="h-4 w-4" />}
-              title="Organize & Manage"
-              description="Store, categorize, and version your prompts with advanced metadata and organization tools."
-              testId="card-feature-organize"
-            />
-            <GridItem
-              area="md:[grid-area:1/7/2/13] xl:[grid-area:1/7/2/13]"
-              icon={<Users className="h-4 w-4" />}
-              title="Community Driven"
-              description="Share, discover, and collaborate on prompts with a vibrant community of creators."
-              testId="card-feature-community"
-            />
-            <GridItem
-              area="md:[grid-area:2/1/2/7] xl:[grid-area:2/1/3/7]"
-              icon={<Search className="h-4 w-4" />}
-              title="Advanced Search"
-              description="Find the perfect prompt with full-text search, filtering by tags, categories, and more."
-              testId="card-feature-search"
-            />
-            <GridItem
-              area="md:[grid-area:2/7/2/13] xl:[grid-area:2/7/3/13]"
-              icon={<Shield className="h-4 w-4" />}
-              title="Secure & Private"
-              description="Keep your prompts private or share them publicly with role-based access control."
-              testId="card-feature-secure"
-            />
-          </ul>
-        </div>
-      </section>
+     
 
       {/* CTA Section */}
       <section className="pt-8 pb-20 px-6">
