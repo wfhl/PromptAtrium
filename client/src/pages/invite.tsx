@@ -47,12 +47,12 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-6">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Join Community</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Join Community</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             {inviteCode ? "Validating your invite code..." : "Enter your invite code to join a community"}
           </p>
         </div>
@@ -62,7 +62,7 @@ export default function InvitePage() {
 
         {/* Footer */}
         {!inviteCode && (
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             <p>Don't have an invite code? Contact a community admin.</p>
           </div>
         )}
