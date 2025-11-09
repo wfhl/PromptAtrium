@@ -3484,6 +3484,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Transaction Reporting Endpoints ============
+  
+  // Get transaction history for a user (buyers see purchases, sellers see sales)
+  app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { 
+        type = 'all', // all, purchases, sales, payouts, refunds
+        status,
+        startDate,
+        endDate,
+        page = 1,
+        limit = 20
+      } = req.query;
+      
+      const transactions = await storage.getUserTransactions(userId, {
+        type: type as string,
+        status: status as string,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        page: Number(page),
+        limit: Number(limit)
+      });
+      
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+  
+  // Export transactions as CSV
+  app.get('/api/transactions/export', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { type, startDate, endDate } = req.query;
+      
+      const transactions = await storage.getUserTransactions(userId, {
+        type: type as string,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        page: 1,
+        limit: 10000 // Export all matching transactions
+      });
+      
+      // Convert to CSV format
+      const csv = storage.convertTransactionsToCSV(transactions.data);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="transactions-${Date.now()}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting transactions:", error);
+      res.status(500).json({ message: "Failed to export transactions" });
+    }
+  });
+  
+  // Get seller's pending payouts
+  app.get('/api/marketplace/seller/pending-payouts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Get seller profile
+      const sellerProfile = await storage.getSellerProfile(userId);
+      if (!sellerProfile) {
+        return res.status(404).json({ message: "Seller profile not found" });
+      }
+      
+      const pendingPayouts = await storage.getPendingPayouts(userId);
+      res.json(pendingPayouts);
+    } catch (error) {
+      console.error("Error fetching pending payouts:", error);
+      res.status(500).json({ message: "Failed to fetch pending payouts" });
+    }
+  });
+  
+  // Admin: Get platform transaction summary
+  app.get('/api/admin/transactions/summary', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      const summary = await storage.getPlatformTransactionSummary({
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined
+      });
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching transaction summary:", error);
+      res.status(500).json({ message: "Failed to fetch transaction summary" });
+    }
+  });
+  
+  // Admin: Get all transactions with filtering
+  app.get('/api/admin/transactions', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const {
+        type,
+        status,
+        userId,
+        startDate,
+        endDate,
+        page = 1,
+        limit = 50
+      } = req.query;
+      
+      const transactions = await storage.getAllTransactions({
+        type: type as string,
+        status: status as string,
+        userId: userId as string,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        page: Number(page),
+        limit: Number(limit)
+      });
+      
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching all transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+  
+  // Admin: Process manual payout batch
+  app.post('/api/admin/payouts/process', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { payoutMethod = 'stripe', limit = 100 } = req.body;
+      
+      // Import payment service
+      const { paymentService } = await import('./services/paymentService');
+      
+      const result = await paymentService.processScheduledPayouts(
+        payoutMethod as 'stripe' | 'paypal',
+        limit
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error processing payouts:", error);
+      res.status(500).json({ message: "Failed to process payouts" });
+    }
+  });
+  
+  // Admin: Get payout batches
+  app.get('/api/admin/payouts/batches', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { status, page = 1, limit = 20 } = req.query;
+      
+      const batches = await storage.getPayoutBatches({
+        status: status as string,
+        page: Number(page),
+        limit: Number(limit)
+      });
+      
+      res.json(batches);
+    } catch (error) {
+      console.error("Error fetching payout batches:", error);
+      res.status(500).json({ message: "Failed to fetch payout batches" });
+    }
+  });
+  
   // ============ Marketplace Purchase Flow Endpoints ============
   
   // Create Stripe payment intent for a listing
