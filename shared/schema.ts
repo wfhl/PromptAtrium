@@ -851,8 +851,9 @@ export const sellerProfiles = pgTable("seller_profiles", {
     businessAddress?: string;
   }>(),
   payoutMethod: varchar("payout_method", {
-    enum: ["stripe", "manual"]
-  }),
+    enum: ["stripe", "paypal"]
+  }).notNull().default("stripe"),
+  paypalEmail: varchar("paypal_email"),
   totalSales: integer("total_sales").notNull().default(0),
   totalRevenueCents: integer("total_revenue_cents").notNull().default(0),
   totalCreditsEarned: integer("total_credits_earned").notNull().default(0),

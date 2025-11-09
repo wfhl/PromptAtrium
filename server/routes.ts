@@ -64,7 +64,17 @@ const sellerOnboardingSchema = z.object({
     },
     { message: "At least one tax information field is required" }
   ),
-  payoutMethod: z.enum(["stripe", "manual"]),
+  payoutMethod: z.enum(["stripe", "paypal"]),
+  paypalEmail: z.string().email("Invalid email address").optional(),
+}).refine((data) => {
+  // If PayPal is selected, email is required
+  if (data.payoutMethod === "paypal" && !data.paypalEmail) {
+    return false;
+  }
+  return true;
+}, {
+  message: "PayPal email is required for PayPal payouts",
+  path: ["paypalEmail"],
 });
 
 // Helper function to resolve public image URLs for development
@@ -2820,7 +2830,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if profile exists
       const existingProfile = await storage.getSellerProfile(userId);
       
-      // Check if Stripe is configured
+      // Handle PayPal payout method
+      if (validatedData.payoutMethod === 'paypal') {
+        // For PayPal, we don't need Stripe Connect
+        const profileData = {
+          userId,
+          businessType: validatedData.businessType,
+          taxInfo: validatedData.taxInfo,
+          payoutMethod: 'paypal' as const,
+          paypalEmail: validatedData.paypalEmail,
+          onboardingStatus: 'completed' as const // Mark as completed immediately for PayPal
+        };
+        
+        if (existingProfile) {
+          // Update existing profile
+          await db.update(sellerProfiles)
+            .set({
+              ...profileData,
+              updatedAt: new Date()
+            })
+            .where(eq(sellerProfiles.userId, userId));
+          
+          const updatedProfile = await storage.getSellerProfile(userId);
+          return res.json(updatedProfile);
+        } else {
+          // Create new profile
+          const newProfile = await storage.createSellerProfile(profileData);
+          return res.json(newProfile);
+        }
+      }
+      
+      // Check if Stripe is configured (for Stripe payout method)
       if (!stripe) {
         // Fallback to non-Stripe onboarding if Stripe is not configured
         if (existingProfile) {

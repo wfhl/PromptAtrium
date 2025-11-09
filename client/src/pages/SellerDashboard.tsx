@@ -33,13 +33,23 @@ const onboardingSchema = z.object({
   vatNumber: z.string().optional(),
   businessName: z.string().optional(),
   businessAddress: z.string().optional(),
-  // payoutMethod is always stripe, no longer user-selectable
+  payoutMethod: z.enum(["stripe", "paypal"]),
+  paypalEmail: z.string().email("Invalid email address").optional(),
 }).refine((data) => {
   // At least one tax field should be provided
   return data.taxId || data.vatNumber || data.businessName || data.businessAddress;
 }, {
   message: "At least one tax information field is required",
   path: ["taxId"], // Show error on first tax field
+}).refine((data) => {
+  // If PayPal is selected, email is required
+  if (data.payoutMethod === "paypal" && !data.paypalEmail) {
+    return false;
+  }
+  return true;
+}, {
+  message: "PayPal email is required for PayPal payouts",
+  path: ["paypalEmail"],
 });
 
 // Seller response form validation schema
@@ -173,6 +183,8 @@ export default function SellerDashboard() {
       vatNumber: "",
       businessName: "",
       businessAddress: "",
+      payoutMethod: "stripe",
+      paypalEmail: "",
     },
   });
   
@@ -184,7 +196,7 @@ export default function SellerDashboard() {
     },
   });
 
-  // Seller onboarding mutation with Stripe Connect
+  // Seller onboarding mutation with Stripe Connect or PayPal
   const onboardingMutation = useMutation({
     mutationFn: async (data: z.infer<typeof onboardingSchema>) => {
       const response = await apiRequest("POST", "/api/marketplace/seller/onboard", {
@@ -195,7 +207,8 @@ export default function SellerDashboard() {
           businessName: data.businessName || undefined,
           businessAddress: data.businessAddress || undefined,
         },
-        payoutMethod: "stripe", // Always use Stripe for automated payouts
+        payoutMethod: data.payoutMethod,
+        paypalEmail: data.payoutMethod === "paypal" ? data.paypalEmail : undefined,
       });
       return await response.json() as { stripeOnboardingUrl?: string };
     },
@@ -388,24 +401,72 @@ export default function SellerDashboard() {
                   />
                 </div>
 
-                {/* Payout Method - Stripe Only */}
-                <div className="space-y-2">
-                  <FormLabel>Payout Method</FormLabel>
-                  <div className="p-4 border rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CreditCard className="h-5 w-5 text-primary" />
-                      <span className="font-medium">Stripe Connect (Automated)</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Automated payouts directly to your bank account. After completing the onboarding, 
-                      Stripe will handle all payment processing and automatically transfer funds to your 
-                      bank account based on your payout schedule (typically 2-7 business days after a sale).
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    No PayPal or manual payouts needed - everything is handled automatically through Stripe's secure payment system.
-                  </p>
-                </div>
+                {/* Payout Method Selection */}
+                <FormField
+                  control={form.control}
+                  name="payoutMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Payout Method</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-payout-method">
+                            <SelectValue placeholder="Select payout method" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="stripe">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-4 w-4" />
+                              Bank Transfer (via Stripe)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="paypal">
+                            <div className="flex items-center gap-2">
+                              <Wallet className="h-4 w-4" />
+                              PayPal
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        {field.value === "stripe" ? (
+                          "Automated payouts directly to your bank account (2-7 business days)"
+                        ) : field.value === "paypal" ? (
+                          "Automated payouts to your PayPal account (typically within 24 hours)"
+                        ) : (
+                          "Choose how you'd like to receive payments for your sales"
+                        )}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* PayPal Email - Only shown when PayPal is selected */}
+                {form.watch("payoutMethod") === "paypal" && (
+                  <FormField
+                    control={form.control}
+                    name="paypalEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>PayPal Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            type="email"
+                            placeholder="your-email@example.com" 
+                            data-testid="input-paypal-email" 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enter the email address associated with your PayPal account
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <Button 
                   type="submit" 
