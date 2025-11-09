@@ -281,8 +281,8 @@ export default function SellerDashboard() {
     return <div>Loading...</div>;
   }
 
-  // Show onboarding form if profile is not completed
-  if (sellerProfile && sellerProfile.onboardingStatus !== 'completed') {
+  // Show onboarding form if profile doesn't exist or is not completed
+  if (!sellerProfile || sellerProfile.onboardingStatus !== 'completed') {
     return (
       <div className="container mx-auto py-8 px-4 max-w-2xl">
         <Card>
