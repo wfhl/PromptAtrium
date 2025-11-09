@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
-import { marketplaceOrders, transactionLedger } from '@shared/schema';
+import { marketplaceOrders, transactionLedger, sellerProfiles } from '@shared/schema';
 import { paymentService } from '../services/paymentService';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -201,7 +201,7 @@ async function handlePayoutFailed(payout: Stripe.Payout) {
   console.log('Payout failed:', payout.id);
 }
 
-// Handle refunds
+// Handle refunds (webhook notification from Stripe - refund already happened)
 async function handleChargeRefunded(charge: Stripe.Charge) {
   const orderId = charge.metadata?.orderId;
   
@@ -209,7 +209,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     return;
   }
 
-  // Check if refund already processed
+  // Check if refund already recorded in ledger
   const [existingRefund] = await db
     .select()
     .from(transactionLedger)
@@ -221,22 +221,60 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     );
 
   if (existingRefund) {
+    console.log('Refund already recorded for order:', orderId);
     return; // Already processed
   }
 
-  // Process the refund
-  await paymentService.processRefund(
-    orderId,
-    charge.amount_refunded,
-    'Refund processed via Stripe'
-  );
+  // Record the refund in our ledger (don't create a new Stripe refund - it already happened!)
+  // Get the original purchase transaction
+  const [originalTransaction] = await db
+    .select()
+    .from(transactionLedger)
+    .where(
+      and(
+        eq(transactionLedger.orderId, orderId),
+        eq(transactionLedger.type, 'purchase')
+      )
+    );
 
-  console.log('Refund processed for order:', orderId);
+  if (!originalTransaction) {
+    console.error('Original transaction not found for refund:', orderId);
+    return;
+  }
+
+  // Calculate refund amounts (proportional commission refund)
+  const refundAmount = charge.amount_refunded;
+  const refundPercentage = refundAmount / charge.amount;
+  const commissionRefund = Math.floor(originalTransaction.platformFee * refundPercentage);
+  
+  // Create refund entry in ledger
+  await db.insert(transactionLedger).values({
+    orderId,
+    userId: originalTransaction.userId,
+    type: 'refund',
+    amount: -refundAmount, // Negative for refund
+    platformFee: -commissionRefund, // Negative commission refund
+    status: 'completed',
+    paymentMethod: originalTransaction.paymentMethod,
+    stripePaymentIntentId: charge.payment_intent as string,
+    description: 'Refund processed via Stripe webhook',
+    createdAt: new Date(),
+    processedAt: new Date(),
+  });
+
+  // Update the order status to refunded
+  await db
+    .update(marketplaceOrders)
+    .set({
+      status: 'refunded',
+      updatedAt: new Date(),
+    })
+    .where(eq(marketplaceOrders.id, orderId));
+
+  console.log('Refund recorded in ledger for order:', orderId, 'Amount:', refundAmount);
 }
 
 // Handle Stripe Connect account updates
-import { sellerProfiles } from '@shared/schema';
-import { and } from 'drizzle-orm';
 
 async function handleAccountUpdated(account: Stripe.Account) {
   // Update seller profile onboarding status

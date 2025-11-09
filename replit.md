@@ -1,7 +1,23 @@
 # PromptAtrium - AI Prompt Management Platform
 
 ## Overview
-A comprehensive platform for managing, sharing, and generating AI prompts. Features include a prompt library, community sharing, collections management, and advanced prompt generation tools.
+A comprehensive platform for managing, sharing, and generating AI prompts. Features include a prompt library, community sharing, collections management, advanced prompt generation tools, and a complete marketplace payment infrastructure.
+
+## Recent Updates (November 09, 2025)
+
+### Marketplace Payment Infrastructure Implementation
+- **Transaction Ledger System**: Implemented comprehensive database schema with `transaction_ledger`, `payout_batches`, and `platform_settings` tables for tracking all financial movements (purchases, commissions, refunds, payouts)
+- **Automated Stripe Connect Integration**: Built PaymentService class handling order completion, commission calculation, and automated transfers to connected seller accounts
+- **Webhook Event Processing**: Created robust webhook handlers for real-time payment events (payment_intent.succeeded, transfer.created/failed, payout.paid/failed, charge.refunded)
+- **Commission Management UI**: Added admin interface (`CommissionSettings.tsx`) for configuring platform commission rates, payout schedules, processing fees, with fee calculator for transparency
+- **Transaction Reporting Dashboards**: Built comprehensive dashboards for admins (`TransactionDashboard.tsx`) and sellers (`SellerTransactionDashboard.tsx`) with metrics, history, and export capabilities
+- **CSV/JSON Export**: Added export endpoints for transaction data in both CSV and JSON formats for admins and sellers
+- **Payout Scheduling Service**: Implemented `PayoutScheduler` service with configurable frequencies (daily/weekly/biweekly/monthly), minimum thresholds, and automatic batch processing
+- **Security Enhancements**: Added `isSuperAdmin` middleware for admin-only endpoints, proper transaction integrity management, and idempotent webhook handling
+- **Critical Bug Fixes**: 
+  - Fixed ledger corruption in webhook handlers by restricting updates to specific transaction types
+  - Resolved duplicate refund issue by properly handling Stripe webhook notifications without creating new refunds
+  - Fixed import errors preventing webhook handler from loading
 
 ## Recent Updates (October 31, 2025)
 
