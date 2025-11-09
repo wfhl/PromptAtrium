@@ -33,7 +33,7 @@ const onboardingSchema = z.object({
   vatNumber: z.string().optional(),
   businessName: z.string().optional(),
   businessAddress: z.string().optional(),
-  payoutMethod: z.enum(["stripe", "manual"]),
+  // payoutMethod is always stripe, no longer user-selectable
 }).refine((data) => {
   // At least one tax field should be provided
   return data.taxId || data.vatNumber || data.businessName || data.businessAddress;
@@ -173,7 +173,6 @@ export default function SellerDashboard() {
       vatNumber: "",
       businessName: "",
       businessAddress: "",
-      payoutMethod: "stripe",
     },
   });
   
@@ -196,7 +195,7 @@ export default function SellerDashboard() {
           businessName: data.businessName || undefined,
           businessAddress: data.businessAddress || undefined,
         },
-        payoutMethod: data.payoutMethod,
+        payoutMethod: "stripe", // Always use Stripe for automated payouts
       });
       return await response.json() as { stripeOnboardingUrl?: string };
     },
@@ -389,31 +388,24 @@ export default function SellerDashboard() {
                   />
                 </div>
 
-                {/* Payout Method */}
-                <FormField
-                  control={form.control}
-                  name="payoutMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Payout Method</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-payout-method">
-                            <SelectValue placeholder="Select payout method" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="stripe">Stripe (Automated)</SelectItem>
-                          <SelectItem value="manual">Manual (Invoice-based)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Choose how you'd like to receive payments for your sales
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Payout Method - Stripe Only */}
+                <div className="space-y-2">
+                  <FormLabel>Payout Method</FormLabel>
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Stripe Connect (Automated)</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Automated payouts directly to your bank account. After completing the onboarding, 
+                      Stripe will handle all payment processing and automatically transfer funds to your 
+                      bank account based on your payout schedule (typically 2-7 business days after a sale).
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    No PayPal or manual payouts needed - everything is handled automatically through Stripe's secure payment system.
+                  </p>
+                </div>
 
                 <Button 
                   type="submit" 
