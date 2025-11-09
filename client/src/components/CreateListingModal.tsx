@@ -52,6 +52,8 @@ const listingSchema = z.object({
   message: "Please set valid pricing (minimum $1.00 or 100 credits)",
 });
 
+type ListingFormData = z.infer<typeof listingSchema>;
+
 export function CreateListingModal({ open, onClose, editingListing }: CreateListingModalProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -102,7 +104,7 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
     enabled: open && !!sellerProfile && sellerProfile?.onboardingStatus === 'completed',
   }) as { data: Category[]; isLoading: boolean };
 
-  const form = useForm<z.infer<typeof listingSchema>>({
+  const form = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema),
     defaultValues: {
       promptId: editingListing?.promptId || "",
@@ -115,7 +117,7 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
       previewPercentage: editingListing?.previewPercentage || 20,
       category: editingListing?.category || "",
       tags: editingListing?.tags || [],
-      status: editingListing?.status || "active",
+      status: (editingListing?.status === "sold_out" ? "paused" : editingListing?.status) || "active" as "draft" | "active" | "paused",
     },
   });
 
@@ -133,16 +135,16 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
         previewPercentage: editingListing.previewPercentage,
         category: editingListing.category || "",
         tags: editingListing.tags || [],
-        status: editingListing.status as any,
+        status: (editingListing.status === "sold_out" ? "paused" : editingListing.status) as "draft" | "active" | "paused",
       });
     }
   }, [editingListing, form]);
 
   // Create listing mutation
   const createListingMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof listingSchema>) => {
+    mutationFn: async (data: ListingFormData) => {
       const response = await apiRequest("POST", "/api/marketplace/listings", data);
-      return response.json();
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/marketplace/my-listings"] });
@@ -162,9 +164,9 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
 
   // Update listing mutation
   const updateListingMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof listingSchema>) => {
+    mutationFn: async (data: ListingFormData) => {
       const response = await apiRequest("PUT", `/api/marketplace/listings/${editingListing?.id}`, data);
-      return response.json();
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/marketplace/my-listings"] });
@@ -181,7 +183,7 @@ export function CreateListingModal({ open, onClose, editingListing }: CreateList
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof listingSchema>) => {
+  const onSubmit = async (data: ListingFormData) => {
     if (editingListing) {
       await updateListingMutation.mutateAsync(data);
     } else {

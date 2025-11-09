@@ -91,25 +91,25 @@ export default function SellerDashboard() {
   const { data: sellerReviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ["/api/marketplace/reviews/seller"],
     enabled: !!sellerProfile,
-  });
+  }) as { data: any[]; isLoading: boolean };
   
   // Fetch Stripe balance
   const { data: stripeBalance, isLoading: balanceLoading } = useQuery({
     queryKey: ["/api/marketplace/seller/balance"],
     enabled: !!sellerProfile?.stripeAccountId && sellerProfile.onboardingStatus === 'completed',
-  });
+  }) as { data: { available?: number; pending?: number } | undefined; isLoading: boolean };
   
   // Fetch Stripe payouts
   const { data: stripePayouts = [], isLoading: payoutsLoading } = useQuery({
     queryKey: ["/api/marketplace/seller/payouts"],
     enabled: !!sellerProfile?.stripeAccountId && sellerProfile.onboardingStatus === 'completed',
-  });
+  }) as { data: any[]; isLoading: boolean };
 
   // Update listing mutation
   const updateListingMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<MarketplaceListing> }) => {
       const response = await apiRequest("PUT", `/api/marketplace/listings/${id}`, data);
-      return response.json();
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/marketplace/my-listings"] });
@@ -128,7 +128,7 @@ export default function SellerDashboard() {
   const deleteListingMutation = useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("DELETE", `/api/marketplace/listings/${id}`);
-      return response.json();
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/marketplace/my-listings"] });
@@ -147,7 +147,7 @@ export default function SellerDashboard() {
   const addResponseMutation = useMutation({
     mutationFn: async ({ reviewId, response }: { reviewId: string; response: string }) => {
       const res = await apiRequest("POST", `/api/marketplace/reviews/${reviewId}/response`, { response });
-      return res.json();
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/marketplace/reviews/seller"] });
@@ -198,13 +198,13 @@ export default function SellerDashboard() {
         },
         payoutMethod: data.payoutMethod,
       });
-      return response;
+      return await response.json() as { stripeOnboardingUrl?: string };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/marketplace/seller/profile"] });
       
       // If Stripe onboarding URL is provided, redirect to it
-      if (data.stripeOnboardingUrl) {
+      if (data?.stripeOnboardingUrl) {
         toast({ 
           title: "Redirecting to Stripe", 
           description: "Complete your Stripe account setup to receive payments.",
@@ -235,10 +235,10 @@ export default function SellerDashboard() {
   const refreshOnboardingMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/marketplace/seller/refresh-onboarding");
-      return response;
+      return await response.json() as { url?: string };
     },
     onSuccess: (data) => {
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url;
       }
     },
