@@ -3535,11 +3535,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Export transactions as CSV
-  app.get('/api/transactions/export', isAuthenticated, async (req: any, res) => {
+  // Export transactions as CSV or JSON
+  app.get('/api/user/transactions/export', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).claims.sub;
-      const { type, startDate, endDate } = req.query;
+      const { type, startDate, endDate, format = 'csv' } = req.query;
       
       const transactions = await storage.getUserTransactions(userId, {
         type: type as string,
@@ -3549,12 +3549,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit: 10000 // Export all matching transactions
       });
       
-      // Convert to CSV format
-      const csv = storage.convertTransactionsToCSV(transactions.data);
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="transactions-${Date.now()}.csv"`);
-      res.send(csv);
+      if (format === 'json') {
+        res.json(transactions.data);
+      } else {
+        // Convert to CSV format
+        const csv = storage.convertTransactionsToCSV(transactions.data);
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="transactions-${Date.now()}.csv"`);
+        res.send(csv);
+      }
     } catch (error) {
       console.error("Error exporting transactions:", error);
       res.status(500).json({ message: "Failed to export transactions" });
@@ -3624,6 +3628,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching all transactions:", error);
       res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+  
+  // Admin: Export transactions as CSV or JSON
+  app.get('/api/admin/transactions/export', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { 
+        startDate, 
+        endDate, 
+        format = 'csv',
+        type,
+        status
+      } = req.query;
+      
+      // Fetch all transactions for the period
+      const transactions = await storage.getAllTransactions({
+        type: type as string,
+        status: status as string,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        page: 1,
+        limit: 10000 // Export all
+      });
+      
+      if (format === 'json') {
+        res.json(transactions.data);
+      } else {
+        // Convert to CSV
+        const csv = storage.convertTransactionsToCSV(transactions.data);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="admin-transactions-${Date.now()}.csv"`);
+        res.send(csv);
+      }
+    } catch (error) {
+      console.error("Error exporting transactions:", error);
+      res.status(500).json({ message: "Failed to export transactions" });
     }
   });
   
