@@ -3565,6 +3565,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get seller statistics
+  app.get('/api/seller/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { startDate, endDate } = req.query;
+      
+      const stats = await storage.getSellerStats(userId, {
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+      });
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching seller stats:", error);
+      res.status(500).json({ message: "Failed to fetch seller stats" });
+    }
+  });
+  
+  // Get seller's payout status and next payout info
+  app.get('/api/seller/payout-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      
+      // Import payout scheduler
+      const { payoutScheduler } = await import('./services/payoutScheduler');
+      
+      // Get next payout info
+      const nextPayout = await payoutScheduler.getNextPayoutDate(userId);
+      
+      // Get seller's payout method
+      const sellerProfile = await storage.getSellerProfile(userId);
+      
+      res.json({
+        nextPayoutDate: nextPayout?.date,
+        nextPayoutAmount: nextPayout?.amount ? nextPayout.amount / 100 : 0,
+        payoutMethod: sellerProfile?.stripeAccountId ? 'stripe' : 
+                     sellerProfile?.paypalEmail ? 'paypal' : null,
+        isOnboarded: !!(sellerProfile?.stripeAccountId || sellerProfile?.paypalEmail),
+      });
+    } catch (error) {
+      console.error("Error fetching payout status:", error);
+      res.status(500).json({ message: "Failed to fetch payout status" });
+    }
+  });
+  
   // Get seller's pending payouts
   app.get('/api/marketplace/seller/pending-payouts', isAuthenticated, async (req: any, res) => {
     try {
