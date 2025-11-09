@@ -835,7 +835,7 @@ export const userAchievements = pgTable("user_achievements", {
 
 // Seller profiles table - tracks seller information and stats
 export const sellerProfiles = pgTable("seller_profiles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().unique().references(() => users.id),
   stripeAccountId: varchar("stripe_account_id"),
   onboardingStatus: varchar("onboarding_status", { 
@@ -870,7 +870,7 @@ export const sellerProfiles = pgTable("seller_profiles", {
 
 // Marketplace listings table - tracks prompts listed for sale
 export const marketplaceListings = pgTable("marketplace_listings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: text("id").primaryKey(),
   promptId: char("prompt_id", { length: 10 }).notNull().references(() => prompts.id),
   sellerId: varchar("seller_id").notNull().references(() => users.id),
   title: varchar("title").notNull(),
@@ -909,7 +909,7 @@ export const marketplaceOrders = pgTable("marketplace_orders", {
   orderNumber: varchar("order_number").notNull().unique(), // Human-readable order ID
   buyerId: varchar("buyer_id").notNull().references(() => users.id),
   sellerId: varchar("seller_id").notNull().references(() => users.id),
-  listingId: varchar("listing_id").notNull().references(() => marketplaceListings.id),
+  listingId: text("listing_id").notNull().references(() => marketplaceListings.id),
   paymentMethod: varchar("payment_method", { 
     enum: ["stripe", "credits"] 
   }).notNull(),
@@ -1064,6 +1064,117 @@ export const disputeMessages = pgTable("dispute_messages", {
   index("idx_dispute_messages_admin").on(table.isAdminMessage),
   // Index for creation date ordering
   index("idx_dispute_messages_created").on(table.createdAt),
+]);
+
+// Transaction ledger table - comprehensive tracking of all financial movements
+export const transactionLedger = pgTable("transaction_ledger", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").references(() => marketplaceOrders.id),
+  type: varchar("type", {
+    enum: ["purchase", "commission", "payout", "refund", "adjustment", "withdrawal_request"]
+  }).notNull(),
+  status: varchar("status", {
+    enum: ["pending", "processing", "completed", "failed", "cancelled"]
+  }).notNull().default("pending"),
+  
+  // Actors
+  fromUserId: varchar("from_user_id").references(() => users.id), // Buyer for purchases, platform for commissions
+  toUserId: varchar("to_user_id").references(() => users.id), // Seller for payouts, platform for commissions
+  
+  // Amounts (all stored in cents to avoid floating point issues)
+  amountCents: integer("amount_cents").notNull(), // Transaction amount
+  commissionCents: integer("commission_cents"), // Commission amount if applicable
+  netAmountCents: integer("net_amount_cents"), // Net amount after commission
+  currencyCode: varchar("currency_code").default("USD"),
+  
+  // Payment method details
+  paymentMethod: varchar("payment_method", {
+    enum: ["stripe", "paypal", "credits", "bank_transfer"]
+  }),
+  
+  // External payment references
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
+  stripeTransferId: varchar("stripe_transfer_id"),
+  stripePayoutId: varchar("stripe_payout_id"),
+  paypalTransactionId: varchar("paypal_transaction_id"),
+  paypalBatchId: varchar("paypal_batch_id"),
+  
+  // Additional metadata
+  description: text("description"),
+  metadata: jsonb("metadata").default({}), // Store additional details
+  failureReason: text("failure_reason"), // If status is failed
+  
+  // Timestamps
+  processedAt: timestamp("processed_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_transaction_ledger_order").on(table.orderId),
+  index("idx_transaction_ledger_from_user").on(table.fromUserId),
+  index("idx_transaction_ledger_to_user").on(table.toUserId),
+  index("idx_transaction_ledger_type").on(table.type),
+  index("idx_transaction_ledger_status").on(table.status),
+  index("idx_transaction_ledger_created").on(table.createdAt),
+  index("idx_transaction_ledger_stripe_payout").on(table.stripePayoutId),
+]);
+
+// Payout batches table - groups payouts for processing
+export const payoutBatches = pgTable("payout_batches", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  batchNumber: varchar("batch_number").notNull().unique(), // Human-readable batch ID
+  payoutMethod: varchar("payout_method", {
+    enum: ["stripe", "paypal"]
+  }).notNull(),
+  status: varchar("status", {
+    enum: ["pending", "processing", "completed", "failed", "partial"]
+  }).notNull().default("pending"),
+  
+  // Batch totals (in cents)
+  totalAmountCents: integer("total_amount_cents").notNull(),
+  totalPayouts: integer("total_payouts").notNull(),
+  successfulPayouts: integer("successful_payouts").default(0),
+  failedPayouts: integer("failed_payouts").default(0),
+  
+  // External references
+  stripePayoutBatchId: varchar("stripe_payout_batch_id"),
+  paypalBatchId: varchar("paypal_batch_id"),
+  
+  // Processing details
+  processedBy: varchar("processed_by").references(() => users.id), // Admin who initiated
+  scheduledFor: timestamp("scheduled_for"),
+  processedAt: timestamp("processed_at"),
+  completedAt: timestamp("completed_at"),
+  
+  metadata: jsonb("metadata").default({}),
+  errorLog: jsonb("error_log").default([]),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_payout_batches_status").on(table.status),
+  index("idx_payout_batches_method").on(table.payoutMethod),
+  index("idx_payout_batches_scheduled").on(table.scheduledFor),
+  index("idx_payout_batches_created").on(table.createdAt),
+]);
+
+// Platform settings table - stores configurable marketplace settings
+export const platformSettings = pgTable("platform_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key").notNull().unique(),
+  value: jsonb("value").notNull(),
+  category: varchar("category", {
+    enum: ["commission", "payout", "general", "features", "limits"]
+  }).notNull(),
+  description: text("description"),
+  isEditable: boolean("is_editable").default(true), // Some settings may be system-only
+  validationRules: jsonb("validation_rules"), // JSON schema for validation
+  lastModifiedBy: varchar("last_modified_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_platform_settings_key").on(table.key),
+  index("idx_platform_settings_category").on(table.category),
 ]);
 
 // Relations
@@ -1465,6 +1576,33 @@ export const insertDisputeMessageSchema = createInsertSchema(disputeMessages).om
   createdAt: true,
 });
 
+// Transaction ledger insert schemas
+export const insertTransactionLedgerSchema = createInsertSchema(transactionLedger).omit({
+  id: true,
+  processedAt: true,
+  completedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Payout batch insert schemas
+export const insertPayoutBatchSchema = createInsertSchema(payoutBatches).omit({
+  id: true,
+  successfulPayouts: true,
+  failedPayouts: true,
+  processedAt: true,
+  completedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Platform settings insert schemas
+export const insertPlatformSettingSchema = createInsertSchema(platformSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -1611,6 +1749,14 @@ export type MarketplaceDispute = typeof marketplaceDisputes.$inferSelect;
 export type InsertMarketplaceDispute = z.infer<typeof insertMarketplaceDisputeSchema>;
 export type DisputeMessage = typeof disputeMessages.$inferSelect;
 export type InsertDisputeMessage = z.infer<typeof insertDisputeMessageSchema>;
+
+// Transaction and payout types
+export type TransactionLedger = typeof transactionLedger.$inferSelect;
+export type InsertTransactionLedger = z.infer<typeof insertTransactionLedgerSchema>;
+export type PayoutBatch = typeof payoutBatches.$inferSelect;
+export type InsertPayoutBatch = z.infer<typeof insertPayoutBatchSchema>;
+export type PlatformSetting = typeof platformSettings.$inferSelect;
+export type InsertPlatformSetting = z.infer<typeof insertPlatformSettingSchema>;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;
