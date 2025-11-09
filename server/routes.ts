@@ -20,7 +20,7 @@ import {
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient, parseObjectPath } from "./objectStorage";
 import { ObjectPermission, getObjectAclPolicy } from "./objectAcl";
 import { File } from "@google-cloud/storage";
-import express from "express";
+import express, { NextFunction, Response } from "express";
 import { z } from "zod";
 import { getAuthUrl, getTokens, saveToGoogleDrive, refreshAccessToken } from "./googleDrive";
 import { devStorage } from "./devStorage";
@@ -3483,6 +3483,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch chart data" });
     }
   });
+
+  // ============ Admin Middleware ============
+  const isSuperAdmin = async (req: any, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user || (user.role !== 'super_admin' && user.role !== 'global_admin' && user.role !== 'developer')) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      next();
+    } catch (error) {
+      console.error("Admin middleware error:", error);
+      res.status(500).json({ message: "Authorization check failed" });
+    }
+  };
 
   // ============ Transaction Reporting Endpoints ============
   

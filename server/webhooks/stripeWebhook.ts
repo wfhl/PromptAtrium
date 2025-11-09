@@ -126,7 +126,8 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
     return;
   }
 
-  // Update transaction ledger with transfer status
+  // Update ONLY the purchase transaction (seller payout) with transfer status
+  // Don't touch commission or other transaction types
   await db
     .update(transactionLedger)
     .set({
@@ -134,7 +135,13 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
       status: 'processing',
       processedAt: new Date(),
     })
-    .where(eq(transactionLedger.orderId, orderId));
+    .where(
+      and(
+        eq(transactionLedger.orderId, orderId),
+        eq(transactionLedger.type, 'purchase'),
+        eq(transactionLedger.paymentMethod, 'stripe')
+      )
+    );
 
   console.log('Transfer created for order:', orderId);
 }
@@ -147,7 +154,8 @@ async function handleTransferFailed(transfer: Stripe.Transfer) {
     return;
   }
 
-  // Update transaction ledger with failure
+  // Update ONLY the specific transaction that has this transfer ID
+  // This ensures we only update the seller payout, not commission rows
   await db
     .update(transactionLedger)
     .set({
@@ -157,7 +165,8 @@ async function handleTransferFailed(transfer: Stripe.Transfer) {
     .where(
       and(
         eq(transactionLedger.orderId, orderId),
-        eq(transactionLedger.stripeTransferId, transfer.id)
+        eq(transactionLedger.stripeTransferId, transfer.id),
+        eq(transactionLedger.type, 'purchase')
       )
     );
 
