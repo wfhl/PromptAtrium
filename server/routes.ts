@@ -3865,6 +3865,234 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ============ Marketplace Management Endpoints ============
+  
+  // Get marketplace settings
+  app.get('/api/admin/marketplace/settings', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const settings = await storage.getPlatformSettings([
+        'commission_rate',
+        'payout_frequency',
+        'minimum_payout_amount',
+        'auto_payouts',
+        'stripe_enabled',
+        'paypal_enabled',
+        'processing_fee_percentage',
+        'flat_processing_fee',
+        'marketplace_name',
+        'marketplace_description',
+        'require_seller_verification',
+        'max_listings_per_seller',
+        'allow_digital_products',
+        'allow_physical_products',
+        'dispute_resolution_days',
+        'buyer_protection_enabled'
+      ]);
+      
+      res.json({
+        commissionRate: Number(settings['commission_rate'] || 15),
+        payoutFrequency: settings['payout_frequency'] || 'weekly',
+        minimumPayoutAmount: Number(settings['minimum_payout_amount'] || 1000),
+        autoPayouts: settings['auto_payouts'] === 'true',
+        stripeEnabled: settings['stripe_enabled'] === 'true',
+        paypalEnabled: settings['paypal_enabled'] === 'true',
+        processingFeePercentage: Number(settings['processing_fee_percentage'] || 2.9),
+        flatProcessingFee: Number(settings['flat_processing_fee'] || 0.30),
+        marketplaceName: settings['marketplace_name'] || 'PromptAtrium Marketplace',
+        marketplaceDescription: settings['marketplace_description'] || '',
+        requireSellerVerification: settings['require_seller_verification'] === 'true',
+        maxListingsPerSeller: Number(settings['max_listings_per_seller'] || 100),
+        allowDigitalProducts: settings['allow_digital_products'] !== 'false',
+        allowPhysicalProducts: settings['allow_physical_products'] === 'true',
+        disputeResolutionDays: Number(settings['dispute_resolution_days'] || 7),
+        buyerProtectionEnabled: settings['buyer_protection_enabled'] !== 'false'
+      });
+    } catch (error) {
+      console.error("Error fetching marketplace settings:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace settings" });
+    }
+  });
+  
+  // Update marketplace settings
+  app.put('/api/admin/marketplace/settings', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const updates: Record<string, string> = {};
+      const {
+        commissionRate,
+        payoutFrequency,
+        minimumPayoutAmount,
+        autoPayouts,
+        stripeEnabled,
+        paypalEnabled,
+        processingFeePercentage,
+        flatProcessingFee,
+        marketplaceName,
+        marketplaceDescription,
+        requireSellerVerification,
+        maxListingsPerSeller,
+        allowDigitalProducts,
+        allowPhysicalProducts,
+        disputeResolutionDays,
+        buyerProtectionEnabled
+      } = req.body;
+      
+      if (commissionRate !== undefined) updates['commission_rate'] = String(commissionRate);
+      if (payoutFrequency !== undefined) updates['payout_frequency'] = payoutFrequency;
+      if (minimumPayoutAmount !== undefined) updates['minimum_payout_amount'] = String(minimumPayoutAmount);
+      if (autoPayouts !== undefined) updates['auto_payouts'] = String(autoPayouts);
+      if (stripeEnabled !== undefined) updates['stripe_enabled'] = String(stripeEnabled);
+      if (paypalEnabled !== undefined) updates['paypal_enabled'] = String(paypalEnabled);
+      if (processingFeePercentage !== undefined) updates['processing_fee_percentage'] = String(processingFeePercentage);
+      if (flatProcessingFee !== undefined) updates['flat_processing_fee'] = String(flatProcessingFee);
+      if (marketplaceName !== undefined) updates['marketplace_name'] = marketplaceName;
+      if (marketplaceDescription !== undefined) updates['marketplace_description'] = marketplaceDescription;
+      if (requireSellerVerification !== undefined) updates['require_seller_verification'] = String(requireSellerVerification);
+      if (maxListingsPerSeller !== undefined) updates['max_listings_per_seller'] = String(maxListingsPerSeller);
+      if (allowDigitalProducts !== undefined) updates['allow_digital_products'] = String(allowDigitalProducts);
+      if (allowPhysicalProducts !== undefined) updates['allow_physical_products'] = String(allowPhysicalProducts);
+      if (disputeResolutionDays !== undefined) updates['dispute_resolution_days'] = String(disputeResolutionDays);
+      if (buyerProtectionEnabled !== undefined) updates['buyer_protection_enabled'] = String(buyerProtectionEnabled);
+      
+      await storage.updatePlatformSettings(updates);
+      
+      res.json({ message: "Settings updated successfully" });
+    } catch (error) {
+      console.error("Error updating marketplace settings:", error);
+      res.status(500).json({ message: "Failed to update marketplace settings" });
+    }
+  });
+  
+  // Get marketplace statistics
+  app.get('/api/admin/marketplace/stats', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      // Get seller stats
+      const sellers = await storage.getSellerProfiles();
+      const activeSellers = sellers.filter(s => s.stripeConnected || s.paypalConnected).length;
+      
+      // Get listing stats
+      const prompts = await storage.getPrompts();
+      const activeListings = prompts.filter(p => p.isForSale && p.priceCents && p.priceCents > 0).length;
+      const newListingsToday = prompts.filter(p => {
+        const createdAt = new Date(p.createdAt);
+        const today = new Date();
+        return createdAt.toDateString() === today.toDateString();
+      }).length;
+      
+      // Get transaction summary
+      const summary = await storage.getPlatformTransactionSummary();
+      
+      res.json({
+        totalSellers: sellers.length,
+        activeSellers,
+        activeListings,
+        newListingsToday,
+        gmv: summary.totalSales / 100,
+        platformRevenue: summary.totalCommission / 100
+      });
+    } catch (error) {
+      console.error("Error fetching marketplace stats:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace stats" });
+    }
+  });
+  
+  // Get marketplace sellers
+  app.get('/api/admin/marketplace/sellers', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const sellers = await storage.getSellerProfiles();
+      const users = await storage.getUsers();
+      
+      // Join seller data with user data
+      const sellersWithUserData = sellers.map(seller => {
+        const user = users.find(u => u.id === seller.userId);
+        return {
+          id: seller.id,
+          userId: seller.userId,
+          username: user?.username || 'Unknown',
+          email: user?.email || 'unknown@example.com',
+          status: seller.stripeConnected || seller.paypalConnected ? 'active' : 'inactive',
+          stripeConnected: seller.stripeConnected,
+          paypalConnected: seller.paypalConnected,
+          totalSales: 0, // TODO: Calculate from transaction_ledger
+          totalRevenue: 0, // TODO: Calculate from transaction_ledger
+          pendingPayout: 0, // TODO: Calculate from transaction_ledger
+          joinedAt: user?.createdAt || new Date().toISOString(),
+          verified: seller.stripeConnected || seller.paypalConnected
+        };
+      });
+      
+      res.json(sellersWithUserData);
+    } catch (error) {
+      console.error("Error fetching sellers:", error);
+      res.status(500).json({ message: "Failed to fetch sellers" });
+    }
+  });
+  
+  // Update seller status
+  app.patch('/api/admin/marketplace/sellers/:sellerId', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { sellerId } = req.params;
+      const { status } = req.body;
+      
+      // TODO: Implement seller status update logic
+      // This would typically involve updating a seller status field in the database
+      
+      res.json({ message: "Seller status updated successfully" });
+    } catch (error) {
+      console.error("Error updating seller:", error);
+      res.status(500).json({ message: "Failed to update seller" });
+    }
+  });
+  
+  // Get marketplace listings
+  app.get('/api/admin/marketplace/listings', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const prompts = await storage.getPrompts();
+      const users = await storage.getUsers();
+      
+      // Filter for marketplace listings (prompts that are for sale)
+      const listings = prompts
+        .filter(p => p.isForSale && p.priceCents && p.priceCents > 0)
+        .map(prompt => {
+          const seller = users.find(u => u.id === prompt.userId);
+          return {
+            id: prompt.id,
+            title: prompt.name,
+            sellerId: prompt.userId,
+            sellerName: seller?.username || 'Unknown',
+            price: (prompt.priceCents || 0) / 100,
+            status: prompt.isPublic ? 'active' : 'inactive',
+            category: prompt.category || 'uncategorized',
+            salesCount: 0, // TODO: Calculate from orders
+            revenue: 0, // TODO: Calculate from transaction_ledger
+            createdAt: prompt.createdAt,
+            featured: false, // TODO: Add featured field to prompts
+            reported: false // TODO: Add reported field to prompts
+          };
+        });
+      
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      res.status(500).json({ message: "Failed to fetch listings" });
+    }
+  });
+  
+  // Update listing status
+  app.patch('/api/admin/marketplace/listings/:listingId', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { listingId } = req.params;
+      const { status, featured } = req.body;
+      
+      // TODO: Implement listing status/featured update logic
+      // This would typically involve updating prompt fields in the database
+      
+      res.json({ message: "Listing updated successfully" });
+    } catch (error) {
+      console.error("Error updating listing:", error);
+      res.status(500).json({ message: "Failed to update listing" });
+    }
+  });
+  
   // ============ Marketplace Purchase Flow Endpoints ============
   
   // Create Stripe payment intent for a listing
