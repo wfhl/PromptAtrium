@@ -7174,6 +7174,292 @@ export class DatabaseStorage implements IStorage {
         });
     }
   }
+
+  // Get platform transaction summary for admin dashboard
+  async getPlatformTransactionSummary(filters?: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<{
+    totalRevenue: number;
+    totalCommission: number;
+    totalPayouts: number;
+    pendingPayouts: number;
+    totalOrders: number;
+    averageOrderValue: number;
+    topSellers: Array<{
+      userId: string;
+      username: string;
+      totalSales: number;
+      totalRevenue: number;
+    }>;
+    recentTransactions: Array<{
+      id: string;
+      type: string;
+      amount: number;
+      status: string;
+      userId: string;
+      username: string;
+      createdAt: string;
+      orderId?: string;
+      description?: string;
+    }>;
+  }> {
+    let conditions = [];
+    
+    if (filters?.startDate) {
+      conditions.push(gte(transactionLedger.createdAt, filters.startDate));
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(transactionLedger.createdAt, filters.endDate));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    const transactions = await db
+      .select()
+      .from(transactionLedger)
+      .where(whereClause);
+    
+    // Calculate summary metrics
+    const totalRevenue = transactions
+      .filter(t => t.type === 'purchase' && t.status === 'completed')
+      .reduce((sum, t) => sum + (t.amountCents || 0), 0) / 100;
+    
+    const totalCommission = transactions
+      .filter(t => t.type === 'commission' && t.status === 'completed')
+      .reduce((sum, t) => sum + (t.amountCents || 0), 0) / 100;
+    
+    const totalPayouts = transactions
+      .filter(t => t.type === 'payout' && t.status === 'completed')
+      .reduce((sum, t) => sum + (t.amountCents || 0), 0) / 100;
+    
+    const pendingPayouts = transactions
+      .filter(t => t.type === 'payout' && t.status === 'pending')
+      .reduce((sum, t) => sum + (t.amountCents || 0), 0) / 100;
+
+    const orders = await db
+      .select()
+      .from(marketplaceOrders)
+      .where(eq(marketplaceOrders.status, 'completed'));
+    
+    const totalOrders = orders.length;
+    const averageOrderValue = totalOrders > 0 
+      ? orders.reduce((sum, o) => sum + (o.amountCents || 0), 0) / totalOrders / 100
+      : 0;
+
+    // Get top sellers
+    const sellers = await db
+      .select({
+        userId: sellerProfiles.userId,
+        totalSales: sellerProfiles.totalSales,
+        totalRevenue: sellerProfiles.totalRevenueCents,
+      })
+      .from(sellerProfiles)
+      .orderBy(desc(sellerProfiles.totalRevenueCents))
+      .limit(5);
+
+    const topSellers = await Promise.all(
+      sellers.map(async (seller) => {
+        const user = await this.getUser(seller.userId);
+        return {
+          userId: seller.userId,
+          username: user?.username || 'Unknown',
+          totalSales: seller.totalSales || 0,
+          totalRevenue: (seller.totalRevenue || 0) / 100,
+        };
+      })
+    );
+
+    // Get recent transactions
+    const recentTxns = await db
+      .select()
+      .from(transactionLedger)
+      .orderBy(desc(transactionLedger.createdAt))
+      .limit(10);
+
+    const recentTransactions = await Promise.all(
+      recentTxns.map(async (txn) => {
+        const userId = txn.toUserId || txn.fromUserId || '';
+        const user = userId ? await this.getUser(userId) : null;
+        return {
+          id: txn.id,
+          type: txn.type,
+          amount: (txn.amountCents || 0) / 100,
+          status: txn.status,
+          userId,
+          username: user?.username || 'Unknown',
+          createdAt: txn.createdAt?.toISOString() || '',
+          orderId: txn.orderId || undefined,
+          description: txn.description || undefined,
+        };
+      })
+    );
+
+    return {
+      totalRevenue,
+      totalCommission,
+      totalPayouts,
+      pendingPayouts,
+      totalOrders,
+      averageOrderValue,
+      topSellers,
+      recentTransactions,
+    };
+  }
+
+  // Get all transactions with filtering
+  async getAllTransactions(filters?: {
+    type?: string;
+    status?: string;
+    userId?: string;
+    startDate?: Date;
+    endDate?: Date;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 50;
+    const offset = (page - 1) * limit;
+
+    let conditions = [];
+
+    // Apply filters
+    if (filters?.type) {
+      conditions.push(eq(transactionLedger.type, filters.type as any));
+    }
+    if (filters?.status) {
+      conditions.push(eq(transactionLedger.status, filters.status as any));
+    }
+    if (filters?.userId) {
+      conditions.push(
+        or(
+          eq(transactionLedger.fromUserId, filters.userId),
+          eq(transactionLedger.toUserId, filters.userId)
+        )
+      );
+    }
+    if (filters?.startDate) {
+      conditions.push(gte(transactionLedger.createdAt, filters.startDate));
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(transactionLedger.createdAt, filters.endDate));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get total count
+    const [{ count: total }] = await db
+      .select({ count: count() })
+      .from(transactionLedger)
+      .where(whereClause);
+
+    // Get paginated data
+    const data = await db
+      .select()
+      .from(transactionLedger)
+      .where(whereClause)
+      .orderBy(desc(transactionLedger.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      total,
+      page,
+      totalPages,
+    };
+  }
+
+  // Convert transactions to CSV format
+  convertTransactionsToCSV(transactions: any[]): string {
+    const headers = [
+      'ID',
+      'Date',
+      'Type',
+      'Status',
+      'From User',
+      'To User',
+      'Amount',
+      'Commission',
+      'Net Amount',
+      'Payment Method',
+      'Description',
+    ];
+
+    const rows = transactions.map((t) => [
+      t.id,
+      t.createdAt ? new Date(t.createdAt).toISOString() : '',
+      t.type,
+      t.status,
+      t.fromUserId || '',
+      t.toUserId || '',
+      t.amountCents ? (t.amountCents / 100).toFixed(2) : '0.00',
+      t.commissionCents ? (t.commissionCents / 100).toFixed(2) : '0.00',
+      t.netAmountCents ? (t.netAmountCents / 100).toFixed(2) : '0.00',
+      t.paymentMethod || '',
+      t.description || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    return csvContent;
+  }
+
+  // Get payout batches
+  async getPayoutBatches(filters?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 20;
+    const offset = (page - 1) * limit;
+
+    let conditions = [];
+
+    if (filters?.status) {
+      conditions.push(eq(payoutBatches.status, filters.status as any));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [{ count: total }] = await db
+      .select({ count: count() })
+      .from(payoutBatches)
+      .where(whereClause);
+
+    const data = await db
+      .select()
+      .from(payoutBatches)
+      .where(whereClause)
+      .orderBy(desc(payoutBatches.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      total,
+      page,
+      totalPages,
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();
