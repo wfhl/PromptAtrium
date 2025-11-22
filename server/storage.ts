@@ -579,6 +579,10 @@ export interface IStorage {
     creditAmount?: number;
     reason?: string;
   }): Promise<{ success: boolean; message: string }>;
+  
+  // Platform settings operations
+  getPlatformSettings(keys: string[]): Promise<Record<string, string>>;
+  updatePlatformSettings(settings: Record<string, string>): Promise<void>;
 }
 
 function generatePromptId(): string {
@@ -7133,6 +7137,42 @@ export class DatabaseStorage implements IStorage {
           Number(admins[0]?.count || 0) === Number(postAdmins[0]?.count || 0),
       },
     };
+  }
+  
+  // Platform settings operations
+  async getPlatformSettings(keys: string[]): Promise<Record<string, string>> {
+    const settings = await db
+      .select()
+      .from(platformSettings)
+      .where(inArray(platformSettings.key, keys));
+    
+    const result: Record<string, string> = {};
+    for (const setting of settings) {
+      result[setting.key] = setting.value;
+    }
+    return result;
+  }
+  
+  async updatePlatformSettings(settings: Record<string, string>): Promise<void> {
+    for (const [key, value] of Object.entries(settings)) {
+      await db
+        .insert(platformSettings)
+        .values({
+          key,
+          value,
+          category: key.startsWith('paypal.') ? 'paypal' : 'general',
+          description: '',
+          isEditable: true,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: platformSettings.key,
+          set: {
+            value,
+            updatedAt: new Date(),
+          },
+        });
+    }
   }
 }
 

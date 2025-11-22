@@ -3750,6 +3750,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ============ PayPal Configuration Endpoints ============
+  
+  // Get PayPal configuration
+  app.get('/api/admin/paypal-config', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      // Fetch PayPal settings from platformSettings table
+      const settings = await storage.getPlatformSettings(['paypal.mode', 'paypal.enabled', 'paypal.webhook_id']);
+      
+      const config = {
+        mode: settings['paypal.mode'] || 'sandbox',
+        enabled: settings['paypal.enabled'] === 'true',
+        webhookId: settings['paypal.webhook_id'] || '',
+        clientId: process.env.PAYPAL_CLIENT_ID ? '***CONFIGURED***' : '',
+        lastVerified: settings['paypal.last_verified'] || null,
+      };
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching PayPal config:", error);
+      res.status(500).json({ message: "Failed to fetch PayPal configuration" });
+    }
+  });
+  
+  // Update PayPal configuration
+  app.put('/api/admin/paypal-config', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { mode, enabled, webhookId } = req.body;
+      
+      // Update settings
+      const updates: Record<string, string> = {};
+      if (mode !== undefined) updates['paypal.mode'] = mode;
+      if (enabled !== undefined) updates['paypal.enabled'] = String(enabled);
+      if (webhookId !== undefined) updates['paypal.webhook_id'] = webhookId;
+      
+      await storage.updatePlatformSettings(updates);
+      
+      res.json({ message: "PayPal configuration updated" });
+    } catch (error) {
+      console.error("Error updating PayPal config:", error);
+      res.status(500).json({ message: "Failed to update PayPal configuration" });
+    }
+  });
+  
+  // Test PayPal connection
+  app.post('/api/admin/paypal-test', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { paypalService } = await import('./services/paypalService');
+      
+      if (!paypalService.isConfigured()) {
+        return res.status(400).json({ 
+          message: "PayPal is not configured. Please add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET to environment variables." 
+        });
+      }
+      
+      // Try to get payout batch status (using a fake ID to test API connection)
+      try {
+        await paypalService.getPayoutStatus('TEST_CONNECTION_CHECK');
+      } catch (error: any) {
+        // We expect this to fail with 404 (batch not found) if connection works
+        if (error.statusCode === 404 || error.message?.includes('404')) {
+          // Connection successful, just batch doesn't exist
+          await storage.updatePlatformSettings({ 'paypal.last_verified': new Date().toISOString() });
+          return res.json({ success: true, message: "PayPal connection verified" });
+        }
+        throw error;
+      }
+      
+      return res.json({ success: true, message: "PayPal connection verified" });
+    } catch (error: any) {
+      console.error("Error testing PayPal connection:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to connect to PayPal", 
+        details: error.details 
+      });
+    }
+  });
+  
+  // Process PayPal payouts manually
+  app.post('/api/admin/paypal-payouts/process', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { paymentService } = await import('./services/paymentService');
+      
+      // Process PayPal payouts
+      const result = await paymentService.processScheduledPayouts('paypal', 100);
+      
+      res.json({
+        success: true,
+        payoutCount: result.payoutCount,
+        totalAmount: result.totalAmountCents,
+        batchId: result.batchId,
+      });
+    } catch (error: any) {
+      console.error("Error processing PayPal payouts:", error);
+      res.status(500).json({ message: error.message || "Failed to process PayPal payouts" });
+    }
+  });
+  
   // ============ Marketplace Purchase Flow Endpoints ============
   
   // Create Stripe payment intent for a listing
