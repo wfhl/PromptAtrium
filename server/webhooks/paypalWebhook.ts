@@ -3,10 +3,69 @@ import { paypalService } from '../services/paypalService';
 import { db } from '../db';
 import { eq } from 'drizzle-orm';
 import { payoutBatches, transactionLedger } from '@shared/schema';
+import crypto from 'crypto';
+import axios from 'axios';
+
+// Verify PayPal webhook signature
+async function verifyPayPalWebhook(req: Request): Promise<boolean> {
+  try {
+    // Get verification headers
+    const transmissionId = req.headers['paypal-transmission-id'] as string;
+    const transmissionTime = req.headers['paypal-transmission-time'] as string;
+    const transmissionSig = req.headers['paypal-transmission-sig'] as string;
+    const certUrl = req.headers['paypal-cert-url'] as string;
+    const authAlgo = req.headers['paypal-auth-algo'] as string;
+    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+    
+    if (!transmissionId || !transmissionTime || !transmissionSig || !certUrl || !authAlgo || !webhookId) {
+      console.error('[PayPal Webhook] Missing verification headers');
+      return false;
+    }
+
+    // In development/sandbox mode, optionally skip verification
+    if (process.env.PAYPAL_MODE === 'sandbox' && process.env.SKIP_PAYPAL_WEBHOOK_VERIFICATION === 'true') {
+      console.warn('[PayPal Webhook] Skipping verification in sandbox mode');
+      return true;
+    }
+
+    // Fetch the certificate from PayPal
+    const certResponse = await axios.get(certUrl);
+    const cert = certResponse.data;
+
+    // Create the expected signature
+    const expectedSig = crypto
+      .createHash('sha256')
+      .update(transmissionId + '|' + transmissionTime + '|' + webhookId + '|' + JSON.stringify(req.body))
+      .digest('base64');
+
+    // Verify the signature
+    const verifier = crypto.createVerify(authAlgo);
+    verifier.update(transmissionId + '|' + transmissionTime + '|' + webhookId + '|' + JSON.stringify(req.body));
+    
+    const isValid = verifier.verify(cert, transmissionSig, 'base64');
+    
+    if (!isValid) {
+      console.error('[PayPal Webhook] Signature verification failed');
+    }
+    
+    return isValid;
+  } catch (error: any) {
+    console.error('[PayPal Webhook] Error verifying webhook signature:', error);
+    return false;
+  }
+}
 
 // PayPal webhook handler
 export async function handlePayPalWebhook(req: Request, res: Response) {
   try {
+    // Verify webhook signature
+    const isValidWebhook = await verifyPayPalWebhook(req);
+    
+    if (!isValidWebhook) {
+      console.error('[PayPal Webhook] Failed webhook verification');
+      return res.status(401).json({ message: 'Webhook verification failed' });
+    }
+
     // PayPal sends webhooks as JSON with event type
     const webhookData = req.body;
     
@@ -15,7 +74,7 @@ export async function handlePayPalWebhook(req: Request, res: Response) {
       return res.status(400).json({ message: 'Invalid webhook data' });
     }
 
-    console.log(`[PayPal Webhook] Received event: ${webhookData.event_type}`);
+    console.log(`[PayPal Webhook] Verified event: ${webhookData.event_type}`);
 
     // Handle different webhook events
     switch (webhookData.event_type) {

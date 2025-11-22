@@ -24,6 +24,7 @@ interface PayPalConfig {
   mode: 'sandbox' | 'live';
   enabled: boolean;
   webhookId?: string;
+  secretConfigured?: boolean;
   lastVerified?: string;
 }
 
@@ -117,7 +118,7 @@ export default function PayPalConfiguration() {
     );
   }
 
-  const isConfigured = config?.clientId && process.env.PAYPAL_CLIENT_SECRET;
+  const isConfigured = config?.clientId && config?.clientId !== '' && config?.secretConfigured;
 
   return (
     <div className="space-y-6">
@@ -196,14 +197,16 @@ export default function PayPalConfiguration() {
                   </p>
                 </div>
 
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Client Secret Required</AlertTitle>
-                  <AlertDescription>
-                    The PayPal Client Secret must be added as an environment variable for security.
-                    Add PAYPAL_CLIENT_SECRET to your Replit Secrets.
-                  </AlertDescription>
-                </Alert>
+                {!config?.secretConfigured && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Client Secret Required</AlertTitle>
+                    <AlertDescription>
+                      The PayPal Client Secret must be added as an environment variable for security.
+                      Add PAYPAL_CLIENT_SECRET to your Replit Secrets.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <div className="flex items-center space-x-2">
                   <Switch

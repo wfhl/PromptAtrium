@@ -3773,13 +3773,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/paypal-config', isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
       // Fetch PayPal settings from platformSettings table
-      const settings = await storage.getPlatformSettings(['paypal.mode', 'paypal.enabled', 'paypal.webhook_id']);
+      const settings = await storage.getPlatformSettings(['paypal.mode', 'paypal.enabled', 'paypal.webhook_id', 'paypal.last_verified']);
       
       const config = {
         mode: settings['paypal.mode'] || 'sandbox',
         enabled: settings['paypal.enabled'] === 'true',
         webhookId: settings['paypal.webhook_id'] || '',
         clientId: process.env.PAYPAL_CLIENT_ID ? '***CONFIGURED***' : '',
+        secretConfigured: !!process.env.PAYPAL_CLIENT_SECRET,
         lastVerified: settings['paypal.last_verified'] || null,
       };
       

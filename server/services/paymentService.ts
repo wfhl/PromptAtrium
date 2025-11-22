@@ -377,46 +377,6 @@ export class PaymentService {
       .where(inArray(transactionLedger.id, transactionIds));
   }
 
-  // Record PayPal payout (placeholder for actual implementation)
-  private async recordPaypalPayout(
-    sellerId: string,
-    amountCents: number,
-    transactionIds: string[],
-    batchId: string
-  ): Promise<void> {
-    // Get seller's PayPal email
-    const [seller] = await db
-      .select()
-      .from(sellerProfiles)
-      .where(eq(sellerProfiles.userId, sellerId));
-
-    if (!seller || !seller.paypalEmail) {
-      throw new Error('Seller PayPal email not found');
-    }
-
-    // Create payout transaction record
-    await db.insert(transactionLedger).values({
-      type: 'payout',
-      status: 'pending', // Will be updated when PayPal API is integrated
-      toUserId: sellerId,
-      amountCents: amountCents,
-      paymentMethod: 'paypal',
-      description: `PayPal payout from batch ${batchId} to ${seller.paypalEmail}`,
-      metadata: {
-        batchId,
-        paypalEmail: seller.paypalEmail,
-        sourceTransactionIds: transactionIds,
-      },
-    });
-
-    // Mark source transactions as pending payout
-    await db
-      .update(transactionLedger)
-      .set({
-        metadata: sql`${transactionLedger.metadata} || jsonb_build_object('payoutBatchId', ${batchId}, 'paypalEmail', ${seller.paypalEmail})`,
-      })
-      .where(inArray(transactionLedger.id, transactionIds));
-  }
 
   // Handle refunds
   async processRefund(
