@@ -266,13 +266,13 @@ export class PaymentService {
               batch.id
             );
           } else if (payoutMethod === 'paypal') {
-            // PayPal payout implementation would go here
-            // For now, just create the payout record
-            await this.recordPaypalPayout(
+            // Process PayPal payout
+            const { paypalService } = await import('./paypalService');
+            await paypalService.processPayout(
               payout.sellerId!,
               payout.totalPendingCents,
               payout.transactionIds,
-              batch.id
+              `Marketplace payout from batch ${batch.id}`
             );
           }
 

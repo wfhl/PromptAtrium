@@ -3289,6 +3289,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ============ PayPal Webhook Handler ============
+  
+  // PayPal webhook endpoint for payout events
+  app.post('/api/webhooks/paypal', express.json(), async (req, res) => {
+    try {
+      // Import PayPal webhook handler
+      const { handlePayPalWebhook } = await import('./webhooks/paypalWebhook');
+      
+      // Delegate to PayPal webhook handler
+      await handlePayPalWebhook(req, res);
+    } catch (error: any) {
+      console.error("PayPal webhook error:", error);
+      // Still return 200 to prevent PayPal from retrying
+      res.status(200).json({ received: true, error: error.message });
+    }
+  });
+  
   // ============ Seller Payout Management Endpoints ============
   
   // Get seller's Stripe balance
