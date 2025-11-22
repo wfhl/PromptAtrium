@@ -73,9 +73,9 @@ export default function TransactionDashboard() {
 
   // Fetch payout batches
   const { data: payoutBatches } = useQuery({
-    queryKey: ['/api/admin/payouts'],
+    queryKey: ['/api/admin/payouts/batches'],
     queryFn: async () => {
-      return apiRequest('/api/admin/payouts', { method: 'GET' });
+      return apiRequest('/api/admin/payouts/batches', { method: 'GET' });
     },
   });
 
@@ -148,20 +148,20 @@ export default function TransactionDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Transaction Dashboard</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Transaction Dashboard</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Monitor all marketplace transactions and financial metrics
           </p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="justify-start text-left font-normal">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(dateRange.from, "PP")} - {format(dateRange.to, "PP")}
+              <Button variant="outline" className="justify-start text-left font-normal text-xs sm:text-sm">
+                <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">{format(dateRange.from, "PP")} - {format(dateRange.to, "PP")}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -183,7 +183,7 @@ export default function TransactionDashboard() {
           
           <div className="flex items-center gap-2">
             <Select value={exportFormat} onValueChange={(value: any) => setExportFormat(value)}>
-              <SelectTrigger className="w-24">
+              <SelectTrigger className="w-20 sm:w-24 text-xs sm:text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -191,9 +191,10 @@ export default function TransactionDashboard() {
                 <SelectItem value="json">JSON</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleExport} variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export
+            <Button onClick={handleExport} variant="outline" size="sm" className="text-xs sm:text-sm">
+              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              <span className="hidden sm:inline">Export</span>
+              <span className="sm:hidden">Export</span>
             </Button>
           </div>
         </div>
@@ -255,10 +256,10 @@ export default function TransactionDashboard() {
       </div>
 
       <Tabs defaultValue="transactions" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
-          <TabsTrigger value="sellers">Top Sellers</TabsTrigger>
-          <TabsTrigger value="payouts">Payout Batches</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-1 h-auto p-1">
+          <TabsTrigger value="transactions" className="text-xs sm:text-sm">Recent Transactions</TabsTrigger>
+          <TabsTrigger value="sellers" className="text-xs sm:text-sm">Top Sellers</TabsTrigger>
+          <TabsTrigger value="payouts" className="text-xs sm:text-sm">Payout Batches</TabsTrigger>
         </TabsList>
 
         <TabsContent value="transactions" className="space-y-4">
@@ -269,7 +270,7 @@ export default function TransactionDashboard() {
                 All financial transactions in the selected period
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -325,7 +326,7 @@ export default function TransactionDashboard() {
                 Sellers with highest revenue in the selected period
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -375,7 +376,7 @@ export default function TransactionDashboard() {
                 History of payout batch processing
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -388,7 +389,7 @@ export default function TransactionDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payoutBatches?.map((batch: any) => (
+                  {payoutBatches?.data?.map((batch: any) => (
                     <TableRow key={batch.id}>
                       <TableCell className="font-mono text-xs">
                         {batch.id.substring(0, 8)}...
@@ -402,15 +403,15 @@ export default function TransactionDashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        ${batch.totalAmount.toFixed(2)}
+                        ${(batch.totalAmountCents / 100).toFixed(2)}
                       </TableCell>
-                      <TableCell>{batch.payoutCount}</TableCell>
+                      <TableCell>{batch.totalPayouts || batch.payoutCount || 0}</TableCell>
                       <TableCell>
                         {getStatusBadge(batch.status)}
                       </TableCell>
                     </TableRow>
                   ))}
-                  {(!payoutBatches || payoutBatches.length === 0) && (
+                  {(!payoutBatches?.data || payoutBatches.data.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground">
                         No payout batches found
