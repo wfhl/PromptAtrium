@@ -1603,6 +1603,63 @@ export const insertPlatformSettingSchema = createInsertSchema(platformSettings).
   updatedAt: true,
 });
 
+// Prompt Refinement Conversations table - stores chat history for prompt refinement
+export const promptRefinementConversations = pgTable("prompt_refinement_conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: varchar("title"),
+  originalPrompt: text("original_prompt"),
+  refinedPrompt: text("refined_prompt"),
+  templateUsed: varchar("template_used"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Prompt Refinement Messages table - individual messages in a conversation
+export const promptRefinementMessages = pgTable("prompt_refinement_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => promptRefinementConversations.id, { onDelete: 'cascade' }),
+  role: varchar("role", { enum: ["user", "assistant", "system"] }).notNull(),
+  content: text("content").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User Prompt Memory table - stores learned preferences and patterns per user
+export const userPromptMemory = pgTable("user_prompt_memory", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
+  preferredStyles: jsonb("preferred_styles").default([]),
+  preferredThemes: jsonb("preferred_themes").default([]),
+  preferredModifiers: jsonb("preferred_modifiers").default([]),
+  avoidedTerms: jsonb("avoided_terms").default([]),
+  customInstructions: text("custom_instructions"),
+  totalConversations: integer("total_conversations").default(0),
+  totalRefinements: integer("total_refinements").default(0),
+  lastActiveAt: timestamp("last_active_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Insert schemas for refinement system
+export const insertPromptRefinementConversationSchema = createInsertSchema(promptRefinementConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPromptRefinementMessageSchema = createInsertSchema(promptRefinementMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserPromptMemorySchema = createInsertSchema(userPromptMemory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Bulk edit schemas - only fields that can be bulk edited
 export const bulkEditPromptSchema = z.object({
   // Fields that can be bulk edited
@@ -1757,6 +1814,14 @@ export type PayoutBatch = typeof payoutBatches.$inferSelect;
 export type InsertPayoutBatch = z.infer<typeof insertPayoutBatchSchema>;
 export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type InsertPlatformSetting = z.infer<typeof insertPlatformSettingSchema>;
+
+// Prompt Refinement types
+export type PromptRefinementConversation = typeof promptRefinementConversations.$inferSelect;
+export type InsertPromptRefinementConversation = z.infer<typeof insertPromptRefinementConversationSchema>;
+export type PromptRefinementMessage = typeof promptRefinementMessages.$inferSelect;
+export type InsertPromptRefinementMessage = z.infer<typeof insertPromptRefinementMessageSchema>;
+export type UserPromptMemory = typeof userPromptMemory.$inferSelect;
+export type InsertUserPromptMemory = z.infer<typeof insertUserPromptMemorySchema>;
 
 // Bulk operation types
 export type BulkEditPrompt = z.infer<typeof bulkEditPromptSchema>;

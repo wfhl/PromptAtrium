@@ -134,6 +134,15 @@ import {
   disputeMessages,
   type DisputeMessage,
   type InsertDisputeMessage,
+  promptRefinementConversations,
+  promptRefinementMessages,
+  userPromptMemory,
+  type PromptRefinementConversation,
+  type InsertPromptRefinementConversation,
+  type PromptRefinementMessage,
+  type InsertPromptRefinementMessage,
+  type UserPromptMemory,
+  type InsertUserPromptMemory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, ilike, inArray, isNull, isNotNull, gte } from "drizzle-orm";
@@ -583,6 +592,22 @@ export interface IStorage {
   // Platform settings operations
   getPlatformSettings(keys: string[]): Promise<Record<string, string>>;
   updatePlatformSettings(settings: Record<string, string>): Promise<void>;
+  
+  // Prompt Refinement operations
+  createRefinementConversation(data: InsertPromptRefinementConversation): Promise<PromptRefinementConversation>;
+  getRefinementConversation(id: string): Promise<PromptRefinementConversation | undefined>;
+  getUserRefinementConversations(userId: string, options?: { limit?: number; offset?: number; activeOnly?: boolean }): Promise<PromptRefinementConversation[]>;
+  updateRefinementConversation(id: string, data: Partial<PromptRefinementConversation>): Promise<PromptRefinementConversation>;
+  deleteRefinementConversation(id: string): Promise<void>;
+  
+  // Refinement message operations
+  createRefinementMessage(data: InsertPromptRefinementMessage): Promise<PromptRefinementMessage>;
+  getConversationMessages(conversationId: string): Promise<PromptRefinementMessage[]>;
+  
+  // User prompt memory operations
+  getUserPromptMemory(userId: string): Promise<UserPromptMemory | undefined>;
+  upsertUserPromptMemory(userId: string, data: Partial<UserPromptMemory>): Promise<UserPromptMemory>;
+  updateUserPromptMemory(userId: string, updates: Partial<UserPromptMemory>): Promise<UserPromptMemory>;
 }
 
 function generatePromptId(): string {
@@ -7459,6 +7484,157 @@ export class DatabaseStorage implements IStorage {
       page,
       totalPages,
     };
+  }
+
+  // Prompt Refinement Conversation operations
+  async createRefinementConversation(data: InsertPromptRefinementConversation): Promise<PromptRefinementConversation> {
+    const [conversation] = await db
+      .insert(promptRefinementConversations)
+      .values(data)
+      .returning();
+    
+    // Update user memory stats
+    await this.updateUserPromptMemoryStats(data.userId, 'conversation');
+    
+    return conversation;
+  }
+
+  async getRefinementConversation(id: string): Promise<PromptRefinementConversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(promptRefinementConversations)
+      .where(eq(promptRefinementConversations.id, id));
+    return conversation;
+  }
+
+  async getUserRefinementConversations(
+    userId: string, 
+    options?: { limit?: number; offset?: number; activeOnly?: boolean }
+  ): Promise<PromptRefinementConversation[]> {
+    const limit = options?.limit || 20;
+    const offset = options?.offset || 0;
+    
+    let conditions = [eq(promptRefinementConversations.userId, userId)];
+    
+    if (options?.activeOnly) {
+      conditions.push(eq(promptRefinementConversations.isActive, true));
+    }
+    
+    return await db
+      .select()
+      .from(promptRefinementConversations)
+      .where(and(...conditions))
+      .orderBy(desc(promptRefinementConversations.updatedAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async updateRefinementConversation(
+    id: string, 
+    data: Partial<PromptRefinementConversation>
+  ): Promise<PromptRefinementConversation> {
+    const [conversation] = await db
+      .update(promptRefinementConversations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(promptRefinementConversations.id, id))
+      .returning();
+    return conversation;
+  }
+
+  async deleteRefinementConversation(id: string): Promise<void> {
+    await db
+      .delete(promptRefinementConversations)
+      .where(eq(promptRefinementConversations.id, id));
+  }
+
+  // Refinement message operations
+  async createRefinementMessage(data: InsertPromptRefinementMessage): Promise<PromptRefinementMessage> {
+    const [message] = await db
+      .insert(promptRefinementMessages)
+      .values(data)
+      .returning();
+    
+    // Update conversation's updatedAt timestamp
+    await db
+      .update(promptRefinementConversations)
+      .set({ updatedAt: new Date() })
+      .where(eq(promptRefinementConversations.id, data.conversationId));
+    
+    return message;
+  }
+
+  async getConversationMessages(conversationId: string): Promise<PromptRefinementMessage[]> {
+    return await db
+      .select()
+      .from(promptRefinementMessages)
+      .where(eq(promptRefinementMessages.conversationId, conversationId))
+      .orderBy(promptRefinementMessages.createdAt);
+  }
+
+  // User prompt memory operations
+  async getUserPromptMemory(userId: string): Promise<UserPromptMemory | undefined> {
+    const [memory] = await db
+      .select()
+      .from(userPromptMemory)
+      .where(eq(userPromptMemory.userId, userId));
+    return memory;
+  }
+
+  async upsertUserPromptMemory(userId: string, data: Partial<UserPromptMemory>): Promise<UserPromptMemory> {
+    const existing = await this.getUserPromptMemory(userId);
+    
+    if (existing) {
+      return await this.updateUserPromptMemory(userId, data);
+    }
+    
+    const [memory] = await db
+      .insert(userPromptMemory)
+      .values({
+        userId,
+        preferredStyles: data.preferredStyles || [],
+        preferredThemes: data.preferredThemes || [],
+        preferredModifiers: data.preferredModifiers || [],
+        avoidedTerms: data.avoidedTerms || [],
+        customInstructions: data.customInstructions || null,
+        totalConversations: data.totalConversations || 0,
+        totalRefinements: data.totalRefinements || 0,
+      })
+      .returning();
+    
+    return memory;
+  }
+
+  async updateUserPromptMemory(userId: string, updates: Partial<UserPromptMemory>): Promise<UserPromptMemory> {
+    const [memory] = await db
+      .update(userPromptMemory)
+      .set({ ...updates, updatedAt: new Date(), lastActiveAt: new Date() })
+      .where(eq(userPromptMemory.userId, userId))
+      .returning();
+    return memory;
+  }
+
+  // Helper method to update user memory stats
+  private async updateUserPromptMemoryStats(userId: string, type: 'conversation' | 'refinement'): Promise<void> {
+    const existing = await this.getUserPromptMemory(userId);
+    
+    if (existing) {
+      const updates: Partial<UserPromptMemory> = {
+        lastActiveAt: new Date(),
+      };
+      
+      if (type === 'conversation') {
+        updates.totalConversations = (existing.totalConversations || 0) + 1;
+      } else if (type === 'refinement') {
+        updates.totalRefinements = (existing.totalRefinements || 0) + 1;
+      }
+      
+      await this.updateUserPromptMemory(userId, updates);
+    } else {
+      await this.upsertUserPromptMemory(userId, {
+        totalConversations: type === 'conversation' ? 1 : 0,
+        totalRefinements: type === 'refinement' ? 1 : 0,
+      });
+    }
   }
 }
 
