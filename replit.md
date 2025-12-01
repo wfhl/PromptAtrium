@@ -3,6 +3,18 @@
 ## Overview
 A comprehensive platform for managing, sharing, and generating AI prompts. Features include a prompt library, community sharing, collections management, advanced prompt generation tools, and a complete marketplace payment infrastructure.
 
+## Recent Updates (December 01, 2025)
+
+### AI-Powered Prompt Refinement Chat Interface
+- **Chat-Style Prompt Refinement**: Added conversational AI interface for iteratively improving generated prompts in the Quick Prompt tool
+- **Per-User Memory System**: Implemented persistent preference learning that remembers user's preferred styles, themes, modifiers, and avoided terms across sessions
+- **Database Schema**: New tables for `prompt_refinement_conversations`, `prompt_refinement_messages`, and `user_prompt_memory`
+- **Conversation History**: Users can view and resume previous refinement conversations
+- **Preference Learning**: AI automatically extracts and learns preferences from conversations with Zod validation and size limits
+- **Secure Implementation**: Fixed authentication to use Replit Auth (`claims.sub`), added ownership verification on all endpoints, validated AI-generated preference data
+- **Integration**: "Refine with AI" button appears after generating a prompt, allowing authenticated users to chat with AI for improvements
+- **OpenAI Integration**: Uses Replit AI Integrations with GPT-5 for intelligent prompt refinement (no API key required, charges billed to credits)
+
 ## Recent Updates (November 09, 2025)
 
 ### Marketplace Payment Infrastructure Implementation

@@ -11,12 +11,24 @@ const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY
 });
 
-const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.isAuthenticated?.() || !req.user?.id) {
+interface AuthenticatedRequest extends Request {
+  user?: {
+    claims: {
+      sub: string;
+    };
+  };
+}
+
+const isAuthenticated = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated?.() || !req.user?.claims?.sub) {
     return res.status(401).json({ error: 'Authentication required' });
   }
   next();
 };
+
+function getUserId(req: AuthenticatedRequest): string {
+  return (req.user as any).claims.sub;
+}
 
 const chatMessageSchema = z.object({
   message: z.string().min(1, 'Message is required'),
@@ -92,21 +104,32 @@ function extractRefinedPrompt(response: string): { text: string; refinedPrompt: 
   return { text, refinedPrompt };
 }
 
-async function extractUserPreferences(messages: Array<{ role: string; content: string }>): Promise<{
-  styles: string[];
-  themes: string[];
-  modifiers: string[];
-  avoidedTerms: string[];
-}> {
+const preferenceItemSchema = z.string().min(1).max(100);
+const extractedPreferencesSchema = z.object({
+  styles: z.array(preferenceItemSchema).max(10).default([]),
+  themes: z.array(preferenceItemSchema).max(10).default([]),
+  modifiers: z.array(preferenceItemSchema).max(10).default([]),
+  avoidedTerms: z.array(preferenceItemSchema).max(10).default([]),
+});
+
+type ExtractedPreferences = z.infer<typeof extractedPreferencesSchema>;
+
+async function extractUserPreferences(messages: Array<{ role: string; content: string }>): Promise<ExtractedPreferences> {
+  const emptyResult: ExtractedPreferences = { styles: [], themes: [], modifiers: [], avoidedTerms: [] };
+  
   try {
+    if (messages.length === 0) {
+      return emptyResult;
+    }
+    
     const analysisPrompt = `Analyze this conversation and extract any user preferences mentioned. Return a JSON object with:
-- styles: artistic styles the user seems to prefer (e.g., "cinematic", "anime", "photorealistic")
-- themes: themes or subjects they gravitate toward
-- modifiers: common descriptive terms they use or like
-- avoidedTerms: things they explicitly want to avoid
+- styles: artistic styles the user seems to prefer (e.g., "cinematic", "anime", "photorealistic"). Max 10 items, each max 100 chars.
+- themes: themes or subjects they gravitate toward. Max 10 items, each max 100 chars.
+- modifiers: common descriptive terms they use or like. Max 10 items, each max 100 chars.
+- avoidedTerms: things they explicitly want to avoid. Max 10 items, each max 100 chars.
 
 Conversation:
-${messages.map(m => `${m.role}: ${m.content}`).join('\n')}
+${messages.slice(-20).map(m => `${m.role}: ${m.content.slice(0, 500)}`).join('\n')}
 
 Return ONLY valid JSON, no other text:`;
 
@@ -120,21 +143,29 @@ Return ONLY valid JSON, no other text:`;
     const content = response.choices[0]?.message?.content || '{}';
     const parsed = JSON.parse(content);
     
-    return {
-      styles: parsed.styles || [],
-      themes: parsed.themes || [],
-      modifiers: parsed.modifiers || [],
-      avoidedTerms: parsed.avoidedTerms || [],
+    const sanitized = {
+      styles: (Array.isArray(parsed.styles) ? parsed.styles : []).filter((s: any) => typeof s === 'string').slice(0, 10),
+      themes: (Array.isArray(parsed.themes) ? parsed.themes : []).filter((t: any) => typeof t === 'string').slice(0, 10),
+      modifiers: (Array.isArray(parsed.modifiers) ? parsed.modifiers : []).filter((m: any) => typeof m === 'string').slice(0, 10),
+      avoidedTerms: (Array.isArray(parsed.avoidedTerms) ? parsed.avoidedTerms : []).filter((a: any) => typeof a === 'string').slice(0, 10),
     };
+    
+    const validated = extractedPreferencesSchema.safeParse(sanitized);
+    if (!validated.success) {
+      console.error('Preference validation failed:', validated.error);
+      return emptyResult;
+    }
+    
+    return validated.data;
   } catch (error) {
     console.error('Error extracting preferences:', error);
-    return { styles: [], themes: [], modifiers: [], avoidedTerms: [] };
+    return emptyResult;
   }
 }
 
-router.post('/chat', isAuthenticated, async (req: Request, res: Response) => {
+router.post('/chat', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     const parsed = chatMessageSchema.safeParse(req.body);
     
     if (!parsed.success) {
@@ -217,9 +248,9 @@ router.post('/chat', isAuthenticated, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/conversations', isAuthenticated, async (req: Request, res: Response) => {
+router.get('/conversations', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = parseInt(req.query.offset as string) || 0;
     const activeOnly = req.query.activeOnly === 'true';
@@ -237,9 +268,9 @@ router.get('/conversations', isAuthenticated, async (req: Request, res: Response
   }
 });
 
-router.get('/conversations/:id', isAuthenticated, async (req: Request, res: Response) => {
+router.get('/conversations/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     const { id } = req.params;
 
     const conversation = await storage.getRefinementConversation(id);
@@ -259,9 +290,9 @@ router.get('/conversations/:id', isAuthenticated, async (req: Request, res: Resp
   }
 });
 
-router.delete('/conversations/:id', isAuthenticated, async (req: Request, res: Response) => {
+router.delete('/conversations/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     const { id } = req.params;
 
     const conversation = await storage.getRefinementConversation(id);
@@ -277,9 +308,9 @@ router.delete('/conversations/:id', isAuthenticated, async (req: Request, res: R
   }
 });
 
-router.get('/memory', isAuthenticated, async (req: Request, res: Response) => {
+router.get('/memory', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     const memory = await storage.getUserPromptMemory(userId);
     
     res.json(memory || {
@@ -297,9 +328,9 @@ router.get('/memory', isAuthenticated, async (req: Request, res: Response) => {
   }
 });
 
-router.patch('/memory', isAuthenticated, async (req: Request, res: Response) => {
+router.patch('/memory', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     const parsed = updateMemorySchema.safeParse(req.body);
     
     if (!parsed.success) {
@@ -314,13 +345,13 @@ router.patch('/memory', isAuthenticated, async (req: Request, res: Response) => 
   }
 });
 
-router.post('/learn-preferences', isAuthenticated, async (req: Request, res: Response) => {
+router.post('/learn-preferences', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     const { conversationId } = req.body;
 
-    if (!conversationId) {
-      return res.status(400).json({ error: 'Conversation ID required' });
+    if (!conversationId || typeof conversationId !== 'string') {
+      return res.status(400).json({ error: 'Valid conversation ID required' });
     }
 
     const conversation = await storage.getRefinementConversation(conversationId);
@@ -352,15 +383,15 @@ router.post('/learn-preferences', isAuthenticated, async (req: Request, res: Res
       extractedPreferences: extractedPrefs,
       updatedMemory,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error learning preferences:', error);
     res.status(500).json({ error: 'Failed to learn preferences' });
   }
 });
 
-router.delete('/memory', isAuthenticated, async (req: Request, res: Response) => {
+router.delete('/memory', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
     
     await storage.upsertUserPromptMemory(userId, {
       preferredStyles: [],

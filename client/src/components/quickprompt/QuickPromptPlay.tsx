@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Sparkles, Copy, Link, ExternalLink, FileText, Camera, Film, Brush, Crown, UserCircle, Share, Palette, Share2, Dices, Save, Plus, ImageIcon, X, ChevronRight, ChevronDown, Eye } from "lucide-react";
+import { Sparkles, Copy, Link, ExternalLink, FileText, Camera, Film, Brush, Crown, UserCircle, Share, Palette, Share2, Dices, Save, Plus, ImageIcon, X, ChevronRight, ChevronDown, Eye, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Link as WouterLink } from "wouter";
@@ -18,6 +18,7 @@ import { useCreateCharacterPreset } from "@/hooks/use-presets";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminMode } from "@/context/AdminModeContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { RefineWithAIButton } from "./PromptRefinementChat";
 
 // Rule templates will be fetched from database and sorted in required order
 
@@ -1559,45 +1560,61 @@ export default function QuickPromptPlay() {
               </div>
             
               {generatedPrompt && (
-                <div className="flex space-x-2 pt-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 border-gray-700 bg-gray-800/50 text-primary-400 hover:bg-gray-800 hover:text-primary-300"
-                  onClick={async () => {
-                    if (navigator.share) {
-                      try {
-                        await navigator.share({
-                          title: 'Generated Prompt',
-                          text: generatedPrompt,
+                <div className="flex flex-col space-y-2 pt-1">
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 border-gray-700 bg-gray-800/50 text-primary-400 hover:bg-gray-800 hover:text-primary-300"
+                      onClick={async () => {
+                        if (navigator.share) {
+                          try {
+                            await navigator.share({
+                              title: 'Generated Prompt',
+                              text: generatedPrompt,
+                            });
+                          } catch (err) {
+                            console.log('Share cancelled');
+                          }
+                        } else {
+                          navigator.clipboard.writeText(generatedPrompt);
+                          toast({
+                            title: "Copied to clipboard",
+                            description: "Prompt has been copied to your clipboard"
+                          });
+                        }
+                      }}
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Share
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 border-gray-700 bg-gray-800/50 text-green-400 hover:bg-gray-800 hover:text-green-300"
+                      onClick={() => setShareModalOpen(true)}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Prompt
+                    </Button>
+                  </div>
+                  {isAuthenticated && (
+                    <RefineWithAIButton
+                      currentPrompt={generatedPrompt}
+                      templateInfo={dbRuleTemplates.find(t => t.id.toString() === template) ? {
+                        name: dbRuleTemplates.find(t => t.id.toString() === template)!.name,
+                        category: dbRuleTemplates.find(t => t.id.toString() === template)!.template_type || 'General'
+                      } : undefined}
+                      onPromptRefined={(refinedPrompt) => {
+                        setGeneratedPrompt(refinedPrompt);
+                        toast({
+                          title: "Prompt Refined",
+                          description: "Your prompt has been updated with the AI refinement."
                         });
-                      } catch (err) {
-                        // User cancelled or error
-                        console.log('Share cancelled');
-                      }
-                    } else {
-                      // Fallback to clipboard copy
-                      navigator.clipboard.writeText(generatedPrompt);
-                      toast({
-                        title: "Copied to clipboard",
-                        description: "Prompt has been copied to your clipboard"
-                      });
-                    }
-                  }}
-                >
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Share
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 border-gray-700 bg-gray-800/50 text-green-400 hover:bg-gray-800 hover:text-green-300"
-                  onClick={() => setShareModalOpen(true)}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Prompt
-                </Button>
-              </div>
+                      }}
+                    />
+                  )}
+                </div>
               )}
             </div>
           )}
