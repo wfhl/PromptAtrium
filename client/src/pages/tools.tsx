@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
-import { Plus, FolderPlus, FileUp, FileSearch, Sparkles, BookOpen, RatioIcon, ChartScatter, Lock, Wrench } from "lucide-react";
+import { Plus, FolderPlus, FileUp, FileSearch, Sparkles, BookOpen, RatioIcon, ChartScatter, Lock, Wrench, PickaxeIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PromptModal } from "@/components/PromptModal";
 import { BulkImportModal } from "@/components/BulkImportModal";
@@ -102,6 +102,14 @@ export default function Tools() {
       icon: FileSearch,
       color: "text-cyan-500",
       link: "/tools/metadata-analyzer",
+    },
+    {
+      id: "prompt-miner",
+      title: "PromptMiner",
+      description: "AI-powered prompt extraction",
+      icon: PickaxeIcon,
+      color: "text-indigo-500",
+      link: "/tools/prompt-miner",
     },
     {
       id: "prompt-collections",

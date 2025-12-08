@@ -1,0 +1,230 @@
+import { Router, Request, Response } from "express";
+import { isAuthenticated } from "../replitAuth";
+import { GoogleGenAI, Type, Schema } from "@google/genai";
+
+const router = Router();
+
+interface PromptImage {
+  id: string;
+  data: string;
+  mimeType: string;
+  isGenerated: boolean;
+}
+
+interface ExtractedPrompt {
+  id: string;
+  title: string;
+  content: string;
+  negativePrompt?: string;
+  model?: string;
+  images: PromptImage[];
+  source: string;
+  tags: string[];
+  originalSourceImage?: string;
+}
+
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
+const stripBase64Prefix = (dataUrl: string): string => {
+  return dataUrl.split(',')[1];
+};
+
+const cleanJson = (text: string): string => {
+  let clean = text.trim();
+  const firstBracket = clean.indexOf('[');
+  const lastBracket = clean.lastIndexOf(']');
+  
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    clean = clean.substring(firstBracket, lastBracket + 1);
+  } else if (clean.startsWith('```')) {
+    clean = clean.replace(/^```(json)?/, '').replace(/```$/, '');
+  }
+  
+  return clean.trim();
+};
+
+const PROMPT_EXTRACTION_SCHEMA: Schema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "A short, descriptive title for the prompt." },
+      content: { type: Type.STRING, description: "The full generative AI prompt text found." },
+      negativePrompt: { type: Type.STRING, description: "Any negative prompt text found (optional)." },
+      tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Keywords describing the style or subject." },
+      suggestedModel: { type: Type.STRING, description: "The likely AI model this prompt is for (e.g. Midjourney, Stable Diffusion)." },
+      imageParams: { type: Type.STRING, description: "Any parameters like --ar 16:9, steps, cfg scale found." }
+    },
+    required: ["title", "content", "tags"],
+  },
+};
+
+const SYSTEM_INSTRUCTION = "You are an expert AI Data Parser specialized in extracting generative AI metadata and prompts from mixed media.";
+
+router.post("/analyze", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { taskType, data, name, mimeType, base64 } = req.body;
+    
+    if (!taskType || !name) {
+      return res.status(400).json({ error: "Missing required fields: taskType and name" });
+    }
+
+    const ai = getAI();
+    const parts: any[] = [];
+    const sourceName = name;
+    let sourceBase64: string | undefined = undefined;
+    
+    const isUrl = taskType === 'text' && typeof data === 'string' && 
+                  (data.startsWith('http://') || data.startsWith('https://'));
+
+    if (taskType === 'file' && base64) {
+      sourceBase64 = base64;
+      parts.push({
+        inlineData: {
+          mimeType: mimeType,
+          data: stripBase64Prefix(base64),
+        },
+      });
+    } else if (taskType === 'text') {
+      parts.push({ text: `Analyze the following content:\n${data}` });
+    } else {
+      return res.status(400).json({ error: "Invalid task type or missing data" });
+    }
+
+    let promptText = `
+      Analyze the provided content. 
+      Identify and extract any "Generative AI Prompts" present. 
+      A prompt is a detailed text description used to generate images or text.
+      Sometimes prompts are in metadata, screenshots of web UIs, or just plain text lists.
+      
+      If an image is a screenshot of a prompt interface (like Civitai, Midjourney Discord), extract the prompt text carefully.
+    `;
+
+    if (isUrl) {
+      promptText += `
+        \nSince this is a URL, use Google Search to retrieve the context, caption, or text content of the page.
+        Look for image generation parameters, prompts, or art descriptions in the post caption or comments.
+        IMPORTANT: Return ONLY a JSON array of the extracted data. Do not include markdown formatting or conversational text.
+      `;
+    } else {
+      promptText += `\nReturn a JSON array of the extracted prompts. If no prompts are found, return an empty array.`;
+    }
+
+    parts.push({ text: promptText });
+
+    const config: any = {
+      systemInstruction: SYSTEM_INSTRUCTION,
+    };
+
+    if (isUrl) {
+      config.tools = [{ googleSearch: {} }];
+    } else {
+      config.responseMimeType = "application/json";
+      config.responseSchema = PROMPT_EXTRACTION_SCHEMA;
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: { parts },
+      config: config,
+    });
+
+    const rawText = response.text || "[]";
+    const cleanedJson = cleanJson(rawText);
+    let parsedPrompts: any[] = [];
+    
+    try {
+      parsedPrompts = JSON.parse(cleanedJson);
+    } catch (e) {
+      console.warn(`JSON Parse error for ${sourceName}. Raw text:`, rawText);
+      if (isUrl && rawText.length > 20) {
+        parsedPrompts = [{
+          title: `Extracted from Link`,
+          content: rawText.substring(0, 500),
+          tags: ["link-content"],
+          suggestedModel: "Unknown"
+        }];
+      } else {
+        return res.status(500).json({ error: "Invalid JSON response from model" });
+      }
+    }
+
+    if (!Array.isArray(parsedPrompts)) {
+      if (typeof parsedPrompts === 'object' && parsedPrompts !== null) {
+        parsedPrompts = [parsedPrompts];
+      } else {
+        parsedPrompts = [];
+      }
+    }
+
+    const mappedPrompts: ExtractedPrompt[] = parsedPrompts.map((p: any) => ({
+      id: crypto.randomUUID(),
+      title: p.title || `Prompt from ${sourceName}`,
+      content: p.content,
+      negativePrompt: p.negativePrompt,
+      model: p.suggestedModel,
+      tags: p.tags || [],
+      source: sourceName,
+      images: [],
+      originalSourceImage: sourceBase64
+    }));
+
+    res.json({ prompts: mappedPrompts });
+
+  } catch (error: any) {
+    console.error("PromptMiner analyze error:", error);
+    res.status(500).json({ error: error.message || "Analysis failed" });
+  }
+});
+
+router.post("/generate-image", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { prompt } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ error: "Missing prompt" });
+    }
+
+    const ai = getAI();
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-image",
+      contents: {
+        parts: [{ text: prompt }]
+      },
+      config: {}
+    });
+
+    const parts = response.candidates?.[0]?.content?.parts;
+    if (!parts) {
+      return res.status(500).json({ error: "No content generated" });
+    }
+
+    for (const part of parts) {
+      if (part.inlineData && part.inlineData.data) {
+        return res.json({
+          image: {
+            id: crypto.randomUUID(),
+            data: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
+            mimeType: part.inlineData.mimeType,
+            isGenerated: true
+          }
+        });
+      }
+    }
+
+    res.status(500).json({ error: "No image data found in response" });
+
+  } catch (error: any) {
+    console.error("PromptMiner generate-image error:", error);
+    res.status(500).json({ error: error.message || "Image generation failed" });
+  }
+});
+
+export default router;

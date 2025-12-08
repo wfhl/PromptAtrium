@@ -25,6 +25,7 @@ import BranchedPrompts from "@/pages/BranchedPrompts";
 import AspectRatioCalculatorPage from "@/pages/tools/aspect-ratio-calculator";
 import MetadataAnalyzerPage from "@/pages/tools/metadata-analyzer";
 import QuickPrompterPage from "@/pages/tools/quick-prompter";
+import PromptMinerPage from "@/pages/tools/prompt-miner";
 import InstallGuide from "@/pages/install-guide";
 import PromptDetail from "@/pages/prompt-detail";
 import PromptHistoryPage from "@/pages/prompt-history";
@@ -103,6 +104,9 @@ function Router() {
         </Route>
         <Route path="/tools/quick-prompter">
           {() => isAuthenticated ? <Layout><QuickPrompterPage /></Layout> : <QuickPrompterPage />}
+        </Route>
+        <Route path="/tools/prompt-miner">
+          {() => isAuthenticated ? <Layout><PromptMinerPage /></Layout> : <PromptMinerPage />}
         </Route>
         <Route path="/marketplace">
           {() => isAuthenticated ? <Layout><Marketplace /></Layout> : <Marketplace />}

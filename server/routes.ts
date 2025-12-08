@@ -27,6 +27,7 @@ import { devStorage } from "./devStorage";
 import aiAnalyzerRouter from "./routes/aiAnalyzer";
 import captionRouter from "./routes/caption";
 import enhancePromptRouter from "./routes/enhance-prompt";
+import promptMinerRouter from "./routes/prompt-miner";
 import systemDataRouter from "./routes/system-data";
 import adminRouter from "./routes/admin";
 import promptRefinementRouter from "./routes/prompt-refinement";
@@ -7376,6 +7377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Quick Prompt API routes
   app.use('/api/caption', captionRouter);
   app.use('/api/enhance-prompt', enhancePromptRouter);
+  app.use('/api/prompt-miner', promptMinerRouter);
   app.use('/api/system-data', systemDataRouter);
   
   // Register Admin routes
