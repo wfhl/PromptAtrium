@@ -56,6 +56,7 @@ interface ParsedPrompt {
   sourceUrl?: string;
   authorReference?: string;
   exampleImages?: string;
+  images?: string[]; // Array of image data URIs or URLs
   styleKeywords?: string;
   difficultyLevel?: string;
   useCase?: string;
@@ -813,7 +814,8 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
             tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',').map((t: string) => t.trim()) : []),
             status: (item.status === "published" ? "published" : "draft") as "draft" | "published",
             isPublic: item.isPublic || item.public || false,
-            isNsfw: item.isNsfw || item.nsfw || false
+            isNsfw: item.isNsfw || item.nsfw || false,
+            images: Array.isArray(item.images) ? item.images.filter((img: any) => img) : []
           }));
         } catch (standardJsonError) {
           // If standard JSON parsing fails, try to handle various JSONL formats
@@ -899,12 +901,13 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           parsed = jsonObjects.map((item: any, index: number) => ({
             name: item.name || item.title || `Prompt ${index + 1}`,
             promptContent: item.prompt || item.content || item.promptContent || item.positive_prompt || item.negative_prompt || "",
-            description: item.description || "",
+            description: item.description || item.notes || "",
             category: item.category || "",
             tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',').map((t: string) => t.trim()) : []),
             status: (item.status === "published" ? "published" : "draft") as "draft" | "published",
             isPublic: item.isPublic || item.public || false,
-            isNsfw: item.isNsfw || item.nsfw || false
+            isNsfw: item.isNsfw || item.nsfw || false,
+            images: Array.isArray(item.images) ? item.images.filter((img: any) => img) : []
           }));
         }
       } else if (extension === 'txt') {
@@ -1288,6 +1291,7 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
           license: defaultLicense || "CC0 (Public Domain)",
           sourceUrl: defaultSourceUrl || "",
           intendedGenerator: defaultIntendedGenerator && defaultIntendedGenerator !== "none" ? defaultIntendedGenerator : "",
+          images: p.images || [],
           tags: [
             ...(p.tags || []),
             ...(defaultTags ? defaultTags.split(",").map(t => t.trim()).filter(t => t) : [])

@@ -1336,6 +1336,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               promptStyles: Array.isArray(promptData.promptStyles) ? promptData.promptStyles : [],
               intendedGenerators: Array.isArray(promptData.intendedGenerators) ? promptData.intendedGenerators : [],
               collectionIds: Array.isArray(promptData.collectionIds) ? promptData.collectionIds : [],
+              // Handle images - map to exampleImagesUrl field
+              exampleImagesUrl: Array.isArray(promptData.images) 
+                ? promptData.images.filter((img: any) => typeof img === 'string' && img.trim())
+                : [],
               status: promptData.status || "draft",
               isPublic: promptData.isPublic ?? false,
               version: 1,
