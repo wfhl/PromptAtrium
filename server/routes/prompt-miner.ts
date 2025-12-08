@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { isAuthenticated } from "../replitAuth";
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 
@@ -164,7 +165,7 @@ router.post("/analyze", isAuthenticated, async (req: Request, res: Response) => 
     }
 
     const mappedPrompts: ExtractedPrompt[] = parsedPrompts.map((p: any) => ({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       title: p.title || `Prompt from ${sourceName}`,
       content: p.content,
       negativePrompt: p.negativePrompt,
@@ -210,7 +211,7 @@ router.post("/generate-image", isAuthenticated, async (req: Request, res: Respon
       if (part.inlineData && part.inlineData.data) {
         return res.json({
           image: {
-            id: crypto.randomUUID(),
+            id: randomUUID(),
             data: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
             mimeType: part.inlineData.mimeType,
             isGenerated: true
