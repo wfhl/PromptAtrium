@@ -775,11 +775,40 @@ export function BulkImportModal({ open, onOpenChange, collections }: BulkImportM
         // Try standard JSON parsing first
         try {
           const jsonData = JSON.parse(content);
-          const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData];
+          let dataArray: any[] = [];
+          
+          // Handle different JSON structures
+          if (Array.isArray(jsonData)) {
+            // Direct array format
+            dataArray = jsonData;
+          } else if (typeof jsonData === 'object' && jsonData !== null) {
+            // Check for common array property names
+            const arrayPropertyNames = ['prompts', 'data', 'items', 'content', 'records', 'list'];
+            for (const propName of arrayPropertyNames) {
+              if (Array.isArray(jsonData[propName])) {
+                dataArray = jsonData[propName];
+                break;
+              }
+            }
+            
+            // If no array property found, check if object is a single prompt
+            if (dataArray.length === 0) {
+              // If object has prompt-like properties, treat it as a single prompt
+              if (jsonData.name || jsonData.prompt || jsonData.content) {
+                dataArray = [jsonData];
+              } else {
+                // Last resort: wrap the object
+                dataArray = [jsonData];
+              }
+            }
+          }
+          
+          console.log(`Extracted ${dataArray.length} prompts from JSON`);
+          
           parsed = dataArray.map((item: any, index: number) => ({
             name: item.name || item.title || `Prompt ${index + 1}`,
             promptContent: item.prompt || item.content || item.promptContent || item.positive_prompt || item.negative_prompt || "",
-            description: item.description || "",
+            description: item.description || item.notes || "",
             category: item.category || "",
             tags: Array.isArray(item.tags) ? item.tags : (item.tags ? item.tags.split(',').map((t: string) => t.trim()) : []),
             status: (item.status === "published" ? "published" : "draft") as "draft" | "published",
