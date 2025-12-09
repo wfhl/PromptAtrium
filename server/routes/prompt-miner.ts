@@ -201,11 +201,13 @@ router.post("/generate-image", isAuthenticated, async (req: Request, res: Respon
     const ai = getAI();
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
+      model: "gemini-2.0-flash-exp",
       contents: {
-        parts: [{ text: prompt }]
+        parts: [{ text: `Generate an image based on this prompt: ${prompt}` }]
       },
-      config: {}
+      config: {
+        responseModalities: ["image", "text"]
+      }
     });
 
     const parts = response.candidates?.[0]?.content?.parts;
