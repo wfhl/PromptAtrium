@@ -270,15 +270,16 @@ function PromptCard({
     setIsGenerating(true);
     setError(null);
     try {
-      const response = await apiRequest("/api/prompt-miner/generate-image", "POST", { prompt: prompt.content });
-      if (response.image) {
+      const response = await apiRequest("POST", "/api/prompt-miner/generate-image", { prompt: prompt.content });
+      const data = await response.json();
+      if (data.image) {
         onUpdate({
           ...prompt,
-          images: [...prompt.images, response.image]
+          images: [...prompt.images, data.image]
         });
       }
-    } catch (err) {
-      setError("Generation failed.");
+    } catch (err: any) {
+      setError(err?.message || "Generation failed.");
     } finally {
       setIsGenerating(false);
     }
@@ -537,17 +538,19 @@ export default function PromptMinerPage() {
       const taskId = taskIds[index];
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'processing' } : t));
 
-      apiRequest("/api/prompt-miner/analyze", "POST", task)
-        .then((response: any) => {
-          if (response.prompts && response.prompts.length > 0) {
-            setExtractedPrompts(prev => [...response.prompts, ...prev]);
-            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'success', message: `Found ${response.prompts.length} prompt(s)` } : t));
+      apiRequest("POST", "/api/prompt-miner/analyze", task)
+        .then((res: Response) => res.json())
+        .then((data: any) => {
+          if (data.prompts && data.prompts.length > 0) {
+            setExtractedPrompts(prev => [...data.prompts, ...prev]);
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'success', message: `Found ${data.prompts.length} prompt(s)` } : t));
           } else {
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'success', message: 'No prompts found' } : t));
           }
         })
-        .catch(() => {
-          setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'error', message: 'Processing failed' } : t));
+        .catch((err: any) => {
+          const errorMessage = err?.message || err?.error || 'Processing failed';
+          setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'error', message: errorMessage } : t));
         })
         .finally(() => {
           completedCount++;

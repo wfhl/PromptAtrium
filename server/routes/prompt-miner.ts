@@ -69,14 +69,17 @@ const PROMPT_EXTRACTION_SCHEMA: Schema = {
 const SYSTEM_INSTRUCTION = "You are an expert AI Data Parser specialized in extracting generative AI metadata and prompts from mixed media.";
 
 router.post("/analyze", isAuthenticated, async (req: Request, res: Response) => {
+  console.log("[PromptMiner] Analyze request received:", { taskType: req.body.taskType, name: req.body.name });
   try {
     const { taskType, data, name, mimeType, base64 } = req.body;
     
     if (!taskType || !name) {
+      console.log("[PromptMiner] Missing required fields");
       return res.status(400).json({ error: "Missing required fields: taskType and name" });
     }
 
     const ai = getAI();
+    console.log("[PromptMiner] Gemini AI initialized");
     const parts: any[] = [];
     const sourceName = name;
     let sourceBase64: string | undefined = undefined;
@@ -130,11 +133,13 @@ router.post("/analyze", isAuthenticated, async (req: Request, res: Response) => 
       config.responseSchema = PROMPT_EXTRACTION_SCHEMA;
     }
 
+    console.log("[PromptMiner] Calling Gemini API with model: gemini-2.5-flash");
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: { parts },
       config: config,
     });
+    console.log("[PromptMiner] Gemini API response received");
 
     const rawText = response.text || "[]";
     const cleanedJson = cleanJson(rawText);
@@ -179,7 +184,8 @@ router.post("/analyze", isAuthenticated, async (req: Request, res: Response) => 
     res.json({ prompts: mappedPrompts });
 
   } catch (error: any) {
-    console.error("PromptMiner analyze error:", error);
+    console.error("[PromptMiner] Analyze error:", error?.message || error);
+    console.error("[PromptMiner] Full error:", JSON.stringify(error, null, 2));
     res.status(500).json({ error: error.message || "Analysis failed" });
   }
 });
