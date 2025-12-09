@@ -123,6 +123,10 @@ export default function Library() {
   const [selectedPromptIds, setSelectedPromptIds] = useState<Set<string>>(new Set());
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false);
+  const [showAddToCollectionDialog, setShowAddToCollectionDialog] = useState(false);
+  const [collectionForBulkAdd, setCollectionForBulkAdd] = useState<string | null>(null);
+  const [newCollectionNameForBulk, setNewCollectionNameForBulk] = useState("");
+  const [isCreatingCollectionForBulk, setIsCreatingCollectionForBulk] = useState(false);
 
   // Collections state
   const [createCollectionModalOpen, setCreateCollectionModalOpen] = useState(false);
@@ -508,6 +512,74 @@ export default function Library() {
     });
   };
 
+  const handleAddToCollection = () => {
+    setShowAddToCollectionDialog(true);
+  };
+
+  const handleProceedAddToCollection = async () => {
+    if (!collectionForBulkAdd && !newCollectionNameForBulk.trim()) {
+      toast({
+        title: "Error",
+        description: "Please select or create a collection",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    let collectionId = collectionForBulkAdd;
+    
+    if (!collectionId && newCollectionNameForBulk.trim()) {
+      setIsCreatingCollectionForBulk(true);
+      try {
+        const response = await apiRequest("POST", "/api/collections", {
+          name: newCollectionNameForBulk,
+          isPublic: false,
+          type: "user",
+        });
+        const newCollection = await response.json();
+        collectionId = newCollection.id;
+      } catch (err: any) {
+        toast({
+          title: "Error",
+          description: err.message || "Failed to create collection",
+          variant: "destructive"
+        });
+        setIsCreatingCollectionForBulk(false);
+        return;
+      }
+      setIsCreatingCollectionForBulk(false);
+    }
+
+    if (collectionId) {
+      const selectedPromptIdArray = Array.from(selectedPromptIds);
+      try {
+        await apiRequest("POST", "/api/prompts/bulk-add-to-collection", {
+          promptIds: selectedPromptIdArray,
+          collectionId
+        });
+        
+        queryClient.invalidateQueries({ queryKey: ["/api/prompts"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+        
+        toast({
+          title: "Added to Collection",
+          description: `${selectedPromptIdArray.length} prompts added to collection`
+        });
+
+        setShowAddToCollectionDialog(false);
+        setCollectionForBulkAdd(null);
+        setNewCollectionNameForBulk("");
+        setSelectedPromptIds(new Set());
+      } catch (err: any) {
+        toast({
+          title: "Error",
+          description: err.message || "Failed to add prompts to collection",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   // Collection handlers
   const onCreateCollectionSubmit = (data: CollectionFormData) => {
     createCollectionMutation.mutate(data);
@@ -842,6 +914,7 @@ export default function Library() {
             onToggleBulkMode={handleToggleBulkMode}
             isBulkMode={isBulkMode}
             isLoading={bulkOperationMutation.isPending}
+            onAddToCollection={handleAddToCollection}
           />
 
             {/* Content Grid */}
@@ -1601,6 +1674,81 @@ export default function Library() {
                 {deleteCollectionMutation.isPending ? "Deleting..." : "Delete"}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to Collection Dialog */}
+      <Dialog open={showAddToCollectionDialog} onOpenChange={setShowAddToCollectionDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add {selectedPromptIds.size} Prompt{selectedPromptIds.size !== 1 ? 's' : ''} to Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select existing collection</label>
+              <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-2">
+                {collections.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No collections yet</p>
+                ) : (
+                  collections.map(col => (
+                    <button
+                      key={col.id}
+                      onClick={() => setCollectionForBulkAdd(col.id)}
+                      className={`w-full text-left px-3 py-2 rounded-md border transition-colors text-sm ${
+                        collectionForBulkAdd === col.id
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'border-border hover:bg-accent'
+                      }`}
+                    >
+                      {col.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="border-t pt-4 space-y-2">
+              <label htmlFor="new-collection-name" className="text-sm font-medium">Or create new collection</label>
+              <div className="flex gap-2">
+                <Input
+                  id="new-collection-name"
+                  placeholder="Collection name..."
+                  value={newCollectionNameForBulk}
+                  onChange={(e) => {
+                    setNewCollectionNameForBulk(e.target.value);
+                    setCollectionForBulkAdd(null);
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => setCollectionForBulkAdd(null)}
+                  variant={newCollectionNameForBulk.trim() && !collectionForBulkAdd ? "default" : "outline"}
+                  size="sm"
+                >
+                  Create
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddToCollectionDialog(false);
+                setCollectionForBulkAdd(null);
+                setNewCollectionNameForBulk("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleProceedAddToCollection}
+              disabled={isCreatingCollectionForBulk}
+            >
+              {isCreatingCollectionForBulk ? "Creating..." : "Add to Collection"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
