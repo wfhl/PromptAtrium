@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Plus, FolderPlus, ChartScatter, FileUp, RatioIcon, FileSearch, Sparkles, BookOpen, Lock } from "lucide-react";
+import { Plus, FolderPlus, ChartScatter, FileUp, RatioIcon, FileSearch, Sparkles, BookOpen, Lock, Wand2 } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
@@ -153,22 +153,22 @@ export function QuickActions({
             </div>
           </Button>
         </Link>
-          {/* Coming Soon: Project */}
-          <Button
-            variant="ghost"
-            className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 opacity-60 cursor-not-allowed relative hover:bg-transparent group"
-            onClick={() => handleComingSoon("Project")}
-            data-testid="button-start-project"
-          >
-            <div className="w-8 h-8 md:w-7 md:h-7 bg-blue-500/00 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 relative transition-transform group-hover:scale-150">
-              <ChartScatter className="h-4 w-4 text-blue-500 transition-all group-hover:brightness-150" />
-              <Lock className="h-2.5 w-2.5 text-blue-500 absolute -top-1 -right-1 bg-background rounded-full transition-all group-hover:brightness-150" />
-            </div>
-            <div className="text-center md:text-left">
-              <p className="text-xs md:text-base font-medium text-foreground">Project</p>
-              <p className="text-xs text-muted-foreground hidden md:block">Coming soon</p>
-            </div>
-          </Button>
+          {/* PromptMiner */}
+          <Link href="/tools/prompt-miner" className="contents">
+            <Button
+              variant="ghost"
+              className="flex flex-col items-center justify-center p-1 h-auto md:flex-row md:justify-start md:w-full md:p-2 hover:bg-transparent group"
+              data-testid="button-prompt-miner"
+            >
+              <div className="w-8 h-8 md:w-7 md:h-7 bg-indigo-500/0 rounded-md flex items-center justify-center mb-1 md:mb-0 md:mr-2 flex-shrink-0 transition-transform group-hover:scale-150">
+                <Wand2 className="h-4 w-4 text-indigo-500 transition-all group-hover:brightness-150" />
+              </div>
+              <div className="text-center md:text-left">
+                <p className="text-xs md:text-base font-medium text-foreground">PromptMiner</p>
+                <p className="text-xs text-muted-foreground hidden md:block">Extract from images</p>
+              </div>
+            </Button>
+          </Link>
       </div>
     </div>
   );
