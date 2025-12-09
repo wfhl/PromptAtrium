@@ -2,8 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { FileJson, Sparkles, Trash2, Layers, Download, Share2, ArrowLeft, Upload, FileText, X, Link2, Image as ImageIcon, Loader2, CheckCircle2, XCircle, FileIcon, Wand2, RefreshCw, Save, CheckSquare, Square, Copy, Check, Crop as CropIcon, BookmarkPlus } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from '@tanstack/react-query';
+import type { Collection } from '@shared/schema';
 
 interface PromptImage {
   id: string;
@@ -532,6 +537,17 @@ export default function PromptMinerPage() {
   const [selectedPromptIds, setSelectedPromptIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'extract' | 'library'>('extract');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [isCreatingCollection, setIsCreatingCollection] = useState(false);
+  const [pendingBulkSave, setPendingBulkSave] = useState(false);
+
+  // Fetch user collections
+  const { data: collections = [] } = useQuery<Collection[]>({
+    queryKey: ["/api/collections"],
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     setSelectedPromptIds(new Set());
@@ -687,8 +703,8 @@ export default function PromptMinerPage() {
   const [isBulkSaving, setIsBulkSaving] = useState(false);
   const [savedToDbIds, setSavedToDbIds] = useState<Set<string>>(new Set());
 
-  const handleSaveToDatabase = async (prompt: ExtractedPrompt): Promise<void> => {
-    const promptData = {
+  const handleSaveToDatabase = async (prompt: ExtractedPrompt, collectionId?: string): Promise<void> => {
+    const promptData: any = {
       name: prompt.title || 'Untitled Prompt',
       description: prompt.content?.substring(0, 500) || '',
       promptContent: prompt.content || '',
@@ -701,6 +717,10 @@ export default function PromptMinerPage() {
       notes: `Extracted via PromptMiner from: ${prompt.source || 'unknown source'}`,
     };
 
+    if (collectionId) {
+      promptData.collectionId = collectionId;
+    }
+
     try {
       const response = await apiRequest("POST", "/api/prompts", promptData);
       if (!response.ok) {
@@ -711,6 +731,7 @@ export default function PromptMinerPage() {
       
       setSavedToDbIds(prev => new Set([...prev, prompt.id]));
       queryClient.invalidateQueries({ queryKey: ['/api/prompts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
       
       toast({
         title: "Saved to Library",
@@ -733,13 +754,20 @@ export default function PromptMinerPage() {
       return;
     }
 
+    setPendingBulkSave(true);
+    setShowCollectionDialog(true);
+  };
+
+  const handleProceedBulkSave = async () => {
+    const selected = getVisiblePrompts().filter(p => selectedPromptIds.has(p.id) && !savedToDbIds.has(p.id));
+    
     setIsBulkSaving(true);
     let successCount = 0;
     let failCount = 0;
 
     for (const prompt of selected) {
       try {
-        await handleSaveToDatabase(prompt);
+        await handleSaveToDatabase(prompt, selectedCollectionId || undefined);
         successCount++;
       } catch (err) {
         failCount++;
@@ -748,7 +776,11 @@ export default function PromptMinerPage() {
     }
 
     setIsBulkSaving(false);
+    setShowCollectionDialog(false);
     setSelectedPromptIds(new Set());
+    setSelectedCollectionId(null);
+    setNewCollectionName('');
+    setPendingBulkSave(false);
     
     if (failCount === 0) {
       toast({
@@ -761,6 +793,45 @@ export default function PromptMinerPage() {
         description: `${successCount} saved, ${failCount} failed.`,
         variant: "destructive"
       });
+    }
+  };
+
+  const handleCreateNewCollection = async () => {
+    if (!newCollectionName.trim()) {
+      toast({
+        title: "Error",
+        description: "Collection name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsCreatingCollection(true);
+    try {
+      const response = await apiRequest("POST", "/api/collections", {
+        name: newCollectionName,
+        isPublic: false,
+        type: "user",
+      });
+      
+      const newCollection = await response.json();
+      setSelectedCollectionId(newCollection.id);
+      setNewCollectionName('');
+      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+      
+      toast({
+        title: "Collection created",
+        description: `"${newCollectionName}" has been created.`,
+      });
+    } catch (err: any) {
+      console.error('Collection creation error:', err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to create collection",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreatingCollection(false);
     }
   };
 
@@ -841,12 +912,20 @@ export default function PromptMinerPage() {
               </button>
             </div>
 
-            {selectedPromptIds.size > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-muted-foreground">{selectedPromptIds.size} selected</span>
-                <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                  {selectedPromptIds.size === getVisiblePrompts().length ? 'Deselect All' : 'Select All'}
+            <div className="flex items-center gap-2 flex-wrap">
+              {getVisiblePrompts().length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleSelectAll}
+                  data-testid="button-select-all"
+                >
+                  {selectedPromptIds.size === getVisiblePrompts().length && selectedPromptIds.size > 0 ? 'Deselect All' : 'Select All'}
                 </Button>
+              )}
+              {selectedPromptIds.size > 0 && (
+                <>
+                  <span className="text-sm text-muted-foreground">{selectedPromptIds.size} selected</span>
                 <Button 
                   size="sm" 
                   onClick={handleBulkSaveToDatabase}
@@ -875,8 +954,9 @@ export default function PromptMinerPage() {
                   <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                   Delete
                 </Button>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -911,6 +991,91 @@ export default function PromptMinerPage() {
             )}
           </div>
         </div>
+
+        {/* Collection Selector Dialog */}
+        <Dialog open={showCollectionDialog} onOpenChange={setShowCollectionDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Save to Collection</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Select existing collection or create new</Label>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <button
+                    onClick={() => setSelectedCollectionId(null)}
+                    className={`w-full text-left px-3 py-2 rounded-md border transition-colors ${
+                      selectedCollectionId === null
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border hover:bg-accent'
+                    }`}
+                  >
+                    No Collection (My Library)
+                  </button>
+                  {collections.map(collection => (
+                    <button
+                      key={collection.id}
+                      onClick={() => setSelectedCollectionId(collection.id)}
+                      className={`w-full text-left px-3 py-2 rounded-md border transition-colors ${
+                        selectedCollectionId === collection.id
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'border-border hover:bg-accent'
+                      }`}
+                    >
+                      {collection.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t pt-4">
+                <Label htmlFor="collection-name" className="text-sm font-medium">Create new collection</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="collection-name"
+                    placeholder="Collection name..."
+                    value={newCollectionName}
+                    onChange={(e) => setNewCollectionName(e.target.value)}
+                    className="flex-1"
+                    data-testid="input-collection-name"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleCreateNewCollection}
+                    disabled={isCreatingCollection}
+                    variant="outline"
+                    data-testid="button-create-collection-dialog"
+                  >
+                    {isCreatingCollection ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Create'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCollectionDialog(false)}
+                disabled={isBulkSaving}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleProceedBulkSave}
+                disabled={isBulkSaving}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="button-proceed-bulk-save"
+              >
+                {isBulkSaving ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <BookmarkPlus className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                Save {selectedPromptIds.size} Prompt{selectedPromptIds.size !== 1 ? 's' : ''}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
