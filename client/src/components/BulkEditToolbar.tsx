@@ -249,120 +249,116 @@ export function BulkEditToolbar({
 
       {/* Mobile Floating Action Bar */}
       {isBulkMode && (
-        <div className="md:hidden fixed bottom-20 left-0 right-0 z-40 border-t bg-primary/5 border-primary/20 shadow-lg">
-          <div className="max-w-full overflow-x-auto">
-            <div className="flex items-center gap-2 p-3 min-w-min">
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Badge variant="default" className="bg-primary text-xs">
-                  {selectedCount}
-                </Badge>
+        <div className="md:hidden fixed bottom-20 left-4 right-4 z-40 rounded-xl border border-primary/30 bg-primary/90 backdrop-blur-md shadow-lg shadow-primary/25 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            {/* Selection Count */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-white/20 text-white font-semibold text-sm">
+                {selectedCount}
               </div>
-              
-              {hasSelection && (
-                <>
-                  <Button
-                    onClick={() => onBulkOperation("export")}
-                    variant="outline"
-                    size="xs"
-                    disabled={isLoading}
-                    className="text-xs"
-                  >
-                    <Download className="h-3 w-3" />
-                  </Button>
-
-                  <Button
-                    onClick={() => onBulkOperation("like")}
-                    variant="outline"
-                    size="xs"
-                    disabled={isLoading}
-                    className="text-xs"
-                  >
-                    <Heart className="h-3 w-3" />
-                  </Button>
-
-                  <Button
-                    onClick={() => onBulkOperation("favorite")}
-                    variant="outline"
-                    size="xs"
-                    disabled={isLoading}
-                    className="text-xs"
-                  >
-                    <Bookmark className="h-3 w-3" />
-                  </Button>
-
-                  <Button
-                    onClick={() => onBulkOperation("update")}
-                    variant="outline"
-                    size="xs"
-                    disabled={isLoading}
-                    className="text-xs"
-                  >
-                    <Edit3 className="h-3 w-3" />
-                  </Button>
-
-                  {onAddToCollection && (
-                    <Button
-                      onClick={onAddToCollection}
-                      variant="outline"
-                      size="xs"
-                      disabled={isLoading}
-                      className="text-xs"
-                    >
-                      <FolderPlus className="h-3 w-3" />
-                    </Button>
-                  )}
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        disabled={isLoading}
-                        className="text-xs"
-                      >
-                        <MoreHorizontal className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40 text-xs">
-                      <DropdownMenuLabel className="text-xs">Visibility</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => onBulkOperation("makePublic")} className="text-xs">
-                        <Eye className="h-3 w-3 mr-1" />
-                        Public
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onBulkOperation("makePrivate")} className="text-xs">
-                        <EyeOff className="h-3 w-3 mr-1" />
-                        Private
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs">Status</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => onBulkOperation("publish")} className="text-xs">
-                        <FileEdit className="h-3 w-3 mr-1" />
-                        Publish
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onBulkOperation("archive")} className="text-xs">
-                        <Archive className="h-3 w-3 mr-1" />
-                        Archive
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => onBulkOperation("delete")} className="text-destructive text-xs">
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
-              )}
-
-              <Button
-                onClick={onToggleBulkMode}
-                variant="ghost"
-                size="xs"
-                className="ml-auto text-xs"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Close
-              </Button>
+              <span className="text-white/80 text-xs font-medium hidden min-[400px]:inline">
+                selected
+              </span>
             </div>
+            
+            {/* Action Buttons */}
+            {hasSelection && (
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                <button
+                  onClick={() => onBulkOperation("export")}
+                  disabled={isLoading}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors disabled:opacity-50"
+                  title="Export"
+                >
+                  <Download className="h-4 w-4" />
+                </button>
+
+                <button
+                  onClick={() => onBulkOperation("like")}
+                  disabled={isLoading}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors disabled:opacity-50"
+                  title="Like"
+                >
+                  <Heart className="h-4 w-4" />
+                </button>
+
+                <button
+                  onClick={() => onBulkOperation("favorite")}
+                  disabled={isLoading}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors disabled:opacity-50"
+                  title="Favorite"
+                >
+                  <Bookmark className="h-4 w-4" />
+                </button>
+
+                <button
+                  onClick={() => onBulkOperation("update")}
+                  disabled={isLoading}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors disabled:opacity-50"
+                  title="Edit"
+                >
+                  <Edit3 className="h-4 w-4" />
+                </button>
+
+                {onAddToCollection && (
+                  <button
+                    onClick={onAddToCollection}
+                    disabled={isLoading}
+                    className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors disabled:opacity-50"
+                    title="Add to Collection"
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                  </button>
+                )}
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      disabled={isLoading}
+                      className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors disabled:opacity-50"
+                      title="More actions"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">Visibility</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => onBulkOperation("makePublic")}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Make Public
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onBulkOperation("makePrivate")}>
+                      <EyeOff className="h-4 w-4 mr-2" />
+                      Make Private
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">Status</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => onBulkOperation("publish")}>
+                      <FileEdit className="h-4 w-4 mr-2" />
+                      Publish
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onBulkOperation("archive")}>
+                      <Archive className="h-4 w-4 mr-2" />
+                      Archive
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onBulkOperation("delete")} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+
+            {/* Close Button */}
+            <button
+              onClick={onToggleBulkMode}
+              className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors flex-shrink-0"
+              title="Close bulk edit"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}
