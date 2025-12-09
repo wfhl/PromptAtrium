@@ -1574,6 +1574,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk add prompts to collection endpoint
+  app.post('/api/prompts/bulk-add-to-collection', isAuthenticated, strictApiLimiter, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const { promptIds, collectionId } = req.body;
+      
+      if (!Array.isArray(promptIds) || promptIds.length === 0) {
+        return res.status(400).json({ message: "promptIds must be a non-empty array" });
+      }
+      
+      if (!collectionId) {
+        return res.status(400).json({ message: "collectionId is required" });
+      }
+      
+      // Verify user owns the collection
+      const collection = await storage.getCollection(collectionId);
+      if (!collection) {
+        return res.status(404).json({ message: "Collection not found" });
+      }
+      if (collection.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to modify this collection" });
+      }
+      
+      // Verify user owns all prompts
+      const ownedPrompts = await storage.getPrompts({ userId, promptIds });
+      const ownedPromptIds = new Set(ownedPrompts.map((p: any) => p.id));
+      
+      const unauthorizedPrompts = promptIds.filter((id: string) => !ownedPromptIds.has(id));
+      if (unauthorizedPrompts.length > 0) {
+        return res.status(403).json({ 
+          message: "Not authorized to modify some prompts",
+          unauthorizedPrompts 
+        });
+      }
+      
+      // Add each prompt to the collection
+      let successCount = 0;
+      for (const promptId of promptIds) {
+        try {
+          await storage.updatePrompt(promptId, { collectionId });
+          successCount++;
+        } catch (error) {
+          console.error(`Error adding prompt ${promptId} to collection:`, error);
+        }
+      }
+      
+      res.json({ 
+        message: `Successfully added ${successCount} prompts to collection`,
+        success: successCount,
+        total: promptIds.length
+      });
+    } catch (error) {
+      console.error("Error in bulk add to collection:", error);
+      res.status(500).json({ message: "Failed to add prompts to collection" });
+    }
+  });
+
   // Community routes
   app.post('/api/prompts/:id/like', isAuthenticated, async (req: any, res) => {
     try {
