@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileJson, Sparkles, Trash2, Layers, Download, Share2, ArrowLeft, Upload, FileText, X, Link2, Image as ImageIcon, Loader2, CheckCircle2, XCircle, FileIcon, Wand2, RefreshCw, Save, CheckSquare, Square, Copy, Check, Crop as CropIcon } from 'lucide-react';
+import { FileJson, Sparkles, Trash2, Layers, Download, Share2, ArrowLeft, Upload, FileText, X, Link2, Image as ImageIcon, Loader2, CheckCircle2, XCircle, FileIcon, Wand2, RefreshCw, Save, CheckSquare, Square, Copy, Check, Crop as CropIcon, BookmarkPlus } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface PromptImage {
   id: string;
@@ -251,6 +251,7 @@ function PromptCard({
   onUpdate, 
   onDelete, 
   onSave,
+  onSaveToDatabase,
   onExport
 }: {
   prompt: ExtractedPrompt;
@@ -259,12 +260,21 @@ function PromptCard({
   onUpdate: (updated: ExtractedPrompt) => void;
   onDelete: (id: string) => void;
   onSave?: (prompt: ExtractedPrompt) => void;
+  onSaveToDatabase?: (prompt: ExtractedPrompt) => Promise<void>;
   onExport: () => void;
 }) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSavingToDb, setIsSavingToDb] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSavedState, setIsSavedState] = useState(false);
+  const [isSavedToDb, setIsSavedToDb] = useState(!onSaveToDatabase);
   const [copied, setCopied] = useState(false);
+  
+  useEffect(() => {
+    if (!onSaveToDatabase) {
+      setIsSavedToDb(true);
+    }
+  }, [onSaveToDatabase]);
 
   const handleGenerateImage = async () => {
     setIsGenerating(true);
@@ -299,6 +309,20 @@ function PromptCard({
     if (onSave) {
       onSave(prompt);
       setIsSavedState(true);
+    }
+  };
+
+  const handleSaveToDatabase = async () => {
+    if (onSaveToDatabase && !isSavedToDb) {
+      setIsSavingToDb(true);
+      try {
+        await onSaveToDatabase(prompt);
+        setIsSavedToDb(true);
+      } catch (err) {
+        setError("Failed to save to library");
+      } finally {
+        setIsSavingToDb(false);
+      }
     }
   };
 
@@ -418,8 +442,26 @@ function PromptCard({
           </div>
           
           <div className="flex items-center gap-1">
+            {onSaveToDatabase && !isSavedToDb && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleSaveToDatabase} 
+                className="text-green-500 hover:text-green-600" 
+                disabled={isSavingToDb}
+                title="Save to My Library"
+                data-testid="button-save-to-db"
+              >
+                {isSavingToDb ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />}
+              </Button>
+            )}
+            {isSavedToDb && (
+              <span className="text-green-500 px-2" title="Saved to Library">
+                <CheckCircle2 className="w-4 h-4" />
+              </span>
+            )}
             {onSave && !isSavedState && (
-              <Button variant="ghost" size="icon" onClick={handleSave} className="text-primary" data-testid="button-save-prompt">
+              <Button variant="ghost" size="icon" onClick={handleSave} className="text-primary" title="Save to Session" data-testid="button-save-prompt">
                 <Save className="w-4 h-4" />
               </Button>
             )}
@@ -642,6 +684,86 @@ export default function PromptMinerPage() {
     });
   };
 
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const [savedToDbIds, setSavedToDbIds] = useState<Set<string>>(new Set());
+
+  const handleSaveToDatabase = async (prompt: ExtractedPrompt): Promise<void> => {
+    const promptData = {
+      name: prompt.title || 'Untitled Prompt',
+      description: prompt.content?.substring(0, 500) || '',
+      promptContent: prompt.content || '',
+      negativePrompt: prompt.negativePrompt || null,
+      tags: prompt.tags || [],
+      intendedGenerator: prompt.model || null,
+      sourceUrl: prompt.source || null,
+      isPublic: false,
+      status: 'draft' as const,
+      notes: `Extracted via PromptMiner from: ${prompt.source || 'unknown source'}`,
+    };
+
+    try {
+      const response = await apiRequest("POST", "/api/prompts", promptData);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData?.message || errorData?.errors?.[0]?.message || 'Failed to save prompt';
+        throw new Error(errorMessage);
+      }
+      
+      setSavedToDbIds(prev => new Set([...prev, prompt.id]));
+      queryClient.invalidateQueries({ queryKey: ['/api/prompts'] });
+      
+      toast({
+        title: "Saved to Library",
+        description: `"${prompt.title}" has been saved to your prompt library.`,
+      });
+    } catch (err: any) {
+      console.error('Save to database error:', err);
+      throw err;
+    }
+  };
+
+  const handleBulkSaveToDatabase = async () => {
+    const selected = getVisiblePrompts().filter(p => selectedPromptIds.has(p.id) && !savedToDbIds.has(p.id));
+    if (selected.length === 0) {
+      toast({
+        title: "Nothing to save",
+        description: "All selected prompts have already been saved.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsBulkSaving(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const prompt of selected) {
+      try {
+        await handleSaveToDatabase(prompt);
+        successCount++;
+      } catch (err) {
+        failCount++;
+        console.error(`Failed to save prompt "${prompt.title}":`, err);
+      }
+    }
+
+    setIsBulkSaving(false);
+    setSelectedPromptIds(new Set());
+    
+    if (failCount === 0) {
+      toast({
+        title: "All prompts saved",
+        description: `${successCount} prompt(s) saved to your library.`,
+      });
+    } else {
+      toast({
+        title: "Partial save completed",
+        description: `${successCount} saved, ${failCount} failed.`,
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground pb-32 relative overflow-x-hidden">
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -725,10 +847,24 @@ export default function PromptMinerPage() {
                 <Button variant="outline" size="sm" onClick={handleSelectAll}>
                   {selectedPromptIds.size === getVisiblePrompts().length ? 'Deselect All' : 'Select All'}
                 </Button>
+                <Button 
+                  size="sm" 
+                  onClick={handleBulkSaveToDatabase}
+                  disabled={isBulkSaving}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  data-testid="button-bulk-save-db"
+                >
+                  {isBulkSaving ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <BookmarkPlus className="w-3.5 h-3.5 mr-1.5" />
+                  )}
+                  Save to My Library
+                </Button>
                 {activeTab === 'extract' && (
-                  <Button size="sm" onClick={handleSaveSelectedToLibrary}>
+                  <Button size="sm" variant="outline" onClick={handleSaveSelectedToLibrary}>
                     <Share2 className="w-3.5 h-3.5 mr-1.5" />
-                    Save to Library
+                    Save to Session
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={handleExportSelected}>
@@ -768,6 +904,7 @@ export default function PromptMinerPage() {
                   onUpdate={handleUpdatePrompt}
                   onDelete={handleDeletePrompt}
                   onSave={activeTab === 'extract' ? handleSaveToLibrary : undefined}
+                  onSaveToDatabase={!savedToDbIds.has(prompt.id) ? handleSaveToDatabase : undefined}
                   onExport={() => exportPromptsToJSON([prompt], `prompt-${prompt.title.replace(/\s+/g, '-').toLowerCase()}`)}
                 />
               ))
